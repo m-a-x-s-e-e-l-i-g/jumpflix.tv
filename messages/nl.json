@@ -1,4 +1,35 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"hello_world": "Hello, {name} from nl!"
+	"hello_world": "Hello, {name} from nl!",
+	"tv_description": "Geselecteerde parkour & freerunning films en playlists.",
+	"tv_searchPlaceholder": "Zoeken",
+	"tv_back": "Terug",
+	"tv_playNow": "Nu afspelen",
+	"tv_watchOn": "Bekijk op",
+	"tv_paid": "Betaald",
+	"tv_play": "Afspelen",
+	"tv_open": "Openen",
+	"tv_selectPlaceholder": "Selecteer een item om details te zien.",
+	"tv_noImage": "Geen afbeelding",
+	"tv_playlistBadge": "Afspeellijst",
+	"tv_noResults": "Geen resultaten. Pas filters aan.",
+	"tv_showPaid": "Toon betaald",
+	"tv_close": "Sluiten",
+	"tv_noPlayer": "Geen speler beschikbaar"
+	,"tv_sort_random": "Sorteren: Willekeurig"
+	,"tv_sort_titleAsc": "Titel A–Z"
+	,"tv_sort_yearDesc": "Jaar (nieuwste)"
+	,"tv_sort_yearAsc": "Jaar (oudste)"
+	,"tv_sort_durationAsc": "Duur (kort → lang)"
+	,"tv_sort_durationDesc": "Duur (lang → kort)"
+	,"tv_badge_movie": "FILM"
+	,"tv_badge_playlist": "PLAYLIST"
+	,"tv_creators": "Makers"
+	,"tv_starring": "Met"
+	,"tv_videos": "Video's"
+	,"tv_type": "Type"
+	,"tv_videoCountSuffix": "video's"
+	,"tv_provider": "Aanbieder"
+	,"tv_showFewer": "Minder tonen"
+	,"tv_showAll": "Alles tonen"
 }

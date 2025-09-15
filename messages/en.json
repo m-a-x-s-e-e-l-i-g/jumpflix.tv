@@ -1,4 +1,35 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"hello_world": "Hello, {name} from en!"
+	"hello_world": "Hello, {name} from en!",
+	"tv_description": "Curated parkour & freerunning movies and playlists.",
+	"tv_searchPlaceholder": "Search",
+	"tv_back": "Back",
+	"tv_playNow": "Play now",
+	"tv_watchOn": "Watch on",
+	"tv_paid": "Paid",
+	"tv_play": "Play",
+	"tv_open": "Open",
+	"tv_selectPlaceholder": "Select an item to see details.",
+	"tv_noImage": "No image",
+	"tv_playlistBadge": "Playlist",
+	"tv_noResults": "No results. Try adjusting filters.",
+	"tv_showPaid": "Show paid",
+	"tv_close": "Close",
+	"tv_noPlayer": "No player available"
+	,"tv_sort_random": "Sort: Random"
+	,"tv_sort_titleAsc": "Title A–Z"
+	,"tv_sort_yearDesc": "Year (newest)"
+	,"tv_sort_yearAsc": "Year (oldest)"
+	,"tv_sort_durationAsc": "Duration (short → long)"
+	,"tv_sort_durationDesc": "Duration (long → short)"
+	,"tv_badge_movie": "MOVIE"
+	,"tv_badge_playlist": "PLAYLIST"
+	,"tv_creators": "Creators"
+	,"tv_starring": "Starring"
+	,"tv_videos": "Videos"
+	,"tv_type": "Type"
+	,"tv_videoCountSuffix": "videos"
+	,"tv_provider": "Provider"
+	,"tv_showFewer": "Show fewer"
+	,"tv_showAll": "Show all"
 }

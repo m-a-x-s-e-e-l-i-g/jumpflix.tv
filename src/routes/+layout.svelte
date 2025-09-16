@@ -3,6 +3,8 @@
 	import favicon from '$lib/assets/favicon.png';
 	import { Sheet as SheetRoot, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
 	import CogIcon from '@lucide/svelte/icons/cog';
+	import GithubIcon from '@lucide/svelte/icons/github';
+	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 
@@ -20,7 +22,7 @@
 		const updateTheme = (e: MediaQueryList | MediaQueryListEvent) => {
 			const stored = localStorage.getItem('theme');
 			// e.matches is true if dark mode is enabled
-			const matches = 'matches' in e ? e.matches : (e as MediaQueryList).matches;
+			const matches = 'matches' in e ? (e as MediaQueryListEvent).matches : (e as MediaQueryList).matches;
 			if (stored === 'dark' || (!stored && matches)) {
 				document.documentElement.classList.add('dark');
 			} else {
@@ -28,9 +30,9 @@
 			}
 		};
 		const mql = window.matchMedia('(prefers-color-scheme: dark)');
-		mql.addEventListener('change', updateTheme);
+		mql.addEventListener('change', updateTheme as any);
 		// Initial check in case theme was changed while page was open
-		updateTheme(mql);
+		updateTheme(mql as any);
 	}
 </script>
 
@@ -41,7 +43,7 @@
 <!-- Top-left settings cog that opens a left-side sheet -->
 <SheetRoot>
 	<div class="fixed left-4 top-4 z-50">
-	<SheetTrigger aria-label={m.settings_open()}>
+		<SheetTrigger aria-label={m.settings_open()}>
 			<button
 				class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 			>
@@ -51,22 +53,18 @@
 		</SheetTrigger>
 	</div>
 
-	<SheetContent side="left" class="p-4">
-		<SheetHeader>
+	<SheetContent side="left" class="p-0 flex flex-col h-full">
+		<SheetHeader class="px-4 pt-4">
 			<SheetTitle>{m.settings()}</SheetTitle>
 		</SheetHeader>
 
-		<div class="mt-2">
+		<!-- Scrollable content -->
+		<div class="flex-1 overflow-y-auto p-4">
 			<p class="mb-2 text-sm text-muted-foreground">{m.settings_language()}</p>
 			<div class="grid grid-cols-2 gap-2">
 				{#each langs as l}
 					<button
-						class={[
-							'flex items-center gap-2 rounded-md border p-3 text-left text-sm transition',
-							currentLocale === l.code
-								? 'border-primary ring-1 ring-primary'
-								: 'border-border hover:bg-muted/60'
-						].join(' ')}
+						class="[ 'flex items-center gap-2 rounded-md border p-3 text-left text-sm transition', currentLocale === l.code ? 'border-primary ring-1 ring-primary' : 'border-border hover:bg-muted/60' ].join(' ')"
 						aria-pressed={currentLocale === l.code}
 						onclick={() => setLocale(l.code)}
 					>
@@ -75,6 +73,29 @@
 					</button>
 				{/each}
 			</div>
+
+			<!-- Project Links -->
+			<div class="mt-6">
+				<p class="mb-2 text-sm text-muted-foreground">{m.settings_links()}</p>
+				<div class="flex flex-col gap-2">
+					<a href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+						<GithubIcon class="size-4" />
+						<span class="text-sm text-foreground">GitHub</span>
+					</a>
+					<a href="https://pkfr.nl" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+						<GlobeIcon class="size-4" />
+						<span class="text-sm text-foreground">pkfr.nl — Dutch Parkour Community</span>
+					</a>
+				</div>
+			</div>
+		</div>
+
+		<!-- Bottom Credits Footer -->
+		<div class="border-t border-border text-muted-foreground text-xs flex items-center justify-between md:justify-end gap-3 p-4 bg-background/90 backdrop-blur">
+			<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" title="MAXmade - Max Seelig" class="flex items-center gap-2">
+				<img src="/images/logo-MAXmade-light.svg" alt="MAXmade - Max Seelig" class="h-5 w-auto block dark:hidden" />
+				<img src="/images/logo-MAXmade-dark.svg" alt="MAXmade - Max Seelig" class="h-5 w-auto hidden dark:block" />
+			</a>
 		</div>
 	</SheetContent>
 </SheetRoot>

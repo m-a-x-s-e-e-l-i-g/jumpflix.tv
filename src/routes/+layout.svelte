@@ -5,6 +5,7 @@
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import GithubIcon from '@lucide/svelte/icons/github';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
+	import { Toaster } from 'svelte-sonner';
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 
@@ -101,3 +102,6 @@
 </SheetRoot>
 
 {@render children?.()}
+
+<!-- Global toast container -->
+<Toaster richColors position="top-right" />

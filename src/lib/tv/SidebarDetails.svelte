@@ -39,9 +39,6 @@
           <span>{(selected as any).duration}</span>
         {:else}
           <span class="bg-red-600 px-2 py-1 rounded text-white text-xs">PLAYLIST</span>
-          {#if (selected as any).creators?.length}
-            <span>{(selected as any).creators.join(', ')}</span>
-          {/if}
           <span>{(selected as any).videoCount || '?'} videos</span>
         {/if}
         {#if (selected as any).trakt}
@@ -113,8 +110,6 @@
             </div>
           </div>
         {/if}
-        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Videos:</span><span class="text-gray-900 dark:text-white">{(selected as any).videoCount || '?'}</span></div>
-        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Type:</span><span class="text-gray-900 dark:text-white">YouTube Playlist</span></div>
         {#if (selected as any).starring?.length}
           <div class="space-y-1">
             <span class="text-gray-500 dark:text-gray-400 block">Starring:</span>

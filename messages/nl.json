@@ -1,7 +1,7 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"hello_world": "Hello, {name} from nl!",
-	"tv_description": "Geselecteerde parkour & freerunning films en playlists.",
+	"tv_description": "Ontdek parkour & freerunning films, documentaires en playlists.",
 	"tv_searchPlaceholder": "Zoek op titel, maker of atleet...",
 	"tv_back": "Terug",
 	"tv_playNow": "Nu afspelen",
@@ -13,7 +13,7 @@
 	"tv_noImage": "Geen afbeelding",
 	"tv_playlistBadge": "Afspeellijst",
 	"tv_noResults": "Geen resultaten. Pas filters aan.",
-	"tv_showPaid": "Toon betaald",
+	"tv_showPaid": "Betaald",
 	"tv_close": "Sluiten",
 	"tv_noPlayer": "Geen speler beschikbaar"
 	,"tv_sort_random": "Sorteren: Willekeurig"
@@ -32,4 +32,7 @@
 	,"tv_provider": "Aanbieder"
 	,"tv_showFewer": "Minder tonen"
 	,"tv_showAll": "Alles tonen"
+	,"settings": "Instellingen"
+	,"settings_language": "Taal"
+	,"settings_open": "Instellingen openen"
 }

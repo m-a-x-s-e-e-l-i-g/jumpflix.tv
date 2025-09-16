@@ -87,6 +87,10 @@
 						<GlobeIcon class="size-4" />
 						<span class="text-sm text-foreground">pkfr.nl — Dutch Parkour Community</span>
 					</a>
+					<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+						<GlobeIcon class="size-4" />
+						<span class="text-sm text-foreground">maxmade.nl — Max Seelig's Portfolio</span>
+					</a>
 				</div>
 			</div>
 		</div>

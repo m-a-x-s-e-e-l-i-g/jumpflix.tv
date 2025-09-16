@@ -74,20 +74,20 @@
 		<div class="flex flex-wrap items-center gap-4">
 			<!-- Search -->
 			<div class="relative flex-1 min-w-[300px] group">
-				<span class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-400 transition-colors z-10">
+				<span class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors z-10">
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
 				</span>
 				{#if $searchQuery}
-					<button type="button" class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-200 transition-colors p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 z-10" on:click={() => (searchQuery.set(''))} aria-label="Clear search">
+					<button type="button" class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 z-10" on:click={() => (searchQuery.set(''))} aria-label="Clear search">
 						<svg class="w-4 h-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
 					</button>
 				{/if}
-				<input bind:value={$searchQuery} type="text" autocomplete="off" spellcheck="false" placeholder={m.tv_searchPlaceholder()} aria-label="Search content" class="w-full h-12 bg-[#0f172a]/60 dark:bg-gray-900/60 border border-gray-700/60 focus:border-blue-500/70 text-gray-200 placeholder-gray-500 rounded-xl text-sm focus:outline-none backdrop-blur-sm transition pr-10" style="padding-left: 3rem;" />
+				<input bind:value={$searchQuery} type="text" autocomplete="off" spellcheck="false" placeholder={m.tv_searchPlaceholder()} aria-label="Search content" class="w-full h-12 bg-white/80 dark:bg-gray-900/60 border border-gray-300 dark:border-gray-700 focus:border-gray-400 dark:focus:border-blue-500/70 text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 rounded-xl text-sm focus:outline-none backdrop-blur-sm transition pr-10" style="padding-left: 3rem;" />
 			</div>
 
 			<!-- Show paid switch -->
-			<label class="flex items-center gap-3 select-none bg-[#0f172a]/60 dark:bg-gray-900/60 border border-gray-700/60 rounded-xl px-4 py-3 backdrop-blur-sm">
-				<span class="text-xs uppercase tracking-wide text-gray-300">{m.tv_showPaid()}</span>
+			<label class="flex items-center gap-3 select-none bg-white/80 dark:bg-gray-900/60 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 backdrop-blur-sm">
+				<span class="text-xs uppercase tracking-wide text-gray-700 dark:text-gray-300">{m.tv_showPaid()}</span>
 				<Switch bind:checked={$showPaid} ariaLabel={m.tv_showPaid()} />
 			</label>
 
@@ -95,13 +95,13 @@
 			<div class="min-w-[170px] relative">
 				<select
 					bind:value={$sortBy}
-					class="appearance-none w-full bg-[#0f172a]/60 dark:bg-gray-900/60 border border-gray-700/60 rounded-xl px-4 py-3 text-sm pr-10 text-gray-200 focus:outline-none focus:border-blue-500/70 transition backdrop-blur-sm"
+					class="appearance-none w-full bg-white/80 dark:bg-gray-900/60 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm pr-10 text-gray-900 dark:text-gray-200 focus:outline-none focus:border-gray-400 dark:focus:border-blue-500/70 transition backdrop-blur-sm"
 				>
 					{#each Object.entries(sortLabels) as [value, label]}
 						<option {value}>{label}</option>
 					{/each}
 				</select>
-				<span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400">▾</span>
+				<span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 dark:text-gray-400">▾</span>
 			</div>
 		</div>
 

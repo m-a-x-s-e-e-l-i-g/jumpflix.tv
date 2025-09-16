@@ -30,7 +30,7 @@
   </div>
   <div class="space-y-4 relative z-10 flex-1">
     <div>
-  <h2 class="text-3xl font-serif font-light text-gray-100 tracking-wide mb-4">{selected.title}</h2>
+  <h2 class="text-3xl font-serif font-light text-gray-900 dark:text-gray-100 tracking-wide mb-4">{selected.title}</h2>
       <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
         {#if selected.type === 'movie'}
           <span class="bg-blue-600 px-2 py-1 rounded text-white text-xs">MOVIE</span>
@@ -54,7 +54,7 @@
     </div>
     <div>
       <br />
-  <p class="text-gray-300 dark:text-gray-300 leading-relaxed text-sm font-sans">{selected.description}</p>
+  <p class="text-gray-700 dark:text-gray-300 leading-relaxed text-sm font-sans">{selected.description}</p>
     </div>
     {#if selected.type === 'movie'}
       <div class="space-y-2 text-sm">

@@ -20,7 +20,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           { m.tv_back() }
         </button>
-        <h2 class="text-base line-clamp-2 pr-2 pl-2 text-gray-900 dark:text-white" style="margin:0;font-size:.9em!important;font-family: 'Inter', sans-serif;">{selected.title}</h2>
+        <h2 class="text-base line-clamp-2 pr-2 pl-2 text-gray-900 dark:text-white" style="margin:0;font-size:.9em!important;">{selected.title}</h2>
       </div>
       <div class="relative">
         {#if isImage(selected.thumbnail)}
@@ -28,10 +28,10 @@
         {/if}
         <div class="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-white/10 dark:from-black dark:via-black/60 dark:to-black/10"></div>
         <div class="absolute bottom-4 left-4 right-4">
-          <h3 class="mb-2 text-gray-900 dark:text-white accentFont" style="font-size:2em!important;font-weight:100;">{selected.title}</h3>
+          <h1 class="mb-2 text-gray-900 dark:text-white font-light" style="font-size:2em!important;font-family: 'Merriweather', serif;">{selected.title}</h1>
           <div class="flex flex-wrap items-center gap-2 text-xs text-gray-700 dark:text-gray-300 mb-3">
             {#if selected.type === 'movie'}
-              <span class="bg-blue-600 px-2 py-1 rounded">MOVIE</span>
+              <span class="bg-blue-600 px-2 py-1 rounded text-white">MOVIE</span>
               {#if selected.paid}<span class="bg-yellow-400 text-black px-2 py-1 rounded font-bold">PAID</span>{/if}
               <span>{(selected as any).year}</span>
               <span>{(selected as any).duration}</span>

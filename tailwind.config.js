@@ -60,6 +60,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'Segoe UI', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif', ...fontFamily.sans],
+        accent: ['Merriweather', 'Georgia', 'serif'],
         serif: ['Merriweather', 'Georgia', 'serif'],
         mono: ['Fira Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace']
       },

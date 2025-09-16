@@ -1,4 +1,3 @@
-// Full playlists dataset migrated from pkfr-nl
 export const playlists = [
   {
     id: 1,

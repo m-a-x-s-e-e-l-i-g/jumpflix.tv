@@ -1,4 +1,3 @@
-// Full movies dataset migrated from pkfr-nl (svelte-i18n dependency removed)
 export const movies = [
   {
     id: 1,

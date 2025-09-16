@@ -64,10 +64,12 @@
 
 <div class="min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[420px]">
 	<div class="container mx-auto px-6 pt-10 text-center">
-		<div class="mb-4 flex justify-center">
-			<img src="/images/jumpflix-light.webp" alt="JUMPFLIX parkour tv" class="dark:hidden" style="height: 150px; width: auto; max-height: 150px;" loading="eager" />
-			<img src="/images/jumpflix-dark.webp" alt="JUMPFLIX parkour tv" class="hidden dark:block" style="height: 150px; width: auto; max-height: 150px;" loading="eager" />
-		</div>
+		   <div class="mb-4 flex justify-center">
+			   <a href="/" aria-label="Go to homepage">
+				   <img src="/images/jumpflix-light.webp" alt="JUMPFLIX parkour tv" class="dark:hidden" style="height: 150px; width: auto; max-height: 150px;" loading="eager" />
+				   <img src="/images/jumpflix-dark.webp" alt="JUMPFLIX parkour tv" class="hidden dark:block" style="height: 150px; width: auto; max-height: 150px;" loading="eager" />
+			   </a>
+		   </div>
 		<p class="text-gray-400 dark:text-gray-300 font-sans text-sm tracking-wide max-w-3xl mx-auto">{m.tv_description()}</p>
 	</div>
 	<div class="container mx-auto px-6 pt-6">

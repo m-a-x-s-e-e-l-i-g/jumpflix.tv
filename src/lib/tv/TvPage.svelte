@@ -128,7 +128,7 @@
     <div class="container mx-auto px-6 py-10 tv-main mt-2">
       <div bind:this={gridEl} class="grid auto-fit-grid gap-6">
         {#if $visibleContent.length === 0}
-          <div class="col-span-full text-center text-gray-400 py-8">No results. Try adjusting filters.</div>
+          <div class="col-span-full text-center text-gray-400 py-8">{m.tv_noResults()}</div>
         {:else}
           {#each $visibleContent as item (item.type + ':' + item.id)}
             {#if item.type === 'movie'}

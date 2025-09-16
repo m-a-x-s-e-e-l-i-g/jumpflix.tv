@@ -176,6 +176,6 @@
   <div class="absolute inset-0 z-0 bg-white dark:bg-gray-800 border-l border-black/10 dark:border-white/10"></div>
   <div class="text-center text-gray-500 dark:text-gray-400 py-12 relative z-10">
     <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
-    <p>Select a movie or playlist to view details</p>
+    <p>{m.tv_selectPlaceholder()}</p>
   </div>
 {/if}

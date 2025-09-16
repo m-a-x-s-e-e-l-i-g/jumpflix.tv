@@ -30,7 +30,7 @@
   </div>
   <div class="space-y-4 relative z-10 flex-1">
     <div>
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2" style="font-weight:100;">{selected.title}</h2>
+  <h2 class="text-3xl font-serif font-light text-gray-100 tracking-wide mb-4">{selected.title}</h2>
       <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
         {#if selected.type === 'movie'}
           <span class="bg-blue-600 px-2 py-1 rounded text-white text-xs">MOVIE</span>
@@ -54,7 +54,7 @@
     </div>
     <div>
       <br />
-      <p class="text-gray-700 dark:text-gray-300 leading-relaxed">{selected.description}</p>
+  <p class="text-gray-300 dark:text-gray-300 leading-relaxed text-sm font-sans">{selected.description}</p>
     </div>
     {#if selected.type === 'movie'}
       <div class="space-y-2 text-sm">
@@ -135,7 +135,7 @@
     {/if}
   </div>
   <div class="relative z-10 pt-4">
-    <button on:click={() => { if (isInlinePlayable(selected)) openContent(selected); else if (selected?.externalUrl) openExternal(selected); }} class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer">
+    <button on:click={() => { if (isInlinePlayable(selected)) openContent(selected); else if (selected?.externalUrl) openExternal(selected); }} class="w-full bg-blue-600/90 hover:bg-blue-500 text-white py-4 px-6 rounded-2xl font-medium tracking-wide transition-colors flex items-center justify-center gap-3 cursor-pointer shadow-lg shadow-blue-900/30 backdrop-blur">
       {#if isInlinePlayable(selected)}
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>{ m.tv_playNow() }
       {:else}

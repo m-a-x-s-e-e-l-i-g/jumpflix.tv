@@ -20,7 +20,7 @@
   tabindex="0"
   role="button"
 >
-  <div class="relative aspect-[2/3] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-3 shadow-lg transition-all duration-300"
+  <div class="relative aspect-[2/3] bg-[#0f172a] dark:bg-gray-800 border border-gray-700/60 dark:border-gray-700 rounded-xl overflow-hidden mb-3 shadow-md transition-all duration-300"
     class:group-hover:ring-4={!isMobile}
     class:group-hover:ring-red-400={!isMobile}
     class:ring-4={!isMobile && isSelected}
@@ -43,6 +43,6 @@
         </div>
       </div>
     {/if}
-    <div class="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-[10px] text-white/90">{item.videoCount || '?'} videos</div>
+    <div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur px-2 py-1 rounded-md text-[10px] text-white/90">{item.videoCount || '?'} videos</div>
   </div>
 </div>

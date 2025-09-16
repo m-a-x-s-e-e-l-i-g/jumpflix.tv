@@ -3,6 +3,10 @@
   import { isImage, isInlinePlayable } from './utils';
   import type { ContentItem } from './types';
   import * as m from '$lib/paraglide/messages';
+  import { browser } from '$app/environment';
+  import { toast } from 'svelte-sonner';
+  import Link2Icon from '@lucide/svelte/icons/link-2';
+  import { getUrlForItem } from './slug';
 
   export let show = false;
   export let isMobile = false;
@@ -10,6 +14,30 @@
   export let closeDetailsPanel: () => void;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
+
+  async function copyLink() {
+    if (!selected) return;
+    const path = getUrlForItem(selected);
+    const url = browser ? new URL(path, window.location.origin).toString() : path;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const el = document.createElement('textarea');
+        el.value = url;
+        el.setAttribute('readonly', '');
+        el.style.position = 'absolute';
+        el.style.left = '-9999px';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      }
+      toast.success('Link copied');
+    } catch (e) {
+      if (browser) window.history.pushState({}, '', url);
+    }
+  }
 </script>
 
 {#if isMobile && show && selected}
@@ -40,11 +68,15 @@
               <span>{(selected as any).videoCount || '?'} videos</span>
             {/if}
             {#if selected.type === 'movie' && (selected as any).trakt}
-              <a href={(selected as any).trakt} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-7 h-7 focus:outline-none focus:ring-2 focus:ring-[#ED1C24] focus:ring-offset-2 focus:ring-offset-black rounded transition active:scale-95 hover:scale-105" aria-label="View on Trakt" title="Trakt">
+              <a href={(selected as any).trakt} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-6 h-6 mx-1 focus:outline-none focus:ring-2 focus:ring-[#ED1C24] focus:ring-offset-2 focus:ring-offset-black rounded transition active:scale-95 hover:scale-105" aria-label="View on Trakt" title="Trakt">
                 <img src="https://trakt.tv/assets/logos/logomark.square.gradient-b644b16c38ff775861b4b1f58c1230f6a097a2466ab33ae00445a505c33fcb91.svg" alt="" class="w-full h-full select-none" loading="lazy" decoding="async" />
                 <span class="sr-only">Trakt</span>
               </a>
             {/if}
+            <!-- Shareable URL: icon-only copy button -->
+            <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" on:click={copyLink} title="Copy link" aria-label="Copy link">
+              <Link2Icon class="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

@@ -56,7 +56,7 @@ visibleContent.subscribe(list => {
     selectedIndex.set(0);
     return;
   }
-  let current: ContentItem | null;
+  let current: ContentItem | null = null;
   selectedContent.update(val => { current = val; return val; });
   if (!current || !list.some(i => i.id === current!.id && i.type === current!.type)) {
     selectedContent.set(list[0]);
@@ -70,8 +70,15 @@ visibleContent.subscribe(list => {
 // Actions
 export function selectContent(item: ContentItem) {
   selectedContent.set(item);
-  const idx = allContent.findIndex(i => i.id === item.id && i.type === item.type);
-  selectedIndex.set(Math.max(0, idx));
+  // IMPORTANT: Use the current visibleContent ordering (which can be filtered & sorted)
+  // rather than the original allContent ordering. Using allContent caused keyboard
+  // navigation to "jump" after clicking a card because selectedIndex did not match
+  // the position within the displayed grid.
+  let currentList: ContentItem[] = [];
+  const unsub = visibleContent.subscribe(list => { currentList = list; });
+  unsub();
+  const idx = currentList.findIndex(i => i.id === item.id && i.type === item.type);
+  selectedIndex.set(idx >= 0 ? idx : 0);
   showPlayer.set(false);
 }
 

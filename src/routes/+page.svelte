@@ -40,7 +40,17 @@
 		if (!gridEl) return 1; const children = Array.from(gridEl.children) as HTMLElement[]; if (!children.length) return 1; const firstTop = children[0].offsetTop; let count = 0; for (const el of children) { if (Math.abs(el.offsetTop - firstTop) < 2) count++; else break; } return count || 1;
 	}
 	$: if (browser) { columns = computeColumns(); }
-	function isTypingTarget(target: EventTarget | null) { if (!(target instanceof HTMLElement)) return false; const tag = target.tagName; if (target.isContentEditable) return true; if ([ 'INPUT', 'TEXTAREA', 'SELECT', 'BUTTON' ].includes(tag)) return true; const role = target.getAttribute('role'); if (role && ['textbox','combobox','button'].includes(role)) return true; return false; }
+	function isTypingTarget(target: EventTarget | null) {
+		if (!(target instanceof HTMLElement)) return false;
+		const tag = target.tagName;
+		if (target.isContentEditable) return true;
+		// Native form fields where typing occurs
+		if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return true;
+		const role = target.getAttribute('role');
+		// ARIA roles that imply text entry / composition (exclude 'button')
+		if (role && ['textbox','combobox'].includes(role)) return true;
+		return false;
+	}
 	function scrollSelectedIntoView(idx: number) { if (!gridEl) return; const el = gridEl.children[idx] as HTMLElement | undefined; if (el) requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch {} }); }
 	function setIndex(idx: number) { const list = $visibleContent; if (!list.length) return; const clamped = Math.max(0, Math.min(list.length - 1, idx)); selectedIndex.set(clamped); selectedContent.set(list[clamped]); scrollSelectedIntoView(clamped); }
 	function handleKeydown(event: KeyboardEvent) { if ($showPlayer && event.key === 'Escape') { closePlayer(); return; } if (event.key === 'Escape' && document.fullscreenElement) { document.exitFullscreen(); closePlayer(); return; } if (isTypingTarget(event.target)) return; if ($showPlayer) return; const list = $visibleContent; if (!list.length) return; const idx = $selectedIndex; const current = $selectedContent; switch (event.key) { case 'ArrowRight': event.preventDefault(); setIndex(idx + 1); break; case 'ArrowLeft': event.preventDefault(); setIndex(idx - 1); break; case 'ArrowDown': event.preventDefault(); setIndex(idx + columns); break; case 'ArrowUp': event.preventDefault(); setIndex(idx - columns); break; case 'Enter': if (current) { event.preventDefault(); openContent(current); } break; } }
@@ -48,7 +58,7 @@
 </script>
 
 <svelte:head>
-	<title>JUMPFLIX Parkour Freerunning TV</title>
+	<title>🍿 JUMPFLIX Parkour Freerunning TV 📺</title>
 	<meta name="description" content={m.tv_description()} />
 </svelte:head>
 
@@ -174,5 +184,16 @@
 		max-width: 100vw;
 		padding: 0 1rem 0 0;
 		margin: 1rem auto;
+	}
+
+	/* Focus styling for cards: hide outline on mouse click, show subtle ring for keyboard */
+	.auto-fit-grid :global([role="button"][tabindex="0"]:focus:not(:focus-visible)) {
+		outline: none;
+		box-shadow: none;
+	}
+
+	.auto-fit-grid :global([role="button"][tabindex="0"]:focus-visible) {
+		outline: none;
+		border: none;
 	}
 </style>

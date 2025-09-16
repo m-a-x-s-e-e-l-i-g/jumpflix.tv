@@ -28,7 +28,7 @@
         {/if}
         <div class="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-white/10 dark:from-black dark:via-black/60 dark:to-black/10"></div>
         <div class="absolute bottom-4 left-4 right-4">
-          <h3 class="mb-2 text-gray-900 dark:text-white" style="font-size:2em!important;font-weight:100;">{selected.title}</h3>
+          <h3 class="mb-2 text-gray-900 dark:text-white accentFont" style="font-size:2em!important;font-weight:100;">{selected.title}</h3>
           <div class="flex flex-wrap items-center gap-2 text-xs text-gray-700 dark:text-gray-300 mb-3">
             {#if selected.type === 'movie'}
               <span class="bg-blue-600 px-2 py-1 rounded">MOVIE</span>

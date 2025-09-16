@@ -9,6 +9,13 @@ export default {
   content: ['./src/**/*.{svelte,ts,js}'],
   safelist: ['dark'],
   theme: {
+    container: {
+      center: true,
+      padding: '2rem',
+      screens: {
+        '2xl': '1400px'
+      }
+    },
     extend: {
       colors: {
         border: 'oklch(var(--border) / <alpha-value>)',
@@ -52,7 +59,29 @@ export default {
         sm: 'calc(var(--radius) - 4px)'
       },
       fontFamily: {
-        sans: ['Inter', ...fontFamily.sans]
+        sans: ['Inter', 'Segoe UI', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif', ...fontFamily.sans],
+        serif: ['Merriweather', 'Georgia', 'serif'],
+        mono: ['Fira Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+      },
+      fontSize: {
+        xs: ['0.75rem', { lineHeight: '1.5' }],
+        sm: ['0.875rem', { lineHeight: '1.5' }],
+        base: ['1rem', { lineHeight: '1.7' }],
+        lg: ['1.125rem', { lineHeight: '1.7' }],
+        xl: ['1.25rem', { lineHeight: '1.7' }],
+        '2xl': ['1.5rem', { lineHeight: '1.3' }],
+        '3xl': ['1.875rem', { lineHeight: '1.2' }],
+        '4xl': ['2.25rem', { lineHeight: '1.2' }],
+        '5xl': ['3rem', { lineHeight: '1.1' }]
+      },
+      spacing: {
+        xs: '0.5rem',
+        sm: '1rem',
+        md: '1.5rem',
+        lg: '2rem',
+        xl: '2.5rem',
+        '2xl': '3rem',
+        '3xl': '4rem'
       },
       keyframes: {
         'accordion-down': { from: { height: '0' }, to: { height: 'var(--bits-accordion-content-height)' } },

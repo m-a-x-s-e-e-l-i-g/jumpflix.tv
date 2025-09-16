@@ -72,9 +72,66 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--primaryFont, 'Inter', system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
 }
+
+h2{
+  font-family: var(--accentFont, 'Merriweather', serif);
+}
+
+/* Add font CSS variables mirroring pkfr-nl for easier cross-project parity */
+:root {
+  --primaryFont: 'Inter', 'Segoe UI', 'Helvetica Neue', -apple-system, BlinkMacSystemFont, Roboto,
+    Arial, 'Noto Sans', sans-serif;
+  --accentFont: 'Merriweather', 'Inter', 'Georgia', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, serif;
+}
+
+/* Responsive root font sizing to match pkfr-nl scaling */
+@media (min-width: 48rem) { /* sm */
+  :root { font-size: 1.25rem; }
+}
+@media (min-width: 80rem) { /* lg */
+  :root { font-size: 1.375rem; }
+}
+
+/* Spacing utility classes (optional parity with legacy SCSS utilities) */
+.spacing-xs { margin-bottom: 0.5rem; }
+.spacing-sm { margin-bottom: 1rem; }
+.spacing-md { margin-bottom: 1.5rem; }
+.spacing-lg { margin-bottom: 2rem; }
+.spacing-xl { margin-bottom: 2.5rem; }
+.spacing-2xl { margin-bottom: 3rem; }
+.spacing-3xl { margin-bottom: 4rem; }
+
+.mt-xs { margin-top: 0.5rem; }
+.mt-sm { margin-top: 1rem; }
+.mt-md { margin-top: 1.5rem; }
+.mt-lg { margin-top: 2rem; }
+.mt-xl { margin-top: 2.5rem; }
+.mt-2xl { margin-top: 3rem; }
+.mt-3xl { margin-top: 4rem; }
+
+.mb-xs { margin-bottom: 0.5rem; }
+.mb-sm { margin-bottom: 1rem; }
+.mb-md { margin-bottom: 1.5rem; }
+.mb-lg { margin-bottom: 2rem; }
+.mb-xl { margin-bottom: 2.5rem; }
+.mb-2xl { margin-bottom: 3rem; }
+.mb-3xl { margin-bottom: 4rem; }
+
+.py-xs { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.py-sm { padding-top: 1rem; padding-bottom: 1rem; }
+.py-md { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.py-lg { padding-top: 2rem; padding-bottom: 2rem; }
+.py-xl { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+
+.px-xs { padding-left: 0.5rem; padding-right: 0.5rem; }
+.px-sm { padding-left: 1rem; padding-right: 1rem; }
+.px-md { padding-left: 1.5rem; padding-right: 1.5rem; }
+.px-lg { padding-left: 2rem; padding-right: 2rem; }
+.px-xl { padding-left: 2.5rem; padding-right: 2.5rem; }
 
 /* Only apply hover effects on non-mobile devices */
 @media (min-width: 768px) {

@@ -524,5 +524,17 @@ export const movies = [
     duration: "-",
     creators: ["Norf", "Alec Reduker", "Noah Heath"],
     starring: ["Niko Selski", "Ethan Rud", "Myles Ross", "Noah Heath"],
+  },
+  {
+    id: 36,
+    title: "Tether",
+    year: "2023",
+    description: "A parkour film on healing and identity, moving from injury and solitude to friendship and freedom through body, space, and people.",
+    thumbnail: "/images/posters/tether-egg-klickstein-parkour-poster.webp",
+    videoId: "wGb0Y5xJHp4",
+    type: "movie",
+    duration: "12m",
+    creators: ["Egg Klickstein", "Spencer Hovel", "Ross Allen", "Josh Malone", "Zack Karro", "Trevor Kunkel", "Mike Kitchell"],
+    starring: ["Egg Klickstein"]
   }
 ];

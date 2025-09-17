@@ -5,6 +5,9 @@ export const prerender = true;
 
 const SITE = (env.PUBLIC_SITE_URL || 'https://www.jumpflix.tv').replace(/\/$/, '');
 
+// Note: Sitemap is automatically submitted to search engines after build
+// via the post-build script (scripts/submit-sitemap.mjs)
+
 function xmlEscape(input: string): string {
   return input
     .replace(/&/g, '&amp;')

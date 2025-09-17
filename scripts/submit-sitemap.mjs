@@ -18,43 +18,126 @@ const SITE_URL = process.env.PUBLIC_SITE_URL || 'https://www.jumpflix.tv';
 const SITEMAP_URL = `${SITE_URL.replace(/\/$/, '')}/sitemap.xml`;
 
 /**
- * Submit sitemap to Google
+ * Submit sitemap to Google (using IndexNow API or traditional ping)
  */
 async function submitToGoogle() {
   try {
-    const pingUrl = `https://www.google.com/ping?sitemap=${encodeURIComponent(SITEMAP_URL)}`;
-    const response = await fetch(pingUrl, { method: 'GET' });
+    // First try the traditional ping method (still works in some cases)
+    const pingUrl = `https://www.google.com/webmasters/tools/ping?sitemap=${encodeURIComponent(SITEMAP_URL)}`;
+    const response = await fetch(pingUrl, { 
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; SitemapSubmitter/1.0)'
+      }
+    });
     
     if (response.ok) {
       console.log('✅ Successfully submitted sitemap to Google');
       return true;
     } else {
-      console.error(`❌ Google submission failed with status: ${response.status}`);
+      console.log(`⚠️  Google ping method returned status: ${response.status}`);
+      console.log('ℹ️  Note: For reliable Google submissions, consider using Google Search Console API');
+      console.log('   or manually submit via https://search.google.com/search-console');
       return false;
     }
   } catch (error) {
     console.error(`❌ Google submission error: ${error.message}`);
+    console.log('ℹ️  For reliable Google submissions, use Google Search Console API or manual submission');
     return false;
   }
 }
 
 /**
- * Submit sitemap to Bing
+ * Submit sitemap using IndexNow API (supported by Bing, Yandex, and others)
+ */
+async function submitToIndexNow() {
+  try {
+    const indexNowUrl = 'https://api.indexnow.org/indexnow';
+    
+    // IndexNow requires a key, but we can try without one first
+    const payload = {
+      host: new URL(SITE_URL).hostname,
+      key: 'anonymous', // Some services accept anonymous submissions
+      keyLocation: `${SITE_URL}/indexnow-key.txt`,
+      urlList: [SITEMAP_URL]
+    };
+
+    const response = await fetch(indexNowUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (compatible; SitemapSubmitter/1.0)'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok || response.status === 202) {
+      console.log('✅ Successfully submitted sitemap via IndexNow API');
+      return true;
+    } else {
+      console.log(`⚠️  IndexNow submission returned status: ${response.status}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`❌ IndexNow submission error: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * Submit sitemap to Bing (try multiple methods)
  */
 async function submitToBing() {
   try {
-    const pingUrl = `https://www.bing.com/ping?sitemap=${encodeURIComponent(SITEMAP_URL)}`;
-    const response = await fetch(pingUrl, { method: 'GET' });
+    // Try IndexNow first (modern approach)
+    const indexNowSuccess = await submitToIndexNow();
+    if (indexNowSuccess) {
+      console.log('✅ Successfully submitted sitemap to Bing via IndexNow');
+      return true;
+    }
+
+    // Fallback to traditional ping (may be deprecated)
+    const pingUrl = `https://www.bing.com/webmaster/ping.aspx?siteMap=${encodeURIComponent(SITEMAP_URL)}`;
+    const response = await fetch(pingUrl, { 
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; SitemapSubmitter/1.0)'
+      }
+    });
     
     if (response.ok) {
-      console.log('✅ Successfully submitted sitemap to Bing');
+      console.log('✅ Successfully submitted sitemap to Bing via ping');
       return true;
     } else {
-      console.error(`❌ Bing submission failed with status: ${response.status}`);
+      console.log(`⚠️  Bing ping method returned status: ${response.status}`);
+      console.log('ℹ️  Note: For reliable Bing submissions, consider using Bing Webmaster Tools API');
+      console.log('   or manually submit via https://www.bing.com/webmasters');
       return false;
     }
   } catch (error) {
     console.error(`❌ Bing submission error: ${error.message}`);
+    console.log('ℹ️  For reliable Bing submissions, use Bing Webmaster Tools API or manual submission');
+    return false;
+  }
+}
+
+/**
+ * Validate that the sitemap is accessible
+ */
+async function validateSitemap() {
+  try {
+    console.log(`🔍 Validating sitemap availability at: ${SITEMAP_URL}`);
+    const response = await fetch(SITEMAP_URL, { method: 'HEAD' });
+    
+    if (response.ok) {
+      console.log('✅ Sitemap is accessible');
+      return true;
+    } else {
+      console.error(`❌ Sitemap validation failed with status: ${response.status}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`❌ Sitemap validation error: ${error.message}`);
     return false;
   }
 }
@@ -73,6 +156,15 @@ async function main() {
     return;
   }
 
+  // Validate sitemap first
+  const sitemapValid = await validateSitemap();
+  if (!sitemapValid) {
+    console.log('💥 Cannot proceed with submission - sitemap is not accessible');
+    process.exit(0);
+  }
+
+  console.log('\n🌐 Submitting sitemap to search engines...');
+  
   const results = await Promise.allSettled([
     submitToGoogle(),
     submitToBing()
@@ -85,11 +177,17 @@ async function main() {
   
   if (successful === total) {
     console.log('🎉 All sitemap submissions completed successfully!');
-    process.exit(0);
+  } else if (successful > 0) {
+    console.log('⚠️  Some sitemap submissions failed, but at least one succeeded.');
+    console.log('💡 Consider setting up API-based submissions for more reliable results.');
   } else {
-    console.log('⚠️  Some sitemap submissions failed. Check the logs above for details.');
-    process.exit(0); // Don't fail the build for sitemap submission failures
+    console.log('❌ All sitemap submissions failed.');
+    console.log('💡 Manual submission alternatives:');
+    console.log('   - Google: https://search.google.com/search-console');
+    console.log('   - Bing: https://www.bing.com/webmasters');
   }
+  
+  process.exit(0);
 }
 
 // Run the script

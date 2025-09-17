@@ -17,16 +17,21 @@ export class SitemapSubmitter {
    */
   async submitToGoogle(): Promise<{ success: boolean; message: string }> {
     try {
-      const pingUrl = `https://www.google.com/ping?sitemap=${encodeURIComponent(this.sitemapUrl)}`;
-      const response = await fetch(pingUrl, { method: 'GET' });
+      const pingUrl = `https://www.google.com/webmasters/tools/ping?sitemap=${encodeURIComponent(this.sitemapUrl)}`;
+      const response = await fetch(pingUrl, { 
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; SitemapSubmitter/1.0)'
+        }
+      });
       
       if (response.ok) {
         return { success: true, message: 'Successfully submitted to Google' };
       } else {
-        return { success: false, message: `Google submission failed: ${response.status}` };
+        return { success: false, message: `Google submission returned status: ${response.status}. Consider using Google Search Console API for reliable submissions.` };
       }
     } catch (error) {
-      return { success: false, message: `Google submission error: ${error}` };
+      return { success: false, message: `Google submission error: ${error}. Consider using Google Search Console API for reliable submissions.` };
     }
   }
 
@@ -35,16 +40,21 @@ export class SitemapSubmitter {
    */
   async submitToBing(): Promise<{ success: boolean; message: string }> {
     try {
-      const pingUrl = `https://www.bing.com/ping?sitemap=${encodeURIComponent(this.sitemapUrl)}`;
-      const response = await fetch(pingUrl, { method: 'GET' });
+      const pingUrl = `https://www.bing.com/webmaster/ping.aspx?siteMap=${encodeURIComponent(this.sitemapUrl)}`;
+      const response = await fetch(pingUrl, { 
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; SitemapSubmitter/1.0)'
+        }
+      });
       
       if (response.ok) {
         return { success: true, message: 'Successfully submitted to Bing' };
       } else {
-        return { success: false, message: `Bing submission failed: ${response.status}` };
+        return { success: false, message: `Bing submission returned status: ${response.status}. Consider using Bing Webmaster Tools API for reliable submissions.` };
       }
     } catch (error) {
-      return { success: false, message: `Bing submission error: ${error}` };
+      return { success: false, message: `Bing submission error: ${error}. Consider using Bing Webmaster Tools API for reliable submissions.` };
     }
   }
 

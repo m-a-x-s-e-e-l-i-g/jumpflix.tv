@@ -33,7 +33,7 @@
         document.execCommand('copy');
         document.body.removeChild(el);
       }
-      toast.success('Link copied');
+      toast.message('Link copied');
     } catch (e) {
       if (browser) window.history.pushState({}, '', url);
     }

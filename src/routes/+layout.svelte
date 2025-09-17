@@ -5,7 +5,7 @@
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import GithubIcon from '@lucide/svelte/icons/github';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
-	import { Toaster } from 'svelte-sonner';
+	import { Toaster, toast } from 'svelte-sonner';
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 
@@ -13,6 +13,7 @@
 
 	// current locale from Paraglide (reactive state)
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
+	let sheetOpen = $state(false);
 	const langs = [
 		{ code: 'en' as const, flag: '🇬🇧', label: 'English' },
 		{ code: 'nl' as const, flag: '🇳🇱', label: 'Nederlands' }
@@ -23,6 +24,12 @@
 		// Avoid default reload behavior; update local state to trigger re-render
 		await (setLocale as any)(code, { reload: false });
 		currentLocale = code;
+
+		// Close settings sheet and show a toast
+		sheetOpen = false;
+		const lang = langs.find((l) => l.code === code);
+		const label = lang?.label ?? code.toUpperCase();
+		toast.message(m.settings_languageChanged({ language: label }));
 	}
 
 	// Keep the <html lang> attribute in sync
@@ -63,11 +70,11 @@
 </svelte:head>
 
 <!-- Top-left settings cog that opens a left-side sheet -->
-<SheetRoot>
+<SheetRoot bind:open={sheetOpen}>
 	<div class="absolute left-4 top-4 z-30">
 		<SheetTrigger aria-label={m.settings_open()}>
 			<button
-				class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+				class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 			>
 				<CogIcon class="size-5" />
 				<span class="sr-only">{m.settings_open()}</span>
@@ -86,7 +93,7 @@
 			<div class="grid grid-cols-2 gap-2">
 				{#each langs as l}
 					<button
-						class="[ 'flex items-center gap-2 rounded-md border p-3 text-left text-sm transition', currentLocale === l.code ? 'border-primary ring-1 ring-primary' : 'border-border hover:bg-muted/60' ].join(' ')"
+						class="[ 'flex items-center gap-2 rounded-md border border-border p-3 text-left text-sm transition', currentLocale === l.code ? 'bg-muted/40 outline outline-1 outline-primary outline-offset-2' : 'hover:bg-muted/60' ].join(' ')"
 						aria-pressed={currentLocale === l.code}
 						onclick={() => changeLocale(l.code)}
 					>
@@ -131,4 +138,4 @@
 {/key}
 
 <!-- Global toast container -->
-<Toaster richColors position="top-right" />
+<Toaster richColors position="bottom-center" />

@@ -37,4 +37,5 @@
 	,"settings_open": "Instellingen openen"
 	,"settings_credits": "Credits"
 	,"settings_links": "Links"
+    ,"settings_languageChanged": "Taal gewijzigd naar {language}"
 }

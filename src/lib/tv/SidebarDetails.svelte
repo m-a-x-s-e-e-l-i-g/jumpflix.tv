@@ -40,7 +40,7 @@
         document.execCommand('copy');
         document.body.removeChild(el);
       }
-      toast.success('Link copied');
+      toast.message('Link copied');
     } catch (e) {
       // As a last resort, navigate to the URL (so user can copy from address bar)
       if (browser) window.history.pushState({}, '', url);

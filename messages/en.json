@@ -37,4 +37,5 @@
 	,"settings_open": "Open settings"
 	,"settings_credits": "Credits"
 	,"settings_links": "Links"
+    ,"settings_languageChanged": "Language changed to {language}"
 }

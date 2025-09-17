@@ -64,7 +64,7 @@
 
 <!-- Top-left settings cog that opens a left-side sheet -->
 <SheetRoot>
-	<div class="absolute left-4 top-4 z-50">
+	<div class="absolute left-4 top-4 z-30">
 		<SheetTrigger aria-label={m.settings_open()}>
 			<button
 				class="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"

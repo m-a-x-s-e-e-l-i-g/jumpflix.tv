@@ -11,12 +11,26 @@
 
 	let { children } = $props();
 
-	// current locale from Paraglide
-	let currentLocale: 'en' | 'nl' = getLocale() as any;
+	// current locale from Paraglide (reactive state)
+	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
 	const langs = [
 		{ code: 'en' as const, flag: '🇬🇧', label: 'English' },
 		{ code: 'nl' as const, flag: '🇳🇱', label: 'Nederlands' }
 	];
+
+	// Switch locale without full page reload for instant UX
+	async function changeLocale(code: 'en' | 'nl') {
+		// Avoid default reload behavior; update local state to trigger re-render
+		await (setLocale as any)(code, { reload: false });
+		currentLocale = code;
+	}
+
+	// Keep the <html lang> attribute in sync
+	$effect(() => {
+		if (typeof document !== 'undefined') {
+			document.documentElement.setAttribute('lang', currentLocale);
+		}
+	});
 
 	// Listen for system theme changes and update the 'dark' class on <html>
 	if (typeof window !== 'undefined' && window.matchMedia) {
@@ -67,7 +81,7 @@
 					<button
 						class="[ 'flex items-center gap-2 rounded-md border p-3 text-left text-sm transition', currentLocale === l.code ? 'border-primary ring-1 ring-primary' : 'border-border hover:bg-muted/60' ].join(' ')"
 						aria-pressed={currentLocale === l.code}
-						onclick={() => setLocale(l.code)}
+						onclick={() => changeLocale(l.code)}
 					>
 						<span class="text-lg leading-none">{l.flag}</span>
 						<span>{l.label}</span>
@@ -105,7 +119,9 @@
 	</SheetContent>
 </SheetRoot>
 
-{@render children?.()}
+{#key currentLocale}
+	{@render children?.()}
+{/key}
 
 <!-- Global toast container -->
 <Toaster richColors position="top-right" />

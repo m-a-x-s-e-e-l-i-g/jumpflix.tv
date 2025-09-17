@@ -53,6 +53,13 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<meta name="robots" content="index, follow, max-image-preview:large" />
+	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220" />
+	<!-- Open Graph / Twitter defaults -->
+	<meta property="og:site_name" content="JUMPFLIX" />
+	<meta property="og:type" content="website" />
+	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
 <!-- Top-left settings cog that opens a left-side sheet -->

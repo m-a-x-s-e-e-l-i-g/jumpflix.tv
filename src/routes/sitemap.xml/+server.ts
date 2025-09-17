@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/public';
-import { movieSlugMap, playlistSlugMap } from '$lib/tv/slug';
+import { movieSlugMap, playlistSlugMap, getItemBySlug } from '$lib/tv/slug';
 
 export const prerender = true;
 
@@ -29,8 +29,20 @@ export const GET = async () => {
 
   const all = [...paths, ...moviePaths, ...playlistPaths];
 
+  const now = new Date().toISOString();
   const urls = all
-    .map((path) => `  <url>\n    <loc>${xmlEscape(`${SITE}${path}`)}</loc>\n  </url>`) 
+    .map((path) => {
+      const isMovie = path.startsWith('/movie/');
+      const isPlaylist = path.startsWith('/playlist/');
+      const slug = isMovie || isPlaylist ? path.split('/').pop() || '' : '';
+      const item = slug ? getItemBySlug(isMovie ? 'movie' : 'playlist', slug) : null;
+      let lastmod = now;
+      if (item && item.type === 'movie' && 'year' in item && item.year) {
+        lastmod = `${item.year}-01-01`;
+      }
+      const loc = `${SITE}${path}`;
+      return `  <url>\n    <loc>${xmlEscape(loc)}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`;
+    })
     .join('\n');
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;

@@ -1,3 +1,5 @@
+import { ThumbsDown } from "lucide-svelte";
+
 export const movies = [
   {
     id: 1,
@@ -85,7 +87,6 @@ export const movies = [
     externalUrl: "https://storrorplus.storror.com/programs/rca?cid=4256061",
     paid: true,
     provider: "STORROR+",
-    price: "€8",
     type: "movie",
     duration: "1h 53m",
     trakt: "https://trakt.tv/movies/roof-culture-asia-2017",
@@ -171,7 +172,6 @@ export const movies = [
     externalUrl: "https://storrorplus.storror.com/programs/supertramps-thailand",
     paid: true,
     provider: "STORROR+",
-    price: "€6",
     type: "movie",
     duration: "1h 9m",
     trakt: "https://trakt.tv/movies/storror-supertramps-thailand-2015",
@@ -510,5 +510,19 @@ export const movies = [
       "Jobo",
       "Ziggi Kaitai"
     ]
+  },
+  {
+    id: 35,
+    title: "Lullaby",
+    year: "2023",
+    description: "Norf is a team from Minneapolis, Minnesota. Advocating for quality over quantity and long-form content over Instagram clips they made 'Lullaby' to capture their unique movement style and passion for the sport.",
+    thumbnail: "/images/posters/norf-lullaby-parkour-freerunning-movie-poster.webp",
+    externalUrl: "https://thecommons.boston/?pop=videos&post_id=382",
+    paid: true,
+    provider: "The Commons",
+    type: "movie",
+    duration: "",
+    creators: ["Norf", "Alec Reduker", "Noah Heath"],
+    starring: ["Niko Selski", "Ethan Rud", "Myles Ross", "Noah Heath"],
   }
 ];

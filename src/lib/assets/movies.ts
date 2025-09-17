@@ -478,5 +478,37 @@ export const movies = [
     duration: "9m",
     creators: ["Jack Dodds", "Ben Carm", "Lester Castro Nilsson"],
     starring: ["Matt McCreary", "Kevin Franzén"]
+  },
+  {
+    id: 34,
+    title: "FOREIGN EXCHANGE",
+    year: "2024",
+    description: "Parkour feels like a foreign exchange programme. Ideas get shared around with the migration of people between places. FOREIGN EXCHANGE features 22 athletes from 9 different countries.",
+    thumbnail: "/images/posters/foreign-exchange-parkour-freerunning-movie-poster.webp",
+    videoId: "S3rAh8ik2ZQ",
+    type: "movie",
+    duration: "37m",
+    creators: ["SCRUFFY!", "Jack Dodds", "Joe Williams", "Coby Marcus"],
+    starring: [
+      "Tom Mitchem",
+      "Lisa Schneider",
+      "Coby Marcus",
+      "Dylan Picard",
+      "Camila Stefaniu",
+      "Miles Cooper",
+      "Bloggy",
+      "Kuba Dudkiewicz",
+      "Dodds",
+      "Night",
+      "Theo Bailey",
+      "Cody Veenvliet",
+      "Matt McCreary",
+      "Nico Vanhole",
+      "Max Pattenden",
+      "George Prior",
+      "Karol 'Lolek' Zalewski",
+      "Jobo",
+      "Ziggi Kaitai"
+    ]
   }
 ];

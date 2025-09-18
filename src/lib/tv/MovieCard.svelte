@@ -38,6 +38,7 @@
         style="height:100%;"
         layout="fullWidth"
         aspectRatio={2/3}
+        sizes="(max-width: 767px) 165px, 220px"
         cdn={dev ? undefined : 'netlify'}
         on:load={() => markThumbnailLoaded(item.thumbnail)}
       />

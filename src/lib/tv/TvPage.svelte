@@ -11,8 +11,9 @@
   import Switch from '$lib/components/ui/Switch.svelte';
   import { sortLabels } from '$lib/tv/utils';
   import type { ContentItem } from '$lib/tv/types';
-  import { browser } from '$app/environment';
+  import { browser, dev } from '$app/environment';
   import * as m from '$lib/paraglide/messages';
+  import { Image } from '@unpic/svelte';
 
   export let initialItem: ContentItem | null = null;
 
@@ -148,7 +149,8 @@
     <!-- Hidden cache to retain already-loaded thumbnails in DOM -->
     <div aria-hidden="true" style="position:fixed; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;">
       {#each Array.from($loadedThumbnails) as src}
-        <img src={src} alt="" loading="eager" />
+        <!-- keep cached without downloading full size: tiny responsive unpic image -->
+        <Image src={src} alt="" width={20} height={30} layout="constrained" cdn={dev ? undefined : 'netlify'} />
       {/each}
     </div>
   </div>

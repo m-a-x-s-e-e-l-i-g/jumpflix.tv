@@ -54,7 +54,7 @@
       </div>
       <div class="relative">
         {#if isImage(selected.thumbnail)}
-          <Image src={selected.thumbnail} alt={selected.title + ' background'} class="w-full h-72 object-cover opacity-60" layout="fullWidth" aspectRatio={2/3} cdn={dev ? undefined : 'netlify'} />
+          <Image src={selected.thumbnail} alt={selected.title + ' background'} class="w-full h-72 object-cover opacity-60" layout="fullWidth" aspectRatio={2/3} sizes="100vw" cdn={dev ? undefined : 'netlify'} />
         {/if}
         <div class="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-white/10 dark:from-black dark:via-black/60 dark:to-black/10"></div>
         <div class="absolute bottom-4 left-4 right-4">

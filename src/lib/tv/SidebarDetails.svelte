@@ -53,7 +53,7 @@
 {#if selected}
   <div class="absolute inset-0 z-0">
     {#if isImage(selected.thumbnail)}
-      <Image src={selected.thumbnail} alt={`${selected.title} background`} class="w-full h-full object-cover scale-200" layout="fullWidth" aspectRatio={2/3} cdn={dev ? undefined : 'netlify'} />
+      <Image src={selected.thumbnail} alt={`${selected.title} background`} class="w-full h-full object-cover" layout="fullWidth" aspectRatio={2/3} sizes="420px" cdn={dev ? undefined : 'netlify'} />
       <div class="absolute inset-0 backdrop-blur-2xl bg-white/70 dark:bg-black/70 border-l border-black/10 dark:border-white/10"></div>
     {:else}
       <div class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 scale-110"></div>

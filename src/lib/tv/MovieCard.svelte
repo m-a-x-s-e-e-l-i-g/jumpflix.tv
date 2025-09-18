@@ -2,6 +2,8 @@
   import type { Movie } from './types';
   import { isImage } from './utils';
   import { loadedThumbnails, markThumbnailLoaded } from './store';
+  import { Image } from '@unpic/svelte';
+  import { dev } from '$app/environment';
   export let item: Movie;
   export let isSelected = false;
   export let isMobile = false;
@@ -28,12 +30,15 @@
     title={item.title}
   >
     {#if isImage(item.thumbnail)}
-      <img
+      <Image
         src={item.thumbnail}
         alt={item.title + ' poster'}
         class="w-full h-full object-cover"
         loading="lazy"
         style="height:100%;"
+        layout="fullWidth"
+        aspectRatio={2/3}
+        cdn={dev ? undefined : 'netlify'}
         on:load={() => markThumbnailLoaded(item.thumbnail)}
       />
     {:else}

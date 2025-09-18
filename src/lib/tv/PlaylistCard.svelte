@@ -2,6 +2,8 @@
   import type { Playlist } from './types';
   import { isImage } from './utils';
   import { markThumbnailLoaded } from './store';
+  import { Image } from '@unpic/svelte';
+  import { dev } from '$app/environment';
   export let item: Playlist;
   export let isSelected = false;
   export let isMobile = false;
@@ -28,11 +30,14 @@
     title={item.title}
   >
     {#if isImage(item.thumbnail)}
-      <img
+      <Image
         src={item.thumbnail}
         alt={item.title + ' thumbnail'}
         class="w-full h-full object-cover"
         loading="lazy"
+        layout="fullWidth"
+        aspectRatio={2/3}
+        cdn={dev ? undefined : 'netlify'}
         on:load={() => markThumbnailLoaded(item.thumbnail)}
       />
     {:else}

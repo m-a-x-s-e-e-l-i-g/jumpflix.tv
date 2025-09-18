@@ -1,11 +1,13 @@
 <script lang="ts">
-	import { Select as SelectPrimitive } from "bits-ui";
+	import type { HTMLAttributes } from "svelte/elements";
 	import { cn } from "$lib/utils.js";
 
-	type $$Props = SelectPrimitive.ValueProps;
+	type $$Props = HTMLAttributes<HTMLSpanElement>;
+	let className: $$Props["class"] = undefined;
+	export { className as class };
 </script>
 
-<SelectPrimitive.Value
-	class={cn("text-sm", $$props.class)}
-	{...$$restProps}
-/>
+<span class={cn("text-sm", className)} {...$$restProps}>
+	<slot />
+	<!-- Provide default slot fallback to show selected value via trigger content -->
+</span>

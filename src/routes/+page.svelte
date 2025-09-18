@@ -17,18 +17,18 @@
   <meta name="twitter:image" content="https://www.jumpflix.tv/images/jumpflix-dark.webp" />
   <!-- JSON-LD Website -->
   <script type="application/ld+json">
-    {JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'WebSite',
-      name: 'JUMPFLIX',
-      url: 'https://www.jumpflix.tv/',
-      inLanguage: '%paraglide.lang%',
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: 'https://www.jumpflix.tv/?q={search_term_string}',
-        'query-input': 'required name=search_term_string'
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "JUMPFLIX",
+      "url": "https://www.jumpflix.tv/",
+      "inLanguage": "%paraglide.lang%",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.jumpflix.tv/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
       }
-    })}
+    }
   </script>
 </svelte:head>
 

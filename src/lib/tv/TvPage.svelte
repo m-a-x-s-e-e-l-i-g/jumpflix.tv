@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import { get } from 'svelte/store';
   import MovieCard from '$lib/tv/MovieCard.svelte';
   import PlaylistCard from '$lib/tv/PlaylistCard.svelte';
   import SidebarDetails from '$lib/tv/SidebarDetails.svelte';
@@ -65,7 +67,33 @@
   function scrollSelectedIntoView(idx: number) { if (!gridEl) return; const el = gridEl.children[idx] as HTMLElement | undefined; if (el) requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch {} }); }
   function setIndex(idx: number) { const list = $visibleContent; if (!list.length) return; const clamped = Math.max(0, Math.min(list.length - 1, idx)); selectedIndex.set(clamped); selectedContent.set(list[clamped]); scrollSelectedIntoView(clamped); }
   function handleKeydown(event: KeyboardEvent) { if ($showPlayer && event.key === 'Escape') { closePlayer(); return; } if (event.key === 'Escape' && document.fullscreenElement) { document.exitFullscreen(); closePlayer(); return; } if (isTypingTarget(event.target)) return; if ($showPlayer) return; const list = $visibleContent; if (!list.length) return; const idx = $selectedIndex; const current = $selectedContent; switch (event.key) { case 'ArrowRight': event.preventDefault(); setIndex(idx + 1); break; case 'ArrowLeft': event.preventDefault(); setIndex(idx - 1); break; case 'ArrowDown': event.preventDefault(); setIndex(idx + columns); break; case 'ArrowUp': event.preventDefault(); setIndex(idx - columns); break; case 'Enter': if (current) { event.preventDefault(); openContent(current); } break; } }
-  onMount(() => { function updateIsMobile() { isMobile = window.innerWidth < 768; if (!isMobile) showDetailsPanel.set(false); } updateIsMobile(); columns = computeColumns(); const resizeHandler = () => { updateIsMobile(); columns = computeColumns(); }; window.addEventListener('resize', resizeHandler); document.addEventListener('keydown', handleKeydown); document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) closePlayer(); }); return () => { document.removeEventListener('keydown', handleKeydown); window.removeEventListener('resize', resizeHandler); }; });
+  onMount(() => {
+    // Initialize search from URL param (?q=...)
+    const q = get(page).url.searchParams.get('q') ?? '';
+    if (q) searchQuery.set(q);
+
+    // Keep URL in sync as user types (shareable links)
+    const unsub = searchQuery.subscribe((val) => {
+      const url = new URL(window.location.href);
+      if (val) url.searchParams.set('q', val);
+      else url.searchParams.delete('q');
+      window.history.replaceState({}, '', url);
+    });
+
+    function updateIsMobile() { isMobile = window.innerWidth < 768; if (!isMobile) showDetailsPanel.set(false); }
+    updateIsMobile();
+    columns = computeColumns();
+    const resizeHandler = () => { updateIsMobile(); columns = computeColumns(); };
+    window.addEventListener('resize', resizeHandler);
+    document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) closePlayer(); });
+
+    return () => {
+      unsub();
+      document.removeEventListener('keydown', handleKeydown);
+      window.removeEventListener('resize', resizeHandler);
+    };
+  });
 </script>
 
 <svelte:head>

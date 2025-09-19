@@ -2,6 +2,8 @@
   import type { ContentItem } from './types';
   import { isImage } from './utils';
   import { Image } from '@unpic/svelte';
+  import { blurhashToCssGradientString } from '@unpic/placeholder';
+  import { posterBlurhash } from '$lib/assets/blurhash';
   import { dev } from '$app/environment';
   import { markThumbnailLoaded } from '$lib/tv/store';
 
@@ -13,6 +15,8 @@
   export let priority = false;
 
   let error = false;
+  $: blurhash = item.blurhash || (item.thumbnail ? posterBlurhash[item.thumbnail] : undefined);
+  $: background = blurhash ? blurhashToCssGradientString(blurhash) : undefined;
 
   $: altSuffix = item.type === 'movie' ? ' poster' : ' thumbnail';
 
@@ -44,8 +48,8 @@
     class:ring-red-500={!isMobile && isSelected}
     title={item.title}
   >
-    <!-- Placeholder layer (always present, sits under the poster) -->
-    <div class="relative inset-0"></div>
+  <!-- Placeholder layer (always present, sits under the poster) -->
+  <div class="absolute inset-0" style:background-image={background} style:background-size="cover" style:background-position="center"></div>
     <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
       <div class="max-w-[90%] text-center">
         <span class="text-white drop-shadow-md text-[12px] font-semibold whitespace-nowrap overflow-hidden text-ellipsis align-middle">{item.title}</span>

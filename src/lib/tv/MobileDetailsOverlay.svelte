@@ -9,6 +9,8 @@
   import { getUrlForItem } from './slug';
   import { Image } from '@unpic/svelte';
   import { dev } from '$app/environment';
+  import { blurhashToCssGradientString } from '@unpic/placeholder';
+  import { posterBlurhash } from '$lib/assets/blurhash';
 
   export let show = false;
   export let isMobile = false;
@@ -16,6 +18,10 @@
   export let closeDetailsPanel: () => void;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
+
+  // BlurHash placeholder background for selected thumbnail
+  $: blurhash = selected?.blurhash || (selected?.thumbnail ? posterBlurhash[selected.thumbnail] : undefined);
+  $: background = blurhash ? blurhashToCssGradientString(blurhash) : undefined;
 
   async function copyLink() {
     if (!selected) return;
@@ -53,6 +59,10 @@
         <h2 class="text-base line-clamp-2 pr-2 pl-2 text-gray-900 dark:text-white" style="margin:0;font-size:.9em!important;">{selected.title}</h2>
       </div>
       <div class="relative">
+        <!-- BlurHash placeholder layer for hero -->
+        {#if background}
+          <div class="absolute inset-0" style:background-image={background} style:background-size="cover" style:background-position="center"></div>
+        {/if}
         {#if isImage(selected.thumbnail)}
           <Image src={selected.thumbnail} alt={selected.title + ' background'} class="w-full h-72 object-cover opacity-60" layout="fullWidth" aspectRatio={2/3} sizes="100vw" cdn={dev ? undefined : 'netlify'} />
         {/if}

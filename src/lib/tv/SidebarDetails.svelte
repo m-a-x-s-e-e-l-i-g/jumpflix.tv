@@ -1,13 +1,14 @@
 <script lang="ts">
   import type { ContentItem } from './types';
-  import { isImage, isInlinePlayable } from './utils';
+  import { isInlinePlayable } from './utils';
   import { getUrlForItem } from './slug';
   import { browser } from '$app/environment';
   import { toast } from 'svelte-sonner';
   import Link2Icon from '@lucide/svelte/icons/link-2';
   import * as m from '$lib/paraglide/messages';
-  import { Image } from '@unpic/svelte';
-  import { dev } from '$app/environment';
+  
+  import { blurhashToCssGradientString } from '@unpic/placeholder';
+  import { posterBlurhash } from '$lib/assets/blurhash';
   export let selected: ContentItem | null;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
@@ -22,6 +23,10 @@
     showAllCreators = false;
     showAllStarring = false;
   }
+
+  // BlurHash placeholder background for selected thumbnail
+  $: blurhash = selected?.blurhash || (selected?.thumbnail ? posterBlurhash[selected.thumbnail] : undefined);
+  $: background = blurhash ? blurhashToCssGradientString(blurhash) : undefined;
 
   async function copyLink() {
     if (!selected) return;
@@ -52,13 +57,13 @@
 
 {#if selected}
   <div class="absolute inset-0 z-0">
-    {#if isImage(selected.thumbnail)}
-      <Image src={selected.thumbnail} alt={`${selected.title} background`} class="w-full h-full object-cover" layout="fullWidth" aspectRatio={2/3} sizes="420px" cdn={dev ? undefined : 'netlify'} />
-      <div class="absolute inset-0 backdrop-blur-2xl bg-white/70 dark:bg-black/70 border-l border-black/10 dark:border-white/10"></div>
+    <!-- BlurHash placeholder layer -->
+    {#if background}
+      <div class="absolute inset-0" style:background-image={background} style:background-size="cover" style:background-position="center"></div>
     {:else}
       <div class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 scale-110"></div>
-      <div class="absolute inset-0 backdrop-blur-2xl bg-white/70 dark:bg-black/70 border-l border-black/10 dark:border-white/10"></div>
     {/if}
+    <div class="absolute inset-0 backdrop-blur-2xl bg-white/70 dark:bg-black/70 border-l border-black/10 dark:border-white/10"></div>
   </div>
   <div class="space-y-4 relative z-10 flex-1">
     <div>

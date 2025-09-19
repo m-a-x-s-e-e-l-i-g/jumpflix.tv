@@ -4,6 +4,7 @@ export interface BaseContent {
   title: string;
   description?: string;
   thumbnail?: string;
+  blurhash?: string;
   type: 'movie' | 'playlist';
   paid?: boolean;
   provider?: string;

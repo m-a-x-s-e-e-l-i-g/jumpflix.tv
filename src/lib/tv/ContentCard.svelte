@@ -5,7 +5,7 @@
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { dev } from '$app/environment';
-  import { markThumbnailLoaded } from '$lib/tv/store';
+  import { loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
 
   export let item: ContentItem;
   export let isSelected = false;
@@ -26,7 +26,15 @@
     const target = e.target as HTMLImageElement | null;
     const src = target?.currentSrc || target?.src;
     if (src) markThumbnailLoaded(src);
+    loaded = true;
   }
+
+  // Local loaded state for fade-in; also consider globally cached loaded thumbnails
+  let loaded = false;
+  $: alreadyLoaded = item.thumbnail ? $loadedThumbnails.has(item.thumbnail) : false;
+  $: if (alreadyLoaded) loaded = true;
+  $: imageOpacityClass = loaded ? 'opacity-100' : 'opacity-0';
+  const baseImageClass = 'relative inset-0 w-full h-full object-cover z-10 transition-opacity duration-500 ease-out';
 </script>
 
 <div 
@@ -69,11 +77,11 @@
         decoding="async"
         width={230}
         height={345}
-        class="relative inset-0 w-full h-full object-cover z-10"
+        class={`${baseImageClass} ${imageOpacityClass}`}
         cdn={dev ? undefined : 'netlify'}
         layout="constrained"
-        on:load={handleLoaded}
-        on:error={() => { error = true; }}
+        onload={handleLoaded}
+        onerror={() => { error = true; }}
       />
     {/if}
 

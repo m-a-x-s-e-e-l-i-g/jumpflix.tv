@@ -176,7 +176,6 @@
         <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 dark:text-gray-400">▾</span>
       </div>
     </div>
-    <!-- No hidden cache: posters simply overlay placeholders -->
   </div>
   <div>
     <div class="container mx-auto px-6 py-10 tv-main mt-2">

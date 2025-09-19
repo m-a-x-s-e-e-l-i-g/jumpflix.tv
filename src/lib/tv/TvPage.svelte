@@ -6,13 +6,12 @@
   import SidebarDetails from '$lib/tv/SidebarDetails.svelte';
   import PlayerModal from '$lib/tv/PlayerModal.svelte';
   import MobileDetailsOverlay from '$lib/tv/MobileDetailsOverlay.svelte';
-  import { visibleContent, searchQuery, showPaid, sortBy, selectedContent, showPlayer, showDetailsPanel, selectedIndex, selectContent, openContent, closePlayer, closeDetailsPanel, loadedThumbnails } from '$lib/tv/store';
+  import { visibleContent, searchQuery, showPaid, sortBy, selectedContent, showPlayer, showDetailsPanel, selectedIndex, selectContent, openContent, closePlayer, closeDetailsPanel } from '$lib/tv/store';
   import Switch from '$lib/components/ui/Switch.svelte';
   import { sortLabels } from '$lib/tv/utils';
   import type { ContentItem } from '$lib/tv/types';
-  import { browser, dev } from '$app/environment';
+  import { browser } from '$app/environment';
   import * as m from '$lib/paraglide/messages';
-  import { Image } from '@unpic/svelte';
 
   export let initialItem: ContentItem | null = null;
 
@@ -145,13 +144,7 @@
         <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 dark:text-gray-400">▾</span>
       </div>
     </div>
-    <!-- Hidden cache to retain already-loaded thumbnails in DOM -->
-    <div aria-hidden="true" style="position:fixed; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;">
-      {#each Array.from($loadedThumbnails) as src}
-        <!-- keep cached without downloading full size: tiny responsive unpic image -->
-        <Image src={src} alt="" width={20} height={30} layout="constrained" cdn={dev ? undefined : 'netlify'} />
-      {/each}
-    </div>
+    <!-- No hidden cache: posters simply overlay placeholders -->
   </div>
   <div>
     <div class="container mx-auto px-6 py-10 tv-main mt-2">

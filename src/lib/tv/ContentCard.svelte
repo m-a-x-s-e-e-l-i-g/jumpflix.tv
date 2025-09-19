@@ -57,10 +57,9 @@
     class:ring-4={!isMobile && isSelected}
     class:ring-red-500={!isMobile && isSelected}
     title={item.title}
-    style="width: 220px;"
   >
     <!-- Placeholder layer (always present, sits under the poster) -->
-    <div class="absolute inset-0" style={bgStyle}></div>
+    <div class="relative inset-0" style={bgStyle}></div>
     <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
       <div class="max-w-[90%] text-center">
         <span class="text-white drop-shadow-md text-[12px] font-semibold whitespace-nowrap overflow-hidden text-ellipsis align-middle">{item.title}</span>
@@ -80,7 +79,7 @@
         decoding="async"
         width={230}
         height={345}
-        class="absolute inset-0 w-full h-full object-cover z-10"
+        class="relative inset-0 w-full h-full object-cover z-10"
         cdn={dev ? undefined : 'netlify'}
         layout="constrained"
         on:error={() => { error = true; }}

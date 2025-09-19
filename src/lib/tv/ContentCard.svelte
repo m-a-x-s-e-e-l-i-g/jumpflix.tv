@@ -72,6 +72,17 @@
       {#if !($loadedThumbnails.has(item.thumbnail!) || loaded)}
         <div class="absolute inset-0" style={bgStyle}></div>
         <div class="absolute inset-0 z-10 bg-black/10 dark:bg-black/10 animate-pulse"></div>
+        {#if item.type === 'movie'}
+          <!-- Show movie title and year while loading (centered, no bg) -->
+          <div class="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+            <div class="max-w-[90%] text-center">
+              <span class="text-white drop-shadow-md text-[12px] font-semibold whitespace-nowrap overflow-hidden text-ellipsis align-middle">{item.title}</span>
+              {#if item.year}
+                <span class="text-white/80 drop-shadow-md text-[12px] align-middle"> ({item.year})</span>
+              {/if}
+            </div>
+          </div>
+        {/if}
       {/if}
       <!-- Native image to ensure load events fire reliably -->
       <img

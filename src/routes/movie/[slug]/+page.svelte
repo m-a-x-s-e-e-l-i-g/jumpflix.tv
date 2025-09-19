@@ -24,48 +24,6 @@
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={desc} />
   <meta name="twitter:image" content={image} />
-  <!-- JSON-LD Movie -->
-  {#if item}
-    <script type="application/ld+json">
-      {JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'Movie',
-        name: item.title,
-        datePublished: item.year,
-        description: desc,
-        image,
-        url,
-        actor: (item.starring || []).map((name: string) => ({ '@type': 'Person', name })),
-        creator: (item.creators || []).map((name: string) => ({ '@type': 'Person', name }))
-      })}
-    </script>
-    {#if item.videoId || item.vimeoId}
-      <script type="application/ld+json">
-        {JSON.stringify({
-          '@context': 'https://schema.org',
-          '@type': 'VideoObject',
-          name: item.title,
-          description: desc,
-          thumbnailUrl: [image],
-          uploadDate: item.year ? `${item.year}-01-01` : undefined,
-          embedUrl: item.videoId
-            ? `https://www.youtube.com/embed/${item.videoId}`
-            : (item.vimeoId ? `https://player.vimeo.com/video/${item.vimeoId}` : undefined),
-          url
-        })}
-      </script>
-    {/if}
-    <script type="application/ld+json">
-      {JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: origin },
-          { '@type': 'ListItem', position: 2, name: item.title, item: url }
-        ]
-      })}
-    </script>
-  {/if}
 </svelte:head>
 
 <TvPage initialItem={item ?? null} />

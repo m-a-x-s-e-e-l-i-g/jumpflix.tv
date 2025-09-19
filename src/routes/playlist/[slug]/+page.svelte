@@ -24,29 +24,6 @@
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={desc} />
   <meta name="twitter:image" content={image} />
-  <!-- JSON-LD ItemList/CollectionPage -->
-  {#if item}
-    <script type="application/ld+json">
-      {JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'CollectionPage',
-        name: item.title,
-        description: desc,
-        image,
-        url
-      })}
-    </script>
-    <script type="application/ld+json">
-      {JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: origin },
-          { '@type': 'ListItem', position: 2, name: item.title, item: url }
-        ]
-      })}
-    </script>
-  {/if}
 </svelte:head>
 
 <TvPage initialItem={item ?? null} />

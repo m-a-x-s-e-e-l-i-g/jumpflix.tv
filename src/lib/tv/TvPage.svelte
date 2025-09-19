@@ -2,8 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { get } from 'svelte/store';
-  import MovieCard from '$lib/tv/MovieCard.svelte';
-  import PlaylistCard from '$lib/tv/PlaylistCard.svelte';
+  import ContentCard from '$lib/tv/ContentCard.svelte';
   import SidebarDetails from '$lib/tv/SidebarDetails.svelte';
   import PlayerModal from '$lib/tv/PlayerModal.svelte';
   import MobileDetailsOverlay from '$lib/tv/MobileDetailsOverlay.svelte';
@@ -161,11 +160,7 @@
           <div class="col-span-full text-center text-gray-400 py-8">{m.tv_noResults()}</div>
         {:else}
           {#each $visibleContent as item (item.type + ':' + item.id)}
-            {#if item.type === 'movie'}
-              <MovieCard {item} isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)} onSelect={handleSelect} />
-            {:else}
-              <PlaylistCard {item} isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)} onSelect={handleSelect} />
-            {/if}
+            <ContentCard {item} isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)} onSelect={handleSelect} {isMobile} />
           {/each}
         {/if}
       </div>

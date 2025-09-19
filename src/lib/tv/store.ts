@@ -2,11 +2,11 @@ import { writable, derived, type Readable } from 'svelte/store';
 import { movies } from '$lib/assets/movies';
 import { playlists } from '$lib/assets/playlists';
 import type { ContentItem, SortBy } from './types';
-import { buildRankMap, filterAndSortContent, isInlinePlayable } from './utils';
+import { buildRankMap, filterAndSortContent, isInlinePlayable, keyFor } from './utils';
 
 // Base data (static for now)
 const seed = new Date().toISOString().slice(0, 10);
-const allContent: ContentItem[] = ([...(movies as any), ...(playlists as any)] as ContentItem[]);
+export const allContent: ContentItem[] = ([...(movies as any), ...(playlists as any)] as ContentItem[]);
 const rankMap = buildRankMap(allContent, seed);
 
 // UI state stores
@@ -48,6 +48,18 @@ export const visibleContent = derived(
     sortBy: $sortBy
   })
 );
+
+// All items, only sorted (no filtering). Useful to keep DOM stable by hiding non-matching items.
+export const sortedAllContent = derived([sortBy], ([$sortBy]) =>
+  filterAndSortContent(allContent, rankMap, {
+    searchQuery: '',
+    showPaid: true,
+    sortBy: $sortBy
+  })
+);
+
+// Set of keys for currently visible items (for fast membership checks in UI)
+export const visibleKeys = derived(visibleContent, ($list) => new Set($list.map((i) => keyFor(i))));
 
 // Keep selectedContent in sync when list changes
 visibleContent.subscribe(list => {

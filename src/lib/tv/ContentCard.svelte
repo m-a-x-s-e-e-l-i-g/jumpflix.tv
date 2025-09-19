@@ -78,11 +78,11 @@
         loading={priority ? 'eager' : 'lazy'}
         fetchpriority={priority ? 'high' : undefined}
         decoding="async"
-        sizes="(max-width: 767px) 165px, 220px"
+        width={230}
+        height={345}
         class="absolute inset-0 w-full h-full object-cover z-10"
         cdn={dev ? undefined : 'netlify'}
-        layout="contain"
-        aspectRatio={2/3}
+        layout="constrained"
         on:error={() => { error = true; }}
       />
     {/if}

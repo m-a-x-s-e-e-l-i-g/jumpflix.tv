@@ -14,27 +14,6 @@
 
   let error = false;
 
-  // Tiny blurhash-style color pair derived from URL
-  function hashString(str: string) {
-    let h = 0;
-    for (let i = 0; i < str.length; i++) {
-      h = (h << 5) - h + str.charCodeAt(i);
-      h |= 0;
-    }
-    return h >>> 0;
-  }
-  function colorPairFromSrc(src: string) {
-    const h = hashString(src);
-    const hue1 = h % 360;
-    const hue2 = (h * 7) % 360;
-    const sat = 55 + (h % 20); // 55–75%
-    const l1 = 18 + (h % 8);   // 18–26%
-    const l2 = 26 + (h % 8);   // 26–34%
-    return [`hsl(${hue1} ${sat}% ${l1}%)`, `hsl(${hue2} ${sat}% ${l2}%)`];
-  }
-  $: [c1, c2] = colorPairFromSrc(item.thumbnail || item.title || '');
-  $: bgStyle = `background: linear-gradient(135deg, ${c1}, ${c2})`;
-
   $: altSuffix = item.type === 'movie' ? ' poster' : ' thumbnail';
 
   // no loading lifecycle needed
@@ -66,7 +45,7 @@
     title={item.title}
   >
     <!-- Placeholder layer (always present, sits under the poster) -->
-    <div class="relative inset-0" style={bgStyle}></div>
+    <div class="relative inset-0"></div>
     <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
       <div class="max-w-[90%] text-center">
         <span class="text-white drop-shadow-md text-[12px] font-semibold whitespace-nowrap overflow-hidden text-ellipsis align-middle">{item.title}</span>

@@ -159,8 +159,14 @@
         {#if $visibleContent.length === 0}
           <div class="col-span-full text-center text-gray-400 py-8">{m.tv_noResults()}</div>
         {:else}
-          {#each $visibleContent as item (item.type + ':' + item.id)}
-            <ContentCard {item} isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)} onSelect={handleSelect} {isMobile} />
+          {#each $visibleContent as item, i (item.type + ':' + item.id)}
+            <ContentCard
+              {item}
+              isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)}
+              onSelect={handleSelect}
+              {isMobile}
+              priority={i < Math.max(columns * 2, 8)}
+            />
           {/each}
         {/if}
       </div>

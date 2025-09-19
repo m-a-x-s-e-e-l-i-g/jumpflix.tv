@@ -8,6 +8,8 @@
   export let isSelected = false;
   export let isMobile = false;
   export let onSelect: (item: ContentItem) => void;
+  // Prioritize above-the-fold images for fastest first paint
+  export let priority = false;
 
   let error = false;
   let loaded = false;
@@ -76,7 +78,8 @@
         bind:this={imgEl}
         src={item.thumbnail}
         alt={item.title + altSuffix}
-        loading="lazy"
+        loading={priority ? 'eager' : 'lazy'}
+        fetchpriority={priority ? 'high' : undefined}
         decoding="async"
         sizes="(max-width: 767px) 165px, 220px"
         class="w-full h-full object-cover transition-opacity duration-500"

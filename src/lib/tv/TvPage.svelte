@@ -2,8 +2,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { get } from 'svelte/store';
-  import MovieCard from '$lib/tv/MovieCard.svelte';
-  import PlaylistCard from '$lib/tv/PlaylistCard.svelte';
+  import ContentCard from '$lib/tv/ContentCard.svelte';
   import SidebarDetails from '$lib/tv/SidebarDetails.svelte';
   import PlayerModal from '$lib/tv/PlayerModal.svelte';
   import MobileDetailsOverlay from '$lib/tv/MobileDetailsOverlay.svelte';
@@ -11,8 +10,9 @@
   import Switch from '$lib/components/ui/Switch.svelte';
   import { sortLabels } from '$lib/tv/utils';
   import type { ContentItem } from '$lib/tv/types';
-  import { browser } from '$app/environment';
+  import { browser, dev } from '$app/environment';
   import * as m from '$lib/paraglide/messages';
+  import { Image } from '@unpic/svelte';
 
   export let initialItem: ContentItem | null = null;
 
@@ -148,7 +148,8 @@
     <!-- Hidden cache to retain already-loaded thumbnails in DOM -->
     <div aria-hidden="true" style="position:fixed; width:0; height:0; overflow:hidden; opacity:0; pointer-events:none;">
       {#each Array.from($loadedThumbnails) as src}
-        <img src={src} alt="" loading="eager" />
+        <!-- keep cached without downloading full size: tiny responsive unpic image -->
+        <Image src={src} alt="" width={20} height={30} layout="constrained" cdn={dev ? undefined : 'netlify'} />
       {/each}
     </div>
   </div>
@@ -158,12 +159,14 @@
         {#if $visibleContent.length === 0}
           <div class="col-span-full text-center text-gray-400 py-8">{m.tv_noResults()}</div>
         {:else}
-          {#each $visibleContent as item (item.type + ':' + item.id)}
-            {#if item.type === 'movie'}
-              <MovieCard {item} isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)} onSelect={handleSelect} />
-            {:else}
-              <PlaylistCard {item} isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)} onSelect={handleSelect} />
-            {/if}
+          {#each $visibleContent as item, i (item.type + ':' + item.id)}
+            <ContentCard
+              {item}
+              isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)}
+              onSelect={handleSelect}
+              {isMobile}
+              priority={i < Math.max(columns * 2, 8)}
+            />
           {/each}
         {/if}
       </div>

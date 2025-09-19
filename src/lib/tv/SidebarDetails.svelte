@@ -9,6 +9,7 @@
   
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
+  import { fade } from 'svelte/transition';
   export let selected: ContentItem | null;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
@@ -59,9 +60,17 @@
   <div class="absolute inset-0 z-0">
     <!-- BlurHash placeholder layer -->
     {#if background}
-      <div class="absolute inset-0" style:background-image={background} style:background-size="cover" style:background-position="center"></div>
+      {#key background}
+        <div
+          class="absolute inset-0"
+          style:background-image={background}
+          style:background-size="cover"
+          style:background-position="center"
+          transition:fade={{ duration: 250 }}
+        ></div>
+      {/key}
     {:else}
-      <div class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 scale-110"></div>
+      <div class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 scale-110" transition:fade={{ duration: 250 }}></div>
     {/if}
     <div class="absolute inset-0 backdrop-blur-2xl bg-white/70 dark:bg-black/70 border-l border-black/10 dark:border-white/10"></div>
   </div>

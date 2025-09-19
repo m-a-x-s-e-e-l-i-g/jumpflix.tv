@@ -6,7 +6,8 @@
   import SidebarDetails from '$lib/tv/SidebarDetails.svelte';
   import PlayerModal from '$lib/tv/PlayerModal.svelte';
   import MobileDetailsOverlay from '$lib/tv/MobileDetailsOverlay.svelte';
-  import { visibleContent, searchQuery, showPaid, sortBy, selectedContent, showPlayer, showDetailsPanel, selectedIndex, selectContent, openContent, closePlayer, closeDetailsPanel } from '$lib/tv/store';
+  import { visibleContent, visibleKeys, sortedAllContent, searchQuery, showPaid, sortBy, selectedContent, showPlayer, showDetailsPanel, selectedIndex, selectContent, openContent, closePlayer, closeDetailsPanel } from '$lib/tv/store';
+  import { loadedThumbnails } from '$lib/tv/store';
   import Switch from '$lib/components/ui/Switch.svelte';
   import { sortLabels } from '$lib/tv/utils';
   import type { ContentItem } from '$lib/tv/types';
@@ -53,7 +54,19 @@
   function openExternalContent(content: ContentItem) { if (content?.externalUrl) window.open(content.externalUrl, '_blank', 'noopener'); }
   let columns = 1;
   function computeColumns(): number {
-    if (!gridEl) return 1; const children = Array.from(gridEl.children) as HTMLElement[]; if (!children.length) return 1; const firstTop = children[0].offsetTop; let count = 0; for (const el of children) { if (Math.abs(el.offsetTop - firstTop) < 2) count++; else break; } return count || 1;
+    if (!gridEl) return 1;
+    const children = Array.from(gridEl.children) as HTMLElement[];
+    if (!children.length) return 1;
+    // Only consider visible elements (display != none)
+    const visibleEls = children.filter((el) => el.offsetParent !== null);
+    if (!visibleEls.length) return 1;
+    const firstTop = visibleEls[0].offsetTop;
+    let count = 0;
+    for (const el of visibleEls) {
+      if (Math.abs(el.offsetTop - firstTop) < 2) count++;
+      else break;
+    }
+    return count || 1;
   }
   $: if (browser) { columns = computeColumns(); }
   function isTypingTarget(target: EventTarget | null) {
@@ -65,7 +78,21 @@
     if (role && ['textbox','combobox'].includes(role)) return true;
     return false;
   }
-  function scrollSelectedIntoView(idx: number) { if (!gridEl) return; const el = gridEl.children[idx] as HTMLElement | undefined; if (el) requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch {} }); }
+  function getDomIndexForVisibleIndex(vIdx: number) {
+    // Map visible list index to DOM index among all items (skipping hidden ones)
+    const visibleKeyArray = $visibleContent.map((it) => `${it.type}:${it.id}`);
+    const targetKey = visibleKeyArray[vIdx];
+    if (!targetKey) return -1;
+    const all = $sortedAllContent;
+    return all.findIndex((it) => `${it.type}:${it.id}` === targetKey);
+  }
+  function scrollSelectedIntoView(idx: number) {
+    if (!gridEl) return;
+    const domIdx = getDomIndexForVisibleIndex(idx);
+    if (domIdx < 0) return;
+    const el = gridEl.children[domIdx] as HTMLElement | undefined;
+    if (el) requestAnimationFrame(() => { try { el.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); } catch {} });
+  }
   function setIndex(idx: number) { const list = $visibleContent; if (!list.length) return; const clamped = Math.max(0, Math.min(list.length - 1, idx)); selectedIndex.set(clamped); selectedContent.set(list[clamped]); scrollSelectedIntoView(clamped); }
   function handleKeydown(event: KeyboardEvent) { if ($showPlayer && event.key === 'Escape') { closePlayer(); return; } if (event.key === 'Escape' && document.fullscreenElement) { document.exitFullscreen(); closePlayer(); return; } if (isTypingTarget(event.target)) return; if ($showPlayer) return; const list = $visibleContent; if (!list.length) return; const idx = $selectedIndex; const current = $selectedContent; switch (event.key) { case 'ArrowRight': event.preventDefault(); setIndex(idx + 1); break; case 'ArrowLeft': event.preventDefault(); setIndex(idx - 1); break; case 'ArrowDown': event.preventDefault(); setIndex(idx + columns); break; case 'ArrowUp': event.preventDefault(); setIndex(idx - columns); break; case 'Enter': if (current) { event.preventDefault(); openContent(current); } break; } }
   onMount(() => {
@@ -95,6 +122,9 @@
       window.removeEventListener('resize', resizeHandler);
     };
   });
+
+  // Prioritize first visible posters above the fold even when hidden items remain mounted
+  $: priorityKeys = new Set(($visibleContent || []).slice(0, Math.max(columns * 2, 8)).map((it) => `${it.type}:${it.id}`));
 </script>
 
 <svelte:head>
@@ -154,14 +184,16 @@
         {#if $visibleContent.length === 0}
           <div class="col-span-full text-center text-gray-400 py-8">{m.tv_noResults()}</div>
         {:else}
-          {#each $visibleContent as item, i (item.type + ':' + item.id)}
-            <ContentCard
-              {item}
-              isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)}
-              onSelect={handleSelect}
-              {isMobile}
-              priority={i < Math.max(columns * 2, 8)}
-            />
+          {#each $sortedAllContent as item, i (item.type + ':' + item.id)}
+            <div class:hidden={!$visibleKeys.has(item.type + ':' + item.id)} class="w-full">
+              <ContentCard
+                {item}
+                isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)}
+                onSelect={handleSelect}
+                {isMobile}
+                priority={priorityKeys.has(item.type + ':' + item.id)}
+              />
+            </div>
           {/each}
         {/if}
       </div>

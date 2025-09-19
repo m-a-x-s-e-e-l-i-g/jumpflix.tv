@@ -3,6 +3,7 @@
   import { isImage } from './utils';
   import { Image } from '@unpic/svelte';
   import { dev } from '$app/environment';
+  import { markThumbnailLoaded } from '$lib/tv/store';
 
   export let item: ContentItem;
   export let isSelected = false;
@@ -37,6 +38,12 @@
   $: altSuffix = item.type === 'movie' ? ' poster' : ' thumbnail';
 
   // no loading lifecycle needed
+
+  function handleLoaded(e: Event) {
+    const target = e.target as HTMLImageElement | null;
+    const src = target?.currentSrc || target?.src;
+    if (src) markThumbnailLoaded(src);
+  }
 </script>
 
 <div 
@@ -82,6 +89,7 @@
         class="relative inset-0 w-full h-full object-cover z-10"
         cdn={dev ? undefined : 'netlify'}
         layout="constrained"
+        on:load={handleLoaded}
         on:error={() => { error = true; }}
       />
     {/if}

@@ -1,13 +1,42 @@
 <script lang="ts">
   import type { Playlist } from './types';
   import { isImage } from './utils';
-  import { markThumbnailLoaded } from './store';
-  import { Image } from '@unpic/svelte';
-  import { dev } from '$app/environment';
+  import { loadedThumbnails, markThumbnailLoaded } from './store';
+  import { onMount } from 'svelte';
   export let item: Playlist;
   export let isSelected = false;
   export let isMobile = false;
   export let onSelect: (item: Playlist) => void;
+  let error = false;
+  let loaded = false;
+  let imgEl: HTMLImageElement | null = null;
+
+  function hashString(str: string) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = (h << 5) - h + str.charCodeAt(i);
+      h |= 0;
+    }
+    return h >>> 0;
+  }
+  function colorPairFromSrc(src: string) {
+    const h = hashString(src);
+    const hue1 = h % 360;
+    const hue2 = (h * 7) % 360;
+    const sat = 55 + (h % 20);
+    const l1 = 18 + (h % 8);
+    const l2 = 26 + (h % 8);
+    return [`hsl(${hue1} ${sat}% ${l1}%)`, `hsl(${hue2} ${sat}% ${l2}%)`];
+  }
+  $: [c1, c2] = colorPairFromSrc(item.thumbnail || item.title || '');
+  $: bgStyle = `background: linear-gradient(135deg, ${c1}, ${c2})`;
+
+  onMount(() => {
+    if (imgEl && imgEl.complete) {
+      loaded = true;
+      markThumbnailLoaded(item.thumbnail);
+    }
+  });
 </script>
 
 <div 
@@ -29,17 +58,23 @@
     class:ring-red-500={!isMobile && isSelected}
     title={item.title}
   >
-    {#if isImage(item.thumbnail)}
-      <Image
+    {#if isImage(item.thumbnail) && !error}
+      {#if !($loadedThumbnails.has(item.thumbnail!) || loaded)}
+        <div class="absolute inset-0" style={bgStyle}></div>
+        <div class="absolute inset-0 z-10 bg-black/10 dark:bg-black/10 animate-pulse"></div>
+      {/if}
+      <img
+        bind:this={imgEl}
         src={item.thumbnail}
         alt={item.title + ' thumbnail'}
-        class="w-full h-full object-cover"
         loading="lazy"
-        layout="fullWidth"
-        aspectRatio={2/3}
+        decoding="async"
         sizes="(max-width: 767px) 165px, 220px"
-        cdn={dev ? undefined : 'netlify'}
-        on:load={() => markThumbnailLoaded(item.thumbnail)}
+        class="w-full h-full object-cover transition-opacity duration-500"
+        class:opacity-0={!($loadedThumbnails.has(item.thumbnail!) || loaded)}
+        class:opacity-100={$loadedThumbnails.has(item.thumbnail!) || loaded}
+        on:load={() => { loaded = true; markThumbnailLoaded(item.thumbnail); }}
+        on:error={() => { error = true; loaded = true; markThumbnailLoaded(item.thumbnail); }}
       />
     {:else}
       <div class="absolute inset-0 bg-gradient-to-br from-red-600 to-pink-700 flex items-center justify-center">

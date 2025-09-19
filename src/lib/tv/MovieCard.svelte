@@ -2,12 +2,43 @@
   import type { Movie } from './types';
   import { isImage } from './utils';
   import { loadedThumbnails, markThumbnailLoaded } from './store';
-  import { Image } from '@unpic/svelte';
-  import { dev } from '$app/environment';
+  import { onMount } from 'svelte';
   export let item: Movie;
   export let isSelected = false;
   export let isMobile = false;
   export let onSelect: (item: Movie) => void;
+  let error = false;
+  let loaded = false;
+  let imgEl: HTMLImageElement | null = null;
+
+  // Tiny blurhash-style color pair derived from URL
+  function hashString(str: string) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = (h << 5) - h + str.charCodeAt(i);
+      h |= 0;
+    }
+    return h >>> 0;
+  }
+  function colorPairFromSrc(src: string) {
+    const h = hashString(src);
+    const hue1 = h % 360;
+    const hue2 = (h * 7) % 360;
+    const sat = 55 + (h % 20); // 55–75%
+    const l1 = 18 + (h % 8);   // 18–26%
+    const l2 = 26 + (h % 8);   // 26–34%
+    return [`hsl(${hue1} ${sat}% ${l1}%)`, `hsl(${hue2} ${sat}% ${l2}%)`];
+  }
+  $: [c1, c2] = colorPairFromSrc(item.thumbnail || item.title || '');
+  $: bgStyle = `background: linear-gradient(135deg, ${c1}, ${c2})`;
+
+  onMount(() => {
+    // If the image is already cached, mark as loaded immediately
+    if (imgEl && imgEl.complete) {
+      loaded = true;
+      markThumbnailLoaded(item.thumbnail);
+    }
+  });
 </script>
 
 <div 
@@ -29,18 +60,25 @@
     class:ring-red-500={!isMobile && isSelected}
     title={item.title}
   >
-    {#if isImage(item.thumbnail)}
-      <Image
+    {#if isImage(item.thumbnail) && !error}
+      <!-- Placeholder gradient derived from URL + skeleton shimmer -->
+      {#if !($loadedThumbnails.has(item.thumbnail!) || loaded)}
+        <div class="absolute inset-0" style={bgStyle}></div>
+        <div class="absolute inset-0 z-10 bg-black/10 dark:bg-black/10 animate-pulse"></div>
+      {/if}
+      <!-- Native image to ensure load events fire reliably -->
+      <img
+        bind:this={imgEl}
         src={item.thumbnail}
         alt={item.title + ' poster'}
-        class="w-full h-full object-cover"
         loading="lazy"
-        style="height:100%;"
-        layout="fullWidth"
-        aspectRatio={2/3}
+        decoding="async"
         sizes="(max-width: 767px) 165px, 220px"
-        cdn={dev ? undefined : 'netlify'}
-        on:load={() => markThumbnailLoaded(item.thumbnail)}
+        class="w-full h-full object-cover transition-opacity duration-500"
+        class:opacity-0={!($loadedThumbnails.has(item.thumbnail!) || loaded)}
+        class:opacity-100={$loadedThumbnails.has(item.thumbnail!) || loaded}
+        on:load={() => { loaded = true; markThumbnailLoaded(item.thumbnail); }}
+        on:error={() => { error = true; loaded = true; markThumbnailLoaded(item.thumbnail); }}
       />
     {:else}
       <div class="absolute inset-0 bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center">

@@ -81,7 +81,7 @@
         sizes="(max-width: 767px) 165px, 220px"
         class="absolute inset-0 w-full h-full object-cover z-10"
         cdn={dev ? undefined : 'netlify'}
-        layout="fullWidth"
+        layout="contain"
         aspectRatio={2/3}
         on:error={() => { error = true; }}
       />

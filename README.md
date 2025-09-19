@@ -15,6 +15,7 @@
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/5b284dd6-29a6-4a8b-ae2f-69e3e2528b30/deploy-status)](https://app.netlify.com/projects/jumpflix/deploys) [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
+![jumpflix-tv-parkour-freerun-films-documentaries](https://github.com/user-attachments/assets/b1dae52c-3d6d-4117-a3cf-8e7a1f98c363)
 
 ## ✨ What is JUMPFLIX?
 

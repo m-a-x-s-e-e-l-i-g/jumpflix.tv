@@ -5,6 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Ensure built-in UI (forms, scrollbars) default to light unless overridden */
+  color-scheme: light;
+  /* Firefox: make scrollbars subtle and consistent in light theme */
+  scrollbar-width: thin;
+  /* thumb | track */
+  scrollbar-color: color-mix(in oklch, var(--foreground) 25%, transparent)
+                    color-mix(in oklch, var(--background) 90%, transparent);
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
@@ -40,6 +47,12 @@
 }
 
 .dark {
+  /* In dark mode, opt all descendants into dark-native UI (incl. nested scrollbars) */
+  color-scheme: dark;
+  /* Firefox: darker thumb on dark track */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--foreground) 35%, transparent)
+                    color-mix(in oklch, var(--background) 85%, transparent);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
   --card: oklch(0.208 0.042 265.755);

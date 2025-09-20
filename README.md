@@ -5,7 +5,7 @@
 	<img src="./static/images/jumpflix-light.webp" alt="JUMPFLIX – Parkour & Freerunning TV" width="420" />
 </picture>
 
-### JUMPFLIX • Curated Parkour & Freerunning Movies & Playlists
+### JUMPFLIX • Curated Parkour & Freerunning Movies & Series
 
 <em>Open‑source, community‑driven streaming style catalog for the art of movement.</em>
 
@@ -19,7 +19,7 @@
 
 ## ✨ What is JUMPFLIX?
 
-JUMPFLIX is a SvelteKit + Tailwind powered web app that curates the best parkour & freerunning feature films, documentaries and long‑form playlists—from legendary classics like *Jump London* to modern community productions and all‑women showcases. It isn't a pirate streaming site: instead it links responsibly to official YouTube/Vimeo embeds and (where appropriate) to legitimate paid providers (e.g. STORROR+, JustWatch, Vimeo On Demand, etc.).
+JUMPFLIX is a SvelteKit + Tailwind powered web app that curates the best parkour & freerunning feature films, documentaries and long‑form series—from legendary classics like *Jump London* to modern community productions and all‑women showcases. It isn't a pirate streaming site: instead it links responsibly to official YouTube/Vimeo embeds and (where appropriate) to legitimate paid providers (e.g. STORROR+, JustWatch, Vimeo On Demand, etc.).
 
 The goal: an elegant, fast, mobile‑friendly discovery hub honoring the culture, people, history & progression of parkour.
 
@@ -34,7 +34,7 @@ The goal: an elegant, fast, mobile‑friendly discovery hub honoring the culture
 - Accessibility minded (focus handling, escape to close, reduced clutter)
 - Light/Dark adaptive artwork
 - Internationalization (English + Dutch via Paraglide i18n)
-- Type‑safe content model (`Movie`, `Playlist`) & utility helpers
+- Type‑safe content model (`Movie`, `Series`) & utility helpers
 - Zero backend: purely static deployable (edge/CDN friendly)
 
 ## 🧱 Tech Stack
@@ -46,14 +46,14 @@ The goal: an elegant, fast, mobile‑friendly discovery hub honoring the culture
 | UI Bits | `bits-ui`, custom small components |
 | i18n | `@inlang/paraglide-js` (messages generated from `/messages/*.json`) |
 | Tooling | Vite, TypeScript, ESLint, Prettier, svelte-check |
-| Content | Curated static arrays (`movies.ts`, `playlists.ts`) |
+| Content | Curated static arrays (`movies.ts`, `series.ts`) |
 
 ## 🗂 Directory Glimpse
 
 ```text
 src/
   lib/
-    assets/        # Static curated movie & playlist data
+  assets/        # Static curated movie & series data
     tv/            # TV page components, store, types & utils
     paraglide/     # Generated i18n runtime (do not edit manually)
   routes/
@@ -113,7 +113,7 @@ Defined in `src/lib/tv/types.ts`:
 
 ```ts
 interface Movie { id: number|string; title: string; year?: string; duration?: string; videoId?: string; vimeoId?: string; /* ... */ }
-interface Playlist { id: number|string; title: string; playlistId?: string; videoCount?: number; /* ... */ }
+interface Series { id: number|string; title: string; playlistId?: string; videoCount?: number; /* ... */ }
 ```
 Helper utilities (`utils.ts`) provide deterministic shuffling, sorting, search matching, and embed URL builders.
 
@@ -137,14 +137,14 @@ Minimal chrome, content first. Fast perceived performance. Respect creators by l
 
 Pull requests welcome—especially for:
 
-- New verified films / documentaries / playlists (include legit source links)
+- New verified films / documentaries / series (include legit source links)
 - Additional locales (translations)
 - Accessibility refinements
 - Lightweight performance wins (bundle size, loading behavior)
 
 Content PR checklist:
 
-1. Add the entry to `movies.ts` or `playlists.ts` with `id`, `title`, `type`, and at least one of: `videoId`, `vimeoId`, or `externalUrl`.
+1. Add the entry to `movies.ts` or `series.ts` with `id`, `title`, `type`, and at least one of: `videoId`, `vimeoId`, or `externalUrl`.
 2. Provide a `thumbnail` (web‑optimized `.webp` preferred; local images go in `static/images/posters/`).
 3. Include `creators` / `starring` arrays when known (credit people!).
 4. If paid: set `paid: true`, add `provider`, `price` (if meaningful) & `externalUrl`.

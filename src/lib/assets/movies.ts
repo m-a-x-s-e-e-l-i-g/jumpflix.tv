@@ -521,7 +521,7 @@ export const movies = [
     paid: true,
     provider: "The Commons",
     type: "movie",
-    duration: "12m",
+    duration: "17m",
     creators: ["Norf", "Alec Reduker", "Noah Heath", "The Commons"],
     starring: ["Niko Selski", "Ethan Rud", "Myles Ross", "Noah Heath"],
   },

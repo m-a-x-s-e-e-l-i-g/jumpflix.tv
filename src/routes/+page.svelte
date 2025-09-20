@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-  <title>JUMPFLIX — Parkour & Freerunning Films, Docs, and Playlists</title>
+  <title>JUMPFLIX — Parkour & Freerunning Films, Docs, and Series</title>
   <meta name="description" content={m.tv_description()} />
   <link rel="canonical" href="https://www.jumpflix.tv/" />
   <!-- Social -->

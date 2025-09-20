@@ -1,6 +1,6 @@
 import { movies } from '$lib/assets/movies';
-import { playlists } from '$lib/assets/playlists';
-import type { ContentItem, Movie, Playlist } from './types';
+import { series as seriesData } from '$lib/assets/series';
+import type { ContentItem, Movie, Series } from './types';
 
 export function slugify(input: string): string {
   return input
@@ -19,15 +19,15 @@ function movieBaseSlug(m: Movie): string {
   return slugify(base);
 }
 
-function playlistBaseSlug(p: Playlist): string {
+function seriesBaseSlug(p: Series): string {
   return slugify(p.title);
 }
 
 // Build maps of slug -> item and id -> slug (ensuring uniqueness)
 const movieSlugById = new Map<Movie['id'], string>();
-const playlistSlugById = new Map<Playlist['id'], string>();
+const seriesSlugById = new Map<Series['id'], string>();
 export const movieSlugMap = new Map<string, Movie>();
-export const playlistSlugMap = new Map<string, Playlist>();
+export const seriesSlugMap = new Map<string, Series>();
 
 // Movies
 for (const m of movies as unknown as Movie[]) {
@@ -43,18 +43,18 @@ for (const m of movies as unknown as Movie[]) {
   movieSlugById.set(m.id, slug);
 }
 
-// Playlists
-for (const p of playlists as unknown as Playlist[]) {
-  const base = playlistBaseSlug(p);
+// Series
+for (const p of seriesData as unknown as Series[]) {
+  const base = seriesBaseSlug(p);
   let slug = base;
   let i = 1;
-  while (playlistSlugMap.has(slug)) {
+  while (seriesSlugMap.has(slug)) {
     slug = `${base}-${p.id}`;
     i++;
     if (i > 2) break;
   }
-  playlistSlugMap.set(slug, p);
-  playlistSlugById.set(p.id, slug);
+  seriesSlugMap.set(slug, p);
+  seriesSlugById.set(p.id, slug);
 }
 
 export function getUrlForItem(item: ContentItem): string {
@@ -62,11 +62,11 @@ export function getUrlForItem(item: ContentItem): string {
     const slug = movieSlugById.get((item as Movie).id);
     return slug ? `/movie/${slug}` : '/';
   }
-  const slug = playlistSlugById.get((item as Playlist).id);
-  return slug ? `/playlist/${slug}` : '/';
+  const slug = seriesSlugById.get((item as Series).id);
+  return slug ? `/series/${slug}` : '/';
 }
 
-export function getItemBySlug(kind: 'movie' | 'playlist', slug: string): ContentItem | null {
+export function getItemBySlug(kind: 'movie' | 'series', slug: string): ContentItem | null {
   if (kind === 'movie') return (movieSlugMap.get(slug) as ContentItem) ?? null;
-  return (playlistSlugMap.get(slug) as ContentItem) ?? null;
+  return (seriesSlugMap.get(slug) as ContentItem) ?? null;
 }

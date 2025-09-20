@@ -5,7 +5,7 @@ export interface BaseContent {
   description?: string;
   thumbnail?: string;
   blurhash?: string;
-  type: 'movie' | 'playlist';
+  type: 'movie' | 'series';
   paid?: boolean;
   provider?: string;
   externalUrl?: string;
@@ -22,15 +22,31 @@ export interface Movie extends BaseContent {
   starring?: string[];
 }
 
-export interface Playlist extends BaseContent {
-  type: 'playlist';
+export interface Series extends BaseContent {
+  type: 'series';
   creators?: string[];
   starring?: string[];
-  playlistId?: string; // YouTube playlist id
-  videoCount?: number;
+  playlistId?: string; // YouTube playlist id backing this series
+  videoCount?: number; // optional static fallback count
 }
 
-export type ContentItem = Movie | Playlist;
+export type ContentItem = Movie | Series;
+
+// Episode/Season model (minimal for now)
+export interface Episode {
+  id: string; // YouTube video id
+  title: string;
+  description?: string;
+  publishedAt?: string; // ISO date
+  thumbnail?: string; // best-effort thumbnail URL
+  position?: number; // episode number within season (1-based)
+  duration?: string; // optional, may be unknown without extra API
+}
+
+export interface Season {
+  seasonNumber: number;
+  episodes: Episode[];
+}
 
 export type SortBy =
   | 'default'

@@ -91,12 +91,12 @@
       {/if}
     </div>
 
-    <!-- Bottom-right info: duration for movies, video count for playlists -->
+    <!-- Bottom-right info: duration for movies, episode count for series -->
     <div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur px-2 py-1 rounded-md text-[10px] text-white/90 z-20">
       {#if item.type === 'movie'}
         {item.duration}
       {:else}
-        {(item as any).videoCount || '?'} videos
+        {(item as any).videoCount || '?'} eps
       {/if}
     </div>
   </div>

@@ -6,7 +6,7 @@
   import SidebarDetails from '$lib/tv/SidebarDetails.svelte';
   import PlayerModal from '$lib/tv/PlayerModal.svelte';
   import MobileDetailsOverlay from '$lib/tv/MobileDetailsOverlay.svelte';
-  import { visibleContent, visibleKeys, sortedAllContent, searchQuery, showPaid, sortBy, selectedContent, showPlayer, showDetailsPanel, selectedIndex, selectContent, openContent, closePlayer, closeDetailsPanel } from '$lib/tv/store';
+  import { visibleContent, visibleKeys, sortedAllContent, searchQuery, showPaid, sortBy, selectedContent, showPlayer, showDetailsPanel, selectedIndex, selectContent, openContent, closePlayer, closeDetailsPanel, selectedEpisode, openEpisode, selectEpisode } from '$lib/tv/store';
   import { loadedThumbnails } from '$lib/tv/store';
   import Switch from '$lib/components/ui/Switch.svelte';
   import { sortLabels } from '$lib/tv/utils';
@@ -46,6 +46,16 @@
       document.documentElement.classList.remove('overflow-hidden');
     }
     openContent(item);
+  }
+  function handleOpenEpisode(videoId: string, title: string) {
+    if (browser && isMobile) {
+      showDetailsPanel.set(false);
+      document.documentElement.classList.remove('overflow-hidden');
+    }
+    openEpisode({ id: videoId, title });
+  }
+  function handleSelectEpisode(videoId: string, title: string) {
+    selectEpisode({ id: videoId, title });
   }
   $: if (browser) {
     if (isMobile && $showDetailsPanel) document.documentElement.classList.add('overflow-hidden');
@@ -132,7 +142,7 @@
   <meta name="description" content={m.tv_description()} />
 </svelte:head>
 
-<div class="min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[420px]">
+<div class="min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[460px]">
   <div class="container mx-auto px-6 pt-10 text-center">
        <div class="mb-4 flex justify-center">
          <a href="/" aria-label="Go to homepage">
@@ -197,13 +207,13 @@
         {/if}
       </div>
     </div>
-    <div class="hidden md:flex w-[420px] border-l border-gray-700/50 px-6 pt-14 pb-6 fixed right-0 top-0 bottom-0 overflow-hidden flex-col bg-gradient-to-b from-[#0f172a]/60 to-[#0f172a]/20 dark:from-gray-900/60 dark:to-gray-900/20 backdrop-blur-xl">
-      <SidebarDetails selected={$selectedContent} openContent={handleOpenContent} openExternal={openExternalContent} />
+    <div class="hidden md:flex w-[460px] border-l border-gray-700/50 px-6 pt-14 pb-6 fixed right-0 top-0 bottom-0 overflow-hidden flex-col bg-gradient-to-b from-[#0f172a]/60 to-[#0f172a]/20 dark:from-gray-900/60 dark:to-gray-900/20 backdrop-blur-xl">
+      <SidebarDetails selected={$selectedContent} openContent={handleOpenContent} openExternal={openExternalContent} onOpenEpisode={handleOpenEpisode} onSelectEpisode={handleSelectEpisode} selectedEpisode={$selectedEpisode} />
     </div>
-    <MobileDetailsOverlay show={$showDetailsPanel} {isMobile} selected={$selectedContent} openContent={handleOpenContent} openExternal={openExternalContent} {closeDetailsPanel} />
+    <MobileDetailsOverlay show={$showDetailsPanel} {isMobile} selected={$selectedContent} openContent={handleOpenContent} openExternal={openExternalContent} onOpenEpisode={handleOpenEpisode} onSelectEpisode={handleSelectEpisode} selectedEpisode={$selectedEpisode} {closeDetailsPanel} />
   </div>
 </div>
-<PlayerModal show={$showPlayer} selected={$selectedContent} close={closePlayer} />
+<PlayerModal show={$showPlayer} selected={$selectedContent} selectedEpisode={$selectedEpisode} close={closePlayer} />
 
 <style>
   /* Only apply hover effects on non-mobile devices */

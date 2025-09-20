@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
   import { isImage, isInlinePlayable } from './utils';
-  import type { ContentItem } from './types';
+  import type { ContentItem, Episode } from './types';
   import * as m from '$lib/paraglide/messages';
   import { browser } from '$app/environment';
   import { toast } from 'svelte-sonner';
@@ -18,6 +18,63 @@
   export let closeDetailsPanel: () => void;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
+  // Callback to play a specific episode (id, title)
+  export let onOpenEpisode: (videoId: string, title: string) => void;
+  // Select an episode without playing
+  export let onSelectEpisode: (videoId: string, title: string) => void;
+  // Currently selected episode (for highlighting)
+  export let selectedEpisode: Episode | null = null;
+
+  // Episodes for series (fetched via API to avoid CORS)
+  let episodes: Episode[] = [];
+  let loadingEpisodes = false;
+  // Abort/race handling for fetches when switching series quickly
+  let _episodesController: AbortController | null = null;
+  let _episodesFetchVersion = 0;
+  $: playlistId = selected?.type === 'series' ? (selected as any).playlistId as string | undefined : undefined;
+  // Fetch when playlistId changes
+  $: if (playlistId) {
+    // start fresh load and cancel any in-flight request
+    loadingEpisodes = true;
+    episodes = [];
+    _episodesController?.abort();
+    _episodesController = new AbortController();
+    const version = ++_episodesFetchVersion;
+    fetch(`/api/series/${encodeURIComponent(playlistId)}/episodes`, { signal: _episodesController.signal })
+      .then((r) => r.json())
+      .then((data) => {
+        if (version === _episodesFetchVersion) {
+          episodes = data.episodes || [];
+        }
+      })
+      .catch((err) => {
+        // Ignore AbortError; for other errors, clear episodes
+        if (err?.name !== 'AbortError' && version === _episodesFetchVersion) {
+          episodes = [];
+        }
+      })
+      .finally(() => {
+        if (version === _episodesFetchVersion) {
+          loadingEpisodes = false;
+        }
+      });
+  } else {
+    // Not a series or missing playlist id
+    _episodesController?.abort();
+    _episodesController = null;
+    episodes = [];
+    loadingEpisodes = false;
+  }
+  // Default-select first episode if none selected or selection not in list
+  // IMPORTANT: Defer the write to avoid updating a store inside an effect that reads it (prevents update-depth loops)
+  // Context: Switching between series updates `selected` and the fetched `episodes` list.
+  // If we synchronously call `onSelectEpisode`, the upstream store changes in the same
+  // reactive turn and can re-trigger this effect repeatedly. Deferring breaks the cycle.
+  $: if (episodes && episodes.length > 0) {
+    const cur = selectedEpisode?.id;
+    const exists = cur && episodes.some(e => e.id === cur);
+    if (!exists) Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title));
+  }
 
   // BlurHash placeholder background for selected thumbnail
   $: blurhash = selected?.blurhash || (selected?.thumbnail ? posterBlurhash[selected.thumbnail] : undefined);
@@ -76,8 +133,8 @@
               <span>{(selected as any).year}</span>
               <span>{(selected as any).duration}</span>
             {:else}
-              <span class="bg-red-600 px-2 py-1 rounded">PLAYLIST</span>
-              <span>{(selected as any).videoCount || '?'} videos</span>
+              <span class="bg-red-600 px-2 py-1 rounded">SERIES</span>
+              <span>{(selected as any).videoCount || '?'} episodes</span>
             {/if}
             {#if selected.type === 'movie' && (selected as any).trakt}
               <a href={(selected as any).trakt} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-6 h-6 mx-1 focus:outline-none focus:ring-2 focus:ring-[#ED1C24] focus:ring-offset-2 focus:ring-offset-black rounded transition active:scale-95 hover:scale-105" aria-label="View on Trakt" title="Trakt">
@@ -120,16 +177,59 @@
                 <li class="flex flex-col gap-1"><span class="text-gray-500 dark:text-gray-400">Starring</span><span>{(selected as any).starring.join(', ')}</span></li>
               {/if}
             </ul>
+            <div class="mt-4">
+              <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">{m.tv_episodes()}</h3>
+              {#if loadingEpisodes}
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Loading episodes…</p>
+              {:else if episodes.length === 0}
+                <p class="text-gray-500 dark:text-gray-400 text-sm">No episodes found.</p>
+              {:else}
+                <ul class="space-y-2 max-h-64 overflow-auto pr-1">
+                  {#each episodes as ep}
+                    <li>
+                      <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition text-left outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-50 dark:bg-red-900/30 border-2 border-red-500/60' : ''}"
+                        on:click={() => onSelectEpisode(ep.id, ep.title)}>
+                        <div class="relative w-24 h-14 flex-shrink-0 overflow-hidden rounded">
+                          {#if ep.thumbnail}
+                            <img src={ep.thumbnail} alt={ep.title} class="w-full h-full object-cover" loading="lazy" decoding="async" />
+                          {:else}
+                            <div class="w-full h-full bg-gray-300 dark:bg-gray-700"></div>
+                          {/if}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <div class="text-[13px] text-gray-600 dark:text-gray-400">Ep {ep.position}</div>
+                          <div class="text-base text-gray-900 dark:text-gray-100 truncate">{ep.title}</div>
+                        </div>
+                        
+                      </button>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+            </div>
           </div>
         {/if}
       </div>
     </div>
     <div class="p-4 bg-white/90 dark:bg-black/80 backdrop-blur border-t border-black/10 dark:border-white/10">
-      <button on:click={() => { if (isInlinePlayable(selected)) openContent(selected); else if (selected?.externalUrl) openExternal(selected); }} class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
-        {#if isInlinePlayable(selected)}
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>{ m.tv_playNow() }
+      <button on:click={() => {
+        if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, selectedEpisode.title); return; }
+        if (isInlinePlayable(selected)) openContent(selected);
+        else if (selected?.externalUrl) openExternal(selected);
+      }} class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
+        {#if selected?.type === 'series'}
+          {#if selectedEpisode}
+            {m.tv_playSelectedEpisode()}
+          {:else}
+            Play series
+          {/if}
         {:else}
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>{ m.tv_watchOn() } {selected.provider || 'External'}
+          {#if isInlinePlayable(selected)}
+            { m.tv_playNow() }
+          {:else}
+            { m.tv_watchOn() } {selected?.provider || 'External'}
+          {/if}
         {/if}
       </button>
     </div>

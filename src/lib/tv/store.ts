@@ -1,12 +1,12 @@
-import { writable, derived, type Readable } from 'svelte/store';
+import { writable, derived, type Readable, get } from 'svelte/store';
 import { movies } from '$lib/assets/movies';
-import { playlists } from '$lib/assets/playlists';
-import type { ContentItem, SortBy } from './types';
+import { series } from '$lib/assets/series';
+import type { ContentItem, Episode, SortBy } from './types';
 import { buildRankMap, filterAndSortContent, isInlinePlayable, keyFor } from './utils';
 
 // Base data (static for now)
 const seed = new Date().toISOString().slice(0, 10);
-export const allContent: ContentItem[] = ([...(movies as any), ...(playlists as any)] as ContentItem[]);
+export const allContent: ContentItem[] = ([...(movies as any), ...(series as any)] as ContentItem[]);
 const rankMap = buildRankMap(allContent, seed);
 
 // UI state stores
@@ -17,6 +17,8 @@ export const selectedContent = writable<ContentItem | null>(null);
 export const showPlayer = writable(false);
 export const showDetailsPanel = writable(false);
 export const selectedIndex = writable(0);
+// When playing a single episode from a series, this holds the selected episode
+export const selectedEpisode = writable<Episode | null>(null);
 
 // Track thumbnails that have successfully loaded so we can keep them cached
 export const loadedThumbnails = writable<Set<string>>(new Set());
@@ -92,6 +94,8 @@ export function selectContent(item: ContentItem) {
   const idx = currentList.findIndex(i => i.id === item.id && i.type === item.type);
   selectedIndex.set(idx >= 0 ? idx : 0);
   showPlayer.set(false);
+  // Reset episode selection when switching content
+  selectedEpisode.set(null);
 }
 
 export function selectByOffset(offset: number, currentCols = 1) {
@@ -111,7 +115,21 @@ export function openContent(item: ContentItem) {
   }
 }
 
-export function closePlayer() { showPlayer.set(false); }
+// Open a specific episode (YouTube video) within a series
+export function openEpisode(ep: Episode) {
+  selectedEpisode.set(ep);
+  showPlayer.set(true);
+}
+
+// Select an episode (do not open the player). Useful for preparing the Play button.
+export function selectEpisode(ep: Episode) {
+  // Avoid redundant updates that can retrigger reactive effects unnecessarily
+  const cur = get(selectedEpisode);
+  if (cur?.id === ep.id) return;
+  selectedEpisode.set(ep);
+}
+
+export function closePlayer() { showPlayer.set(false); selectedEpisode.set(null); }
 export function openDetailsPanel() { showDetailsPanel.set(true); }
 export function closeDetailsPanel() { showDetailsPanel.set(false); }
 

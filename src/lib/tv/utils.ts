@@ -126,7 +126,7 @@ export function getPlaylistEmbedUrl(playlistId: string) {
 export function isInlinePlayable(content: ContentItem | null | undefined) {
   if (!content) return false;
   if (content.type === 'movie') return Boolean((content as any).videoId || (content as any).vimeoId);
-  if (content.type === 'playlist') return Boolean((content as any).playlistId);
+  if (content.type === 'series') return Boolean((content as any).playlistId);
   return false;
 }
 

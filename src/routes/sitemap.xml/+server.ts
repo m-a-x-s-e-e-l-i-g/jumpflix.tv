@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/public';
-import { movieSlugMap, playlistSlugMap, getItemBySlug } from '$lib/tv/slug';
+import { movieSlugMap, seriesSlugMap, getItemBySlug } from '$lib/tv/slug';
 
 export const prerender = true;
 
@@ -21,24 +21,24 @@ export const GET = async () => {
   // Base routes
   const paths: string[] = ['/'];
 
-  // Dynamic content routes (movies and playlists)
+  // Dynamic content routes (movies and series)
   const moviePaths = Array.from(movieSlugMap.keys())
     .sort()
     .map((slug) => `/movie/${slug}`);
 
-  const playlistPaths = Array.from(playlistSlugMap.keys())
+  const seriesPaths = Array.from(seriesSlugMap.keys())
     .sort()
-    .map((slug) => `/playlist/${slug}`);
+    .map((slug) => `/series/${slug}`);
 
-  const all = [...paths, ...moviePaths, ...playlistPaths];
+  const all = [...paths, ...moviePaths, ...seriesPaths];
 
   const now = new Date().toISOString();
   const urls = all
     .map((path) => {
-      const isMovie = path.startsWith('/movie/');
-      const isPlaylist = path.startsWith('/playlist/');
-      const slug = isMovie || isPlaylist ? path.split('/').pop() || '' : '';
-      const item = slug ? getItemBySlug(isMovie ? 'movie' : 'playlist', slug) : null;
+  const isMovie = path.startsWith('/movie/');
+  const isSeries = path.startsWith('/series/');
+  const slug = isMovie || isSeries ? path.split('/').pop() || '' : '';
+  const item = slug ? getItemBySlug(isMovie ? 'movie' : 'series', slug) : null;
       let lastmod = now;
       if (item && item.type === 'movie' && 'year' in item && item.year) {
         lastmod = `${item.year}-01-01`;

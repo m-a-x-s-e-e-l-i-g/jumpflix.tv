@@ -52,4 +52,6 @@
 	,"error_playlist_404_title": "Playlist Not Found"
 	,"error_playlist_404_description": "This playlist took a leap of faith and disappeared! Let's find another one."
 	,"error_server_404": "Page not found. This content might have jumped to another location!"
+	,"tv_episodes": "Episodes"
+	,"tv_playSelectedEpisode": "Play selected episode"
 }

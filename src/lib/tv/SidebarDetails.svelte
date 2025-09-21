@@ -40,7 +40,7 @@
   let _episodesFetchVersion = 0;
   $: playlistId = selected?.type === 'series' ? (selected as any).playlistId as string | undefined : undefined;
   // Fetch only when playlistId changes
-  $: if (playlistId) {
+  $: if (browser && playlistId) {
     loadingEpisodes = true;
     episodes = [];
     _episodesController?.abort();
@@ -74,7 +74,7 @@
   // Context: Switching between series updates `selected` and the fetched `episodes` list.
   // If we synchronously call `onSelectEpisode`, the upstream store changes in the same
   // reactive turn and can re-trigger this effect repeatedly. Deferring breaks the cycle.
-  $: if (episodes && episodes.length > 0) {
+  $: if (browser && episodes && episodes.length > 0) {
     const cur = selectedEpisode?.id;
     const exists = cur && episodes.some(e => e.id === cur);
     if (!exists) Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title));

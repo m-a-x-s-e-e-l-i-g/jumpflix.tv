@@ -52,4 +52,6 @@
 	,"error_playlist_404_title": "Afspeellijst Niet Gevonden"
 	,"error_playlist_404_description": "Deze afspeellijst nam een sprong in het diepe en verdween! Laten we een andere zoeken."
 	,"error_server_404": "Pagina niet gevonden. Deze inhoud is misschien naar een andere locatie gesprongen!"
+	,"tv_episodes": "Afleveringen"
+	,"tv_playSelectedEpisode": "Aflevering afspelen"
 }

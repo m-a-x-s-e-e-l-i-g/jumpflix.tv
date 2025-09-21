@@ -548,5 +548,17 @@ export const movies = [
     duration: "9m",
     creators: ["Connor Pennington", "Noah Heath", "The Commons", "Manor"],
     starring: ["Chris Roff"]
+  },
+  {
+    id: 38,
+    title: "Muckle",
+    year: "2024",
+    description: "It's mint",
+    thumbnail: "/images/posters/muckle-parkour-freerunning-movie-poster.webp",
+    videoId: "A8OA7cgkfgM",
+    type: "movie",
+    duration: "56m",
+    creators: ["Artem Parkour", "Joel Cheesman"],
+    starring: ["Dan Calvert", "David Stephenson", "Harry Robson", "Klayton Talbot", "Joel Cheesman"]
   }
 ];

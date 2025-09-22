@@ -38,11 +38,13 @@ export const series = [
   // },
   // {
   //   id: 5,
-  //   title: "World Chase Tag",
+  //   title: "World Chase Tag", // https://en.wikipedia.org/wiki/World_Chase_Tag // https://www.youtube.com/@WorldChaseTag/playlists
   //   creators: ["World Chase Tag"],
   //   description: "The First and Only Global League for Professional Tag! 🏃‍♂️ #KeepChasing #DontGetCaught",
   //   thumbnail: "/images/posters/world-chase-tag-poster.webp",
-  //   playlistId: "UUvo8BitSExXgP-eYjXwJvgw",
+  //   seasons: [
+  //     { seasonNumber: 4, playlistId: "PLAh6we_yqvHG9gJ8ze2ar1ALqNCwJrGeF" }
+  //   ],
   //   type: "series",
   //   videoCount: 312,
   //   starring: []

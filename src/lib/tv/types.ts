@@ -26,8 +26,8 @@ export interface Series extends BaseContent {
   type: 'series';
   creators?: string[];
   starring?: string[];
-  playlistId?: string; // YouTube playlist id backing this series
-  videoCount?: number; // optional static fallback count
+  seasons: Season[]; // Each season must have a playlistId
+  videoCount?: number; // optional static fallback count across seasons
 }
 
 export type ContentItem = Movie | Series;
@@ -44,8 +44,9 @@ export interface Episode {
 }
 
 export interface Season {
-  seasonNumber: number;
-  episodes: Episode[];
+  seasonNumber: number; // 1-based index
+  playlistId: string; // YouTube playlist backing this season
+  episodes?: Episode[]; // optional cache
 }
 
 export type SortBy =

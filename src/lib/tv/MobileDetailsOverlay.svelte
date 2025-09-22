@@ -6,7 +6,7 @@
   import { browser } from '$app/environment';
   import { toast } from 'svelte-sonner';
   import Link2Icon from '@lucide/svelte/icons/link-2';
-  import { getUrlForItem } from './slug';
+  import { getUrlForItem, getEpisodeUrl } from './slug';
   import { Image } from '@unpic/svelte';
   import { dev } from '$app/environment';
   import { blurhashToCssGradientString } from '@unpic/placeholder';
@@ -18,20 +18,27 @@
   export let closeDetailsPanel: () => void;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
+  export let initialSeason: number | undefined;
   // Callback to play a specific episode (id, title)
-  export let onOpenEpisode: (videoId: string, title: string) => void;
+  export let onOpenEpisode: (videoId: string, title: string, episodeNumber?: number, seasonNumber?: number) => void;
   // Select an episode without playing
-  export let onSelectEpisode: (videoId: string, title: string) => void;
+  export let onSelectEpisode: (videoId: string, title: string, episodeNumber?: number, seasonNumber?: number) => void;
   // Currently selected episode (for highlighting)
   export let selectedEpisode: Episode | null = null;
 
-  // Episodes for series (fetched via API to avoid CORS)
+  // Seasons & Episodes for series (fetched via API to avoid CORS)
   let episodes: Episode[] = [];
   let loadingEpisodes = false;
+  let selectedSeason = 1;
+  $: if (typeof initialSeason === 'number' && Number.isFinite(initialSeason)) {
+    selectedSeason = Math.max(1, Math.floor(initialSeason));
+  }
   // Abort/race handling for fetches when switching series quickly
   let _episodesController: AbortController | null = null;
   let _episodesFetchVersion = 0;
-  $: playlistId = selected?.type === 'series' ? (selected as any).playlistId as string | undefined : undefined;
+  $: playlistId = selected?.type === 'series'
+    ? (selected as any).seasons?.find((s: any) => s.seasonNumber === selectedSeason)?.playlistId as string | undefined
+    : undefined;
   // Fetch when playlistId changes
   $: if (browser && playlistId) {
     // start fresh load and cancel any in-flight request
@@ -73,7 +80,15 @@
   $: if (browser && episodes && episodes.length > 0) {
     const cur = selectedEpisode?.id;
     const exists = cur && episodes.some(e => e.id === cur);
-    if (!exists) Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title));
+    if (!cur) {
+      Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title, episodes[0].position || 1));
+    } else if (cur?.startsWith?.('pos:')) {
+      const pos = Number(cur.split(':')[1] || '1');
+      const found = episodes.find(e => (e.position || 0) === pos) || episodes[0];
+      Promise.resolve().then(() => onSelectEpisode(found.id, found.title, found.position || 1));
+    } else if (!exists) {
+      Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title, episodes[0].position || 1));
+    }
   }
 
   // BlurHash placeholder background for selected thumbnail
@@ -82,7 +97,18 @@
 
   async function copyLink() {
     if (!selected) return;
-    const path = getUrlForItem(selected);
+    let path = getUrlForItem(selected);
+    if (selected.type === 'series' && selectedEpisode?.id) {
+      const epNum = selectedEpisode.position && Number.isFinite(selectedEpisode.position)
+        ? Math.max(1, Math.floor(selectedEpisode.position))
+        : null;
+      if (epNum) path = getEpisodeUrl(selected as any, { episodeNumber: epNum, seasonNumber: selectedSeason });
+      else {
+        const params = new URLSearchParams();
+        params.set('ep', selectedEpisode.id);
+        path = `${path}?${params.toString()}`;
+      }
+    }
     const url = browser ? new URL(path, window.location.origin).toString() : path;
     try {
       if (navigator?.clipboard?.writeText) {
@@ -178,6 +204,16 @@
               {/if}
             </ul>
             <div class="mt-4">
+              {#if (selected as any).seasons?.length > 0}
+                <div class="mb-3 flex items-center gap-2">
+                  <label class="text-xs opacity-80" for="mobile-season-select">Season</label>
+                  <select id="mobile-season-select" class="bg-transparent border rounded px-2 py-1 text-xs" bind:value={selectedSeason} on:change={() => { /* refetch via reactive */ }}>
+                    {#each (selected as any).seasons as s}
+                      <option value={s.seasonNumber}>S{s.seasonNumber}</option>
+                    {/each}
+                  </select>
+                </div>
+              {/if}
               <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">{m.tv_episodes()}</h3>
               {#if loadingEpisodes}
                 <p class="text-gray-500 dark:text-gray-400 text-sm">Loading episodes…</p>
@@ -187,8 +223,8 @@
                 <ul class="space-y-2 max-h-64 overflow-auto pr-1">
                   {#each episodes as ep}
                     <li>
-                      <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition text-left outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-50 dark:bg-red-900/30 border-2 border-red-500/60' : ''}"
-                        on:click={() => onSelectEpisode(ep.id, ep.title)}>
+                      <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition text-left outline-none border-2 border-transparent focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-50 dark:bg-red-900/30 border-2 border-red-500/60' : ''}"
+                        on:click={() => onSelectEpisode(ep.id, ep.title, ep.position, selectedSeason)}>
                         <div class="relative w-24 h-14 flex-shrink-0 overflow-hidden rounded">
                           {#if ep.thumbnail}
                             <img src={ep.thumbnail} alt={ep.title} class="w-full h-full object-cover" loading="lazy" decoding="async" />
@@ -213,7 +249,7 @@
     </div>
     <div class="p-4 bg-white/90 dark:bg-black/80 backdrop-blur border-t border-black/10 dark:border-white/10">
       <button on:click={() => {
-        if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, selectedEpisode.title); return; }
+        if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, selectedEpisode.title, selectedEpisode.position || 1, selectedSeason); return; }
         if (isInlinePlayable(selected)) openContent(selected);
         else if (selected?.externalUrl) openExternal(selected);
       }} class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">

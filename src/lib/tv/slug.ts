@@ -66,6 +66,15 @@ export function getUrlForItem(item: ContentItem): string {
   return slug ? `/series/${slug}` : '/';
 }
 
+// Build a pretty URL for a specific episode within a series.
+// Example: /series/<slug>/episodes/7 or /series/<slug>/seasons/1/episodes/7
+export function getEpisodeUrl(series: Series, opts: { episodeNumber: number; seasonNumber?: number }): string {
+  const base = getUrlForItem(series); // /series/<slug>
+  const ep = Math.max(1, Math.floor(opts.episodeNumber || 1));
+  const s = Math.max(1, Math.floor((opts.seasonNumber ?? 1)));
+  return `${base}/seasons/${s}/episodes/${ep}`;
+}
+
 export function getItemBySlug(kind: 'movie' | 'series', slug: string): ContentItem | null {
   if (kind === 'movie') return (movieSlugMap.get(slug) as ContentItem) ?? null;
   return (seriesSlugMap.get(slug) as ContentItem) ?? null;

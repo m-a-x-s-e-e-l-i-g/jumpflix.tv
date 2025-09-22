@@ -1,6 +1,8 @@
 <script lang="ts">
-  import TvPage from '$lib/tv/TvPage.svelte';
   import * as m from '$lib/paraglide/messages';
+  // TvPage is rendered persistently from +layout.svelte
+  // This page contributes only head metadata
+  let {} = $props();
 </script>
 
 <svelte:head>
@@ -32,4 +34,4 @@
   </script>
 </svelte:head>
 
-<TvPage initialItem={null} />
+<!-- Content rendered in layout -->

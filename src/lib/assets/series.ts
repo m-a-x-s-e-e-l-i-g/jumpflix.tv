@@ -18,8 +18,10 @@ export const series = [
     creators: ["Northern Parkour", "Dave Sedgley", "Paul Maunder"],
     description: "A short documentary series exploring what parkour means to practitioners and the so-called 'parkour vision'.",
     thumbnail: "/images/posters/parkour-the-nature-of-challenge-poster.webp",
-    playlistId: "PLFE063C4ADA6CAA18",
     type: "series",
+    seasons: [
+      { seasonNumber: 1, playlistId: "PLFE063C4ADA6CAA18" }
+    ],
     videoCount: 4,
     starring: []
   },
@@ -51,8 +53,10 @@ export const series = [
     creators: ["Adrian Pueyo"],
     description: "A four-part Spanish parkour series (2013–2015) featuring MADD, BTT GUP, James Kingston and others.",
     thumbnail: "/images/posters/gravity-series-spanish-parkour-poster.webp",
-    playlistId: "PLQLQeBBGuzK93e_bI1nt7j5Hkb92Nzgre",
     type: "series",
+    seasons: [
+      { seasonNumber: 1, playlistId: "PLQLQeBBGuzK93e_bI1nt7j5Hkb92Nzgre" }
+    ],
     videoCount: 4,
     starring: ["MADD", "BTT", "GUP", "Scott Bass", "James Kingston", "Tyler Harder", "Marc Selby", "Curtis Randolph", "Franziska Marie", "Garrett Moore", "the Spanish Community"]
   },
@@ -62,8 +66,10 @@ export const series = [
     creators: ["KIPA", "Lester Castro"],
     description: "A Swedish winter parkour trilogy shot in undercover and underground spots across Stockholm and the south (Lund, Helsingborg, Malmö), turning rough, unlikely locations into creative lines. DIY-filmed with a colorful, psychedelic, EDM-tinged vibe, it shows how the crew keeps moving through long, dark, wet winters.",
     thumbnail: "/images/posters/kipa-udg-poster-underground-parkour-freerun.webp",
-    playlistId: "PL5_AeU_YPHqX5CfDpxWbogjIGBn_JtdTc",
     type: "series",
+    seasons: [
+      { seasonNumber: 1, playlistId: "PL5_AeU_YPHqX5CfDpxWbogjIGBn_JtdTc" }
+    ],
     videoCount: 3,
     starring: ["Joel Larsson", "Arvid Nygren", "Lester Castro", "Hugo Arnesson", "Affe Zetterberg"]
   }

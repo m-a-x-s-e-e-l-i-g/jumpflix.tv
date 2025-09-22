@@ -1,14 +1,21 @@
 <script lang="ts">
-  import TvPage from '$lib/tv/TvPage.svelte';
   import { getUrlForItem } from '$lib/tv/slug';
   import { env } from '$env/dynamic/public';
+  // TvPage is rendered in layout; we only set head tags here
   export let data: { item: any, episodes: any[] };
-  const item = data?.item;
-  const title = item ? `${item.title} — Parkour Series on JUMPFLIX` : 'Series — JUMPFLIX';
-  const desc = item?.description || 'Curated parkour series on JUMPFLIX.';
-  const image = item?.thumbnail ? (item.thumbnail.startsWith('http') ? item.thumbnail : `https://www.jumpflix.tv${item.thumbnail}`) : 'https://www.jumpflix.tv/images/jumpflix-dark.webp';
+  // Derived state (reactive)
   const origin = (env.PUBLIC_SITE_URL || 'https://www.jumpflix.tv').replace(/\/$/, '');
-  const url = item ? `${origin}${getUrlForItem(item)}` : origin;
+  let item: any;
+  let title: string;
+  let desc: string;
+  let image: string;
+  let url: string;
+
+  $: item = data?.item;
+  $: title = item ? `${item.title} — Parkour Series on JUMPFLIX` : 'Series — JUMPFLIX';
+  $: desc = item?.description || 'Curated parkour series on JUMPFLIX.';
+  $: image = item?.thumbnail ? (item.thumbnail.startsWith('http') ? item.thumbnail : `https://www.jumpflix.tv${item.thumbnail}`) : 'https://www.jumpflix.tv/images/jumpflix-dark.webp';
+  $: url = item ? `${origin}${getUrlForItem(item)}` : origin;
 </script>
 
 <svelte:head>
@@ -26,4 +33,4 @@
   <meta name="twitter:image" content={image} />
 </svelte:head>
 
-<TvPage initialItem={item ?? null} />
+<!-- Content rendered in layout -->

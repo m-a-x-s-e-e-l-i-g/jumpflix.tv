@@ -8,8 +8,12 @@
 	import { Toaster, toast } from 'svelte-sonner';
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
+	import TvPage from '$lib/tv/TvPage.svelte';
+  
+	// data from +layout.ts
+	let { children, data } = $props<{ children: any; data: { item: any; initialEpisodeNumber: number | null; initialSeasonNumber: number | null } }>();
 
-	let { children } = $props();
+    
 
 	// current locale from Paraglide (reactive state)
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
@@ -134,6 +138,8 @@
 </SheetRoot>
 
 {#key currentLocale}
+	<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
+	<TvPage initialItem={data?.item ?? null} initialEpisodeNumber={data?.initialEpisodeNumber ?? null} initialSeasonNumber={data?.initialSeasonNumber ?? null} />
 	{@render children?.()}
 {/key}
 

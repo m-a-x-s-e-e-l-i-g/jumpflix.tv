@@ -289,7 +289,7 @@
 <div class="min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[460px]">
   <div class="container mx-auto px-6 pt-10 text-center">
        <div class="mb-4 flex justify-center">
-         <a href="/" aria-label="Go to homepage">
+         <a href="/" aria-label="Go to homepage" data-sveltekit-reload>
            <Image src="/images/jumpflix-light.webp" alt="JUMPFLIX parkour tv" class="dark:hidden" height={150} width={205} cdn={dev ? undefined : 'netlify'} loading="eager" />
            <Image src="/images/jumpflix-dark.webp" alt="JUMPFLIX parkour tv" class="hidden dark:block" height={150} width={205} cdn={dev ? undefined : 'netlify'} loading="eager" />
          </a>

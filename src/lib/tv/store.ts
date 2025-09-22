@@ -63,21 +63,28 @@ export const sortedAllContent = derived([sortBy], ([$sortBy]) =>
 // Set of keys for currently visible items (for fast membership checks in UI)
 export const visibleKeys = derived(visibleContent, ($list) => new Set($list.map((i) => keyFor(i))));
 
-// Keep selectedContent in sync when list changes
-visibleContent.subscribe(list => {
+// Keep selection/index consistent when the visible list changes, but do NOT auto-select
+// anything on initial load. This ensures nothing is selected until the user clicks or
+// the route directly specifies an item (e.g., /movie/<slug> or /series/<slug>).
+visibleContent.subscribe((list) => {
   if (list.length === 0) {
     selectedContent.set(null);
     selectedIndex.set(0);
     return;
   }
-  let current: ContentItem | null = null;
-  selectedContent.update(val => { current = val; return val; });
-  if (!current || !list.some(i => i.id === current!.id && i.type === current!.type)) {
-    selectedContent.set(list[0]);
+  const current = get(selectedContent);
+  if (!current) {
+    // No selection yet; keep index at 0 but do not auto-pick an item
     selectedIndex.set(0);
+    return;
+  }
+  const idx = list.findIndex((i) => i.id === current.id && i.type === current.type);
+  if (idx >= 0) {
+    selectedIndex.set(idx);
   } else {
-    const idx = list.findIndex(i => current && i.id === current.id && i.type === current.type);
-    if (idx >= 0) selectedIndex.set(idx);
+    // Previously selected item no longer visible; clear selection
+    selectedContent.set(null);
+    selectedIndex.set(0);
   }
 });
 

@@ -4,6 +4,7 @@
   import { getUrlForItem, getEpisodeUrl } from './slug';
   import { browser } from '$app/environment';
   import { toast } from 'svelte-sonner';
+  import * as Select from "$lib/components/ui/select/index.js";
   import Link2Icon from '@lucide/svelte/icons/link-2';
   import * as m from '$lib/paraglide/messages';
   // Fetch via local API to avoid CORS and keep server-side parsing
@@ -286,7 +287,7 @@
             }}
           >
             {#each (selected as any).seasons as s}
-              <option value={s.seasonNumber}>Season {s.seasonNumber}</option>
+              <option value={s.seasonNumber} class="bg-white dark:bg-black text-gray-900 dark:text-gray-100">Season {s.seasonNumber}</option>
             {/each}
           </select>
         </div>

@@ -6,12 +6,11 @@
   import { toast } from 'svelte-sonner';
   import * as Select from "$lib/components/ui/select/index.js";
   import Link2Icon from '@lucide/svelte/icons/link-2';
-  import * as m from '$lib/paraglide/messages';
-  // Fetch via local API to avoid CORS and keep server-side parsing
-  
+  import * as m from '$lib/paraglide/messages';  
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { fade } from 'svelte/transition';
+  import { decode } from 'html-entities';
   export let selected: ContentItem | null;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
@@ -302,17 +301,17 @@
             {#each episodes as ep}
               <li>
                 <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition text-left border-2 border-transparent outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-50 dark:bg-red-900/30 border-2 border-red-500/60' : ''}"
-                  on:click={() => onSelectEpisode(ep.id, ep.title, ep.position, selectedSeason)}>
+                  on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeason)}>
                   <div class="relative w-20 h-12 flex-shrink-0 overflow-hidden rounded">
                     {#if ep.thumbnail}
-                      <img src={ep.thumbnail} alt={ep.title} class="w-full h-full object-cover" loading="lazy" decoding="async" />
+                      <img src={ep.thumbnail} alt={decode(ep.title)} class="w-full h-full object-cover" loading="lazy" decoding="async" />
                     {:else}
                       <div class="w-full h-full bg-gray-300 dark:bg-gray-700"></div>
                     {/if}
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="text-[13px] text-gray-600 dark:text-gray-400">Ep {ep.position}</div>
-                    <div class="text-base text-gray-900 dark:text-gray-100 truncate">{ep.title}</div>
+                    <div class="text-base text-gray-900 dark:text-gray-100 truncate">{decode(ep.title)}</div>
                   </div>
                   
                 </button>
@@ -325,7 +324,7 @@
   </div>
   <div class="relative z-10 pt-4">
     <button on:click={() => {
-      if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, selectedEpisode.title, selectedEpisode.position || 1, selectedSeason); return; }
+      if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); return; }
       if (isInlinePlayable(selected)) openContent(selected);
       else if (selected?.externalUrl) openExternal(selected);
     }} class="w-full bg-blue-600/90 hover:bg-blue-500 text-white py-4 px-6 rounded-2xl font-medium tracking-wide transition-colors flex items-center justify-center gap-3 cursor-pointer shadow-lg shadow-blue-900/30 backdrop-blur">

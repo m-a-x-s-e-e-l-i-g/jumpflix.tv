@@ -11,6 +11,7 @@
   import { dev } from '$app/environment';
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
+  import { decode } from 'html-entities';
 
   export let show = false;
   export let isMobile = false;
@@ -234,17 +235,17 @@
                   {#each episodes as ep}
                     <li>
                       <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition text-left outline-none border-2 border-transparent focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-50 dark:bg-red-900/30 border-2 border-red-500/60' : ''}"
-                        on:click={() => onSelectEpisode(ep.id, ep.title, ep.position, selectedSeasonNum)}>
+                        on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeasonNum)}>
                         <div class="relative w-24 h-14 flex-shrink-0 overflow-hidden rounded">
                           {#if ep.thumbnail}
-                            <img src={ep.thumbnail} alt={ep.title} class="w-full h-full object-cover" loading="lazy" decoding="async" />
+                            <img src={ep.thumbnail} alt={decode(ep.title)} class="w-full h-full object-cover" loading="lazy" decoding="async" />
                           {:else}
                             <div class="w-full h-full bg-gray-300 dark:bg-gray-700"></div>
                           {/if}
                         </div>
                         <div class="flex-1 min-w-0">
                           <div class="text-[13px] text-gray-600 dark:text-gray-400">Ep {ep.position}</div>
-                          <div class="text-base text-gray-900 dark:text-gray-100 truncate">{ep.title}</div>
+                          <div class="text-base text-gray-900 dark:text-gray-100 truncate">{decode(ep.title)}</div>
                         </div>
                         
                       </button>
@@ -259,7 +260,7 @@
     </div>
     <div class="p-4 bg-white/90 dark:bg-black/80 backdrop-blur border-t border-black/10 dark:border-white/10">
       <button on:click={() => {
-        if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, selectedEpisode.title, selectedEpisode.position || 1, selectedSeason); return; }
+        if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); return; }
         if (isInlinePlayable(selected)) openContent(selected);
         else if (selected?.externalUrl) openExternal(selected);
       }} class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">

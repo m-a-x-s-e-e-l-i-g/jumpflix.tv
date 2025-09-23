@@ -30,6 +30,7 @@
 		"@tailwindcss/vite": "^4.0.0",
 		"@types/node": "^22",
 		"autoprefixer": "^10.4.20",
+		"blurhash": "^2.0.5",
 		"eslint": "^9.22.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
@@ -37,6 +38,7 @@
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
 		"prettier-plugin-tailwindcss": "^0.6.11",
+		"sharp": "^0.33.5",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
 		"tailwind-variants": "^1.0.0",
@@ -45,15 +47,14 @@
 		"tw-animate-css": "^1.3.8",
 		"typescript": "^5.0.0",
 		"typescript-eslint": "^8.20.0",
-		"vite": "^7.0.4",
-		"blurhash": "^2.0.5",
-		"sharp": "^0.33.5"
+		"vite": "^7.0.4"
 	},
 	"dependencies": {
+		"@unpic/placeholder": "^0.1.2",
+		"@unpic/svelte": "^1.0.0",
 		"bits-ui": "^2.9.8",
 		"clsx": "^2.1.1",
-		"@unpic/svelte": "^1.0.0",
-		"@unpic/placeholder": "^0.1.2",
+		"html-entities": "^2.6.0",
 		"lucide-svelte": "^0.544.0",
 		"svelte-sonner": "^0.3.28",
 		"tailwind-merge": "^3.3.1"

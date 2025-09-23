@@ -30,23 +30,27 @@
   let episodes: Episode[] = [];
   let loadingEpisodes = false;
   let selectedSeason = 1;
+  let episodesListEl: HTMLUListElement | null = null;
   $: if (typeof initialSeason === 'number' && Number.isFinite(initialSeason)) {
     selectedSeason = Math.max(1, Math.floor(initialSeason));
   }
+  // Always work with a numeric season internally (select returns strings)
+  $: selectedSeasonNum = Number.isFinite(Number(selectedSeason)) ? Math.max(1, Number(selectedSeason)) : 1;
   // Abort/race handling for fetches when switching series quickly
   let _episodesController: AbortController | null = null;
   let _episodesFetchVersion = 0;
   $: playlistId = selected?.type === 'series'
-    ? (selected as any).seasons?.find((s: any) => s.seasonNumber === selectedSeason)?.playlistId as string | undefined
+    ? (selected as any).seasons?.find((s: any) => s.seasonNumber === selectedSeasonNum)?.playlistId as string | undefined
     : undefined;
   // Fetch when playlistId changes
-  $: if (browser && playlistId) {
+  $: if (browser && playlistId && show) {
     // start fresh load and cancel any in-flight request
     loadingEpisodes = true;
     episodes = [];
     _episodesController?.abort();
     _episodesController = new AbortController();
     const version = ++_episodesFetchVersion;
+    const timeoutId = setTimeout(() => { try { _episodesController?.abort(); } catch {} }, 10000);
     fetch(`/api/series/${encodeURIComponent(playlistId)}/episodes`, { signal: _episodesController.signal })
       .then((r) => r.json())
       .then((data) => {
@@ -61,6 +65,7 @@
         }
       })
       .finally(() => {
+        clearTimeout(timeoutId);
         if (version === _episodesFetchVersion) {
           loadingEpisodes = false;
         }
@@ -81,13 +86,13 @@
     const cur = selectedEpisode?.id;
     const exists = cur && episodes.some(e => e.id === cur);
     if (!cur) {
-      Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title, episodes[0].position || 1));
+      Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title, episodes[0].position || 1, selectedSeasonNum));
     } else if (cur?.startsWith?.('pos:')) {
       const pos = Number(cur.split(':')[1] || '1');
       const found = episodes.find(e => (e.position || 0) === pos) || episodes[0];
-      Promise.resolve().then(() => onSelectEpisode(found.id, found.title, found.position || 1));
+      Promise.resolve().then(() => onSelectEpisode(found.id, found.title, found.position || 1, selectedSeasonNum));
     } else if (!exists) {
-      Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title, episodes[0].position || 1));
+      Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title, episodes[0].position || 1, selectedSeasonNum));
     }
   }
 
@@ -102,7 +107,7 @@
       const epNum = selectedEpisode.position && Number.isFinite(selectedEpisode.position)
         ? Math.max(1, Math.floor(selectedEpisode.position))
         : null;
-      if (epNum) path = getEpisodeUrl(selected as any, { episodeNumber: epNum, seasonNumber: selectedSeason });
+      if (epNum) path = getEpisodeUrl(selected as any, { episodeNumber: epNum, seasonNumber: selectedSeasonNum });
       else {
         const params = new URLSearchParams();
         params.set('ep', selectedEpisode.id);
@@ -204,27 +209,32 @@
               {/if}
             </ul>
             <div class="mt-4">
+              <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">{m.tv_episodes()}</h3>
               {#if (selected as any).seasons?.length > 0}
-                <div class="mb-3 flex items-center gap-2">
-                  <label class="text-xs opacity-80" for="mobile-season-select">Season</label>
-                  <select id="mobile-season-select" class="bg-transparent border rounded px-2 py-1 text-xs" bind:value={selectedSeason} on:change={() => { /* refetch via reactive */ }}>
+                <div class="mb-3">
+                  <select
+                    id="mobile-season-select"
+                    class="w-full bg-transparent border rounded px-3 py-2 text-sm"
+                    bind:value={selectedSeason}
+                    disabled={(selected as any).seasons?.length <= 1}
+                    on:change={(e) => { const next = Number((e.currentTarget as HTMLSelectElement).value); selectedSeason = next; /* triggers reactive fetch */ onSelectEpisode('pos:1', 'Episode 1', 1, Number.isFinite(next) ? Math.max(1, next) : 1); Promise.resolve().then(() => { try { episodesListEl?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }); }}
+                  >
                     {#each (selected as any).seasons as s}
-                      <option value={s.seasonNumber}>S{s.seasonNumber}</option>
+                      <option value={s.seasonNumber}>Season {s.seasonNumber}</option>
                     {/each}
                   </select>
                 </div>
               {/if}
-              <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">{m.tv_episodes()}</h3>
               {#if loadingEpisodes}
                 <p class="text-gray-500 dark:text-gray-400 text-sm">Loading episodes…</p>
               {:else if episodes.length === 0}
                 <p class="text-gray-500 dark:text-gray-400 text-sm">No episodes found.</p>
               {:else}
-                <ul class="space-y-2 max-h-64 overflow-auto pr-1">
+                <ul class="space-y-2 max-h-64 overflow-auto pr-1" bind:this={episodesListEl}>
                   {#each episodes as ep}
                     <li>
                       <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition text-left outline-none border-2 border-transparent focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-50 dark:bg-red-900/30 border-2 border-red-500/60' : ''}"
-                        on:click={() => onSelectEpisode(ep.id, ep.title, ep.position, selectedSeason)}>
+                        on:click={() => onSelectEpisode(ep.id, ep.title, ep.position, selectedSeasonNum)}>
                         <div class="relative w-24 h-14 flex-shrink-0 overflow-hidden rounded">
                           {#if ep.thumbnail}
                             <img src={ep.thumbnail} alt={ep.title} class="w-full h-full object-cover" loading="lazy" decoding="async" />

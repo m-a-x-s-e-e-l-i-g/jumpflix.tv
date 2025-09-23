@@ -95,7 +95,7 @@
       const url = episodeNumber
         ? buildItemUrl($selectedContent, { episodeNumber, seasonNumber: seasonNumber ?? undefined })
         : buildItemUrl($selectedContent, { epId: videoId });
-      nav(url);
+      if (url !== currentPath) nav(url);
     }
     openEpisode({ id: videoId, title, position: episodeNumber });
   }
@@ -107,7 +107,7 @@
       const url = ($selectedContent.type === 'series' && episodeNumber)
         ? buildItemUrl($selectedContent, { episodeNumber, seasonNumber: seasonNumber ?? undefined })
         : buildItemUrl($selectedContent, { epId: videoId });
-      nav(url, { replace: true });
+      if (url !== currentPath) nav(url, { replace: true });
     }
   }
   $: if (browser) {
@@ -354,7 +354,7 @@
       </div>
     </div>
     <div class="hidden md:flex w-[460px] border-l border-gray-700/50 px-6 pt-14 pb-6 fixed right-0 top-0 bottom-0 overflow-hidden flex-col bg-gradient-to-b from-[#0f172a]/60 to-[#0f172a]/20 dark:from-gray-900/60 dark:to-gray-900/20 backdrop-blur-xl">
-      <SidebarDetails selected={$selectedContent} openContent={handleOpenContent} openExternal={openExternalContent} onOpenEpisode={handleOpenEpisode} onSelectEpisode={handleSelectEpisode} selectedEpisode={$selectedEpisode} initialSeason={initialSeasonNumber ?? undefined} />
+  <SidebarDetails selected={$selectedContent} openContent={handleOpenContent} openExternal={openExternalContent} onOpenEpisode={handleOpenEpisode} onSelectEpisode={handleSelectEpisode} selectedEpisode={$selectedEpisode} initialSeason={initialSeasonNumber ?? undefined} {isMobile} />
     </div>
     <MobileDetailsOverlay show={$showDetailsPanel} {isMobile} selected={$selectedContent} openContent={handleOpenContent} openExternal={openExternalContent} onOpenEpisode={handleOpenEpisode} onSelectEpisode={handleSelectEpisode} selectedEpisode={$selectedEpisode} {closeDetailsPanel} initialSeason={initialSeasonNumber ?? undefined} />
   </div>

@@ -87,5 +87,21 @@ export const series = [
     ],
     videoCount: 4,
     starring: ["Connor Pennington", "Ezra Schroer", "Marquis Bennett", "Chris Roff"]
+  },
+  {
+    id: 9,
+    title: "Sport Parkour League",
+    creators: ["Sport Parkour League"],
+    description: "The World's Premiere Parkour Competition League. SKILL, SPEED, STYLE.",
+    thumbnail: "/images/posters/sport-parkour-league-poster.webp",
+    type: "series",
+    seasons: [
+      { seasonNumber: 1, playlistId: "PLWNMaZLpXiVp88rglxQrxlZElhRN_3ECH" },
+      { seasonNumber: 2, playlistId: "PLWNMaZLpXiVp2Si3PpzimWi_kU5_axxMM" },
+      { seasonNumber: 3, playlistId: "PLWNMaZLpXiVqimiX3PC89QVSHKbKuRm9Z" },
+      { seasonNumber: 4, playlistId: "PLWNMaZLpXiVoo8L7qqnHMWpX8tofS2WxS" }
+    ],
+    videoCount: 39,
+    starring: []
   }
 ];

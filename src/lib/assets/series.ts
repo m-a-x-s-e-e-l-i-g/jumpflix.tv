@@ -74,5 +74,18 @@ export const series = [
     ],
     videoCount: 3,
     starring: ["Joel Larsson", "Arvid Nygren", "Lester Castro", "Hugo Arnesson", "Affe Zetterberg"]
+  },
+  {
+    id: 8,
+    title: "Manor - “Dear _____” series",
+    creators: ["Manor", "Noah Heath", "Connor Pennington", "Yaron Erkin"],
+    description: "A series of short films by Manor pushing the visual language of parkour. Highlighting movement with intention — focusing on athletes and ideas that deserve more attention.",
+    thumbnail: "/images/posters/manor-dear-series-poster.webp",
+    type: "series",
+    seasons: [
+      { seasonNumber: 1, playlistId: "PL3iwaCsp8s8Ps6L4CyXP9gKcCh4jKiT-U" }
+    ],
+    videoCount: 4,
+    starring: ["Connor Pennington", "Ezra Schroer", "Marquis Bennett", "Chris Roff"]
   }
 ];

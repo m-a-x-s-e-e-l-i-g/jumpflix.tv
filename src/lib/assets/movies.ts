@@ -539,18 +539,6 @@ export const movies = [
   },
   {
     id: 37,
-    title: "Maven",
-    year: "2023",
-    description: "Chris Roff turns Philly into a playground, training purely for love of movement—facing cops, injuries, and big challenges with calm creativity.",
-    thumbnail: "/images/posters/manor-maven-parkour-freerunning-movie-poster.webp",
-    videoId: "tBTN1oYCKX0",
-    type: "movie",
-    duration: "9m",
-    creators: ["Connor Pennington", "Noah Heath", "The Commons", "Manor"],
-    starring: ["Chris Roff"]
-  },
-  {
-    id: 38,
     title: "Muckle",
     year: "2024",
     description: "It's mint",

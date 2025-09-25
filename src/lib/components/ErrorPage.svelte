@@ -84,16 +84,9 @@
 		<div class="flex justify-center mb-8">
 			<a href="/" aria-label="Go to homepage" class="transition-all duration-300 hover:scale-105 hover:drop-shadow-lg">
 				<img
-					src="/images/jumpflix-light.webp"
+					src="/images/jumpflix.webp"
 					alt="JUMPFLIX parkour tv"
-					class="dark:hidden filter drop-shadow-md"
-					style="height: 120px; width: auto; max-height: 120px;"
-					loading="eager"
-				/>
-				<img
-					src="/images/jumpflix-dark.webp"
-					alt="JUMPFLIX parkour tv"
-					class="hidden dark:block filter drop-shadow-md"
+					class="filter drop-shadow-md"
 					style="height: 120px; width: auto; max-height: 120px;"
 					loading="eager"
 				/>

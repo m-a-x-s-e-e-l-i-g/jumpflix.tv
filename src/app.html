@@ -21,11 +21,34 @@
 				try {
 					const stored = localStorage.getItem('theme');
 					const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-					if(stored === 'dark' || (!stored && prefersDark)) document.documentElement.classList.add('dark');
+					const isDark = stored === 'dark' || (!stored && prefersDark);
+					if(isDark) document.documentElement.classList.add('dark');
 					else document.documentElement.classList.remove('dark');
+
+					// Sync theme-color meta to match current theme for better PWA splash on Android/Edge
+					const setThemeMeta = (dark) => {
+						let meta = document.querySelector('meta[name="theme-color"]');
+						if(!meta){
+							meta = document.createElement('meta');
+							meta.name = 'theme-color';
+							document.head.appendChild(meta);
+						}
+						meta.setAttribute('content', dark ? '#0b1220' : '#ffffff');
+					};
+					setThemeMeta(isDark);
+					// Keep in sync with system changes when no explicit theme stored
+					if(!stored){
+						try {
+							window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)=>setThemeMeta(e.matches));
+						} catch {}
+					}
 				} catch {}
 			})();
 		</script>
+		<meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
+		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" sizes="180x180">
+		<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

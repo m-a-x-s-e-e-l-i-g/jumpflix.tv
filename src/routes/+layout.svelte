@@ -1,6 +1,5 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.png';
 	import { Sheet as SheetRoot, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import GithubIcon from '@lucide/svelte/icons/github';
@@ -63,10 +62,17 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+	<link rel="shortcut icon" href="/favicon.ico" />
 	<meta name="robots" content="index, follow, max-image-preview:large" />
 	<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
 	<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220" />
+	<!-- PWA: iOS/Apple support -->
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<meta name="apple-mobile-web-app-title" content="JUMPFLIX" />
+	<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
 	<!-- Open Graph / Twitter defaults -->
 	<meta property="og:site_name" content="JUMPFLIX" />
 	<meta property="og:type" content="website" />

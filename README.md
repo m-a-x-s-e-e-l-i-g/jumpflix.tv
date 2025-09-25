@@ -2,7 +2,7 @@
 
 <picture>
 	<source media="(prefers-color-scheme: dark)" srcset="./static/images/jumpflix-dark.webp" />
-	<img src="./static/images/jumpflix-light.webp" alt="JUMPFLIX – Parkour & Freerunning TV" width="420" />
+	<img src="./static/images/jumpflix.webp" alt="JUMPFLIX – Parkour & Freerunning TV" width="420" />
 </picture>
 
 ### JUMPFLIX • Curated Parkour & Freerunning Movies & Series

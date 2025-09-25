@@ -54,4 +54,13 @@
 	,"error_server_404": "Page not found. This content might have jumped to another location!"
 	,"tv_episodes": "Episodes"
 	,"tv_playSelectedEpisode": "Play selected episode"
+	,"settings_install": "Install"
+	,"settings_install_cta": "Install JUMPFLIX"
+	,"install_installed": "App installed"
+	,"install_hint": "Use your browser menu to “Add to Home Screen”"
+	,"install_dismissed": "Install dismissed"
+	,"install_thanks": "Thanks! Installing…"
+	,"install_error": "Unable to start install"
+	,"install_not_available": "Install isn't available yet. Try reloading once."
+	,"install_dev": "Install prompts only appear on a production build with a registered service worker."
 }

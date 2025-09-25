@@ -54,4 +54,13 @@
 	,"error_server_404": "Pagina niet gevonden. Deze inhoud is misschien naar een andere locatie gesprongen!"
 	,"tv_episodes": "Afleveringen"
 	,"tv_playSelectedEpisode": "Aflevering afspelen"
+	,"settings_install": "Installeren"
+	,"settings_install_cta": "JUMPFLIX installeren"
+	,"install_installed": "App geïnstalleerd"
+	,"install_hint": "Gebruik het browsermenu om ‘Aan beginscherm toe te voegen’"
+	,"install_dismissed": "Installatie geannuleerd"
+	,"install_thanks": "Bedankt! Aan het installeren…"
+	,"install_error": "Installatie kan niet worden gestart"
+	,"install_not_available": "Installeren is nog niet beschikbaar. Probeer één keer te herladen."
+	,"install_dev": "Installeren werkt alleen in een productie-build met een geregistreerde service worker."
 }

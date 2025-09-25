@@ -2,6 +2,22 @@ import { env } from '$env/dynamic/public';
 
 const SITE_URL = (env.PUBLIC_SITE_URL || 'https://www.jumpflix.tv').replace(/\/$/, '');
 
+function isLocalhostUrl(urlString: string): boolean {
+  try {
+    const u = new URL(urlString);
+    const host = u.hostname.toLowerCase();
+    return (
+      host === 'localhost' ||
+      host === '::1' ||
+      host === '0.0.0.0' ||
+      host.startsWith('127.') ||
+      host.endsWith('.local')
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Submits sitemap to major search engines
  */
@@ -16,6 +32,9 @@ export class SitemapSubmitter {
    * Submit sitemap to Google Search Console
    */
   async submitToGoogle(): Promise<{ success: boolean; message: string }> {
+    if (isLocalhostUrl(this.sitemapUrl) || isLocalhostUrl(SITE_URL)) {
+      return { success: false, message: 'Skipped: sitemap URL points to localhost' };
+    }
     try {
       const pingUrl = `https://www.google.com/webmasters/tools/ping?sitemap=${encodeURIComponent(this.sitemapUrl)}`;
       const response = await fetch(pingUrl, { 
@@ -39,6 +58,9 @@ export class SitemapSubmitter {
    * Submit sitemap to Bing Webmaster Tools
    */
   async submitToBing(): Promise<{ success: boolean; message: string }> {
+    if (isLocalhostUrl(this.sitemapUrl) || isLocalhostUrl(SITE_URL)) {
+      return { success: false, message: 'Skipped: sitemap URL points to localhost' };
+    }
     try {
       const pingUrl = `https://www.bing.com/webmaster/ping.aspx?siteMap=${encodeURIComponent(this.sitemapUrl)}`;
       const response = await fetch(pingUrl, { 

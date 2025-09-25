@@ -18,6 +18,25 @@ const SITE_URL = process.env.PUBLIC_SITE_URL || 'https://www.jumpflix.tv';
 const SITEMAP_URL = `${SITE_URL.replace(/\/$/, '')}/sitemap.xml`;
 
 /**
+ * Determine if a URL points to localhost or a loopback host
+ */
+function isLocalhostUrl(urlString) {
+  try {
+    const u = new URL(urlString);
+    const host = u.hostname.toLowerCase();
+    return (
+      host === 'localhost' ||
+      host === '::1' ||
+      host === '0.0.0.0' ||
+      host.startsWith('127.') ||
+      host.endsWith('.local')
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Submit sitemap to Google (using IndexNow API or traditional ping)
  */
 async function submitToGoogle() {
@@ -148,6 +167,17 @@ async function validateSitemap() {
 async function main() {
   console.log('🚀 Starting sitemap submission process...');
   console.log(`📍 Sitemap URL: ${SITEMAP_URL}`);
+  
+  // Never submit when targeting localhost (unless explicitly forced)
+  if (isLocalhostUrl(SITE_URL) || isLocalhostUrl(SITEMAP_URL)) {
+    if (process.env.FORCE_SITEMAP_SUBMISSION) {
+      console.log('⚠️  PUBLIC_SITE_URL points to localhost but FORCE_SITEMAP_SUBMISSION is set. Proceeding anyway.');
+    } else {
+      console.log('⏭️  Skipping sitemap submission because PUBLIC_SITE_URL points to localhost.');
+      console.log('    Set FORCE_SITEMAP_SUBMISSION=true to override (not recommended).');
+      return;
+    }
+  }
   
   // Check if we're in a production environment
   if (process.env.NODE_ENV !== 'production' && !process.env.FORCE_SITEMAP_SUBMISSION) {

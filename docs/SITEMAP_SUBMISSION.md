@@ -15,6 +15,8 @@ This document outlines the environment variables and configuration options for a
 - `NODE_ENV`: Set to `production` to enable automatic sitemap submission
   - Sitemap submission is skipped in non-production environments by default
 - `FORCE_SITEMAP_SUBMISSION`: Set to `true` to force sitemap submission even in non-production environments
+  - Note: Submissions are also skipped when `PUBLIC_SITE_URL` points to localhost (e.g., <http://localhost:5173>)
+    unless `FORCE_SITEMAP_SUBMISSION=true` is set. This prevents accidental submissions during local development.
 
 ## How It Works
 
@@ -83,3 +85,4 @@ For the most reliable sitemap submissions, consider setting up:
 - IndexNow submissions happen automatically and support multiple search engines
 - The script validates sitemap accessibility before attempting submissions
 - Google's traditional ping method is deprecated but the script attempts it for backwards compatibility
+- Localhost guard: When `PUBLIC_SITE_URL` is localhost/127.0.0.1/::1/.local, submission is skipped by default

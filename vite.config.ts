@@ -11,5 +11,15 @@ export default defineConfig({
 			project: './project.inlang',
 			outdir: './src/lib/paraglide'
 		})
-	]
+	],
+	build: {
+		rollupOptions: {
+			output: {
+				manualChunks: {
+					'vendor-lucide': ['@lucide/svelte', 'lucide-svelte'],
+					'vendor-sonner': ['svelte-sonner']
+				}
+			}
+		}
+	}
 });

@@ -3,10 +3,11 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link rel="preconnect" href="https://fonts.googleapis.com"/>
-		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&display=swap" rel="stylesheet">
+		<!-- Preload hero image for faster LCP on homepage -->
+		<link rel="preload" as="image" href="/images/jumpflix.webp" imagesrcset="/images/jumpflix.webp 1x" imagesizes="300px" fetchpriority="high" />
 		<!-- Google tag (gtag.js) -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-SJ77H41T0Q"></script>
 		<script>
@@ -51,7 +52,7 @@
 		<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
 		%sveltekit.head%
 	</head>
-	<body data-sveltekit-preload-data="hover">
+	<body data-sveltekit-preload-data="hover" data-sveltekit-preload-code="hover">
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>

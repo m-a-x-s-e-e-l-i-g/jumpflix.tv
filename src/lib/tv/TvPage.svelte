@@ -290,7 +290,7 @@
   <div class="container mx-auto px-6 pt-10 text-center">
        <div class="mb-4 flex justify-center">
          <a href="/" aria-label="Go to homepage" data-sveltekit-reload>
-           <Image src="/images/jumpflix.webp" alt="JUMPFLIX parkour tv" width={300} cdn={dev ? undefined : 'netlify'} loading="eager" />
+           <Image src="/images/jumpflix.webp" alt="JUMPFLIX parkour tv" width={300} height={157} cdn={dev ? undefined : 'netlify'} loading="eager" fetchpriority="high" decoding="async" />
          </a>
        </div>
     <p class="text-gray-400 dark:text-gray-300 font-sans text-sm tracking-wide max-w-3xl mx-auto">{m.tv_description()}</p>

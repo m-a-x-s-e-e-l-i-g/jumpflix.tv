@@ -548,5 +548,29 @@ export const movies = [
     duration: "56m",
     creators: ["Artem Parkour", "Joel Cheesman"],
     starring: ["Dan Calvert", "David Stephenson", "Harry Robson", "Klayton Talbot", "Joel Cheesman"]
+  },
+  {
+    id: 38,
+    title: "MAUERFALL | A Berlin Parkour Film",
+    year: "2023",
+    description: "A Berlin Parkour Film made By five young athletes, with the goal to represent Berlin in the global Parkour World and get the name of the team out there. First of many projects, the style is very street orientated and true to the culture.",
+    thumbnail: "/images/posters/mauerfall-a-berlin-parkour-film-poster.webp",
+    videoId: "x0Ej3NKxpBc",
+    type: "movie",
+    duration: "11m",
+    creators: ["Jan Joppek", "Matthias Josue", "KomplexCollective"],
+    starring: ["Matthias Josue", "Jona Tewes", "Lin Buschmeier", "Amir Kaiser", "Jan Joppek"]
+  },
+  {
+    id: 39,
+    title: "LaPazBerlin - A Bolivia Parkour Documentary",
+    year: "2024",
+    description: "A Documentary and of Parkour and the culture in LaPaz - Bolivia. Shot on a three month trip.",
+    thumbnail: "/images/posters/lapazberlin-a-bolivia-parkour-documentary-poster.webp",
+    videoId: "qr8qL_LUquU",
+    type: "movie",
+    duration: "22m",
+    creators: ["Matze", "Jona", "KomplexCollective"],
+    starring: []
   }
 ];

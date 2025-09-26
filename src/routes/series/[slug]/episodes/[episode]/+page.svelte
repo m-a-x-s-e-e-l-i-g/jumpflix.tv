@@ -20,6 +20,17 @@
     ? (item.thumbnail.startsWith('http') ? item.thumbnail : `https://www.jumpflix.tv${item.thumbnail}`)
     : 'https://www.jumpflix.tv/images/jumpflix-dark.webp';
   $: url = item ? `${origin}${getEpisodeUrl(item, { episodeNumber: e, seasonNumber: season })}` : origin;
+  // Structured data (TVEpisode) for legacy route (assumed season 1)
+  $: structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'TVEpisode',
+    name: item ? `${item.title} ${code}` : 'Series Episode',
+    partOfSeries: item ? { '@type': 'TVSeries', name: item.title, url: origin + getUrlForItem(item) } : undefined,
+    episodeNumber: e,
+    seasonNumber: season,
+    description: desc,
+    url
+  };
 </script>
 <!-- Content rendered in layout -->
 
@@ -37,17 +48,6 @@
   <meta name="twitter:description" content={desc} />
   <meta name="twitter:image" content={image} />
 
-  <!-- Minimal JSON-LD for TVEpisode -->
-  <script type="application/ld+json">
-    {JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'TVEpisode',
-      name: item ? `${item.title} ${code}` : 'Series Episode',
-      partOfSeries: item ? { '@type': 'TVSeries', name: item.title, url: origin + getUrlForItem(item) } : undefined,
-      episodeNumber: e,
-      seasonNumber: season,
-      description: desc,
-      url
-    })}
-  </script>
+  <!-- JSON-LD for TVEpisode (use {@html} to prevent HTML escaping) -->
+  <script type="application/ld+json">{@html JSON.stringify(structuredData).replace(/</g, '\\u003c')}</script>
 </svelte:head>

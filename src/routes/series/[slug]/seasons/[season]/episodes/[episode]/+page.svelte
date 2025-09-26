@@ -20,6 +20,19 @@
     ? (item.thumbnail.startsWith('http') ? item.thumbnail : `https://www.jumpflix.tv${item.thumbnail}`)
     : 'https://www.jumpflix.tv/images/jumpflix-dark.webp';
   $: url = item ? `${origin}${getEpisodeUrl(item, { episodeNumber: e, seasonNumber: s })}` : origin;
+  // Structured data (TVEpisode). We build it reactively so desc/image/url updates propagate.
+  $: structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'TVEpisode',
+    name: item ? `${item.title} ${code}` : 'Series Episode',
+    partOfSeries: item
+      ? { '@type': 'TVSeries', name: item.title, url: origin + getEpisodeUrl(item, { episodeNumber: 1, seasonNumber: 1 }) }
+      : undefined,
+    episodeNumber: e,
+    seasonNumber: s,
+    description: desc,
+    url
+  };
 </script>
 <!-- Content rendered in layout -->
 
@@ -37,17 +50,6 @@
   <meta name="twitter:description" content={desc} />
   <meta name="twitter:image" content={image} />
 
-  <!-- Minimal JSON-LD for TVEpisode -->
-  <script type="application/ld+json">
-    {JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'TVEpisode',
-      name: item ? `${item.title} ${code}` : 'Series Episode',
-      partOfSeries: item ? { '@type': 'TVSeries', name: item.title, url: origin + getUrlForItem(item) } : undefined,
-      episodeNumber: e,
-      seasonNumber: s,
-      description: desc,
-      url
-    })}
-  </script>
+  <!-- JSON-LD for TVEpisode (must use {@html} to avoid HTML-escaping quotes) -->
+  <script type="application/ld+json">{@html JSON.stringify(structuredData).replace(/</g, '\\u003c')}</script>
 </svelte:head>

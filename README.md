@@ -1,7 +1,7 @@
 <div align="center">
 
 <picture>
-	<source media="(prefers-color-scheme: dark)" srcset="./static/images/jumpflix-dark.webp" />
+	<source media="(prefers-color-scheme: dark)" srcset="./static/images/jumpflix.webp" />
 	<img src="./static/images/jumpflix.webp" alt="JUMPFLIX – Parkour & Freerunning TV" width="420" />
 </picture>
 

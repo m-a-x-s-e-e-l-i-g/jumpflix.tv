@@ -20,11 +20,6 @@
 		<script>
 			(function(){
 				try {
-					// Capture PWA beforeinstallprompt as early as possible
-					window.addEventListener('beforeinstallprompt', function(e){
-						try { e.preventDefault(); } catch {}
-						window.__bip = e;
-					});
 
 					const stored = localStorage.getItem('theme');
 					const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;

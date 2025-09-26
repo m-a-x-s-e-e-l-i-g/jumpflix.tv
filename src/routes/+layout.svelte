@@ -8,7 +8,7 @@
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 	import TvPage from '$lib/tv/TvPage.svelte';
-	import InstallPWAButton from '$lib/components/InstallPWAButton.svelte';
+    
   
 	// data from +layout.ts
 	let { children, data } = $props<{ children: any; data: { item: any; initialEpisodeNumber: number | null; initialSeasonNumber: number | null } }>();
@@ -125,11 +125,6 @@
 				{/each}
 			</div>
 
-			<!-- PWA Install (only shows when not installed and prompt available) -->
-			<div class="mt-6">
-				<p class="mb-2 text-sm text-muted-foreground">{m.settings_install?.() ?? 'Install'}</p>
-				<InstallPWAButton className="w-full" label={m.settings_install_cta?.() ?? 'Install JUMPFLIX'} />
-			</div>
 
 			<!-- Project Links -->
 			<div class="mt-6">

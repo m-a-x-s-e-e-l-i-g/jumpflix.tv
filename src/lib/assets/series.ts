@@ -78,7 +78,7 @@ export const series = [
   {
     id: 8,
     title: "Manor - “Dear _____” series",
-    creators: ["Manor", "Noah Heath", "Connor Pennington", "Yaron Erkin"],
+    creators: ["Manor", "Noah Heath", "Ethan Rud", "Connor Pennington", "Yaron Erkin"],
     description: "A series of short films by Manor pushing the visual language of parkour. Highlighting movement with intention — focusing on athletes and ideas that deserve more attention.",
     thumbnail: "/images/posters/manor-dear-series-poster.webp",
     type: "series",

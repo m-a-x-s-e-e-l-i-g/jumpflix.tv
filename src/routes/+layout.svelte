@@ -8,6 +8,9 @@
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 	import TvPage from '$lib/tv/TvPage.svelte';
+	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
+	// We'll access the underlying custom element via a store reference set in the prompt component
+	let pwaInstallRef: any = null;
     
   
 	// data from +layout.ts
@@ -142,6 +145,19 @@
 						<GlobeIcon class="size-4" />
 						<span class="text-sm text-foreground">maxmade.nl — Max Seelig's Portfolio</span>
 					</a>
+					<!-- Manual PWA Install trigger -->
+					<button
+						onclick={() => {
+							try {
+								(window as any).gtag?.('event', 'pwa_install_manual_trigger');
+								pwaInstallRef?.showDialog?.(true);
+							} catch {}
+						}}
+						class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition text-left"
+						type="button"
+					>
+						<span class="text-sm text-foreground">Install App</span>
+					</button>
 				</div>
 			</div>
 		</div>
@@ -164,3 +180,6 @@
 
 <!-- Global toast container -->
 <Toaster richColors position="bottom-center" />
+
+<!-- Global PWA install prompt (auto-managed, suppressed after dismissal for 2 weeks) -->
+<PWAInstallPrompt />

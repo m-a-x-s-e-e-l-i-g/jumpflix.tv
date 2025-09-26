@@ -145,19 +145,6 @@
 						<GlobeIcon class="size-4" />
 						<span class="text-sm text-foreground">maxmade.nl — Max Seelig's Portfolio</span>
 					</a>
-					<!-- Manual PWA Install trigger -->
-					<button
-						onclick={() => {
-							try {
-								(window as any).gtag?.('event', 'pwa_install_manual_trigger');
-								pwaInstallRef?.showDialog?.(true);
-							} catch {}
-						}}
-						class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition text-left"
-						type="button"
-					>
-						<span class="text-sm text-foreground">Install App</span>
-					</button>
 				</div>
 			</div>
 		</div>

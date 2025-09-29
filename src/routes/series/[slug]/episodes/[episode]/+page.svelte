@@ -18,7 +18,7 @@
     : `Watch ${item?.title ? `${item.title} ${code}` : 'this parkour series episode'} on JUMPFLIX.`;
   $: image = item?.thumbnail
     ? (item.thumbnail.startsWith('http') ? item.thumbnail : `https://www.jumpflix.tv${item.thumbnail}`)
-    : 'https://www.jumpflix.tv/images/jumpflix-dark.webp';
+    : 'https://www.jumpflix.tv/images/jumpflix.webp';
   $: url = item ? `${origin}${getEpisodeUrl(item, { episodeNumber: e, seasonNumber: season })}` : origin;
   // Structured data (TVEpisode) for legacy route (assumed season 1)
   $: structuredData = {

@@ -2,6 +2,7 @@
   // TvPage is rendered in layout; we only set head tags here
   import { env } from '$env/dynamic/public';
   import { getEpisodeUrl, getUrlForItem } from '$lib/tv/slug';
+  import { decode } from 'html-entities';
   export let data: { item: any; initialEpisodeNumber: number };
   const item = data?.item;
   const ep = data?.initialEpisodeNumber;
@@ -12,9 +13,9 @@
   const origin = (env.PUBLIC_SITE_URL || 'https://www.jumpflix.tv').replace(/\/$/, '');
   $: e = typeof ep === 'number' && ep >= 1 ? ep : 1;
   $: code = `s${String(season).padStart(2, '0')}e${String(e).padStart(2, '0')}`;
-  $: title = item ? `${item.title} ${code} — Watch Parkour Series on JUMPFLIX` : 'Series Episode — JUMPFLIX';
+  $: title = item ? `${decode(item.title)} ${code} — Watch Parkour Series on JUMPFLIX` : 'Series Episode — JUMPFLIX';
   $: desc = item?.description
-    ? `${item.description} (Episode ${e}, Season ${season})`
+    ? `${decode(item.description)} (Episode ${e}, Season ${season})`
     : `Watch ${item?.title ? `${item.title} ${code}` : 'this parkour series episode'} on JUMPFLIX.`;
   $: image = item?.thumbnail
     ? (item.thumbnail.startsWith('http') ? item.thumbnail : `https://www.jumpflix.tv${item.thumbnail}`)
@@ -24,8 +25,8 @@
   $: structuredData = {
     '@context': 'https://schema.org',
     '@type': 'TVEpisode',
-    name: item ? `${item.title} ${code}` : 'Series Episode',
-    partOfSeries: item ? { '@type': 'TVSeries', name: item.title, url: origin + getUrlForItem(item) } : undefined,
+    name: item ? `${decode(item.title)} ${code}` : 'Series Episode',
+    partOfSeries: item ? { '@type': 'TVSeries', name: decode(item.title), url: origin + getUrlForItem(item) } : undefined,
     episodeNumber: e,
     seasonNumber: season,
     description: desc,

@@ -16,6 +16,7 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/forest-flow-parkour-in-nature-poster.webp": "UKE.gwE405%0~6IqE4xZxaR+oIfjfRRlofxY",
   "/images/posters/freerunner-poster.webp": "UFGlS5JE8wo}_NEl#Rt7EnJ:slIA4;E2xuRj",
   "/images/posters/from-here-to-there-poster.webp": "UlL}NkozayIU_ND%D%M{IUkCWBxuaxt8t7f6",
+  "/images/posters/full-of-life-kipa-parkour-film-poster.webp": "URGbq;00xa?b_N8_xuxu9Go#ozIURixaWXNG",
   "/images/posters/gatecrasher-an-all-women-s-parkour-action-film-poster.webp": "UIC@,99aL}o~yZRjroM{00n#xuflxYR4adkr",
   "/images/posters/gefam-crackstone-parkour-film-poster.webp": "U69Qgd%M00E1t7WBazxu00R*~Wxat7t7WAM{",
   "/images/posters/generation-yamakasi-poster.webp": "UYFF~rofIVR-_4jZtRkC=xaxRjf6obofVXi_",

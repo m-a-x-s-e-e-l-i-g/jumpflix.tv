@@ -584,11 +584,11 @@ export const movies = [
     duration: "14m",
     creators: ["Oleg Vorslav"],
     starring: ["Oleg Vorslav", "Dvinsk Clan"]
-  }
-  ,{
+  },
+  {
     id: 41,
     title: "BERLINGO",
-    year: "2024",
+    year: "2020",
     description: "The Swedish parkour scene captured over a couple of summer months – with extra clips from Kevin's time in Germany. Named after Pontus Karlsson's Citroën Berlingo, the car that carried the crew across Sweden while filming this vibe-heavy tour film.",
     thumbnail: "/images/posters/berlingo-kipa-swedish-parkour-film-poster.webp",
     videoId: "xB3UKv6hFoc",
@@ -601,5 +601,30 @@ export const movies = [
       "Kevin Franzén",
       "Lester Castro",
       "Måns"    ]
+  },
+  {
+    id: 42,
+    title: "FULL OF LIFE",
+    year: "2023",
+    description: "A 12 day trip to Lisbon in December 2022. Despite heavy rain and flooding, the crew explored the city's iconic beige limestone spots daily—12 days, full of life!",
+    thumbnail: "/images/posters/full-of-life-kipa-parkour-film-poster.webp",
+    videoId: "YIRxXIEk0bQ",
+    type: "movie",
+    duration: "19m",
+    creators: ["KIPA", "Lester Castro Nilsson"],
+    starring: [
+      "Hugo Arnesson",
+      "Joel Larsson",
+      "Marc Busch",
+      "Pedro Salgado",
+      "Sasha Albasio",
+      "Ian Fortuna",
+      "Afonso Neves",
+      "Pedro Bison",
+      "Lester Castro Nilsson",
+      "Ebbe Höglund",
+      "Joe Scandrett",
+      "Kevin Franzén"
+    ]
   }
 ];

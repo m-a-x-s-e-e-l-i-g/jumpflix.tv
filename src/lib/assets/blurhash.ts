@@ -43,6 +43,7 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/running-a-family-commit-freerun-documentary.webp": "UFHB;uIpE3E2E2Iq%Mxu03_2_1t7o}~pflIV",
   "/images/posters/sabai-sabai-parkour-freerunning-movie-poster.webp": "UPJkMr?G9Yofb[j^xvRi~W%3ahR*IVRixuWD",
   "/images/posters/sick-mode-state-Of-miNd-poster-parkour.webp": "U271o}0000%2~qD%Mxx]9Ft6%ftRIV-;D%t7",
+  "/images/posters/skull-chatter-tempest-freerunning-poster.webp": "UAF~gc0000-;~q?b9FIU4n_3ay9FxuM{IU-;",
   "/images/posters/sole-destroyer-poster.webp": "UANdO8~qxuD%00D%IURj00Rj4nxu4nxuWBt7",
   "/images/posters/sport-parkour-league-poster.webp": "U37n5s0eD%#SVsX8oLjF00}[-pKOt,rYR*XS",
   "/images/posters/storror-supertramps-thailand-poster.webp": "U,JS93WEbJkC~qWBR*WBRPoJayj[M|fkkBa|",

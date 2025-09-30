@@ -839,5 +839,18 @@ export const movies = [
 			'Kevin Franzén',
 			'Ryuya Shirai'
 		]
+	},
+	{
+		id: 44,
+		title: 'Skull Chatter',
+		year: '2020',
+		description:
+			"A raw solo project from TMPST pro Nate Weston—born from a personal mental challenge and completed during a lockdown road trip with filmmaker Kent Johns. Gritty lines, creative movement, and introspective energy define this 12‑minute passion piece.",
+		thumbnail: '/images/posters/skull-chatter-tempest-freerunning-poster.webp',
+		videoId: 'PGkskKL1nCw',
+		type: 'movie',
+		duration: '12m',
+		creators: ['Tempest Freerunning', 'Nate Weston', 'Kent Johns'],
+		starring: ['Nate Weston']
 	}
 ];

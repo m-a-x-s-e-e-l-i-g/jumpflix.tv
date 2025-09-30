@@ -13,10 +13,10 @@
   <meta property="og:title" content="JUMPFLIX — Parkour & Freerunning Films" />
   <meta property="og:description" content={m.tv_description()} />
   <meta property="og:url" content="https://www.jumpflix.tv/" />
-  <meta property="og:image" content="https://www.jumpflix.tv/images/jumpflix-dark.webp" />
+  <meta property="og:image" content="https://www.jumpflix.tv/images/jumpflix.webp" />
   <meta name="twitter:title" content="JUMPFLIX — Parkour & Freerunning Films" />
   <meta name="twitter:description" content={m.tv_description()} />
-  <meta name="twitter:image" content="https://www.jumpflix.tv/images/jumpflix-dark.webp" />
+  <meta name="twitter:image" content="https://www.jumpflix.tv/images/jumpflix.webp" />
   <!-- JSON-LD Website -->
   <script type="application/ld+json">
     {

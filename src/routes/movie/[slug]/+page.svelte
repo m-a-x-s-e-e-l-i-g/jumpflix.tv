@@ -16,7 +16,7 @@
   $: item = data?.item;
   $: title = item ? `${decode(item.title)} (${item.year}) — Watch Parkour Film on JUMPFLIX` : 'Movie — JUMPFLIX';
   $: desc = item?.description ? decode(item.description) : 'Watch parkour films and documentaries on JUMPFLIX.';
-  $: image = item?.thumbnail ? (item.thumbnail.startsWith('http') ? item.thumbnail : `https://www.jumpflix.tv${item.thumbnail}`) : 'https://www.jumpflix.tv/images/jumpflix-dark.webp';
+  $: image = item?.thumbnail ? (item.thumbnail.startsWith('http') ? item.thumbnail : `https://www.jumpflix.tv${item.thumbnail}`) : 'https://www.jumpflix.tv/images/jumpflix.webp';
   $: url = item ? `${origin}${getUrlForItem(item)}` : origin;
 </script>
 

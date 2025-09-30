@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getUrlForItem } from '$lib/tv/slug';
   import { env } from '$env/dynamic/public';
+  import { decode } from 'html-entities';
   // TvPage is rendered in layout; we only set head tags here
   export let data: { item: any };
 
@@ -13,8 +14,8 @@
   let url: string;
 
   $: item = data?.item;
-  $: title = item ? `${item.title} (${item.year}) — Watch Parkour Film on JUMPFLIX` : 'Movie — JUMPFLIX';
-  $: desc = item?.description || 'Watch parkour films and documentaries on JUMPFLIX.';
+  $: title = item ? `${decode(item.title)} (${item.year}) — Watch Parkour Film on JUMPFLIX` : 'Movie — JUMPFLIX';
+  $: desc = item?.description ? decode(item.description) : 'Watch parkour films and documentaries on JUMPFLIX.';
   $: image = item?.thumbnail ? (item.thumbnail.startsWith('http') ? item.thumbnail : `https://www.jumpflix.tv${item.thumbnail}`) : 'https://www.jumpflix.tv/images/jumpflix.webp';
   $: url = item ? `${origin}${getUrlForItem(item)}` : origin;
 </script>

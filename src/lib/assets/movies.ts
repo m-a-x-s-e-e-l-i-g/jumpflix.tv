@@ -585,4 +585,21 @@ export const movies = [
     creators: ["Oleg Vorslav"],
     starring: ["Oleg Vorslav", "Dvinsk Clan"]
   }
+  ,{
+    id: 41,
+    title: "BERLINGO",
+    year: "2024",
+    description: "The Swedish parkour scene captured over a couple of summer months – with extra clips from Kevin's time in Germany. Named after Pontus Karlsson's Citroën Berlingo, the car that carried the crew across Sweden while filming this vibe-heavy tour film.",
+    thumbnail: "/images/posters/berlingo-kipa-swedish-parkour-film-poster.webp",
+    videoId: "xB3UKv6hFoc",
+    type: "movie",
+    duration: "27m",
+    creators: ["KIPA", "Lester Castro"],
+    starring: [
+      "Joel Larsson",
+      "Hugo Arnesson",
+      "Kevin Franzén",
+      "Lester Castro",
+      "Måns"    ]
+  }
 ];

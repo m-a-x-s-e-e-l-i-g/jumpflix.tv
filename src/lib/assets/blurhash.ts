@@ -23,6 +23,7 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/gravity-series-spanish-parkour-poster.webp": "UMGuaY4oD*E2~pIBWBWXE3xYR*%LxZt7Rks.",
   "/images/posters/jump-britain-poster.webp": "UKHVo39FIq.8F#bItRx^Oa.8R.E1?wD%D%M{",
   "/images/posters/jump-london-poster.webp": "USCHyYRPR5tRB:nikCbbC7ofs:W;~qW;RjjZ",
+  "/images/posters/kipa-berlin-parkour-film-poster.webp": "UUJ8Y1s+%L?b?bRi%M%N~qRkWBt8t8ofWXRk",
   "/images/posters/kipa-udg-poster-underground-parkour-freerun.webp": "UHC8dZny~EWA%F.TV?flL#s,9sIUIAt6S4H?",
   "/images/posters/lapazberlin-a-bolivia-parkour-documentary-poster.webp": "UOK8_0=Z,Dj]}_,:o0a$:jr?NwWVibWWjZWV",
   "/images/posters/manor-dear-series-poster.webp": "U48p[Z?a00IV^O-oOsIoE*-p^iIV.l%L#7Rj",

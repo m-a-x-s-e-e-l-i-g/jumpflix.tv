@@ -572,5 +572,17 @@ export const movies = [
     duration: "22m",
     creators: ["Matze", "Jona", "KomplexCollective"],
     starring: []
+  },
+  {
+    id: 40,
+    title: "OUT OF TIME",
+    year: "2009",
+    description: "A parkour video by Latvian freerunner Oleg Vorslav, also known for the early “Russian Climbing” videos. It became one of the first viral parkour videos and is remembered as a community classic.",
+    thumbnail: "/images/posters/out-of-time-parkour-freerunning-movie-poster-oleg-vorslav.webp",
+    vimeoId: "6495648",
+    type: "movie",
+    duration: "14m",
+    creators: ["Oleg Vorslav"],
+    starring: ["Oleg Vorslav", "Dvinsk Clan"]
   }
 ];

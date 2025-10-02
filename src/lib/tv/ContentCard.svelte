@@ -54,6 +54,8 @@
     class:group-hover:ring-red-400={!isMobile}
     class:ring-4={!isMobile && isSelected}
     class:ring-red-500={!isMobile && isSelected}
+    class:group-hover:border-none={!isMobile}
+    class:border-none={!isMobile && isSelected}
     title={item.title}
   >
   <!-- Placeholder layer (always present, sits under the poster) -->

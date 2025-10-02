@@ -8,6 +8,7 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/bound-by-movement-poster.webp": "UGKno6%24.ad.9bGt7kD00NGxuj]~AWCIoV?",
   "/images/posters/brick-mansions-poster.webp": "UdGSP=RPNK%g_NRPt8x]o~aeWANGWAofM|M|",
   "/images/posters/capstone-the-england-project-poster.webp": "UABpkP%MtSj]~AWBNGIUV?RjM{IoNIj]ofog",
+  "/images/posters/controlled-descent-parkour-movie-poster-wenxin-yang.webp": "UICY~|IUE1WV_3IUayRj?]M|Mxs:_2ayM{t7",
   "/images/posters/district-13-ultimatum-poster.webp": "UDDTCn}i*w+ve{$I^Hs=00I:yrOttSJq9wR,",
   "/images/posters/district-b13-poster.webp": "UBFhxB%hVBx[L4xGwZ$%00xZO[9a#4X7M~RR",
   "/images/posters/dutch-parkour-community-tv-playlist-freerunning.webp": "USDJ*FWBIVfllVa{M{bHrWoeNHj[Djoet6t7",

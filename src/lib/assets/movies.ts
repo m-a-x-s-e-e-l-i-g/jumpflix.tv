@@ -845,12 +845,25 @@ export const movies = [
 		title: 'Skull Chatter',
 		year: '2020',
 		description:
-			"A raw solo project from TMPST pro Nate Weston—born from a personal mental challenge and completed during a lockdown road trip with filmmaker Kent Johns. Gritty lines, creative movement, and introspective energy define this 12‑minute passion piece.",
+			'A raw solo project from TMPST pro Nate Weston—born from a personal mental challenge and completed during a lockdown road trip with filmmaker Kent Johns. Gritty lines, creative movement, and introspective energy define this 12‑minute passion piece.',
 		thumbnail: '/images/posters/skull-chatter-tempest-freerunning-poster.webp',
 		videoId: 'PGkskKL1nCw',
 		type: 'movie',
 		duration: '12m',
 		creators: ['Tempest Freerunning', 'Nate Weston', 'Kent Johns'],
 		starring: ['Nate Weston']
+	},
+	{
+		id: 45,
+		title: 'Controlled Descent',
+		year: '2021',
+		description:
+			'A Parkour arthouse short blending movement, philosophy, architecture and community into a cinematic meditation. Lauded as a masterpiece that reframes parkour as poetry in motion.',
+		thumbnail: '/images/posters/controlled-descent-parkour-movie-poster-wenxin-yang.webp',
+		videoId: '-I8SW351amQ',
+		type: 'movie',
+		duration: '15m',
+		creators: ['Wenxin Yang'],
+		starring: ['Wenxin Yang']
 	}
 ];

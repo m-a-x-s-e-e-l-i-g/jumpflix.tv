@@ -1,2 +1,2 @@
-import Root from "./switch.svelte";
+import Root from './switch.svelte';
 export { Root, Root as Switch };

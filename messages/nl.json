@@ -15,52 +15,55 @@
 	"tv_noResults": "Geen resultaten. Pas filters aan.",
 	"tv_showPaid": "Betaald",
 	"tv_close": "Sluiten",
-	"tv_noPlayer": "Geen speler beschikbaar"
-	,"tv_sort_random": "Sorteren: Willekeurig"
-	,"tv_sort_titleAsc": "Titel A–Z"
-	,"tv_sort_yearDesc": "Jaar (nieuwste)"
-	,"tv_sort_yearAsc": "Jaar (oudste)"
-	,"tv_sort_durationAsc": "Duur (kort → lang)"
-	,"tv_sort_durationDesc": "Duur (lang → kort)"
-	,"tv_badge_movie": "FILM"
-	,"tv_badge_playlist": "PLAYLIST"
-	,"tv_creators": "Makers"
-	,"tv_starring": "Met"
-	,"tv_videos": "Video's"
-	,"tv_type": "Type"
-	,"tv_videoCountSuffix": "video's"
-	,"tv_provider": "Aanbieder"
-	,"tv_showFewer": "Minder tonen"
-	,"tv_showAll": "Alles tonen"
-	,"settings": "Instellingen"
-	,"settings_language": "Taal"
-	,"settings_open": "Instellingen openen"
-	,"settings_credits": "Credits"
-	,"settings_links": "Links"
-    ,"settings_languageChanged": "Taal gewijzigd naar {language}"
-	,"error_404_title": "Pagina Niet Gevonden"
-	,"error_404_description": "Deze pagina bestaat niet. Misschien is hij op parkour avontuur gegaan?"
-	,"error_500_title": "Er Ging Iets Mis"
-	,"error_500_description": "Onze servers hebben een val gemaakt. We werken eraan om weer overeind te komen!"
-	,"error_general_title": "Oeps! Er gebeurde iets"
-	,"error_general_description": "We kwamen een onverwachte fout tegen. Probeer het opnieuw."
-	,"error_backHome": "Terug naar JUMPFLIX"
-	,"error_tryAgain": "Opnieuw proberen"
-	,"error_or": "of"
-	,"error_movie_404_title": "Film Niet Gevonden"
-	,"error_movie_404_description": "Deze film lijkt weggesprongen te zijn! Misschien oefent hij nieuwe bewegingen?"
-	,"error_playlist_404_title": "Afspeellijst Niet Gevonden"
-	,"error_playlist_404_description": "Deze afspeellijst nam een sprong in het diepe en verdween! Laten we een andere zoeken."
-	,"error_server_404": "Pagina niet gevonden. Deze inhoud is misschien naar een andere locatie gesprongen!"
-	,"tv_episodes": "Afleveringen"
-	,"tv_playSelectedEpisode": "Aflevering afspelen"
-	,"settings_install": "Installeren"
-	,"settings_install_cta": "JUMPFLIX installeren"
-	,"install_installed": "App geïnstalleerd"
-	,"install_hint": "Gebruik het browsermenu om ‘Aan beginscherm toe te voegen’"
-	,"install_dismissed": "Installatie geannuleerd"
-	,"install_thanks": "Bedankt! Aan het installeren…"
-	,"install_error": "Installatie kan niet worden gestart"
-	,"install_not_available": "Installeren is nog niet beschikbaar. Probeer één keer te herladen."
-	,"install_dev": "Installeren werkt alleen in een productie-build met een geregistreerde service worker."
+	"tv_noPlayer": "Geen speler beschikbaar",
+	"tv_sort_random": "Sorteren: Willekeurig",
+	"tv_sort_titleAsc": "Titel A–Z",
+	"tv_sort_yearDesc": "Jaar (nieuwste)",
+	"tv_sort_yearAsc": "Jaar (oudste)",
+	"tv_sort_durationAsc": "Duur (kort → lang)",
+	"tv_sort_durationDesc": "Duur (lang → kort)",
+	"tv_badge_movie": "FILM",
+	"tv_badge_playlist": "PLAYLIST",
+	"tv_creators": "Makers",
+	"tv_starring": "Met",
+	"tv_videos": "Video's",
+	"tv_type": "Type",
+	"tv_videoCountSuffix": "video's",
+	"tv_provider": "Aanbieder",
+	"tv_showFewer": "Minder tonen",
+	"tv_showAll": "Alles tonen",
+	"settings": "Instellingen",
+	"settings_language": "Taal",
+	"settings_open": "Instellingen openen",
+	"settings_credits": "Credits",
+	"settings_links": "Links",
+	"settings_languageChanged": "Taal gewijzigd naar {language}",
+	"error_404_title": "Pagina Niet Gevonden",
+	"error_404_description": "Deze pagina bestaat niet. Misschien is hij op parkour avontuur gegaan?",
+	"error_500_title": "Er Ging Iets Mis",
+	"error_500_description": "Onze servers hebben een val gemaakt. We werken eraan om weer overeind te komen!",
+	"error_general_title": "Oeps! Er gebeurde iets",
+	"error_general_description": "We kwamen een onverwachte fout tegen. Probeer het opnieuw.",
+	"error_backHome": "Terug naar JUMPFLIX",
+	"error_tryAgain": "Opnieuw proberen",
+	"error_or": "of",
+	"error_movie_404_title": "Film Niet Gevonden",
+	"error_movie_404_description": "Deze film lijkt weggesprongen te zijn! Misschien oefent hij nieuwe bewegingen?",
+	"error_playlist_404_title": "Afspeellijst Niet Gevonden",
+	"error_playlist_404_description": "Deze afspeellijst nam een sprong in het diepe en verdween! Laten we een andere zoeken.",
+	"error_server_404": "Pagina niet gevonden. Deze inhoud is misschien naar een andere locatie gesprongen!",
+	"tv_episodes": "Afleveringen",
+	"tv_playSelectedEpisode": "Aflevering afspelen",
+	"settings_install": "Installeren",
+	"settings_install_cta": "JUMPFLIX installeren",
+	"install_installed": "App geïnstalleerd",
+	"install_hint": "Gebruik het browsermenu om ‘Aan beginscherm toe te voegen’",
+	"install_dismissed": "Installatie geannuleerd",
+	"install_thanks": "Bedankt! Aan het installeren…",
+	"install_error": "Installatie kan niet worden gestart",
+	"install_not_available": "Installeren is nog niet beschikbaar. Probeer één keer te herladen.",
+	"install_dev": "Installeren werkt alleen in een productie-build met een geregistreerde service worker.",
+	"tv_cast": "Casten",
+	"tv_castToDevice": "Casten naar apparaat",
+	"tv_stopCasting": "Casten stoppen"
 }

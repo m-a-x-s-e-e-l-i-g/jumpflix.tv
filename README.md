@@ -10,8 +10,8 @@
 <em>Open‑source, community‑driven streaming style catalog for the art of movement.</em>
 
 ---
-</div>
 
+</div>
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/5b284dd6-29a6-4a8b-ae2f-69e3e2528b30/deploy-status)](https://app.netlify.com/projects/jumpflix/deploys) [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
@@ -19,7 +19,7 @@
 
 ## ✨ What is JUMPFLIX?
 
-JUMPFLIX is a SvelteKit + Tailwind powered web app that curates the best parkour & freerunning feature films, documentaries and long‑form series—from legendary classics like *Jump London* to modern community productions and all‑women showcases. It isn't a pirate streaming site: instead it links responsibly to official YouTube/Vimeo embeds and (where appropriate) to legitimate paid providers (e.g. STORROR+, JustWatch, Vimeo On Demand, etc.).
+JUMPFLIX is a SvelteKit + Tailwind powered web app that curates the best parkour & freerunning feature films, documentaries and long‑form series—from legendary classics like _Jump London_ to modern community productions and all‑women showcases. It isn't a pirate streaming site: instead it links responsibly to official YouTube/Vimeo embeds and (where appropriate) to legitimate paid providers (e.g. STORROR+, JustWatch, Vimeo On Demand, etc.).
 
 The goal: an elegant, fast, mobile‑friendly discovery hub honoring the culture, people, history & progression of parkour.
 
@@ -39,14 +39,14 @@ The goal: an elegant, fast, mobile‑friendly discovery hub honoring the culture
 
 ## 🧱 Tech Stack
 
-| Layer | Stack |
-|-------|-------|
-| Framework | SvelteKit (Svelte 5) |
-| Styling | Tailwind CSS v4 + `tailwind-variants` + `tailwind-merge` + `tailwindcss-animate` |
-| UI Bits | `bits-ui`, custom small components |
-| i18n | `@inlang/paraglide-js` (messages generated from `/messages/*.json`) |
-| Tooling | Vite, TypeScript, ESLint, Prettier, svelte-check |
-| Content | Curated static arrays (`movies.ts`, `series.ts`) |
+| Layer     | Stack                                                                            |
+| --------- | -------------------------------------------------------------------------------- |
+| Framework | SvelteKit (Svelte 5)                                                             |
+| Styling   | Tailwind CSS v4 + `tailwind-variants` + `tailwind-merge` + `tailwindcss-animate` |
+| UI Bits   | `bits-ui`, custom small components                                               |
+| i18n      | `@inlang/paraglide-js` (messages generated from `/messages/*.json`)              |
+| Tooling   | Vite, TypeScript, ESLint, Prettier, svelte-check                                 |
+| Content   | Curated static arrays (`movies.ts`, `series.ts`)                                 |
 
 ## 🗂 Directory Glimpse
 
@@ -77,6 +77,7 @@ Run the dev server:
 ```bash
 npm run dev
 ```
+
 Then open the printed local URL (typically `http://localhost:5173`). Add `-- --open` to auto‑launch:
 
 ```bash
@@ -112,18 +113,31 @@ Messages live in `/messages/{locale}.json`. Paraglide generates runtime modules 
 Defined in `src/lib/tv/types.ts`:
 
 ```ts
-interface Movie { id: number|string; title: string; year?: string; duration?: string; videoId?: string; vimeoId?: string; /* ... */ }
-interface Series { id: number|string; title: string; playlistId?: string; videoCount?: number; /* ... */ }
+interface Movie {
+	id: number | string;
+	title: string;
+	year?: string;
+	duration?: string;
+	videoId?: string;
+	vimeoId?: string /* ... */;
+}
+interface Series {
+	id: number | string;
+	title: string;
+	playlistId?: string;
+	videoCount?: number /* ... */;
+}
 ```
+
 Helper utilities (`utils.ts`) provide deterministic shuffling, sorting, search matching, and embed URL builders.
 
 ## 🎮 Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| Arrow Keys | Navigate grid items |
-| Enter | Open selected (inline player / details) |
-| Escape | Close player / fullscreen / overlays |
+| Key        | Action                                  |
+| ---------- | --------------------------------------- |
+| Arrow Keys | Navigate grid items                     |
+| Enter      | Open selected (inline player / details) |
+| Escape     | Close player / fullscreen / overlays    |
 
 ## 🧊 Deterministic Shuffle
 
@@ -173,14 +187,14 @@ Currently adapter‑auto. For static/edge hosting (e.g. Netlify / Vercel) just b
 
 ## 🧾 Scripts Overview
 
-| Script | Purpose |
-|--------|---------|
-| `dev` | Start Vite dev server |
-| `build` | Production build |
-| `preview` | Preview built app |
-| `check` | Type & Svelte diagnostics |
-| `lint` | Prettier check + ESLint |
-| `format` | Auto-format all files |
+| Script    | Purpose                   |
+| --------- | ------------------------- |
+| `dev`     | Start Vite dev server     |
+| `build`   | Production build          |
+| `preview` | Preview built app         |
+| `check`   | Type & Svelte diagnostics |
+| `lint`    | Prettier check + ESLint   |
+| `format`  | Auto-format all files     |
 
 ## 📸 Visual Style
 

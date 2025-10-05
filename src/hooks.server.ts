@@ -15,7 +15,7 @@ export const handle: Handle = handleParaglide;
 
 export const handleError: HandleServerError = async ({ error, event, status, message }) => {
 	const errorId = crypto.randomUUID();
-	
+
 	// Log error details (in production, you might want to send to error tracking service)
 	if (!dev) {
 		console.error('Server Error:', {
@@ -24,7 +24,7 @@ export const handleError: HandleServerError = async ({ error, event, status, mes
 			message,
 			url: event.url.pathname,
 			timestamp: new Date().toISOString(),
-			userAgent: event.request.headers.get('user-agent'),
+			userAgent: event.request.headers.get('user-agent')
 		});
 	} else {
 		console.error('Dev Server Error:', error);
@@ -44,7 +44,7 @@ function getErrorMessage(status: number): string {
 		case 401:
 			return 'Unauthorized. Please sign in.';
 		case 403:
-			return 'Access forbidden. You don\'t have permission to view this.';
+			return "Access forbidden. You don't have permission to view this.";
 		case 404:
 			return 'error_server_404'; // Will be translated on client side
 		case 429:
@@ -54,7 +54,7 @@ function getErrorMessage(status: number): string {
 		case 502:
 			return 'Bad gateway. Our servers are having connection issues.';
 		case 503:
-			return 'Service unavailable. We\'re performing maintenance.';
+			return "Service unavailable. We're performing maintenance.";
 		default:
 			return 'An unexpected error occurred. Please try again later.';
 	}

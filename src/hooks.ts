@@ -5,7 +5,7 @@ export const reroute = (request) => deLocalizeUrl(request.url).pathname;
 
 export const handleError: HandleClientError = async ({ error, event, status, message }) => {
 	const errorId = crypto.randomUUID();
-	
+
 	// Log client-side errors for debugging
 	console.error('Client Error:', {
 		errorId,

@@ -15,52 +15,55 @@
 	"tv_noResults": "No results. Try adjusting filters.",
 	"tv_showPaid": "Paid",
 	"tv_close": "Close",
-	"tv_noPlayer": "No player available"
-	,"tv_sort_random": "Sort: Random"
-	,"tv_sort_titleAsc": "Title A–Z"
-	,"tv_sort_yearDesc": "Year (newest)"
-	,"tv_sort_yearAsc": "Year (oldest)"
-	,"tv_sort_durationAsc": "Duration (short → long)"
-	,"tv_sort_durationDesc": "Duration (long → short)"
-	,"tv_badge_movie": "MOVIE"
-	,"tv_badge_playlist": "PLAYLIST"
-	,"tv_creators": "Creators"
-	,"tv_starring": "Starring"
-	,"tv_videos": "Videos"
-	,"tv_type": "Type"
-	,"tv_videoCountSuffix": "videos"
-	,"tv_provider": "Provider"
-	,"tv_showFewer": "Show fewer"
-	,"tv_showAll": "Show all"
-	,"settings": "Settings"
-	,"settings_language": "Language"
-	,"settings_open": "Open settings"
-	,"settings_credits": "Credits"
-	,"settings_links": "Links"
-	,"settings_languageChanged": "Language changed to {language}"
-	,"error_404_title": "Page Not Found"
-	,"error_404_description": "This page doesn't exist. Maybe it went off on a parkour adventure?"
-	,"error_500_title": "Something Went Wrong"
-	,"error_500_description": "Our servers took a tumble. We're working on getting back up!"
-	,"error_general_title": "Oops! Something happened"
-	,"error_general_description": "We encountered an unexpected error. Please try again."
-	,"error_backHome": "Back to JUMPFLIX"
-	,"error_tryAgain": "Try Again"
-	,"error_or": "or"
-	,"error_movie_404_title": "Movie Not Found"
-	,"error_movie_404_description": "This movie seems to have jumped away! Maybe it's practicing some new moves?"
-	,"error_playlist_404_title": "Playlist Not Found"
-	,"error_playlist_404_description": "This playlist took a leap of faith and disappeared! Let's find another one."
-	,"error_server_404": "Page not found. This content might have jumped to another location!"
-	,"tv_episodes": "Episodes"
-	,"tv_playSelectedEpisode": "Play selected episode"
-	,"settings_install": "Install"
-	,"settings_install_cta": "Install JUMPFLIX"
-	,"install_installed": "App installed"
-	,"install_hint": "Use your browser menu to “Add to Home Screen”"
-	,"install_dismissed": "Install dismissed"
-	,"install_thanks": "Thanks! Installing…"
-	,"install_error": "Unable to start install"
-	,"install_not_available": "Install isn't available yet. Try reloading once."
-	,"install_dev": "Install prompts only appear on a production build with a registered service worker."
+	"tv_noPlayer": "No player available",
+	"tv_sort_random": "Sort: Random",
+	"tv_sort_titleAsc": "Title A–Z",
+	"tv_sort_yearDesc": "Year (newest)",
+	"tv_sort_yearAsc": "Year (oldest)",
+	"tv_sort_durationAsc": "Duration (short → long)",
+	"tv_sort_durationDesc": "Duration (long → short)",
+	"tv_badge_movie": "MOVIE",
+	"tv_badge_playlist": "PLAYLIST",
+	"tv_creators": "Creators",
+	"tv_starring": "Starring",
+	"tv_videos": "Videos",
+	"tv_type": "Type",
+	"tv_videoCountSuffix": "videos",
+	"tv_provider": "Provider",
+	"tv_showFewer": "Show fewer",
+	"tv_showAll": "Show all",
+	"settings": "Settings",
+	"settings_language": "Language",
+	"settings_open": "Open settings",
+	"settings_credits": "Credits",
+	"settings_links": "Links",
+	"settings_languageChanged": "Language changed to {language}",
+	"error_404_title": "Page Not Found",
+	"error_404_description": "This page doesn't exist. Maybe it went off on a parkour adventure?",
+	"error_500_title": "Something Went Wrong",
+	"error_500_description": "Our servers took a tumble. We're working on getting back up!",
+	"error_general_title": "Oops! Something happened",
+	"error_general_description": "We encountered an unexpected error. Please try again.",
+	"error_backHome": "Back to JUMPFLIX",
+	"error_tryAgain": "Try Again",
+	"error_or": "or",
+	"error_movie_404_title": "Movie Not Found",
+	"error_movie_404_description": "This movie seems to have jumped away! Maybe it's practicing some new moves?",
+	"error_playlist_404_title": "Playlist Not Found",
+	"error_playlist_404_description": "This playlist took a leap of faith and disappeared! Let's find another one.",
+	"error_server_404": "Page not found. This content might have jumped to another location!",
+	"tv_episodes": "Episodes",
+	"tv_playSelectedEpisode": "Play selected episode",
+	"settings_install": "Install",
+	"settings_install_cta": "Install JUMPFLIX",
+	"install_installed": "App installed",
+	"install_hint": "Use your browser menu to “Add to Home Screen”",
+	"install_dismissed": "Install dismissed",
+	"install_thanks": "Thanks! Installing…",
+	"install_error": "Unable to start install",
+	"install_not_available": "Install isn't available yet. Try reloading once.",
+	"install_dev": "Install prompts only appear on a production build with a registered service worker.",
+	"tv_cast": "Cast",
+	"tv_castToDevice": "Cast to device",
+	"tv_stopCasting": "Stop casting"
 }

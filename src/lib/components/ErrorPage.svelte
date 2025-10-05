@@ -68,25 +68,49 @@
 	<meta name="description" content={displayMessage} />
 </svelte:head>
 
-<div class="min-h-screen bg-background text-foreground flex items-center justify-center p-6 relative overflow-hidden">
+<div
+	class="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-6 text-foreground"
+>
 	<!-- Animated background elements -->
 	<div class="absolute inset-0 -z-10">
-		<div class="absolute top-20 left-10 w-2 h-2 bg-primary/20 rounded-full animate-ping" style="animation-delay: 0s; animation-duration: 3s;"></div>
-		<div class="absolute top-32 right-20 w-1 h-1 bg-accent/30 rounded-full animate-ping" style="animation-delay: 1s; animation-duration: 4s;"></div>
-		<div class="absolute bottom-40 left-1/4 w-1.5 h-1.5 bg-primary/15 rounded-full animate-ping" style="animation-delay: 2s; animation-duration: 5s;"></div>
-		<div class="absolute bottom-20 right-1/3 w-2 h-2 bg-accent/20 rounded-full animate-ping" style="animation-delay: 0.5s; animation-duration: 3.5s;"></div>
-		<div class="absolute -top-40 -right-32 w-80 h-80 bg-primary/5 rounded-full animate-pulse" style="animation-duration: 4s;"></div>
-		<div class="absolute -bottom-40 -left-32 w-96 h-96 bg-accent/5 rounded-full animate-pulse" style="animation-duration: 6s; animation-delay: 2s;"></div>
+		<div
+			class="absolute top-20 left-10 h-2 w-2 animate-ping rounded-full bg-primary/20"
+			style="animation-delay: 0s; animation-duration: 3s;"
+		></div>
+		<div
+			class="absolute top-32 right-20 h-1 w-1 animate-ping rounded-full bg-accent/30"
+			style="animation-delay: 1s; animation-duration: 4s;"
+		></div>
+		<div
+			class="absolute bottom-40 left-1/4 h-1.5 w-1.5 animate-ping rounded-full bg-primary/15"
+			style="animation-delay: 2s; animation-duration: 5s;"
+		></div>
+		<div
+			class="absolute right-1/3 bottom-20 h-2 w-2 animate-ping rounded-full bg-accent/20"
+			style="animation-delay: 0.5s; animation-duration: 3.5s;"
+		></div>
+		<div
+			class="absolute -top-40 -right-32 h-80 w-80 animate-pulse rounded-full bg-primary/5"
+			style="animation-duration: 4s;"
+		></div>
+		<div
+			class="absolute -bottom-40 -left-32 h-96 w-96 animate-pulse rounded-full bg-accent/5"
+			style="animation-duration: 6s; animation-delay: 2s;"
+		></div>
 	</div>
 
-	<div class="max-w-2xl mx-auto text-center space-y-8 relative z-10">
+	<div class="relative z-10 mx-auto max-w-2xl space-y-8 text-center">
 		<!-- Logo -->
-		<div class="flex justify-center mb-8">
-			<a href="/" aria-label="Go to homepage" class="transition-all duration-300 hover:scale-105 hover:drop-shadow-lg">
+		<div class="mb-8 flex justify-center">
+			<a
+				href="/"
+				aria-label="Go to homepage"
+				class="transition-all duration-300 hover:scale-105 hover:drop-shadow-lg"
+			>
 				<img
 					src="/images/jumpflix.webp"
 					alt="JUMPFLIX parkour tv"
-					class="filter drop-shadow-md"
+					class="drop-shadow-md filter"
 					style="height: 120px; width: auto; max-height: 120px;"
 					loading="eager"
 				/>
@@ -96,18 +120,20 @@
 		<!-- Error Status with Glass Effect -->
 		<div class="space-y-6">
 			<div class="relative">
-				<div class="text-8xl md:text-9xl font-mono font-black text-primary/10 select-none">
+				<div class="font-mono text-8xl font-black text-primary/10 select-none md:text-9xl">
 					{status}
 				</div>
 				<div class="absolute inset-0 flex items-center justify-center">
-					<div class="text-4xl md:text-5xl font-bold text-primary/80 backdrop-blur-sm bg-background/30 px-6 py-2 rounded-2xl border border-border/50">
+					<div
+						class="rounded-2xl border border-border/50 bg-background/30 px-6 py-2 text-4xl font-bold text-primary/80 backdrop-blur-sm md:text-5xl"
+					>
 						{status}
 					</div>
 				</div>
 			</div>
-			<div class="text-6xl md:text-7xl animate-bounce-gentle">
+			<div class="animate-bounce-gentle text-6xl md:text-7xl">
 				{#if status === 404}
-					<div class="flex justify-center mb-4">
+					<div class="mb-4 flex justify-center">
 						<ParkourAnimation size={120} />
 					</div>
 				{:else}
@@ -117,33 +143,37 @@
 		</div>
 
 		<!-- Error Content with Glass Card -->
-		<div class="backdrop-blur-sm bg-card/30 border border-border/50 rounded-3xl p-8 space-y-6 shadow-2xl">
-			<h1 class="text-3xl md:text-5xl font-bold text-foreground leading-tight">
+		<div
+			class="space-y-6 rounded-3xl border border-border/50 bg-card/30 p-8 shadow-2xl backdrop-blur-sm"
+		>
+			<h1 class="text-3xl leading-tight font-bold text-foreground md:text-5xl">
 				{displayTitle}
 			</h1>
-			<p class="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
+			<p class="mx-auto max-w-lg text-lg leading-relaxed text-muted-foreground md:text-xl">
 				{displayMessage}
 			</p>
 		</div>
 
 		<!-- Action Buttons with Enhanced Design -->
-		<div class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
-			<button 
+		<div class="flex flex-col items-center justify-center gap-4 pt-8 sm:flex-row">
+			<button
 				type="button"
-				class="inline-flex items-center justify-center gap-2 font-medium rounded-md transition-all duration-300 transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-6 text-base min-w-[180px] shadow-lg hover:shadow-xl" 
+				class="inline-flex h-11 min-w-[180px] transform items-center justify-center gap-2 rounded-md bg-primary px-6 text-base font-medium text-primary-foreground shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
 				on:click={goHome}
 			>
-				<span class="text-lg">🏠</span> {m.error_backHome()}
+				<span class="text-lg">🏠</span>
+				{m.error_backHome()}
 			</button>
-			
+
 			{#if status !== 404}
-				<span class="text-muted-foreground text-sm font-medium px-3">{m.error_or()}</span>
-				<button 
+				<span class="px-3 text-sm font-medium text-muted-foreground">{m.error_or()}</span>
+				<button
 					type="button"
-					class="inline-flex items-center justify-center gap-2 font-medium rounded-md transition-all duration-300 transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none border border-border bg-background hover:bg-muted/40 h-11 px-6 text-base min-w-[180px] shadow-md hover:shadow-lg" 
+					class="inline-flex h-11 min-w-[180px] transform items-center justify-center gap-2 rounded-md border border-border bg-background px-6 text-base font-medium shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-muted/40 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
 					on:click={tryAgain}
 				>
-					<span class="text-lg animate-spin-slow">🔄</span> {m.error_tryAgain()}
+					<span class="animate-spin-slow text-lg">🔄</span>
+					{m.error_tryAgain()}
 				</button>
 			{/if}
 		</div>
@@ -157,10 +187,15 @@
 	}
 
 	@keyframes bounceGentle {
-		0%, 20%, 53%, 80%, 100% {
+		0%,
+		20%,
+		53%,
+		80%,
+		100% {
 			transform: translateY(0px) scale(1);
 		}
-		40%, 43% {
+		40%,
+		43% {
 			transform: translateY(-15px) scale(1.05);
 		}
 		70% {

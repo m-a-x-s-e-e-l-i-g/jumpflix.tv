@@ -1,6 +1,12 @@
 <script lang="ts">
 	import '../app.css';
-	import { Sheet as SheetRoot, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
+	import {
+		Sheet as SheetRoot,
+		SheetTrigger,
+		SheetContent,
+		SheetHeader,
+		SheetTitle
+	} from '$lib/components/ui/sheet';
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import GithubIcon from '@lucide/svelte/icons/github';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
@@ -11,12 +17,12 @@
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
-    
-  
-	// data from +layout.ts
-	let { children, data } = $props<{ children: any; data: { item: any; initialEpisodeNumber: number | null; initialSeasonNumber: number | null } }>();
 
-    
+	// data from +layout.ts
+	let { children, data } = $props<{
+		children: any;
+		data: { item: any; initialEpisodeNumber: number | null; initialSeasonNumber: number | null };
+	}>();
 
 	// current locale from Paraglide (reactive state)
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
@@ -51,7 +57,8 @@
 		const updateTheme = (e: MediaQueryList | MediaQueryListEvent) => {
 			const stored = localStorage.getItem('theme');
 			// e.matches is true if dark mode is enabled
-			const matches = 'matches' in e ? (e as MediaQueryListEvent).matches : (e as MediaQueryList).matches;
+			const matches =
+				'matches' in e ? (e as MediaQueryListEvent).matches : (e as MediaQueryList).matches;
 			if (stored === 'dark' || (!stored && matches)) {
 				document.documentElement.classList.add('dark');
 			} else {
@@ -67,11 +74,14 @@
 	// Register Service Worker in production for PWA installability
 	if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && !import.meta.env.DEV) {
 		window.addEventListener('load', () => {
-			navigator.serviceWorker.getRegistration().then((reg) => {
-				if (!reg) {
-					navigator.serviceWorker.register('/service-worker.js').catch(() => {});
-				}
-			}).catch(() => {});
+			navigator.serviceWorker
+				.getRegistration()
+				.then((reg) => {
+					if (!reg) {
+						navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+					}
+				})
+				.catch(() => {});
 		});
 	}
 </script>
@@ -96,10 +106,10 @@
 
 <!-- Top-left settings cog that opens a left-side sheet -->
 <SheetRoot bind:open={sheetOpen}>
-	<div class="absolute left-4 top-4 z-30">
+	<div class="absolute top-4 left-4 z-30">
 		<SheetTrigger aria-label={m.settings_open()}>
 			<button
-				class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+				class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 			>
 				<CogIcon class="size-5" />
 				<span class="sr-only">{m.settings_open()}</span>
@@ -107,7 +117,7 @@
 		</SheetTrigger>
 	</div>
 
-	<SheetContent side="left" class="p-0 flex flex-col h-full">
+	<SheetContent side="left" class="flex h-full flex-col p-0">
 		<SheetHeader class="px-4 pt-4">
 			<SheetTitle>{m.settings()}</SheetTitle>
 		</SheetHeader>
@@ -118,7 +128,7 @@
 			<div class="grid grid-cols-2 gap-2">
 				{#each langs as l}
 					<button
-						class="[ 'flex items-center gap-2 rounded-md border border-border p-3 text-left text-sm transition', currentLocale === l.code ? 'bg-muted/40 outline outline-1 outline-primary outline-offset-2' : 'hover:bg-muted/60' ].join(' ')"
+						class="[ 'flex transition', currentLocale === l.code ? 'bg-muted/40 outline-offset-2' : 'hover:bg-muted/60' ].join(' ') items-center gap-2 rounded-md border border-border p-3 text-left text-sm outline outline-1 outline-primary"
 						aria-pressed={currentLocale === l.code}
 						onclick={() => changeLocale(l.code)}
 					>
@@ -128,20 +138,34 @@
 				{/each}
 			</div>
 
-
 			<!-- Project Links -->
 			<div class="mt-6">
 				<p class="mb-2 text-sm text-muted-foreground">{m.settings_links()}</p>
 				<div class="flex flex-col gap-2">
-					<a href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+					<a
+						href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="flex items-center gap-3 rounded-md border border-border p-3 transition hover:bg-muted/60"
+					>
 						<GithubIcon class="size-4" />
 						<span class="text-sm text-foreground">GitHub</span>
 					</a>
-					<a href="https://pkfr.nl" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+					<a
+						href="https://pkfr.nl"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="flex items-center gap-3 rounded-md border border-border p-3 transition hover:bg-muted/60"
+					>
 						<GlobeIcon class="size-4" />
 						<span class="text-sm text-foreground">pkfr.nl — Dutch Parkour Community</span>
 					</a>
-					<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+					<a
+						href="https://maxmade.nl"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="flex items-center gap-3 rounded-md border border-border p-3 transition hover:bg-muted/60"
+					>
 						<GlobeIcon class="size-4" />
 						<span class="text-sm text-foreground">maxmade.nl — Max Seelig's Portfolio</span>
 					</a>
@@ -150,10 +174,26 @@
 		</div>
 
 		<!-- Bottom Credits Footer -->
-		<div class="border-t border-border text-muted-foreground text-xs flex items-center justify-between md:justify-end gap-3 p-4 bg-background/90 backdrop-blur">
-			<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" title="MAXmade - Max Seelig" class="flex items-center gap-2">
-				<img src="/images/logo-MAXmade-light.svg" alt="MAXmade - Max Seelig" class="h-5 w-auto block dark:hidden" />
-				<img src="/images/logo-MAXmade-dark.svg" alt="MAXmade - Max Seelig" class="h-5 w-auto hidden dark:block" />
+		<div
+			class="flex items-center justify-between gap-3 border-t border-border bg-background/90 p-4 text-xs text-muted-foreground backdrop-blur md:justify-end"
+		>
+			<a
+				href="https://maxmade.nl"
+				target="_blank"
+				rel="noopener noreferrer"
+				title="MAXmade - Max Seelig"
+				class="flex items-center gap-2"
+			>
+				<img
+					src="/images/logo-MAXmade-light.svg"
+					alt="MAXmade - Max Seelig"
+					class="block h-5 w-auto dark:hidden"
+				/>
+				<img
+					src="/images/logo-MAXmade-dark.svg"
+					alt="MAXmade - Max Seelig"
+					class="hidden h-5 w-auto dark:block"
+				/>
 			</a>
 		</div>
 	</SheetContent>
@@ -161,7 +201,11 @@
 
 {#key currentLocale}
 	<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
-	<TvPage initialItem={data?.item ?? null} initialEpisodeNumber={data?.initialEpisodeNumber ?? null} initialSeasonNumber={data?.initialSeasonNumber ?? null} />
+	<TvPage
+		initialItem={data?.item ?? null}
+		initialEpisodeNumber={data?.initialEpisodeNumber ?? null}
+		initialSeasonNumber={data?.initialSeasonNumber ?? null}
+	/>
 	{@render children?.()}
 {/key}
 

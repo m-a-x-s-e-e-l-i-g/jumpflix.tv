@@ -35,6 +35,7 @@
 	import { dev } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { getUrlForItem, getEpisodeUrl } from '$lib/tv/slug';
+	import { toast } from 'svelte-sonner';
 
 	export let initialItem: ContentItem | null = null;
 	export let initialEpisodeNumber: number | null = null;
@@ -46,6 +47,9 @@
 	let lastSelectionSource: 'keyboard' | 'click' | 'programmatic' = 'programmatic';
 	let currentPath = '';
 	let pageTitle: string | null = null;
+	// Track "press back again to exit" state
+	let backPressedOnce = false;
+	let backPressTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// ————————————————————————————————————————————————————————————————
 	// Small helpers to deduplicate selection/navigation logic
@@ -79,8 +83,11 @@
 		const cls = 'overflow-hidden';
 		if (open) {
 			document.documentElement.classList.add(cls);
-			// Push a history entry when opening details so back button can close it
-			window.history.pushState({ detailsOpen: true }, '');
+			// Only push a history entry when opening details (not when opening player on top of details)
+			// This prevents multiple back presses
+			if (!get(showPlayer)) {
+				window.history.pushState({ detailsOpen: true }, '');
+			}
 		} else {
 			if (!$showPlayer) document.documentElement.classList.remove(cls);
 		}
@@ -115,10 +122,8 @@
 		// Ensure URL matches opened content
 		if (browser) nav(buildItemUrl(item));
 		openContent(item);
-		// Push history state when opening player so back button can close it
-		if (browser && isInlinePlayable(item)) {
-			window.history.pushState({ playerOpen: true }, '');
-		}
+		// Don't push additional history when opening player - we rely on the details panel history entry
+		// This prevents needing multiple back presses
 	}
 
 	// Opening an episode from the details panel opens the player and updates URL
@@ -137,10 +142,7 @@
 			if (url !== currentPath) nav(url);
 		}
 		openEpisode({ id: videoId, title, position: episodeNumber });
-		// Push history state when opening player so back button can close it
-		if (browser) {
-			window.history.pushState({ playerOpen: true }, '');
-		}
+		// Don't push additional history when opening player - we rely on the details panel history entry
 	}
 
 	// Selecting an episode from the details panel updates selection and URL, but does not open the player
@@ -315,10 +317,7 @@
 					event.preventDefault();
 					lastSelectionSource = 'keyboard';
 					openContent(current);
-					// Push history state when opening player so back button can close it
-					if (browser && isInlinePlayable(current)) {
-						window.history.pushState({ playerOpen: true }, '');
-					}
+					// Don't push additional history - rely on existing navigation state
 				}
 				break;
 		}
@@ -361,9 +360,23 @@
 
 		// Handle Android back button / browser back navigation
 		const handlePopState = (event: PopStateEvent) => {
-			// If player is open, close it
+			// Reset the "back pressed once" state when navigating
+			backPressedOnce = false;
+			if (backPressTimer) {
+				clearTimeout(backPressTimer);
+				backPressTimer = null;
+			}
+
+			// If player is open, close it and re-open details panel
 			if (get(showPlayer)) {
 				closePlayer();
+				// Re-open the details panel if we're on mobile and have selected content
+				if (isMobile && get(selectedContent)) {
+					// Use setTimeout to ensure player closes first
+					setTimeout(() => {
+						setMobileDetails(true);
+					}, 50);
+				}
 				return;
 			}
 
@@ -373,14 +386,27 @@
 				return;
 			}
 
-			// If we're at the root with nothing selected on mobile, show confirmation to close app
+			// If we're at the root with nothing selected on mobile, implement "press back again to exit"
 			if (isMobile && !get(selectedContent) && window.location.pathname === '/') {
-				const shouldClose = window.confirm('Do you want to close the app?');
-				if (!shouldClose) {
-					// User chose to stay, push a new state to prevent app close
+				if (backPressedOnce) {
+					// Second press within time window - allow exit
+					if (backPressTimer) clearTimeout(backPressTimer);
+					backPressedOnce = false;
+					// Let navigation continue naturally (app will close)
+					return;
+				} else {
+					// First press - show toast and prevent exit
+					backPressedOnce = true;
 					window.history.pushState(null, '', '/');
+					toast.message('Press back again to exit');
+
+					// Reset after 2 seconds
+					backPressTimer = setTimeout(() => {
+						backPressedOnce = false;
+						backPressTimer = null;
+					}, 2000);
+					return;
 				}
-				// If user chose to close, let the navigation continue naturally
 			}
 		};
 
@@ -393,6 +419,7 @@
 			document.removeEventListener('keydown', handleKeydown);
 			window.removeEventListener('resize', resizeHandler);
 			if (browser) window.removeEventListener('popstate', handlePopState);
+			if (backPressTimer) clearTimeout(backPressTimer);
 			unsubPage();
 		};
 	});

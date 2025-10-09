@@ -103,5 +103,25 @@ export const series = [
     ],
     videoCount: 39,
     starring: []
+  },
+  {
+    id: 10,
+    title: "Lisbon Action Heroes",
+    creators: ["Ashigaru", "MATTTMA"],
+    description: "A rolling travel log of Lisbon parkour meetups blending Ashigaru's 2019 invasion with MATTTMA's 2022 surreal month and 2023 showdown.",
+    thumbnail: "/images/posters/lisbon-action-heroes-series-poster-portugal-parkour-freerunning.webp",
+    type: "series",
+    seasons: [
+      { seasonNumber: 1, playlistId: "PL3iwaCsp8s8Myz9d0sl35FaVPr7T15tQF" }
+    ],
+    videoCount: 3,
+    starring: [
+      "Christoph Erkert",
+      "Markus Walberer",
+      "Philipp Rasper",
+      "Florian Rögner",
+      "Lisa Eckert",
+      "Matthias Mayer"
+    ]
   }
 ];

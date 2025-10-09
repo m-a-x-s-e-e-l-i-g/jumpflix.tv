@@ -27,6 +27,7 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/kipa-berlin-parkour-film-poster.webp": "UUJ8Y1s+%L?b?bRi%M%N~qRkWBt8t8ofWXRk",
   "/images/posters/kipa-udg-poster-underground-parkour-freerun.webp": "UHC8dZny~EWA%F.TV?flL#s,9sIUIAt6S4H?",
   "/images/posters/lapazberlin-a-bolivia-parkour-documentary-poster.webp": "UOK8_0=Z,Dj]}_,:o0a$:jr?NwWVibWWjZWV",
+  "/images/posters/lisbon-action-heroes-series-poster-portugal-parkour-freerunning.webp": "UrLCB]sAI=n%}p$~RloLWVjGoLsTj?WCj[o0",
   "/images/posters/manor-dear-series-poster.webp": "U48p[Z?a00IV^O-oOsIoE*-p^iIV.l%L#7Rj",
   "/images/posters/mauerfall-a-berlin-parkour-film-poster.webp": "U24L,kn$0Jt2Kns8kPR+~LRR0WV]MdtQo#V[",
   "/images/posters/muckle-parkour-freerunning-movie-poster.webp": "U04xVw00544n-;IUozMy00~W^n?u00_2R6?b",

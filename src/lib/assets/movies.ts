@@ -865,5 +865,25 @@ export const movies = [
 		duration: '15m',
 		creators: ['Wenxin Yang'],
 		starring: ['Wenxin Yang']
+	},
+	{
+		id: 46,
+		title: 'Robots',
+		year: '2020',
+		description:
+			"Stockholm's parkour scene captured over four months. Old school skate aesthetics and gorgeous movement.",
+		thumbnail: '/images/posters/robots-kipa-parkour-film-poster.webp',
+		videoId: 'ZjSu-ZKTisM',
+		type: 'movie',
+		duration: '15m',
+		creators: ['KIPA', 'Joel Larsson', 'Lester Castro', 'Hugo Arnesson'],
+		starring: [
+			'Hugo Arnesson',
+			'Måns Von Rudfeldt',
+			'Lester Castro',
+			'Oscar Af Karlsson',
+			'Lowe Beijner',
+			'Joel Larsson'
+		]
 	}
 ];

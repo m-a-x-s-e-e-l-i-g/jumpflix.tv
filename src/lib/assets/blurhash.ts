@@ -50,6 +50,7 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/sole-destroyer-poster.webp": "UANdO8~qxuD%00D%IURj00Rj4nxu4nxuWBt7",
   "/images/posters/sport-parkour-league-poster.webp": "U37n5s0eD%#SVsX8oLjF00}[-pKOt,rYR*XS",
   "/images/posters/storror-supertramps-thailand-poster.webp": "U,JS93WEbJkC~qWBR*WBRPoJayj[M|fkkBa|",
+  "/images/posters/street-media-europe-parkour-poster.webp": "UFC$S%Ne0OjF~TxZ9cM|JC=^IqE3IrxZt5Rk",
   "/images/posters/tether-egg-klickstein-parkour-poster.webp": "UJDS{|R%4.t7?wjuRQofVuofj]WB00t7xuRj",
   "/images/posters/the-motus-projects-hazel-poster-freerunning.webp": "UAQ]+w00_3~q0000%M?b009F_3%M9Fxu~q%M",
   "/images/posters/the-motus-projects-sol-poster.webp": "U16keVtj00nm00bF~qt700RR~pNF0JRj~qoy",

@@ -885,5 +885,25 @@ export const movies = [
 			'Lowe Beijner',
 			'Joel Larsson'
 		]
+	},
+	{
+		id: 47,
+		title: 'Street Media - Europe Parkour',
+		year: '2014',
+		description:
+			'Travelling around 9000 miles through Europe for 50 days with sketchy plans, an inter-railing ticket and very little funds.',
+		thumbnail: '/images/posters/street-media-europe-parkour-poster.webp',
+		videoId: 'a_7ptJtoeAg',
+		type: 'movie',
+		duration: '10m',
+		creators: ['Street Media', "Joe O'Brien", 'Matt Hart', 'Sam Petz', 'Noah Hardwood'],
+		starring: [
+			'Matt Hart',
+			'Sam Petz',
+			'George Burdell',
+			'James Holbrook',
+			"Joe O'Brien",
+			'Noah Hardwood'
+		]
 	}
 ];

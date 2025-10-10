@@ -55,6 +55,7 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/the-motus-projects-hazel-poster-freerunning.webp": "UAQ]+w00_3~q0000%M?b009F_3%M9Fxu~q%M",
   "/images/posters/the-motus-projects-sol-poster.webp": "U16keVtj00nm00bF~qt700RR~pNF0JRj~qoy",
   "/images/posters/tracers-poster.webp": "UgMG;cV@_4WB~pRQtRxuETbHROof%htRxaRj",
+  "/images/posters/tru-the-opening-parkour-freerunning-movie-poster.webp": "UIFrhS00js~V9a-:E1E14oD*xt9ZM|^*IV-:",
   "/images/posters/what-happened-myrm-parkour-documentary.webp": "U|I5b=s:a}fk~qofj[fQ%Mj[j[f7NGayayjt",
   "/images/posters/world-chase-tag-poster.webp": "UNC}e9s:I:jZ}Fj[R+WVwdWVjuj]RkWCfioJ",
 } as const;

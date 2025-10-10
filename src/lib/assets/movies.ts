@@ -905,5 +905,18 @@ export const movies = [
 			"Joe O'Brien",
 			'Noah Hardwood'
 		]
-	}
+	},
+		{
+			id: 48,
+			title: 'TRU: The Opening',
+			year: '2011',
+			description:
+				'The debut film from Russia\'s TRU collective, uniting top traceurs from across the CIS to showcase pure parkour and the culture of relentless forward motion.',
+			thumbnail: '/images/posters/tru-the-opening-parkour-freerunning-movie-poster.webp',
+			videoId: 'tRQXqCZQvk4',
+			type: 'movie',
+			duration: '15m',
+			creators: ['Ashmyancev Ilya', 'Traceur.ru'],
+			starring: ['TRU Collective']
+		}
 ];

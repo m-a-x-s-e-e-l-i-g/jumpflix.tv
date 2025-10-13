@@ -933,5 +933,20 @@ export const movies = [
 		externalUrl: 'https://thecommons.boston/?pop=videos&post_id=3855',
 		creators: ['Zach Wiegart', 'The Commons', 'Apex Denver'],
 		starring: ['Megan McQueen', 'Zach Wiegart', 'Santos', 'Mel McQueen']
+	},
+	{
+		id: 50,
+		title: 'Atonement',
+		year: '2024',
+		description:
+			'Josh Malone and The Commons unpack faith, fear, and creative pressure in a raw interview-backed part, pairing Chappy\'s questions with footage of Josh pushing through mental battles at Denver spots.',
+		thumbnail: '/images/posters/the-commons-atonement-josh-malone-poster.webp',
+		type: 'movie',
+		duration: '.',
+		paid: true,
+		provider: 'The Commons',
+		externalUrl: 'https://thecommons.boston/?pop=videos&post_id=4034',
+		creators: ['Josh Malone', 'Egg Klickstein', 'The Commons'],
+		starring: ['Josh Malone']
 	}
 ];

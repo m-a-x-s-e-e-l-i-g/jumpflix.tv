@@ -948,5 +948,20 @@ export const movies = [
 		externalUrl: 'https://thecommons.boston/?pop=videos&post_id=4034',
 		creators: ['Josh Malone', 'Egg Klickstein', 'The Commons'],
 		starring: ['Josh Malone']
+	},
+	{
+		id: 51,
+		title: 'Charmed',
+		year: '2025',
+		description:
+			'Logan Frady reunites with The Commons for a cinematic parkour part and candid interview, blending Egg Klickstein\'s edit with Logan\'s laid-back storytelling about mentors, movement style, and the community that shaped him.',
+		thumbnail: '/images/posters/logan-frady-charmed-poster.webp',
+		type: 'movie',
+		duration: '.',
+		paid: true,
+		provider: 'The Commons',
+		externalUrl: 'https://thecommons.boston/?pop=videos&post_id=6599',
+		creators: ['Logan Frady', 'Egg Klickstein', 'The Commons'],
+		starring: ['Logan Frady', 'Alec (riqbic)', 'Egg Klickstein']
 	}
 ];

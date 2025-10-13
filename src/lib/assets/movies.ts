@@ -963,7 +963,7 @@ export const movies = [
 		externalUrl: 'https://thecommons.boston/?pop=videos&post_id=6599',
 		creators: ['Logan Frady', 'Egg Klickstein', 'The Commons'],
 		starring: ['Logan Frady', 'Alec (riqbic)', 'Egg Klickstein']
-	}
+	},
 	{
 		id: 52,
 		title: 'Dirty',

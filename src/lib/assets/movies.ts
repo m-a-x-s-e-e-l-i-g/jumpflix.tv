@@ -978,5 +978,18 @@ export const movies = [
 		externalUrl: 'https://thecommons.boston/?pop=videos&post_id=7383',
 		creators: ['Ross Allen', 'The Commons', 'Alec Reduker'],
 		starring: ['Ross Allen', 'Josh Malone']
+	},
+	{
+		id: 53,
+		title: 'All of the Above',
+		year: '2024',
+		description:
+			'Geo Bartolucci stitches a year of travel, Lisbon sessions, and Rome fundamentals into a ten-minute part that balances classic running pres with creative dive rolls and gainer variations.',
+		thumbnail: '/images/posters/all-of-the-above-geo-bartolucci-poster.webp',
+		videoId: 'nGoNq5hO-4M',
+		type: 'movie',
+		duration: '10m',
+		creators: ['Geo Bartolucci', 'Pasta Moves', "Lorenzo D'Albertas", 'Monica Del Piano'],
+		starring: ['Geo Bartolucci']
 	}
 ];

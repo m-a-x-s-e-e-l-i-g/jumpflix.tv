@@ -2,6 +2,7 @@
 // Maps public poster paths to their BlurHash strings.
 export const posterBlurhash: Record<string, string> = {
   "/images/posters/6-underground-poster.webp": "UdFYfMMwW.Rj_4VrRjWBALskRPj[9$xtr=of",
+  "/images/posters/all-of-the-above-geo-bartolucci-poster.webp": "UfH_YuROIUtS~VROaetS-:RiWBt8%MWBRjfl",
   "/images/posters/amsterdam-is-dead-poster.webp": "U28E6*bH00IU?cofRjRj00n*_4xv00M{xvxu",
   "/images/posters/balancing-organisms-convoi-films-parkour-poster.webp": "UtF5%NayNGoL^-oes:fQ-=oeofayt8j[WBj[",
   "/images/posters/berlingo-kipa-swedish-parkour-film-poster.webp": "UJE{a,E--pjEKnNzxtV[01n#NGjJ#3w@IVs:",

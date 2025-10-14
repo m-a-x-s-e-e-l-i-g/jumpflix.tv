@@ -360,13 +360,6 @@
 
 		// Handle Android back button / browser back navigation
 		const handlePopState = (event: PopStateEvent) => {
-			// Reset the "back pressed once" state when navigating
-			backPressedOnce = false;
-			if (backPressTimer) {
-				clearTimeout(backPressTimer);
-				backPressTimer = null;
-			}
-
 			// If player is open, close it and re-open details panel
 			if (get(showPlayer)) {
 				closePlayer();
@@ -377,17 +370,31 @@
 						setMobileDetails(true);
 					}, 50);
 				}
+				// Reset back press state since we're handling a specific action
+				backPressedOnce = false;
+				if (backPressTimer) {
+					clearTimeout(backPressTimer);
+					backPressTimer = null;
+				}
 				return;
 			}
 
 			// If mobile details panel is open, close it
 			if (isMobile && get(showDetailsPanel)) {
 				setMobileDetails(false);
+				// Reset back press state since we're handling a specific action
+				backPressedOnce = false;
+				if (backPressTimer) {
+					clearTimeout(backPressTimer);
+					backPressTimer = null;
+				}
 				return;
 			}
 
-			// If we're at the root with nothing selected on mobile, implement "press back again to exit"
-			if (isMobile && !get(selectedContent) && window.location.pathname === '/') {
+			// ONLY on the base URL (home page) with nothing selected, implement "press back again to exit"
+			// This should ONLY work on the root path '/' and nowhere else
+			const isHomePage = window.location.pathname === '/' && !window.location.search;
+			if (isMobile && isHomePage && !get(selectedContent) && !get(showDetailsPanel)) {
 				if (backPressedOnce) {
 					// Second press within time window - allow exit
 					if (backPressTimer) clearTimeout(backPressTimer);
@@ -398,7 +405,14 @@
 					// First press - show toast and prevent exit
 					backPressedOnce = true;
 					window.history.pushState(null, '', '/');
-					toast.message('Press back again to exit');
+
+					// Use setTimeout to ensure toast shows after history manipulation
+					setTimeout(() => {
+						toast('Press back again to exit', {
+							duration: 2000,
+							position: 'bottom-center'
+						});
+					}, 50);
 
 					// Reset after 2 seconds
 					backPressTimer = setTimeout(() => {
@@ -407,6 +421,13 @@
 					}, 2000);
 					return;
 				}
+			}
+
+			// If we get here and not on home page, reset the back press state
+			backPressedOnce = false;
+			if (backPressTimer) {
+				clearTimeout(backPressTimer);
+				backPressTimer = null;
 			}
 		};
 

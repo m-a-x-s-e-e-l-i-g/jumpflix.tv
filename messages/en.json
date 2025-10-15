@@ -1,7 +1,12 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"hello_world": "Hello, {name} from en!",
-	"tv_description": "Curated parkour & freerunning films, documentaries, and series.",
+	"tv_description": "JUMPFLIX spotlights global parkour cinema—films, docs, and series for the movement community.",
+	"tv_heroHeading": "Parkour cinema, curated for the culture.",
+	"tv_heroTagline": "Watch documentaries, movies, and raw movement stories shaped by freerunning crews worldwide.",
+	"tv_heroDescription": "Discover indie films, tour edits, and community spotlights—updated as the global scene grows.",
+	"tv_heroCtaWatch": "Start watching",
+	"tv_heroCtaSubmit": "Submit a film",
 	"tv_searchPlaceholder": "Search by title, creator, or athlete...",
 	"tv_back": "Back",
 	"tv_playNow": "Play now",

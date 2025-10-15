@@ -286,54 +286,87 @@
   {/if}
 </svelte:head>
 
-<div class="min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[460px]">
-  <div class="container mx-auto px-6 pt-10 text-center">
-       <div class="mb-4 flex justify-center">
-         <a href="/" aria-label="Go to homepage" data-sveltekit-reload>
-           <Image src="/images/jumpflix.webp" alt="JUMPFLIX parkour tv" width={300} height={264} cdn={dev ? undefined : 'netlify'} loading="eager" fetchpriority="high" decoding="async" />
-         </a>
-       </div>
-    <p class="text-gray-400 dark:text-gray-300 font-sans text-sm tracking-wide max-w-3xl mx-auto">{m.tv_description()}</p>
+<div class="relative isolate min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[460px]">
+  <div class="page-backdrop" aria-hidden="true">
+    <div class="hero-gradient hero-gradient--page"></div>
+    <div class="hero-glow hero-glow--one hero-glow--page"></div>
+    <div class="hero-glow hero-glow--two hero-glow--page"></div>
+    <div class="hero-grid hero-grid--page"></div>
+    <div class="hero-noise hero-noise--page"></div>
   </div>
-  <div class="container mx-auto px-6 pt-6">
-    <div class="flex flex-wrap items-center gap-4">
-      <!-- Search -->
-      <form class="relative flex-1 min-w-[300px] group">
-        <span class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors z-10">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
-        </span>
-        {#if $searchQuery}
-          <button type="button" class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 z-10" on:click={() => { searchQuery.set(''); }} aria-label="Clear search">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
-        {/if}
-        <input bind:value={$searchQuery} type="text" autocomplete="off" spellcheck="false" placeholder={m.tv_searchPlaceholder()} aria-label="Search content" class="w-full h-12 bg-white/80 dark:bg-gray-900/60 border border-gray-300 dark:border-gray-700 focus:border-gray-400 dark:focus:border-blue-500/70 text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 rounded-xl text-sm focus:outline-none backdrop-blur-sm transition pr-10" style="padding-left: 3rem;" />
-        <!-- Hidden submit to allow pressing Enter in the input to apply URL update without live-sync -->
-        <button type="submit" class="hidden" aria-hidden="true" tabindex="-1"></button>
-      </form>
+  <section class="relative isolate overflow-hidden px-6 pt-24 pb-16 sm:pt-32 sm:pb-20">
+    <div class="hero-overlay" aria-hidden="true"></div>
 
-      <!-- Show paid switch -->
-      <label class="flex items-center gap-3 select-none bg-white/80 dark:bg-gray-900/60 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 backdrop-blur-sm">
-        <span class="text-xs uppercase tracking-wide text-gray-700 dark:text-gray-300">{m.tv_showPaid()}</span>
-        <Switch bind:checked={$showPaid} ariaLabel={m.tv_showPaid()} />
-      </label>
-
-      <!-- Sorting -->
-      <div class="min-w-[170px] relative">
-        <select
-          bind:value={$sortBy}
-          class="appearance-none w-full bg-white/80 dark:bg-gray-900/60 border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-3 text-sm pr-10 text-gray-900 dark:text-gray-200 focus:outline-none focus:border-gray-400 dark:focus:border-blue-500/70 transition backdrop-blur-sm"
-        >
-          {#each Object.entries(sortLabels) as [value, label]}
-            <option {value}>{label}</option>
-          {/each}
-        </select>
-        <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-500 dark:text-gray-400">▾</span>
+    <div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-8 text-center">
+  <div class="hero-logo-stack">
+        <a href="/" aria-label="Go to homepage" data-sveltekit-reload class="hero-logo-link">
+          <Image src="/images/jumpflix.webp" alt="JUMPFLIX parkour tv" width={300} height={264} class="hero-logo" cdn={dev ? undefined : 'netlify'} loading="eager" fetchpriority="high" decoding="async" />
+        </a>
+        <div class="hero-logo-text" aria-hidden="true"><span>JUMPFLIX</span></div>
+      </div>
+      <div class="flex flex-col items-center gap-4">
+        <h1 class="text-center text-4xl font-black uppercase tracking-tight text-white drop-shadow-[0_12px_30px_rgba(0,0,0,0.65)] sm:text-5xl md:text-6xl">
+          <span class="hero-title-gradient">{m.tv_heroHeading()}</span>
+        </h1>
+        <p class="max-w-2xl text-sm font-medium uppercase tracking-[0.28em] text-white/60 sm:text-xs">
+          {m.tv_heroTagline()}
+        </p>
+      </div>
+      <div class="mt-4 flex flex-col items-center gap-4 sm:flex-row">
+        <a href="#catalog" class="group inline-flex items-center gap-3 rounded-full bg-[#e50914] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-[0_22px_40px_-15px_rgba(229,9,20,0.8)] transition hover:bg-[#f6121d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+          {m.tv_heroCtaWatch()}
+          <svg class="size-4 transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11.293 4.293a1 1 0 0 1 1.414 0l4.5 4.5a1 1 0 0 1 0 1.414l-4.5 4.5A1 1 0 0 1 11 14.5V12H4a1 1 0 1 1 0-2h7V5.5a1 1 0 0 1 .293-.707Z"/></svg>
+        </a>
+        <a href="https://forms.gle/16nYjzWtiTbmwdnGA" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-3 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur transition hover:border-white/60 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/70">
+          {m.tv_heroCtaSubmit()}
+        </a>
       </div>
     </div>
-  </div>
+
+    <div class="relative z-10 mx-auto mt-16 w-full max-w-5xl">
+      <div class="rounded-3xl border border-white/10 bg-white/70 p-6 shadow-[0_35px_90px_-40px_rgba(0,0,0,0.95)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/65">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
+          <!-- Search -->
+          <form class="relative flex-1 min-w-[260px] group">
+            <span class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#e50914] dark:text-gray-400 dark:group-focus-within:text-[#f87171] transition-colors z-10">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
+            </span>
+            {#if $searchQuery}
+              <button type="button" class="absolute inset-y-0 right-3 flex items-center rounded-md p-1 text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e50914] focus:ring-offset-2 focus:ring-offset-white/40 dark:focus:ring-offset-slate-950/70 z-10" on:click={() => { searchQuery.set(''); }} aria-label="Clear search">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            {/if}
+            <input bind:value={$searchQuery} type="text" autocomplete="off" spellcheck="false" placeholder={m.tv_searchPlaceholder()} aria-label="Search content" class="h-12 w-full rounded-2xl border border-white/50 bg-white/60 pr-12 text-sm text-gray-900 placeholder-gray-600 shadow-sm transition focus:border-[#e50914]/80 focus:outline-none focus:ring-2 focus:ring-[#e50914]/70 dark:border-white/10 dark:bg-slate-900/80 dark:text-gray-100 dark:placeholder-gray-400" style="padding-left: 3rem;" />
+            <!-- Hidden submit to allow pressing Enter in the input to apply URL update without live-sync -->
+            <button type="submit" class="hidden" aria-hidden="true" tabindex="-1"></button>
+          </form>
+
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center lg:justify-end lg:pl-6">
+            <!-- Show paid switch -->
+            <label class="flex items-center gap-3 select-none rounded-2xl border border-white/15 bg-white/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-700 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 dark:text-gray-200">
+              <span>{m.tv_showPaid()}</span>
+              <Switch bind:checked={$showPaid} ariaLabel={m.tv_showPaid()} />
+            </label>
+
+            <!-- Sorting -->
+            <div class="relative min-w-[170px]">
+              <select
+                bind:value={$sortBy}
+                class="appearance-none w-full rounded-2xl border border-white/30 bg-white/50 px-4 py-3 pr-10 text-sm font-semibold uppercase tracking-[0.12em] text-gray-800 transition focus:border-[#e50914]/80 focus:outline-none focus:ring-2 focus:ring-[#e50914]/70 dark:border-white/10 dark:bg-slate-900/70 dark:text-gray-100"
+              >
+                {#each Object.entries(sortLabels) as [value, label]}
+                  <option {value}>{label}</option>
+                {/each}
+              </select>
+              <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-600 dark:text-gray-300">▾</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
   <div>
-    <div class="container mx-auto px-6 py-10 tv-main mt-2">
+    <div id="catalog" class="container mx-auto px-6 py-10 tv-main mt-2">
       <div bind:this={gridEl} class="grid auto-fit-grid gap-6">
         {#if $visibleContent.length === 0}
           <div class="col-span-full text-center text-gray-400 py-8">{m.tv_noResults()}</div>
@@ -361,6 +394,149 @@
 <PlayerModal show={$showPlayer} selected={$selectedContent} selectedEpisode={$selectedEpisode} close={closePlayer} />
 
 <style>
+  .hero-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(150deg, #050712 5%, #0c1430 45%, #1a233e 100%);
+    opacity: 0.98;
+  }
+  .hero-glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(120px);
+    opacity: 0.7;
+    mix-blend-mode: screen;
+    animation: heroGlow 14s ease-in-out infinite alternate;
+  }
+  .hero-logo-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: -4rem;
+  }
+  .hero-logo-text {
+    font-family: 'Bebas Neue', 'Anton', 'Archivo Black', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 4.75rem);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 0.86;
+    margin-bottom: 6rem;
+  }
+  .hero-logo-text > span {
+    display: inline-block;
+    color: #e63b28;
+    font-weight: 800;
+    transform: perspective(100px) rotateX(31deg) scaleX(1.04);
+    transform-origin: center top;
+    filter: saturate(110%) contrast(110%);
+    text-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+  }
+  @media (max-width: 479px) {
+    .hero-logo-text { font-size: clamp(2rem, 12vw, 3.6rem); letter-spacing: 0.12em; }
+  }
+  .hero-glow--one {
+    top: -28%;
+    right: 12%;
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle at center, rgba(229, 9, 20, 0.7), rgba(229, 9, 20, 0));
+    animation-delay: -3s;
+  }
+  .hero-glow--two {
+    bottom: -30%;
+    left: 6%;
+    width: 520px;
+    height: 520px;
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.55), rgba(59, 130, 246, 0));
+    animation-delay: -8s;
+  }
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 140px 140px;
+    mask-image: radial-gradient(circle at 40% 30%, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0) 70%);
+    opacity: 0.55;
+  }
+  .hero-noise {
+    position: absolute;
+    inset: -10px;
+    background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" preserveAspectRatio="none"%3E%3Cfilter id="n" x="0" y="0" width="1" height="1"%3E%3CfeTurbulence baseFrequency="0.9" numOctaves="3" stitchTiles="stitch" type="fractalNoise"/%3E%3CfeColorMatrix type="saturate" values="0"/%3E%3C/filter%3E%3Crect width="200" height="200" filter="url(%23n)" opacity="0.22"/%3E%3C/svg%3E');
+    background-size: 260px;
+    opacity: 0.22;
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+  }
+  .hero-logo-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 200ms ease, filter 200ms ease;
+  }
+  .hero-logo-link:hover { transform: scale(1.03); filter: drop-shadow(0 25px 60px rgba(229, 9, 20, 0.45)); }
+  .hero-logo-link:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.85);
+    outline-offset: 8px;
+  }
+  :global(.hero-logo) {
+    height: 118px;
+    width: auto;
+    filter: drop-shadow(0 25px 55px rgba(0, 0, 0, 0.5));
+  }
+  @media (min-width: 768px) {
+    :global(.hero-logo) { height: 180px; }
+  }
+  .hero-title-gradient {
+    background-image: linear-gradient(120deg, rgba(255, 255, 255, 0.95), rgba(229, 9, 20, 0.95) 45%, rgba(244, 114, 182, 0.95) 90%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  .page-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: -30;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .hero-gradient--page,
+  .hero-grid--page,
+  .hero-noise--page,
+  .hero-glow--page {
+    height: 100%;
+  }
+  .hero-gradient--page { opacity: 1; }
+  .hero-grid--page {
+    opacity: 0.5;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.6) 65%, rgba(0, 0, 0, 0.2) 100%);
+  }
+  .hero-noise--page {
+    opacity: 0.26;
+  }
+  .hero-glow--page {
+    filter: blur(160px);
+    opacity: 0.72;
+    animation-duration: 20s;
+  }
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: -5;
+    pointer-events: none;
+    background: radial-gradient(circle at 40% 20%, rgba(229, 9, 20, 0.34), transparent 55%),
+      radial-gradient(circle at 70% 10%, rgba(59, 130, 246, 0.28), transparent 60%),
+      linear-gradient(180deg, rgba(5, 7, 18, 0.05) 0%, rgba(5, 7, 18, 0.85) 100%);
+    mix-blend-mode: screen;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 70%, rgba(0, 0, 0, 0) 100%);
+  }
+  @keyframes heroGlow {
+    from { transform: translate3d(-12px, -10px, 0) scale(0.96); opacity: 0.68; }
+    to { transform: translate3d(16px, 18px, 0) scale(1.04); opacity: 0.85; }
+  }
   /* Only apply hover effects on non-mobile devices */
   @media (min-width: 768px) {
     .tv-page :global(.group:hover img) { filter: brightness(1.05); }

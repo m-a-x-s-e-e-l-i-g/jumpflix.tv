@@ -1,0 +1,143 @@
+<script lang="ts">
+  import { enhance } from "$app/forms";
+  import type { SubmitFunction } from "@sveltejs/kit";
+  import { tick } from "svelte";
+  import XIcon from "@lucide/svelte/icons/x";
+  import { Dialog } from "bits-ui";
+
+  let { label = 'Submit a Film' } = $props<{ label?: string }>();
+
+  let open = $state(false);
+  let formEl: HTMLFormElement | null = null;
+  let inputEl: HTMLInputElement | null = null;
+  let isSubmitting = $state(false);
+  let submitError = $state<string | null>(null);
+
+  const handleEnhance: SubmitFunction = () => {
+    return async ({ result, update }) => {
+      isSubmitting = false;
+
+      await update();
+
+      if (result.type === "success") {
+        open = false;
+        submitError = null;
+        formEl?.reset();
+        await tick();
+        inputEl?.focus();
+        return;
+      }
+
+      if (result.type === "failure") {
+        submitError = result.data?.message ?? "Something went wrong.";
+      } else if (result.type === "error") {
+        submitError = "Network error. Please try again.";
+      }
+    };
+  };
+
+  $effect(() => {
+    if (!formEl) return;
+    const cleanup = enhance(formEl, handleEnhance);
+    return () => {
+      cleanup?.destroy?.();
+    };
+  });
+
+  $effect(() => {
+    if (!open) return;
+    tick().then(() => {
+      inputEl?.focus();
+    }).catch(() => {});
+  });
+
+  function handleSubmit() {
+    submitError = null;
+    isSubmitting = true;
+  }
+
+  function closeDialog() {
+    open = false;
+  }
+
+  const actionButtonBase =
+    "inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-medium uppercase tracking-[0.2em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-white/70 disabled:cursor-not-allowed disabled:opacity-60";
+</script>
+
+<Dialog.Root bind:open={open}>
+  <Dialog.Trigger
+    class="group inline-flex items-center gap-3 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur transition hover:border-white/60 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/70"
+  >
+    {label}
+  </Dialog.Trigger>
+  <Dialog.Portal>
+    <Dialog.Overlay class="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
+    <Dialog.Content
+      class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-background px-6 py-7 shadow-[0_40px_80px_-30px_rgba(0,0,0,0.75)] focus:outline-none"
+      aria-describedby="submit-film-description"
+    >
+      <button
+        type="button"
+  class="absolute right-5 top-5 inline-flex size-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/20"
+  onclick={closeDialog}
+      >
+        <XIcon class="size-4" />
+        <span class="sr-only">Close dialog</span>
+      </button>
+
+      <div class="flex flex-col gap-6">
+        <header class="space-y-2">
+          <Dialog.Title class="text-xl font-semibold text-white">Submit a Film</Dialog.Title>
+          <p id="submit-film-description" class="text-sm text-white/60">
+            Share a parkour film, documentary, or series you think belongs on JUMPFLIX.
+          </p>
+        </header>
+
+        <form
+          method="POST"
+          action="?/submitFilm"
+          bind:this={formEl}
+          class="space-y-4"
+          onsubmit={handleSubmit}
+        >
+      <label class="space-y-2">
+        <span class="text-sm font-medium text-white/80">Title or URL</span>
+        <input
+          bind:this={inputEl}
+          type="text"
+          name="submission"
+          required
+          minlength="3"
+          maxlength="300"
+          placeholder="e.g. Roof Culture Asia or https://youtube.com/watch?v=..."
+          class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-base text-white shadow-inner placeholder:text-white/50 focus:border-[#e50914] focus:outline-none focus:ring-2 focus:ring-[#e50914]/70"
+        />
+      </label>
+      {#if submitError}
+        <p class="text-sm text-red-400" role="status" aria-live="polite">{submitError}</p>
+      {/if}
+          <div class="mt-4 flex flex-col-reverse gap-2 sm:mt-6 sm:flex-row sm:justify-end sm:gap-3">
+            <button
+              type="button"
+              class={`${actionButtonBase} border border-white/20 bg-white/5 text-white/70 hover:border-white/40 hover:text-white`}
+              onclick={closeDialog}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              class={`${actionButtonBase} bg-[#e50914] text-white shadow-[0_12px_32px_-18px_rgba(229,9,20,0.9)] hover:bg-[#ff1a27] disabled:bg-[#e50914]/80`}
+            >
+              {#if isSubmitting}
+                Sending…
+              {:else}
+                Submit
+              {/if}
+            </button>
+          </div>
+        </form>
+      </div>
+    </Dialog.Content>
+  </Dialog.Portal>
+</Dialog.Root>

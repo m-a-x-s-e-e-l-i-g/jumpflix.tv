@@ -17,6 +17,7 @@
   import { dev } from '$app/environment';
   import { goto } from '$app/navigation';
   import { getUrlForItem, getEpisodeUrl } from '$lib/tv/slug';
+  import SubmitFilmDialog from '$lib/components/SubmitFilmDialog.svelte';
 
   export let initialItem: ContentItem | null = null;
   export let initialEpisodeNumber: number | null = null;
@@ -317,13 +318,11 @@
           {m.tv_heroCtaWatch()}
           <svg class="size-4 transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11.293 4.293a1 1 0 0 1 1.414 0l4.5 4.5a1 1 0 0 1 0 1.414l-4.5 4.5A1 1 0 0 1 11 14.5V12H4a1 1 0 1 1 0-2h7V5.5a1 1 0 0 1 .293-.707Z"/></svg>
         </a>
-        <a href="https://forms.gle/16nYjzWtiTbmwdnGA" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-3 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur transition hover:border-white/60 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/70">
-          {m.tv_heroCtaSubmit()}
-        </a>
+  <SubmitFilmDialog label={m.tv_heroCtaSubmit()} />
       </div>
     </div>
 
-    <div class="relative z-10 mx-auto mt-16 w-full max-w-5xl">
+    <div class="relative z-10 mx-auto mt-30 w-full max-w-5xl">
       <div class="rounded-3xl border border-white/10 bg-white/70 p-6 shadow-[0_35px_90px_-40px_rgba(0,0,0,0.95)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/65">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
           <!-- Search -->
@@ -366,7 +365,7 @@
     </div>
   </section>
   <div>
-    <div id="catalog" class="container mx-auto px-6 py-10 tv-main mt-2">
+    <div id="catalog" class="container mx-auto px-6 py-10 tv-main -mt-16">
       <div bind:this={gridEl} class="grid auto-fit-grid gap-6">
         {#if $visibleContent.length === 0}
           <div class="col-span-full text-center text-gray-400 py-8">{m.tv_noResults()}</div>
@@ -417,7 +416,7 @@
   }
   .hero-logo-text {
     font-family: 'Bebas Neue', 'Anton', 'Archivo Black', sans-serif;
-    font-size: clamp(2.5rem, 6vw, 4.75rem);
+    font-size: clamp(2.3rem, 4vw, 4.75rem);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     text-align: center;
@@ -434,7 +433,7 @@
     text-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
   }
   @media (max-width: 479px) {
-    .hero-logo-text { font-size: clamp(2rem, 12vw, 3.6rem); letter-spacing: 0.12em; }
+    .hero-logo-text { font-size: clamp(1rem, 10vw, 3.6rem); letter-spacing: 0.12em; }
   }
   .hero-glow--one {
     top: -28%;

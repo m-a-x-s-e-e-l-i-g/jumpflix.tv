@@ -29,6 +29,7 @@
   let lastSelectionSource: 'keyboard' | 'click' | 'programmatic' = 'programmatic';
   let currentPath = '';
   let pageTitle: string | null = null;
+  let logoTilt = 0;
 
   // ————————————————————————————————————————————————————————————————
   // Small helpers to deduplicate selection/navigation logic
@@ -240,9 +241,28 @@
     document.addEventListener('keydown', handleKeydown);
     document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) closePlayer(); });
 
+    const maxTilt = 6.5;
+    let rafId: number | null = null;
+    const updateLogoTilt = () => {
+      const raw = typeof window === 'undefined' ? 0 : window.scrollY;
+      const next = Math.min(maxTilt, Math.max(0, raw / 90));
+      logoTilt = next;
+    };
+    const handleScroll = () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        updateLogoTilt();
+        rafId = null;
+      });
+    };
+    updateLogoTilt();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
     return () => {
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('resize', resizeHandler);
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
       unsubPage();
     };
   });
@@ -303,7 +323,7 @@
         <a href="/" aria-label="Go to homepage" data-sveltekit-reload class="hero-logo-link">
           <Image src="/images/jumpflix.webp" alt="JUMPFLIX parkour tv" width={300} height={264} class="hero-logo" cdn={dev ? undefined : 'netlify'} loading="eager" fetchpriority="high" decoding="async" />
         </a>
-        <div class="hero-logo-text" aria-hidden="true"><span>JUMPFLIX</span></div>
+  <div class="hero-logo-text" aria-hidden="true"><span style={`--logo-scroll-tilt: ${logoTilt.toFixed(3)}deg;`}>JUMPFLIX</span></div>
       </div>
       <div class="flex flex-col items-center gap-4">
   <h1 class="text-center text-4xl font-black uppercase tracking-tight text-slate-900 drop-shadow-[0_12px_28px_rgba(148,163,184,0.35)] dark:text-white dark:drop-shadow-[0_12px_30px_rgba(0,0,0,0.65)] sm:text-5xl md:text-6xl">
@@ -465,7 +485,7 @@
     display: inline-block;
     color: #e63b28;
     font-weight: 800;
-    transform: perspective(100px) rotateX(31deg) scaleX(1.04);
+    transform: perspective(100px) rotateX(calc(31deg + var(--logo-scroll-tilt, 0deg))) scaleX(1.04);
     transform-origin: center top;
     filter: saturate(110%) contrast(110%);
   text-shadow: var(--hero-logo-text-shadow);

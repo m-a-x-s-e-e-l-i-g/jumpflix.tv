@@ -106,12 +106,16 @@
 		}
 	}
 
-	onMount(() => {
-		if (typeof window === 'undefined') return;
+	function addEventListeners(): () => void {
+		if (typeof window === 'undefined') return () => {};
 		const updateSize = () => { isMobile = window.innerWidth < 768; };
 		updateSize();
 		window.addEventListener('resize', updateSize);
+		return () => { window.removeEventListener('resize', updateSize); };
+	}
 
+	function initializeTheme(): () => void {
+		if (typeof window === 'undefined') return () => {};
 		prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 		const handleSystemTheme = (event: MediaQueryListEvent) => {
 			if (themePreference === 'system') {
@@ -120,7 +124,11 @@
 		};
 		prefersDarkQuery.addEventListener('change', handleSystemTheme);
 		applyTheme(themePreference);
+		return () => { prefersDarkQuery?.removeEventListener('change', handleSystemTheme); };
+	}
 
+	function setupScrollEffects(): () => void {
+		if (typeof window === 'undefined') return () => {};
 		const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 		let rafId = 0;
 		const setScroll = (value: number) => {
@@ -155,14 +163,21 @@
 		if (!reduceMotion) {
 			setScroll(window.scrollY);
 		}
-
 		return () => {
-			window.removeEventListener('resize', updateSize);
-			prefersDarkQuery?.removeEventListener('change', handleSystemTheme);
 			motionQuery.removeEventListener('change', handleMotionPreference);
 			window.removeEventListener('scroll', updateScroll);
 			if (rafId) {
 				window.cancelAnimationFrame(rafId);
+			}
+		};
+	}
+
+	onMount(() => {
+		if (typeof window === 'undefined') return;
+		const cleanupFns = [addEventListeners(), initializeTheme(), setupScrollEffects()];
+		return () => {
+			for (const cleanup of cleanupFns) {
+				cleanup?.();
 			}
 		};
 	});

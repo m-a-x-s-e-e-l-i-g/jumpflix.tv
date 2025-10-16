@@ -207,7 +207,56 @@
   function setIndex(idx: number) { const list = $visibleContent; if (!list.length) return; const clamped = Math.max(0, Math.min(list.length - 1, idx)); selectedIndex.set(clamped); selectedContent.set(list[clamped]); scrollSelectedIntoView(clamped); }
   
   // Handle keyboard navigation and actions
-  function handleKeydown(event: KeyboardEvent) { if ($showPlayer && event.key === 'Escape') { closePlayer(); return; } if (event.key === 'Escape' && document.fullscreenElement) { document.exitFullscreen(); closePlayer(); return; } if (isTypingTarget(event.target)) return; if ($showPlayer) return; const list = $visibleContent; if (!list.length) return; const idx = $selectedIndex; const current = $selectedContent; switch (event.key) { case 'ArrowRight': event.preventDefault(); lastSelectionSource = 'keyboard'; setIndex(idx + 1); break; case 'ArrowLeft': event.preventDefault(); lastSelectionSource = 'keyboard'; setIndex(idx - 1); break; case 'ArrowDown': event.preventDefault(); lastSelectionSource = 'keyboard'; setIndex(idx + columns); break; case 'ArrowUp': event.preventDefault(); lastSelectionSource = 'keyboard'; setIndex(idx - columns); break; case 'Enter': if (current) { event.preventDefault(); lastSelectionSource = 'keyboard'; openContent(current); } break; } }
+  function handleKeydown(event: KeyboardEvent) {
+    if ($showPlayer && event.key === 'Escape') {
+      closePlayer();
+      return;
+    }
+    if (event.key === 'Escape' && document.fullscreenElement) {
+      document.exitFullscreen();
+      closePlayer();
+      return;
+    }
+    if (isTypingTarget(event.target) || $showPlayer) {
+      return;
+    }
+
+    const list = $visibleContent;
+    if (!list.length) return;
+
+    const idx = $selectedIndex;
+    const current = $selectedContent;
+
+    switch (event.key) {
+      case 'ArrowRight':
+        event.preventDefault();
+        lastSelectionSource = 'keyboard';
+        setIndex(idx + 1);
+        break;
+      case 'ArrowLeft':
+        event.preventDefault();
+        lastSelectionSource = 'keyboard';
+        setIndex(idx - 1);
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        lastSelectionSource = 'keyboard';
+        setIndex(idx + columns);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        lastSelectionSource = 'keyboard';
+        setIndex(idx - columns);
+        break;
+      case 'Enter':
+        if (current) {
+          event.preventDefault();
+          lastSelectionSource = 'keyboard';
+          openContent(current);
+        }
+        break;
+    }
+  }
 
   function handleMobileBack() {
     lastSelectionSource = 'programmatic';

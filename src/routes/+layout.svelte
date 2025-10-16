@@ -477,7 +477,7 @@
 		inset: 0;
 		pointer-events: none;
 		overflow: hidden;
-		mix-blend-mode: hard-light;
+		mix-blend-mode: overlay;
 		mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 80%);
 		-webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 80%);
 		contain: layout paint;

@@ -189,7 +189,7 @@
           </div>
         </div>
       </div>
-      <div class="px-4 pb-28 pt-4 space-y-6">
+  <div class="px-4 pb-28 pt-4 space-y-6 mobile-overlay-content">
         <div>
           <p class="text-gray-700 dark:text-gray-200 text-sm leading-relaxed">{selected.description}</p>
         </div>
@@ -266,7 +266,7 @@
         {/if}
       </div>
     </div>
-    <div class="p-4 bg-white/90 dark:bg-black/80 backdrop-blur border-t border-black/10 dark:border-white/10">
+    <div class="mobile-overlay-actions bg-white/90 dark:bg-black/80 backdrop-blur border-t border-black/10 dark:border-white/10">
       <button on:click={() => {
         if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); return; }
         if (isInlinePlayable(selected)) openContent(selected);
@@ -290,3 +290,14 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .mobile-overlay-actions {
+    padding: 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .mobile-overlay-content {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  }
+</style>

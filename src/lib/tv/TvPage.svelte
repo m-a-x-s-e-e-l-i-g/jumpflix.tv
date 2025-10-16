@@ -314,7 +314,7 @@
         </p>
       </div>
       <div class="mt-4 flex flex-col items-center gap-4 sm:flex-row">
-        <a href="#catalog" class="group inline-flex items-center gap-3 rounded-full bg-[#e50914] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-[0_22px_40px_-15px_rgba(229,9,20,0.8)] transition hover:bg-[#f6121d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+        <a href="#search" class="group inline-flex items-center gap-3 rounded-full bg-[#e50914] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-[0_22px_40px_-15px_rgba(229,9,20,0.8)] transition hover:bg-[#f6121d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
           {m.tv_heroCtaWatch()}
           <svg class="size-4 transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11.293 4.293a1 1 0 0 1 1.414 0l4.5 4.5a1 1 0 0 1 0 1.414l-4.5 4.5A1 1 0 0 1 11 14.5V12H4a1 1 0 1 1 0-2h7V5.5a1 1 0 0 1 .293-.707Z"/></svg>
         </a>
@@ -322,7 +322,7 @@
       </div>
     </div>
 
-    <div class="relative z-10 mx-auto mt-30 w-full max-w-5xl">
+    <div id="search" class="relative z-10 mx-auto mt-30 w-full max-w-5xl">
       <div class="rounded-3xl border border-white/10 bg-white/70 p-6 shadow-[0_35px_90px_-40px_rgba(0,0,0,0.95)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/65">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
           <!-- Search -->

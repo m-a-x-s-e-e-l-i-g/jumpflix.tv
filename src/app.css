@@ -44,6 +44,14 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  /* Global stacking context scale */
+  --z-index-background: 0;
+  --z-index-content: 10;
+  --z-index-background-decor: 11;
+  --z-index-settings: 30;
+  --z-index-dialog: 40;
+  --z-index-modal: 50;
+  --z-index-toast: 60;
 }
 
 .dark {

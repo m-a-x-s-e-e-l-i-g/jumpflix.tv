@@ -281,7 +281,7 @@
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<div class="popcorn-layer pointer-events-none fixed inset-0 z-11 overflow-hidden" aria-hidden="true">
+<div class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden" aria-hidden="true">
 	{#each popcorns as popcorn (popcorn.id)}
 		<div
 			class="popcorn-item"
@@ -303,10 +303,10 @@
 	{/each}
 </div>
 
-<div class="relative">
+<div class="relative z-[var(--z-index-content)]">
 	<!-- Top-left settings cog that opens a left-side sheet -->
 	<SheetRoot bind:open={sheetOpen}>
-		<div class="absolute left-4 top-4 z-30" class:hidden={$showDetailsPanel && isMobile}>
+		<div class="absolute left-4 top-4 z-[var(--z-index-settings)]" class:hidden={$showDetailsPanel && isMobile}>
 			<SheetTrigger aria-label={m.settings_open()}>
 				<button
 					class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"

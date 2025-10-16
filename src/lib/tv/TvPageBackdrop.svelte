@@ -29,6 +29,7 @@
     opacity: 0.7;
     mix-blend-mode: screen;
     animation: heroGlow 14s ease-in-out infinite alternate;
+    will-change: transform, opacity;
   }
 
   .hero-glow--one {
@@ -68,6 +69,7 @@
     opacity: var(--hero-noise-opacity);
     mix-blend-mode: soft-light;
     pointer-events: none;
+    will-change: opacity;
   }
 
   .hero-gradient--page,
@@ -94,6 +96,21 @@
     filter: blur(160px);
     opacity: var(--hero-glow-page-opacity);
     animation-duration: 20s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-glow {
+      animation: none;
+      opacity: 0.55;
+    }
+
+    .hero-noise {
+      opacity: calc(var(--hero-noise-opacity) * 0.6);
+    }
+
+    .hero-grid {
+      mask-image: none;
+    }
   }
 
   @keyframes heroGlow {

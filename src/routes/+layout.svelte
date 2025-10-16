@@ -27,7 +27,6 @@
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
 	let sheetOpen = $state(false);
 	let reduceMotion = $state(false);
-	let scrollY = $state(0);
 	type ThemePreference = 'system' | 'light' | 'dark';
 
 	const langs = [
@@ -66,6 +65,57 @@
 	];
 
 	const PARALLAX_STRENGTH = 0.06;
+	type PopcornEntry = {
+		node: HTMLElement;
+		spec: PopcornSpec;
+		lastTranslate: number;
+		lastRotate: number;
+	};
+
+	const popcornEntries = new Set<PopcornEntry>();
+	let lastScrollY = 0;
+
+	function applyPopcornTransform(entry: PopcornEntry, scrollValue: number, motionReduced: boolean) {
+		const { node, spec } = entry;
+		if (!node) return;
+		if (motionReduced) {
+			node.style.transform = `translate3d(0, 0, 0) rotate(${spec.rotateBase}deg)`;
+			entry.lastTranslate = 0;
+			entry.lastRotate = spec.rotateBase;
+			return;
+		}
+		const translateY = scrollValue * spec.depth * PARALLAX_STRENGTH;
+		const rotate = spec.rotateBase + scrollValue * spec.rotateFactor;
+		if (Math.abs(entry.lastTranslate - translateY) < 0.1 && Math.abs(entry.lastRotate - rotate) < 0.1) {
+			return;
+		}
+		node.style.transform = `translate3d(0, ${translateY}px, 0) rotate(${rotate}deg)`;
+		entry.lastTranslate = translateY;
+		entry.lastRotate = rotate;
+	}
+
+	function updatePopcornTransforms(scrollValue: number) {
+		lastScrollY = scrollValue;
+		for (const entry of popcornEntries) {
+			applyPopcornTransform(entry, scrollValue, reduceMotion);
+		}
+	}
+
+	function popcornParallax(node: HTMLElement, spec: PopcornSpec) {
+		const entry: PopcornEntry = { node, spec, lastTranslate: 0, lastRotate: spec.rotateBase };
+		popcornEntries.add(entry);
+		applyPopcornTransform(entry, reduceMotion ? 0 : lastScrollY, reduceMotion);
+		return {
+			update(newSpec: PopcornSpec) {
+				entry.spec = newSpec;
+				entry.lastRotate = newSpec.rotateBase;
+				applyPopcornTransform(entry, reduceMotion ? 0 : lastScrollY, reduceMotion);
+			},
+			destroy() {
+				popcornEntries.delete(entry);
+			}
+		};
+	}
 
 	const themeCopy: Record<'en' | 'nl', { heading: string; system: string; light: string; dark: string; toast: (label: string) => string }> = {
 		en: {
@@ -131,41 +181,45 @@
 		if (typeof window === 'undefined') return () => {};
 		const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 		let rafId = 0;
-		const setScroll = (value: number) => {
-			if (reduceMotion) return;
-			scrollY = value;
+		let pendingScroll = window.scrollY;
+
+		const applyScroll = (value: number) => {
+			const clamped = Math.max(0, value);
+			updatePopcornTransforms(reduceMotion ? 0 : clamped);
 		};
-		const updateScroll = () => {
+
+		const handleScroll = () => {
 			if (reduceMotion) return;
-			const latest = window.scrollY;
+			pendingScroll = window.scrollY;
 			if (rafId) return;
 			rafId = window.requestAnimationFrame(() => {
-				setScroll(latest);
+				updatePopcornTransforms(pendingScroll);
 				rafId = 0;
 			});
 		};
+
 		const handleMotionPreference = (event: MediaQueryListEvent) => {
 			reduceMotion = event.matches;
-			if (event.matches) {
-				scrollY = 0;
+			if (reduceMotion) {
 				if (rafId) {
 					window.cancelAnimationFrame(rafId);
 					rafId = 0;
 				}
+				updatePopcornTransforms(0);
 			} else {
-				scrollY = window.scrollY;
+				updatePopcornTransforms(window.scrollY);
 			}
 		};
+
 		reduceMotion = motionQuery.matches;
-		scrollY = reduceMotion ? 0 : window.scrollY;
+		applyScroll(reduceMotion ? 0 : window.scrollY);
+
 		motionQuery.addEventListener('change', handleMotionPreference);
-		window.addEventListener('scroll', updateScroll, { passive: true });
-		if (!reduceMotion) {
-			setScroll(window.scrollY);
-		}
+		window.addEventListener('scroll', handleScroll, { passive: true });
+
 		return () => {
 			motionQuery.removeEventListener('change', handleMotionPreference);
-			window.removeEventListener('scroll', updateScroll);
+			window.removeEventListener('scroll', handleScroll);
 			if (rafId) {
 				window.cancelAnimationFrame(rafId);
 			}
@@ -285,11 +339,11 @@
 	{#each popcorns as popcorn (popcorn.id)}
 		<div
 			class="popcorn-item"
+			use:popcornParallax={popcorn}
 			style:left={`${popcorn.left}%`}
 			style:top={`${popcorn.top}vh`}
 			style:width={`${popcorn.size}px`}
 			style:height={`${popcorn.size}px`}
-			style:transform={`translate3d(0, ${(reduceMotion ? 0 : scrollY * popcorn.depth * PARALLAX_STRENGTH).toFixed(2)}px, 0) rotate(${(reduceMotion ? popcorn.rotateBase : popcorn.rotateBase + scrollY * popcorn.rotateFactor).toFixed(2)}deg)`}
 		>
 			<div
 				class="popcorn-bob"
@@ -404,6 +458,8 @@
 		mix-blend-mode: soft-light;
 		mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 80%);
 		-webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 80%);
+		contain: layout paint;
+		backface-visibility: hidden;
 	}
 
 	.popcorn-item {
@@ -420,6 +476,7 @@
 		justify-content: center;
 		animation: popcornFloat var(--popcorn-duration, 24s) ease-in-out infinite;
 		animation-delay: var(--popcorn-delay, 0s);
+		will-change: transform;
 	}
 
 	.popcorn-bob img {
@@ -456,6 +513,19 @@
 		.popcorn-bob {
 			animation: none !important;
 			transform: none !important;
+		}
+
+		.popcorn-layer {
+			display: none;
+		}
+	}
+
+	@media (max-width: 768px) {
+		.popcorn-layer {
+			mask-image: none;
+			-webkit-mask-image: none;
+			mix-blend-mode: normal;
+			opacity: 0.55;
 		}
 	}
 </style>

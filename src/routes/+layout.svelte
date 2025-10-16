@@ -240,7 +240,7 @@
 							aria-pressed={themePreference === option.value}
 							onclick={() => changeTheme(option.value)}
 						>
-							<svelte:component this={option.icon} class="size-4" />
+							<option.icon class="size-4" />
 							<span>{themeLabel(option.value)}</span>
 						</button>
 					{/each}

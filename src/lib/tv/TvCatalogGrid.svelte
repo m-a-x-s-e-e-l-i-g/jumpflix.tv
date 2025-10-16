@@ -15,7 +15,7 @@
   const keyFor = (item: ContentItem) => `${item.type}:${item.id}`;
 </script>
 
-<div id="catalog" class="container mx-auto px-6 py-10 tv-main -mt-16">
+<div id="catalog" class="container mx-auto px-6 py-10 tv-main -mt-16 z-20">
   <div bind:this={gridElement} class="grid auto-fit-grid gap-6">
     {#if visibleContent.length === 0}
       <div class="col-span-full text-center text-gray-400 py-8">{m.tv_noResults()}</div>

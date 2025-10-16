@@ -26,6 +26,8 @@
 	// current locale from Paraglide (reactive state)
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
 	let sheetOpen = $state(false);
+	let reduceMotion = $state(false);
+	let scrollY = $state(0);
 	type ThemePreference = 'system' | 'light' | 'dark';
 
 	const langs = [
@@ -38,6 +40,32 @@
 		{ value: 'light', icon: SunIcon },
 		{ value: 'dark', icon: MoonIcon }
 	];
+
+	type PopcornSpec = {
+		id: number;
+		left: number;
+		top: number;
+		size: number;
+		depth: number;
+		floatDuration: number;
+		floatDelay: number;
+		sway: number;
+		opacity: number;
+		rotateBase: number;
+		rotateFactor: number;
+	};
+
+	const popcorns: PopcornSpec[] = [
+		{ id: 0, left: 6, top: -4, size: 160, depth: 0.12, floatDuration: 26, floatDelay: 0, sway: 24, opacity: 0.52, rotateBase: -6, rotateFactor: 0.016 },
+		{ id: 1, left: 78, top: 6, size: 120, depth: 0.18, floatDuration: 24, floatDelay: -6, sway: -18, opacity: 0.48, rotateBase: 8, rotateFactor: -0.02 },
+		{ id: 2, left: 52, top: 18, size: 190, depth: 0.32, floatDuration: 30, floatDelay: -12, sway: 28, opacity: 0.4, rotateBase: -12, rotateFactor: 0.014 },
+		{ id: 3, left: 18, top: 42, size: 130, depth: 0.46, floatDuration: 28, floatDelay: -3, sway: 16, opacity: 0.36, rotateBase: 5, rotateFactor: -0.018 },
+		{ id: 4, left: 64, top: 54, size: 176, depth: 0.26, floatDuration: 32, floatDelay: -15, sway: -22, opacity: 0.42, rotateBase: -3, rotateFactor: 0.017 },
+		{ id: 5, left: 88, top: 70, size: 140, depth: 0.38, floatDuration: 22, floatDelay: -9, sway: 14, opacity: 0.35, rotateBase: 10, rotateFactor: -0.015 },
+		{ id: 6, left: 34, top: 78, size: 164, depth: 0.22, floatDuration: 27, floatDelay: -5, sway: -20, opacity: 0.44, rotateBase: -8, rotateFactor: 0.019 }
+	];
+
+	const PARALLAX_STRENGTH = 0.06;
 
 	const themeCopy: Record<'en' | 'nl', { heading: string; system: string; light: string; dark: string; toast: (label: string) => string }> = {
 		en: {
@@ -80,9 +108,9 @@
 
 	onMount(() => {
 		if (typeof window === 'undefined') return;
-		const update = () => { isMobile = window.innerWidth < 768; };
-		update();
-		window.addEventListener('resize', update);
+		const updateSize = () => { isMobile = window.innerWidth < 768; };
+		updateSize();
+		window.addEventListener('resize', updateSize);
 
 		prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
 		const handleSystemTheme = (event: MediaQueryListEvent) => {
@@ -93,9 +121,49 @@
 		prefersDarkQuery.addEventListener('change', handleSystemTheme);
 		applyTheme(themePreference);
 
+		const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+		let rafId = 0;
+		const setScroll = (value: number) => {
+			if (reduceMotion) return;
+			scrollY = value;
+		};
+		const updateScroll = () => {
+			if (reduceMotion) return;
+			const latest = window.scrollY;
+			if (rafId) return;
+			rafId = window.requestAnimationFrame(() => {
+				setScroll(latest);
+				rafId = 0;
+			});
+		};
+		const handleMotionPreference = (event: MediaQueryListEvent) => {
+			reduceMotion = event.matches;
+			if (event.matches) {
+				scrollY = 0;
+				if (rafId) {
+					window.cancelAnimationFrame(rafId);
+					rafId = 0;
+				}
+			} else {
+				scrollY = window.scrollY;
+			}
+		};
+		reduceMotion = motionQuery.matches;
+		scrollY = reduceMotion ? 0 : window.scrollY;
+		motionQuery.addEventListener('change', handleMotionPreference);
+		window.addEventListener('scroll', updateScroll, { passive: true });
+		if (!reduceMotion) {
+			setScroll(window.scrollY);
+		}
+
 		return () => {
-			window.removeEventListener('resize', update);
+			window.removeEventListener('resize', updateSize);
 			prefersDarkQuery?.removeEventListener('change', handleSystemTheme);
+			motionQuery.removeEventListener('change', handleMotionPreference);
+			window.removeEventListener('scroll', updateScroll);
+			if (rafId) {
+				window.cancelAnimationFrame(rafId);
+			}
 		};
 	});
 
@@ -198,92 +266,181 @@
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<!-- Top-left settings cog that opens a left-side sheet -->
-<SheetRoot bind:open={sheetOpen}>
-	<div class="absolute left-4 top-4 z-30" class:hidden={$showDetailsPanel && isMobile}>
-		<SheetTrigger aria-label={m.settings_open()}>
-			<button
-				class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+<div class="popcorn-layer pointer-events-none fixed inset-0 z-11 overflow-hidden" aria-hidden="true">
+	{#each popcorns as popcorn (popcorn.id)}
+		<div
+			class="popcorn-item"
+			style:left={`${popcorn.left}%`}
+			style:top={`${popcorn.top}vh`}
+			style:width={`${popcorn.size}px`}
+			style:height={`${popcorn.size}px`}
+			style:transform={`translate3d(0, ${(reduceMotion ? 0 : scrollY * popcorn.depth * PARALLAX_STRENGTH).toFixed(2)}px, 0) rotate(${(reduceMotion ? popcorn.rotateBase : popcorn.rotateBase + scrollY * popcorn.rotateFactor).toFixed(2)}deg)`}
+		>
+			<div
+				class="popcorn-bob"
+				style={`--popcorn-duration:${popcorn.floatDuration}s; --popcorn-delay:${popcorn.floatDelay}s; --popcorn-sway:${popcorn.sway}px;`}
+				style:animation-play-state={reduceMotion ? 'paused' : 'running'}
+				style:opacity={popcorn.opacity}
 			>
-				<CogIcon class="size-5" />
-				<span class="sr-only">{m.settings_open()}</span>
-			</button>
-		</SheetTrigger>
-	</div>
-
-	<SheetContent side="left" class="p-0 flex flex-col h-full">
-		<SheetHeader class="px-4 pt-4">
-			<SheetTitle>{m.settings()}</SheetTitle>
-		</SheetHeader>
-
-		<!-- Scrollable content -->
-		<div class="flex-1 overflow-y-auto p-4">
-			<p class="mb-2 text-sm text-muted-foreground">{m.settings_language()}</p>
-			<div class="grid grid-cols-2 gap-2">
-				{#each langs as l}
-					<button
-						class="[ 'flex items-center gap-2 rounded-md border border-border p-3 text-left text-sm transition', currentLocale === l.code ? 'bg-muted/40 outline outline-1 outline-primary outline-offset-2' : 'hover:bg-muted/60' ].join(' ')"
-						aria-pressed={currentLocale === l.code}
-						onclick={() => changeLocale(l.code)}
-					>
-						<span class="text-lg leading-none">{l.flag}</span>
-						<span>{l.label}</span>
-					</button>
-				{/each}
+				<img src="/images/popcorn.svg" alt="" class="h-full w-full object-contain" draggable="false" />
 			</div>
-			<div class="mt-6">
-				<p class="mb-2 text-sm text-muted-foreground">{themeHeading()}</p>
-				<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-					{#each themeOptions as option}
+		</div>
+	{/each}
+</div>
+
+<div class="relative">
+	<!-- Top-left settings cog that opens a left-side sheet -->
+	<SheetRoot bind:open={sheetOpen}>
+		<div class="absolute left-4 top-4 z-30" class:hidden={$showDetailsPanel && isMobile}>
+			<SheetTrigger aria-label={m.settings_open()}>
+				<button
+					class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+				>
+					<CogIcon class="size-5" />
+					<span class="sr-only">{m.settings_open()}</span>
+				</button>
+			</SheetTrigger>
+		</div>
+
+		<SheetContent side="left" class="p-0 flex flex-col h-full">
+			<SheetHeader class="px-4 pt-4">
+				<SheetTitle>{m.settings()}</SheetTitle>
+			</SheetHeader>
+
+			<!-- Scrollable content -->
+			<div class="flex-1 overflow-y-auto p-4">
+				<p class="mb-2 text-sm text-muted-foreground">{m.settings_language()}</p>
+				<div class="grid grid-cols-2 gap-2">
+					{#each langs as l}
 						<button
-							class="[ 'flex items-center gap-2 rounded-md border border-border p-3 text-sm transition', themePreference === option.value ? 'bg-muted/40 outline outline-1 outline-primary outline-offset-2' : 'hover:bg-muted/60' ].join(' ')"
-							aria-pressed={themePreference === option.value}
-							onclick={() => changeTheme(option.value)}
+							class="[ 'flex items-center gap-2 rounded-md border border-border p-3 text-left text-sm transition', currentLocale === l.code ? 'bg-muted/40 outline outline-1 outline-primary outline-offset-2' : 'hover:bg-muted/60' ].join(' ')"
+							aria-pressed={currentLocale === l.code}
+							onclick={() => changeLocale(l.code)}
 						>
-							<option.icon class="size-4" />
-							<span>{themeLabel(option.value)}</span>
+							<span class="text-lg leading-none">{l.flag}</span>
+							<span>{l.label}</span>
 						</button>
 					{/each}
 				</div>
-			</div>
-			<!-- Project Links -->
-			<div class="mt-6">
-				<p class="mb-2 text-sm text-muted-foreground">{m.settings_links()}</p>
-				<div class="flex flex-col gap-2">
-					<a href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
-						<GithubIcon class="size-4" />
-						<span class="text-sm text-foreground">GitHub</span>
-					</a>
-					<a href="https://pkfr.nl" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
-						<GlobeIcon class="size-4" />
-						<span class="text-sm text-foreground">pkfr.nl — Dutch Parkour Community</span>
-					</a>
-					<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
-						<GlobeIcon class="size-4" />
-						<span class="text-sm text-foreground">maxmade.nl — Max Seelig's Portfolio</span>
-					</a>
+				<div class="mt-6">
+					<p class="mb-2 text-sm text-muted-foreground">{themeHeading()}</p>
+					<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+						{#each themeOptions as option}
+							<button
+								class="[ 'flex items-center gap-2 rounded-md border border-border p-3 text-sm transition', themePreference === option.value ? 'bg-muted/40 outline outline-1 outline-primary outline-offset-2' : 'hover:bg-muted/60' ].join(' ')"
+								aria-pressed={themePreference === option.value}
+								onclick={() => changeTheme(option.value)}
+							>
+								<option.icon class="size-4" />
+								<span>{themeLabel(option.value)}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+				<!-- Project Links -->
+				<div class="mt-6">
+					<p class="mb-2 text-sm text-muted-foreground">{m.settings_links()}</p>
+					<div class="flex flex-col gap-2">
+						<a href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+							<GithubIcon class="size-4" />
+							<span class="text-sm text-foreground">GitHub</span>
+						</a>
+						<a href="https://pkfr.nl" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+							<GlobeIcon class="size-4" />
+							<span class="text-sm text-foreground">pkfr.nl — Dutch Parkour Community</span>
+						</a>
+						<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+							<GlobeIcon class="size-4" />
+							<span class="text-sm text-foreground">maxmade.nl — Max Seelig's Portfolio</span>
+						</a>
+					</div>
 				</div>
 			</div>
-		</div>
 
-		<!-- Bottom Credits Footer -->
-		<div class="border-t border-border text-muted-foreground text-xs flex items-center justify-between md:justify-end gap-3 p-4 bg-background/90 backdrop-blur">
-			<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" title="MAXmade - Max Seelig" class="flex items-center gap-2">
-				<img src="/images/logo-MAXmade-light.svg" alt="MAXmade - Max Seelig" class="h-5 w-auto block dark:hidden" />
-				<img src="/images/logo-MAXmade-dark.svg" alt="MAXmade - Max Seelig" class="h-5 w-auto hidden dark:block" />
-			</a>
-		</div>
-	</SheetContent>
-</SheetRoot>
+			<!-- Bottom Credits Footer -->
+			<div class="border-t border-border text-muted-foreground text-xs flex items-center justify-between md:justify-end gap-3 p-4 bg-background/90 backdrop-blur">
+				<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" title="MAXmade - Max Seelig" class="flex items-center gap-2">
+					<img src="/images/logo-MAXmade-light.svg" alt="MAXmade - Max Seelig" class="h-5 w-auto block dark:hidden" />
+					<img src="/images/logo-MAXmade-dark.svg" alt="MAXmade - Max Seelig" class="h-5 w-auto hidden dark:block" />
+				</a>
+			</div>
+		</SheetContent>
+	</SheetRoot>
 
-{#key currentLocale}
-	<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
-	<TvPage initialItem={data?.item ?? null} initialEpisodeNumber={data?.initialEpisodeNumber ?? null} initialSeasonNumber={data?.initialSeasonNumber ?? null} />
-	{@render children?.()}
-{/key}
+	{#key currentLocale}
+		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
+		<TvPage initialItem={data?.item ?? null} initialEpisodeNumber={data?.initialEpisodeNumber ?? null} initialSeasonNumber={data?.initialSeasonNumber ?? null} />
+		{@render children?.()}
+	{/key}
 
-<!-- Global toast container -->
-<Toaster richColors position="bottom-center" />
+	<!-- Global toast container -->
+	<Toaster richColors position="bottom-center" />
 
-<!-- Global PWA install prompt (auto-managed, suppressed after dismissal for 2 weeks) -->
-<PWAInstallPrompt />
+	<!-- Global PWA install prompt (auto-managed, suppressed after dismissal for 2 weeks) -->
+	<PWAInstallPrompt />
+</div>
+
+<style>
+	.popcorn-layer {
+		position: fixed;
+		inset: 0;
+		pointer-events: none;
+		overflow: hidden;
+		mix-blend-mode: soft-light;
+		mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 80%);
+		-webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 80%);
+	}
+
+	.popcorn-item {
+		position: absolute;
+		will-change: transform;
+		transform-origin: center;
+	}
+
+	.popcorn-bob {
+		display: flex;
+		width: 100%;
+		height: 100%;
+		align-items: center;
+		justify-content: center;
+		animation: popcornFloat var(--popcorn-duration, 24s) ease-in-out infinite;
+		animation-delay: var(--popcorn-delay, 0s);
+	}
+
+	.popcorn-bob img {
+		filter: drop-shadow(0 16px 28px rgba(10, 13, 24, 0.28));
+		user-select: none;
+	}
+
+	@keyframes popcornFloat {
+		0% {
+			transform: translate3d(0, 0, 0);
+		}
+
+		50% {
+			transform: translate3d(var(--popcorn-sway, 18px), -18px, 0);
+		}
+
+		100% {
+			transform: translate3d(0, 0, 0);
+		}
+	}
+
+	@media (max-width: 768px) {
+		.popcorn-bob img {
+			filter: drop-shadow(0 10px 20px rgba(10, 13, 24, 0.22));
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.popcorn-layer,
+		.popcorn-item {
+			transform: none !important;
+		}
+
+		.popcorn-bob {
+			animation: none !important;
+			transform: none !important;
+		}
+	}
+</style>

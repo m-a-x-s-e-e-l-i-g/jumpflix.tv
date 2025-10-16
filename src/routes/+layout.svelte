@@ -86,6 +86,7 @@
 	];
 
 	const PARALLAX_STRENGTH = 0.06;
+	const SCROLL_UPDATE_THRESHOLD = 6; // Minimum scroll delta (px) before refreshing parallax to cut down style recalculations
 	type PopcornEntry = {
 		node: HTMLElement;
 		spec: PopcornSpec;
@@ -114,9 +115,12 @@
 		entry.lastRotate = rotate;
 	}
 
-	function updatePopcornTransforms(scrollValue: number) {
-		lastScrollY = scrollValue;
+	function updatePopcornTransforms(scrollValue: number, force = false) {
 		const effective = reduceMotion ? 0 : scrollValue;
+		if (!force && Math.abs(effective - lastScrollY) < SCROLL_UPDATE_THRESHOLD) {
+			return;
+		}
+		lastScrollY = effective;
 		for (const entry of popcornEntries) {
 			applyPopcornTransform(entry, effective, reduceMotion);
 		}
@@ -207,7 +211,7 @@
 
 		const applyScroll = (value: number) => {
 			const clamped = Math.max(0, value);
-			updatePopcornTransforms(clamped);
+			updatePopcornTransforms(clamped, true);
 		};
 
 		const handleScroll = () => {
@@ -227,9 +231,9 @@
 					window.cancelAnimationFrame(rafId);
 					rafId = 0;
 				}
-				updatePopcornTransforms(0);
+				updatePopcornTransforms(0, true);
 			} else {
-				updatePopcornTransforms(window.scrollY);
+				updatePopcornTransforms(window.scrollY, true);
 			}
 		};
 

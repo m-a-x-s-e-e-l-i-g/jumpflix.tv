@@ -234,13 +234,19 @@
       if (!document.fullscreenElement) closePlayer();
     });
 
-    const maxTilt = 6.5;
+  const maxTilt = 6.5;
+  const LOGO_SCROLL_THRESHOLD = 6; // Only retune tilt when scroll shifts enough to matter visually
     let rafId: number | null = null;
+    let lastLogoScroll = -1;
     const applyLogoTilt = (raw: number) => {
       const next = Math.min(maxTilt, Math.max(0, raw / 30));
       logoTilt = next;
     };
-    const scheduleLogoTilt = (raw: number) => {
+    const scheduleLogoTilt = (raw: number, force = false) => {
+      if (!force && Math.abs(raw - lastLogoScroll) < LOGO_SCROLL_THRESHOLD) {
+        return;
+      }
+      lastLogoScroll = raw;
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         applyLogoTilt(raw);
@@ -249,6 +255,7 @@
     };
 
     const initialScroll = typeof window === 'undefined' ? 0 : window.scrollY;
+    lastLogoScroll = initialScroll;
     applyLogoTilt(initialScroll);
 
     const cleanupScroll = subscribeToScroll

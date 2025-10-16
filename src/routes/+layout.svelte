@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '../app.css';
+	import { onMount } from 'svelte';
 	import { Sheet as SheetRoot, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import GithubIcon from '@lucide/svelte/icons/github';
@@ -8,6 +9,7 @@
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 	import TvPage from '$lib/tv/TvPage.svelte';
+	import { showDetailsPanel } from '$lib/tv/store';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
@@ -17,7 +19,7 @@
 	let { children, data } = $props<{ children: any; data: { item: any; initialEpisodeNumber: number | null; initialSeasonNumber: number | null } }>();
 
     
-
+	let isMobile = $state(false);
 	// current locale from Paraglide (reactive state)
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
 	let sheetOpen = $state(false);
@@ -25,6 +27,18 @@
 		{ code: 'en' as const, flag: '🇬🇧', label: 'English' },
 		{ code: 'nl' as const, flag: '🇳🇱', label: 'Nederlands' }
 	];
+
+	if (typeof window !== 'undefined') {
+		isMobile = window.innerWidth < 768;
+	}
+
+	onMount(() => {
+		if (typeof window === 'undefined') return;
+		const update = () => { isMobile = window.innerWidth < 768; };
+		update();
+		window.addEventListener('resize', update);
+		return () => window.removeEventListener('resize', update);
+	});
 
 	// Switch locale without full page reload for instant UX
 	async function changeLocale(code: 'en' | 'nl') {
@@ -96,7 +110,7 @@
 
 <!-- Top-left settings cog that opens a left-side sheet -->
 <SheetRoot bind:open={sheetOpen}>
-	<div class="absolute left-4 top-4 z-30">
+	<div class="absolute left-4 top-4 z-30" class:hidden={$showDetailsPanel && isMobile}>
 		<SheetTrigger aria-label={m.settings_open()}>
 			<button
 				class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -127,8 +141,6 @@
 					</button>
 				{/each}
 			</div>
-
-
 			<!-- Project Links -->
 			<div class="mt-6">
 				<p class="mb-2 text-sm text-muted-foreground">{m.settings_links()}</p>

@@ -5,6 +5,9 @@
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import GithubIcon from '@lucide/svelte/icons/github';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
+	import MonitorIcon from '@lucide/svelte/icons/monitor';
+	import SunIcon from '@lucide/svelte/icons/sun';
+	import MoonIcon from '@lucide/svelte/icons/moon';
 	import { Toaster, toast } from 'svelte-sonner';
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
@@ -23,13 +26,56 @@
 	// current locale from Paraglide (reactive state)
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
 	let sheetOpen = $state(false);
+	type ThemePreference = 'system' | 'light' | 'dark';
+
 	const langs = [
 		{ code: 'en' as const, flag: '🇬🇧', label: 'English' },
 		{ code: 'nl' as const, flag: '🇳🇱', label: 'Nederlands' }
 	];
 
+	const themeOptions: { value: ThemePreference; icon: typeof MonitorIcon }[] = [
+		{ value: 'system', icon: MonitorIcon },
+		{ value: 'light', icon: SunIcon },
+		{ value: 'dark', icon: MoonIcon }
+	];
+
+	const themeCopy: Record<'en' | 'nl', { heading: string; system: string; light: string; dark: string; toast: (label: string) => string }> = {
+		en: {
+			heading: 'Theme',
+			system: 'System',
+			light: 'Light',
+			dark: 'Dark',
+			toast: (label) => `Theme changed to ${label}`
+		},
+		nl: {
+			heading: 'Thema',
+			system: 'Systeem',
+			light: 'Licht',
+			dark: 'Donker',
+			toast: (label) => `Thema gewijzigd naar ${label}`
+		}
+	};
+
+	let themePreference = $state<ThemePreference>('system');
+	let prefersDarkQuery: MediaQueryList | null = null;
+
+	function themeLabel(value: ThemePreference): string {
+		const copy = themeCopy[currentLocale] ?? themeCopy.en;
+		if (value === 'light') return copy.light;
+		if (value === 'dark') return copy.dark;
+		return copy.system;
+	}
+
+	function themeHeading(): string {
+		return (themeCopy[currentLocale] ?? themeCopy.en).heading;
+	}
+
 	if (typeof window !== 'undefined') {
 		isMobile = window.innerWidth < 768;
+		const storedTheme = localStorage.getItem('theme');
+		if (storedTheme === 'light' || storedTheme === 'dark') {
+			themePreference = storedTheme;
+		}
 	}
 
 	onMount(() => {
@@ -37,7 +83,20 @@
 		const update = () => { isMobile = window.innerWidth < 768; };
 		update();
 		window.addEventListener('resize', update);
-		return () => window.removeEventListener('resize', update);
+
+		prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+		const handleSystemTheme = (event: MediaQueryListEvent) => {
+			if (themePreference === 'system') {
+				applyTheme('system', event.matches);
+			}
+		};
+		prefersDarkQuery.addEventListener('change', handleSystemTheme);
+		applyTheme(themePreference);
+
+		return () => {
+			window.removeEventListener('resize', update);
+			prefersDarkQuery?.removeEventListener('change', handleSystemTheme);
+		};
 	});
 
 	// Switch locale without full page reload for instant UX
@@ -53,6 +112,44 @@
 		toast.message(m.settings_languageChanged({ language: label }));
 	}
 
+	function resolveDark(pref: ThemePreference, systemMatches?: boolean): boolean {
+		if (pref === 'system') {
+			if (typeof systemMatches === 'boolean') return systemMatches;
+			if (prefersDarkQuery) return prefersDarkQuery.matches;
+			if (typeof window !== 'undefined') {
+				return window.matchMedia('(prefers-color-scheme: dark)').matches;
+			}
+			return false;
+		}
+		return pref === 'dark';
+	}
+
+	function updateThemeMeta(isDark: boolean) {
+		if (typeof document === 'undefined') return;
+		let meta = document.querySelector('meta[name="theme-color"]');
+		if (!meta) {
+			meta = document.createElement('meta');
+			meta.setAttribute('name', 'theme-color');
+			document.head.appendChild(meta);
+		}
+		meta.setAttribute('content', isDark ? '#0b1220' : '#ffffff');
+	}
+
+	function applyTheme(pref: ThemePreference, systemMatches?: boolean) {
+		if (typeof document === 'undefined') return;
+		const isDark = resolveDark(pref, systemMatches);
+		document.documentElement.classList.toggle('dark', isDark);
+		updateThemeMeta(isDark);
+	}
+
+	function changeTheme(pref: ThemePreference) {
+		if (themePreference === pref) return;
+		themePreference = pref;
+		const label = themeLabel(pref);
+		const copy = themeCopy[currentLocale] ?? themeCopy.en;
+		toast.message(copy.toast(label));
+	}
+
 	// Keep the <html lang> attribute in sync
 	$effect(() => {
 		if (typeof document !== 'undefined') {
@@ -60,23 +157,16 @@
 		}
 	});
 
-	// Listen for system theme changes and update the 'dark' class on <html>
-	if (typeof window !== 'undefined' && window.matchMedia) {
-		const updateTheme = (e: MediaQueryList | MediaQueryListEvent) => {
-			const stored = localStorage.getItem('theme');
-			// e.matches is true if dark mode is enabled
-			const matches = 'matches' in e ? (e as MediaQueryListEvent).matches : (e as MediaQueryList).matches;
-			if (stored === 'dark' || (!stored && matches)) {
-				document.documentElement.classList.add('dark');
-			} else {
-				document.documentElement.classList.remove('dark');
-			}
-		};
-		const mql = window.matchMedia('(prefers-color-scheme: dark)');
-		mql.addEventListener('change', updateTheme as any);
-		// Initial check in case theme was changed while page was open
-		updateTheme(mql as any);
-	}
+	$effect(() => {
+		const pref = themePreference;
+		if (typeof window === 'undefined') return;
+		if (pref === 'system') {
+			localStorage.removeItem('theme');
+		} else {
+			localStorage.setItem('theme', pref);
+		}
+		applyTheme(pref);
+	});
 
 	// Register Service Worker in production for PWA installability
 	if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && !import.meta.env.DEV) {
@@ -140,6 +230,21 @@
 						<span>{l.label}</span>
 					</button>
 				{/each}
+			</div>
+			<div class="mt-6">
+				<p class="mb-2 text-sm text-muted-foreground">{themeHeading()}</p>
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+					{#each themeOptions as option}
+						<button
+							class="[ 'flex items-center gap-2 rounded-md border border-border p-3 text-sm transition', themePreference === option.value ? 'bg-muted/40 outline outline-1 outline-primary outline-offset-2' : 'hover:bg-muted/60' ].join(' ')"
+							aria-pressed={themePreference === option.value}
+							onclick={() => changeTheme(option.value)}
+						>
+							<svelte:component this={option.icon} class="size-4" />
+							<span>{themeLabel(option.value)}</span>
+						</button>
+					{/each}
+				</div>
 			</div>
 			<!-- Project Links -->
 			<div class="mt-6">

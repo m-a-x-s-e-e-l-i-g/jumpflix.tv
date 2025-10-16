@@ -208,6 +208,21 @@
   
   // Handle keyboard navigation and actions
   function handleKeydown(event: KeyboardEvent) { if ($showPlayer && event.key === 'Escape') { closePlayer(); return; } if (event.key === 'Escape' && document.fullscreenElement) { document.exitFullscreen(); closePlayer(); return; } if (isTypingTarget(event.target)) return; if ($showPlayer) return; const list = $visibleContent; if (!list.length) return; const idx = $selectedIndex; const current = $selectedContent; switch (event.key) { case 'ArrowRight': event.preventDefault(); lastSelectionSource = 'keyboard'; setIndex(idx + 1); break; case 'ArrowLeft': event.preventDefault(); lastSelectionSource = 'keyboard'; setIndex(idx - 1); break; case 'ArrowDown': event.preventDefault(); lastSelectionSource = 'keyboard'; setIndex(idx + columns); break; case 'ArrowUp': event.preventDefault(); lastSelectionSource = 'keyboard'; setIndex(idx - columns); break; case 'Enter': if (current) { event.preventDefault(); lastSelectionSource = 'keyboard'; openContent(current); } break; } }
+
+  function handleMobileBack() {
+    lastSelectionSource = 'programmatic';
+    setMobileDetails(false);
+    selectedContent.set(null);
+    selectedEpisode.set(null);
+    pageTitle = null;
+    if (browser) {
+      const target = '/';
+      if (currentPath !== target) {
+        nav(target, { replace: true });
+        currentPath = target;
+      }
+    }
+  }
   
   onMount(() => {
     // Initialize the currentPath from the page store and subscribe for changes
@@ -351,6 +366,7 @@
       selectedEpisode={$selectedEpisode}
       {closeDetailsPanel}
       initialSeason={initialSeasonNumber ?? undefined}
+      onBack={handleMobileBack}
     />
   </div>
 </div>

@@ -42,9 +42,7 @@
       class="group inline-flex items-center gap-3 rounded-full bg-[#e50914] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-[0_22px_40px_-15px_rgba(229,9,20,0.8)] transition hover:bg-[#f6121d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
     >
       {m.tv_heroCtaWatch()}
-      <svg class="size-4 transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-        <path d="M11.293 4.293a1 1 0 0 1 1.414 0l4.5 4.5a1 1 0 0 1 0 1.414l-4.5 4.5A1 1 0 0 1 11 14.5V12H4a1 1 0 1 1 0-2h7V5.5a1 1 0 0 1 .293-.707Z" />
-      </svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5l0 14" /><path d="M18 13l-6 6" /><path d="M6 13l6 6" /></svg>
     </a>
     <SubmitFilmDialog label={m.tv_heroCtaSubmit()} />
   </div>

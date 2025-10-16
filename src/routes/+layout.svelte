@@ -328,12 +328,12 @@
 				<div class="grid grid-cols-2 gap-2">
 					{#each langs as l}
 						<button
-							class="[ 'flex items-center gap-2 rounded-md border border-border p-3 text-left text-sm transition cursor-pointer hover:-translate-y-0.5 hover:shadow-sm', currentLocale === l.code ? 'bg-muted/40 outline outline-1 outline-primary outline-offset-2' : 'hover:bg-muted/60' ].join(' ')"
+							class={`group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-left text-sm transition cursor-pointer hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${currentLocale === l.code ? 'border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 text-foreground shadow-[0_18px_32px_-16px_rgba(59,130,246,0.55)] ring-2 ring-primary/40' : 'text-muted-foreground'}`}
 							aria-pressed={currentLocale === l.code}
 							onclick={() => changeLocale(l.code)}
 						>
-							<span class="text-lg leading-none">{l.flag}</span>
-							<span>{l.label}</span>
+							<span class="text-lg leading-none transition-colors group-hover:text-foreground">{l.flag}</span>
+							<span class={`flex-1 font-medium transition-colors ${currentLocale === l.code ? 'text-foreground' : 'group-hover:text-foreground'}`}>{l.label}</span>
 						</button>
 					{/each}
 				</div>
@@ -342,12 +342,12 @@
 					<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
 						{#each themeOptions as option}
 							<button
-								class="[ 'flex items-center gap-2 rounded-md border border-border p-3 text-sm transition cursor-pointer hover:-translate-y-0.5 hover:shadow-sm', themePreference === option.value ? 'bg-muted/40 outline outline-1 outline-primary outline-offset-2' : 'hover:bg-muted/60' ].join(' ')"
+								class={`group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm transition cursor-pointer hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${themePreference === option.value ? 'border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 text-foreground shadow-[0_18px_32px_-16px_rgba(59,130,246,0.55)] ring-2 ring-primary/40' : 'text-muted-foreground'}`}
 								aria-pressed={themePreference === option.value}
 								onclick={() => changeTheme(option.value)}
 							>
-								<option.icon class="size-4" />
-								<span>{themeLabel(option.value)}</span>
+								<option.icon class={`size-5 shrink-0 transition-colors ${themePreference === option.value ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} aria-hidden="true" />
+								<span class={`flex-1 text-left font-medium leading-tight transition-colors ${themePreference === option.value ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>{themeLabel(option.value)}</span>
 							</button>
 						{/each}
 					</div>
@@ -356,17 +356,17 @@
 				<div class="mt-6">
 					<p class="mb-2 text-sm text-muted-foreground">{m.settings_links()}</p>
 					<div class="flex flex-col gap-2">
-						<a href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+						<a href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv" target="_blank" rel="noopener noreferrer" class="group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
 							<GithubIcon class="size-4" />
-							<span class="text-sm text-foreground">GitHub</span>
+							<span class="font-medium transition-colors group-hover:text-foreground">GitHub</span>
 						</a>
-						<a href="https://pkfr.nl" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+						<a href="https://pkfr.nl" target="_blank" rel="noopener noreferrer" class="group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
 							<GlobeIcon class="size-4" />
-							<span class="text-sm text-foreground">pkfr.nl — Dutch Parkour Community</span>
+							<span class="font-medium transition-colors group-hover:text-foreground">pkfr.nl — Dutch Parkour Community</span>
 						</a>
-						<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-border p-3 hover:bg-muted/60 transition">
+						<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" class="group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background">
 							<GlobeIcon class="size-4" />
-							<span class="text-sm text-foreground">maxmade.nl — Max Seelig's Portfolio</span>
+							<span class="font-medium transition-colors group-hover:text-foreground">maxmade.nl — Max Seelig's Portfolio</span>
 						</a>
 					</div>
 				</div>

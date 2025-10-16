@@ -2,29 +2,24 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { get } from 'svelte/store';
-  import ContentCard from '$lib/tv/ContentCard.svelte';
   import SidebarDetails from '$lib/tv/SidebarDetails.svelte';
   import PlayerModal from '$lib/tv/PlayerModal.svelte';
   import MobileDetailsOverlay from '$lib/tv/MobileDetailsOverlay.svelte';
+  import TvHeroSection from '$lib/tv/TvHeroSection.svelte';
+  import TvSearchControls from '$lib/tv/TvSearchControls.svelte';
+  import TvCatalogGrid from '$lib/tv/TvCatalogGrid.svelte';
   import { visibleContent, visibleKeys, sortedAllContent, searchQuery, showPaid, sortBy, selectedContent, showPlayer, showDetailsPanel, selectedIndex, selectContent, openContent, closePlayer, closeDetailsPanel, selectedEpisode, openEpisode, selectEpisode } from '$lib/tv/store';
-  import { loadedThumbnails } from '$lib/tv/store';
-  import Switch from '$lib/components/ui/Switch.svelte';
-  import { sortLabels } from '$lib/tv/utils';
   import type { ContentItem } from '$lib/tv/types';
   import { browser } from '$app/environment';
-  import * as m from '$lib/paraglide/messages';
-  import { Image } from '@unpic/svelte';
-  import { dev } from '$app/environment';
   import { goto } from '$app/navigation';
   import { getUrlForItem, getEpisodeUrl } from '$lib/tv/slug';
-  import SubmitFilmDialog from '$lib/components/SubmitFilmDialog.svelte';
 
   export let initialItem: ContentItem | null = null;
   export let initialEpisodeNumber: number | null = null;
   export let initialSeasonNumber: number | null = null;
 
   let isMobile = false;
-  let gridEl: HTMLElement;
+  let gridEl: HTMLElement | null = null;
   // Track how selection was changed to decide if URL should sync
   let lastSelectionSource: 'keyboard' | 'click' | 'programmatic' = 'programmatic';
   let currentPath = '';
@@ -318,106 +313,55 @@
   <section class="relative isolate overflow-hidden px-6 pt-24 pb-16 sm:pt-32 sm:pb-20">
     <div class="hero-overlay" aria-hidden="true"></div>
 
-    <div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-8 text-center">
-  <div class="hero-logo-stack">
-        <a href="/" aria-label="Go to homepage" data-sveltekit-reload class="hero-logo-link">
-          <Image src="/images/jumpflix.webp" alt="JUMPFLIX parkour tv" width={300} height={264} class="hero-logo" cdn={dev ? undefined : 'netlify'} loading="eager" fetchpriority="high" decoding="async" />
-        </a>
-  <div class="hero-logo-text" aria-hidden="true"><span style={`--logo-scroll-tilt: ${logoTilt.toFixed(3)}deg;`}>JUMPFLIX</span></div>
-      </div>
-      <div class="flex flex-col items-center gap-4">
-  <h1 class="text-center text-4xl font-black uppercase tracking-tight text-slate-900 drop-shadow-[0_12px_28px_rgba(148,163,184,0.35)] dark:text-white dark:drop-shadow-[0_12px_30px_rgba(0,0,0,0.65)] sm:text-5xl md:text-6xl">
-          <span class="hero-title-gradient">{m.tv_heroHeading()}</span>
-        </h1>
-        <p class="max-w-2xl text-sm font-medium uppercase tracking-[0.28em] text-slate-600 dark:text-white/60 sm:text-xs">
-          {m.tv_heroTagline()}
-        </p>
-      </div>
-      <div class="mt-4 flex flex-col items-center gap-4 sm:flex-row">
-        <a href="#search" class="group inline-flex items-center gap-3 rounded-full bg-[#e50914] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-[0_22px_40px_-15px_rgba(229,9,20,0.8)] transition hover:bg-[#f6121d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-          {m.tv_heroCtaWatch()}
-          <svg class="size-4 transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11.293 4.293a1 1 0 0 1 1.414 0l4.5 4.5a1 1 0 0 1 0 1.414l-4.5 4.5A1 1 0 0 1 11 14.5V12H4a1 1 0 1 1 0-2h7V5.5a1 1 0 0 1 .293-.707Z"/></svg>
-        </a>
-  <SubmitFilmDialog label={m.tv_heroCtaSubmit()} />
-      </div>
-    </div>
+    <TvHeroSection {logoTilt} />
 
-    <div id="search" class="relative z-10 mx-auto mt-30 w-full max-w-5xl">
-      <div class="rounded-3xl border border-white/10 bg-white/70 p-6 shadow-[0_35px_90px_-40px_rgba(0,0,0,0.95)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/65">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
-          <!-- Search -->
-          <form class="relative flex-1 min-w-[260px] group">
-            <span class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#e50914] dark:text-gray-400 dark:group-focus-within:text-[#f87171] transition-colors z-10">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"/></svg>
-            </span>
-            {#if $searchQuery}
-              <button type="button" class="absolute inset-y-0 right-3 flex items-center rounded-md p-1 text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e50914] focus:ring-offset-2 focus:ring-offset-white/40 dark:focus:ring-offset-slate-950/70 z-10" on:click={() => { searchQuery.set(''); }} aria-label="Clear search">
-                <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            {/if}
-            <input bind:value={$searchQuery} type="text" autocomplete="off" spellcheck="false" placeholder={m.tv_searchPlaceholder()} aria-label="Search content" class="h-12 w-full rounded-2xl border border-white/50 bg-white/60 pr-12 text-sm text-gray-900 placeholder-gray-600 shadow-sm transition focus:border-[#e50914]/80 focus:outline-none focus:ring-2 focus:ring-[#e50914]/70 dark:border-white/10 dark:bg-slate-900/80 dark:text-gray-100 dark:placeholder-gray-400" style="padding-left: 3rem;" />
-            <!-- Hidden submit to allow pressing Enter in the input to apply URL update without live-sync -->
-            <button type="submit" class="hidden" aria-hidden="true" tabindex="-1"></button>
-          </form>
-
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center lg:justify-end lg:pl-6">
-            <!-- Show paid switch -->
-            <label class="flex items-center gap-3 select-none rounded-2xl border border-white/15 bg-white/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-700 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 dark:text-gray-200">
-              <span>{m.tv_showPaid()}</span>
-              <Switch bind:checked={$showPaid} ariaLabel={m.tv_showPaid()} />
-            </label>
-
-            <!-- Sorting -->
-            <div class="relative min-w-[170px]">
-              <select
-                bind:value={$sortBy}
-                class="appearance-none w-full rounded-2xl border border-white/30 bg-white/50 px-4 py-3 pr-10 text-sm font-semibold uppercase tracking-[0.12em] text-gray-800 transition focus:border-[#e50914]/80 focus:outline-none focus:ring-2 focus:ring-[#e50914]/70 dark:border-white/10 dark:bg-slate-900/70 dark:text-gray-100"
-              >
-                {#each Object.entries(sortLabels) as [value, label]}
-                  <option {value}>{label}</option>
-                {/each}
-              </select>
-              <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-600 dark:text-gray-300">▾</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <TvSearchControls {searchQuery} {showPaid} {sortBy} />
   </section>
   <div>
-    <div id="catalog" class="container mx-auto px-6 py-10 tv-main -mt-16">
-      <div bind:this={gridEl} class="grid auto-fit-grid gap-6">
-        {#if $visibleContent.length === 0}
-          <div class="col-span-full text-center text-gray-400 py-8">{m.tv_noResults()}</div>
-        {:else}
-          {#each $sortedAllContent as item, i (item.type + ':' + item.id)}
-            <div class:hidden={!$visibleKeys.has(item.type + ':' + item.id)} class="w-full">
-              <ContentCard
-                {item}
-                isSelected={!!($selectedContent && $selectedContent.id === item.id && $selectedContent.type === item.type)}
-                onSelect={handleSelect}
-                {isMobile}
-                priority={priorityKeys.has(item.type + ':' + item.id)}
-              />
-            </div>
-          {/each}
-        {/if}
-      </div>
-    </div>
+    <TvCatalogGrid
+      bind:gridElement={gridEl}
+      sortedAllContent={$sortedAllContent}
+      visibleContent={$visibleContent}
+      visibleKeys={$visibleKeys}
+      selectedContent={$selectedContent}
+      {isMobile}
+      priorityKeys={priorityKeys}
+      onSelect={handleSelect}
+    />
     <div class="hidden md:flex w-[460px] border-l border-slate-200/70 dark:border-gray-700/50 px-6 pt-14 pb-6 fixed right-0 top-0 bottom-0 overflow-hidden flex-col bg-gradient-to-b from-white/90 via-white/75 to-white/55 dark:from-[#0f172a]/60 dark:via-[#0f172a]/35 dark:to-[#0f172a]/20 backdrop-blur-xl">
-  <SidebarDetails selected={$selectedContent} openContent={handleOpenContent} openExternal={openExternalContent} onOpenEpisode={handleOpenEpisode} onSelectEpisode={handleSelectEpisode} selectedEpisode={$selectedEpisode} initialSeason={initialSeasonNumber ?? undefined} {isMobile} />
+      <SidebarDetails
+        selected={$selectedContent}
+        openContent={handleOpenContent}
+        openExternal={openExternalContent}
+        onOpenEpisode={handleOpenEpisode}
+        onSelectEpisode={handleSelectEpisode}
+        selectedEpisode={$selectedEpisode}
+        initialSeason={initialSeasonNumber ?? undefined}
+        {isMobile}
+      />
     </div>
-    <MobileDetailsOverlay show={$showDetailsPanel} {isMobile} selected={$selectedContent} openContent={handleOpenContent} openExternal={openExternalContent} onOpenEpisode={handleOpenEpisode} onSelectEpisode={handleSelectEpisode} selectedEpisode={$selectedEpisode} {closeDetailsPanel} initialSeason={initialSeasonNumber ?? undefined} />
+    <MobileDetailsOverlay
+      show={$showDetailsPanel}
+      {isMobile}
+      selected={$selectedContent}
+      openContent={handleOpenContent}
+      openExternal={openExternalContent}
+      onOpenEpisode={handleOpenEpisode}
+      onSelectEpisode={handleSelectEpisode}
+      selectedEpisode={$selectedEpisode}
+      {closeDetailsPanel}
+      initialSeason={initialSeasonNumber ?? undefined}
+    />
   </div>
 </div>
 <PlayerModal show={$showPlayer} selected={$selectedContent} selectedEpisode={$selectedEpisode} close={closePlayer} />
 
 <style>
-  .tv-page {
+  :global(.tv-page) {
     --hero-gradient: linear-gradient(150deg, #eef2ff 5%, #fdeff7 45%, #fff6e5 100%);
     --hero-gradient-opacity: 0.96;
-  --hero-glow-one: radial-gradient(circle at center, rgba(248, 113, 113, 0.4), rgba(248, 113, 113, 0));
-  --hero-glow-two: radial-gradient(circle at center, rgba(14, 165, 233, 0.3), rgba(14, 165, 233, 0));
+    --hero-glow-one: radial-gradient(circle at center, rgba(248, 113, 113, 0.4), rgba(248, 113, 113, 0));
+    --hero-glow-two: radial-gradient(circle at center, rgba(14, 165, 233, 0.3), rgba(14, 165, 233, 0));
     --hero-grid-line-x: rgba(15, 23, 42, 0.12);
     --hero-grid-line-y: rgba(15, 23, 42, 0.08);
     --hero-grid-opacity: 0.4;
@@ -425,14 +369,14 @@
     --hero-overlay: radial-gradient(circle at 38% 24%, rgba(248, 113, 113, 0.22), transparent 55%),
       radial-gradient(circle at 70% 12%, rgba(59, 130, 246, 0.18), transparent 60%),
       linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.92) 100%);
-  --hero-overlay-blend: normal;
-  --hero-noise-opacity: 0.12;
-  --hero-logo-text-shadow: 0 10px 26px rgba(148, 163, 184, 0.35);
+    --hero-overlay-blend: normal;
+    --hero-noise-opacity: 0.12;
+    --hero-logo-text-shadow: 0 10px 26px rgba(148, 163, 184, 0.35);
     --hero-title-gradient: linear-gradient(120deg, #0f172a 0%, #b91c1c 48%, #7c3aed 92%);
     --hero-title-shadow: 0 10px 22px rgba(148, 163, 184, 0.3);
   }
 
-  :global(.dark) .tv-page {
+  :global(.dark .tv-page) {
     --hero-gradient: linear-gradient(150deg, #050712 5%, #0c1430 45%, #1a233e 100%);
     --hero-gradient-opacity: 0.98;
     --hero-glow-one: radial-gradient(circle at center, rgba(229, 9, 20, 0.7), rgba(229, 9, 20, 0));
@@ -444,11 +388,19 @@
     --hero-overlay: radial-gradient(circle at 40% 20%, rgba(229, 9, 20, 0.34), transparent 55%),
       radial-gradient(circle at 70% 10%, rgba(59, 130, 246, 0.28), transparent 60%),
       linear-gradient(180deg, rgba(5, 7, 18, 0.05) 0%, rgba(5, 7, 18, 0.85) 100%);
-  --hero-overlay-blend: screen;
-  --hero-noise-opacity: 0.26;
-  --hero-logo-text-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+    --hero-overlay-blend: screen;
+    --hero-noise-opacity: 0.26;
+    --hero-logo-text-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
     --hero-title-gradient: linear-gradient(120deg, rgba(255, 255, 255, 0.95), rgba(229, 9, 20, 0.95) 45%, rgba(244, 114, 182, 0.95) 90%);
     --hero-title-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+  }
+
+  .page-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: -30;
+    pointer-events: none;
+    overflow: hidden;
   }
 
   .hero-gradient {
@@ -457,6 +409,7 @@
     background: var(--hero-gradient);
     opacity: var(--hero-gradient-opacity);
   }
+
   .hero-glow {
     position: absolute;
     border-radius: 9999px;
@@ -465,34 +418,7 @@
     mix-blend-mode: screen;
     animation: heroGlow 14s ease-in-out infinite alternate;
   }
-  .hero-logo-stack {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.4rem;
-    margin-top: -4rem;
-  }
-  .hero-logo-text {
-    font-family: 'Bebas Neue', 'Anton', 'Archivo Black', sans-serif;
-    font-size: clamp(2.3rem, 4vw, 4.75rem);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    text-align: center;
-    line-height: 0.86;
-    margin-bottom: 6rem;
-  }
-  .hero-logo-text > span {
-    display: inline-block;
-    color: #e63b28;
-    font-weight: 800;
-    transform: perspective(100px) rotateX(calc(31deg + var(--logo-scroll-tilt, 0deg))) scaleX(1.04);
-    transform-origin: center top;
-    filter: saturate(110%) contrast(110%);
-  text-shadow: var(--hero-logo-text-shadow);
-  }
-  @media (max-width: 479px) {
-    .hero-logo-text { font-size: clamp(1rem, 10vw, 3.6rem); letter-spacing: 0.12em; }
-  }
+
   .hero-glow--one {
     top: -28%;
     right: 12%;
@@ -501,6 +427,7 @@
     background: var(--hero-glow-one);
     animation-delay: -3s;
   }
+
   .hero-glow--two {
     bottom: -30%;
     left: 6%;
@@ -509,6 +436,7 @@
     background: var(--hero-glow-two);
     animation-delay: -8s;
   }
+
   .hero-grid {
     position: absolute;
     inset: 0;
@@ -519,6 +447,7 @@
     mask-image: radial-gradient(circle at 40% 30%, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0) 70%);
     opacity: var(--hero-grid-opacity);
   }
+
   .hero-noise {
     position: absolute;
     inset: -10px;
@@ -528,58 +457,33 @@
     mix-blend-mode: soft-light;
     pointer-events: none;
   }
-  .hero-logo-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 200ms ease, filter 200ms ease;
-  }
-  .hero-logo-link:hover { transform: scale(1.03); filter: drop-shadow(0 25px 60px rgba(229, 9, 20, 0.45)); }
-  .hero-logo-link:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.85);
-    outline-offset: 8px;
-  }
-  :global(.hero-logo) {
-    height: 118px;
-    width: auto;
-    filter: drop-shadow(0 25px 55px rgba(0, 0, 0, 0.5));
-  }
-  @media (min-width: 768px) {
-    :global(.hero-logo) { height: 180px; }
-  }
-  .hero-title-gradient {
-    background-image: var(--hero-title-gradient);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    text-shadow: var(--hero-title-shadow);
-  }
-  .page-backdrop {
-    position: absolute;
-    inset: 0;
-    z-index: -30;
-    pointer-events: none;
-    overflow: hidden;
-  }
+
   .hero-gradient--page,
   .hero-grid--page,
   .hero-noise--page,
   .hero-glow--page {
     height: 100%;
   }
-  .hero-gradient--page { opacity: 1; }
+
+  .hero-gradient--page {
+    opacity: 1;
+  }
+
   .hero-grid--page {
     opacity: var(--hero-grid-opacity);
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.6) 65%, rgba(0, 0, 0, 0.2) 100%);
   }
+
   .hero-noise--page {
     opacity: var(--hero-noise-opacity);
   }
+
   .hero-glow--page {
     filter: blur(160px);
     opacity: var(--hero-glow-page-opacity);
     animation-duration: 20s;
   }
+
   .hero-overlay {
     position: absolute;
     inset: 0;
@@ -589,36 +493,42 @@
     mix-blend-mode: var(--hero-overlay-blend);
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 70%, rgba(0, 0, 0, 0) 100%);
   }
+
   @keyframes heroGlow {
-    from { transform: translate3d(-12px, -10px, 0) scale(0.96); opacity: 0.68; }
-    to { transform: translate3d(16px, 18px, 0) scale(1.04); opacity: 0.85; }
+    from {
+      transform: translate3d(-12px, -10px, 0) scale(0.96);
+      opacity: 0.68;
+    }
+    to {
+      transform: translate3d(16px, 18px, 0) scale(1.04);
+      opacity: 0.85;
+    }
   }
+
   /* Only apply hover effects on non-mobile devices */
   @media (min-width: 768px) {
-    .tv-page :global(.group:hover img) { filter: brightness(1.05); }
-  }
-  .auto-fit-grid {
-    --card-max: 220px;
-    grid-template-columns: repeat(auto-fill, minmax(180px, var(--card-max)));
-    justify-content: center;
-    justify-items: center;
-  }
-  .auto-fit-grid > * { width: 100%; max-width: var(--card-max); }
-  @media (max-width: 767px) {
-    .auto-fit-grid {
-      --card-min: 120px;
-      --card-max: 165px;
-      grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
-      justify-content: center;
+    :global(.tv-page .group:hover img) {
+      filter: brightness(1.05);
     }
-    .auto-fit-grid > * { max-width: var(--card-max); }
+
+    :global(.tv-page) {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    :global(.tv-page .container) {
+      max-width: 100%;
+      width: 100%;
+    }
+
+    :global(.tv-page .tv-main) {
+      width: 100%;
+    }
   }
-  @media (min-width: 768px) {
-    .tv-page { margin-left: auto; margin-right: auto; }
-    .tv-page .container { max-width: 100%; width: 100%; }
-    .tv-page .tv-main { width: 100%; }
+
+  :global(.tv-layout main) {
+    max-width: 100vw;
+    padding: 0 1rem 0 0;
+    margin: 1rem auto;
   }
-  :global(.tv-layout main) { max-width: 100vw; padding: 0 1rem 0 0; margin: 1rem auto; }
-  .auto-fit-grid :global([role="button"][tabindex="0"]:focus:not(:focus-visible)) { outline: none; box-shadow: none; }
-  .auto-fit-grid :global([role="button"][tabindex="0"]:focus-visible) { outline: none; border: none; }
 </style>

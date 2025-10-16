@@ -13,8 +13,8 @@
       <Image
         src="/images/jumpflix.webp"
         alt="JUMPFLIX parkour tv"
-        width={300}
-        height={264}
+        width={93}
+        height={118}
         class="hero-logo"
         cdn={dev ? undefined : 'netlify'}
         loading="eager"
@@ -66,6 +66,7 @@
     text-align: center;
     line-height: 0.86;
     margin-bottom: 6rem;
+    user-select: none;
   }
   .hero-logo-text > span {
     display: inline-block;
@@ -100,11 +101,6 @@
     height: 118px;
     width: auto;
     filter: drop-shadow(0 25px 55px rgba(0, 0, 0, 0.5));
-  }
-  @media (min-width: 768px) {
-    :global(.hero-logo) {
-      height: 180px;
-    }
   }
   .hero-title-gradient {
     background-image: var(--hero-title-gradient);

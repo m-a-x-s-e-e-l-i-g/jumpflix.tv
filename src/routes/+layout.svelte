@@ -545,13 +545,4 @@
 			display: none;
 		}
 	}
-
-	@media (max-width: 768px) {
-		.popcorn-layer {
-			mask-image: none;
-			-webkit-mask-image: none;
-			mix-blend-mode: normal;
-			opacity: 0.55;
-		}
-	}
 </style>

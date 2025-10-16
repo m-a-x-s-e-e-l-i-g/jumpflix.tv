@@ -237,7 +237,7 @@
     const maxTilt = 6.5;
     let rafId: number | null = null;
     const applyLogoTilt = (raw: number) => {
-      const next = Math.min(maxTilt, Math.max(0, raw / 90));
+      const next = Math.min(maxTilt, Math.max(0, raw / 30));
       logoTilt = next;
     };
     const scheduleLogoTilt = (raw: number) => {

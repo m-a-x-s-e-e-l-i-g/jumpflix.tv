@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
-	import { onMount } from 'svelte';
+	import { onMount, setContext } from 'svelte';
+	import type { Action } from 'svelte/action';
 	import { Sheet as SheetRoot, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import GithubIcon from '@lucide/svelte/icons/github';
@@ -14,6 +15,7 @@
 	import TvPage from '$lib/tv/TvPage.svelte';
 	import { showDetailsPanel } from '$lib/tv/store';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
+	import { SCROLL_CONTEXT_KEY, type ScrollSubscriber, type ScrollSubscription } from '$lib/scroll-context';
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
     
@@ -27,6 +29,25 @@
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
 	let sheetOpen = $state(false);
 	let reduceMotion = $state(false);
+
+	let lastScrollY = 0;
+	const scrollSubscribers = new Set<ScrollSubscriber>();
+
+	const subscribeToScroll: ScrollSubscription = (subscriber) => {
+		scrollSubscribers.add(subscriber);
+		subscriber(reduceMotion ? 0 : lastScrollY);
+		return () => {
+			scrollSubscribers.delete(subscriber);
+		};
+	};
+
+	setContext(SCROLL_CONTEXT_KEY, subscribeToScroll);
+
+	function notifyScrollSubscribers(value: number) {
+		for (const subscriber of scrollSubscribers) {
+			subscriber(value);
+		}
+	}
 	type ThemePreference = 'system' | 'light' | 'dark';
 
 	const langs = [
@@ -73,7 +94,6 @@
 	};
 
 	const popcornEntries = new Set<PopcornEntry>();
-	let lastScrollY = 0;
 
 	function applyPopcornTransform(entry: PopcornEntry, scrollValue: number, motionReduced: boolean) {
 		const { node, spec } = entry;
@@ -96,12 +116,14 @@
 
 	function updatePopcornTransforms(scrollValue: number) {
 		lastScrollY = scrollValue;
+		const effective = reduceMotion ? 0 : scrollValue;
 		for (const entry of popcornEntries) {
-			applyPopcornTransform(entry, scrollValue, reduceMotion);
+			applyPopcornTransform(entry, effective, reduceMotion);
 		}
+		notifyScrollSubscribers(effective);
 	}
 
-	function popcornParallax(node: HTMLElement, spec: PopcornSpec) {
+	const popcornParallax: Action<HTMLElement, PopcornSpec> = (node, spec) => {
 		const entry: PopcornEntry = { node, spec, lastTranslate: 0, lastRotate: spec.rotateBase };
 		popcornEntries.add(entry);
 		applyPopcornTransform(entry, reduceMotion ? 0 : lastScrollY, reduceMotion);
@@ -115,7 +137,7 @@
 				popcornEntries.delete(entry);
 			}
 		};
-	}
+	};
 
 	const themeCopy: Record<'en' | 'nl', { heading: string; system: string; light: string; dark: string; toast: (label: string) => string }> = {
 		en: {
@@ -185,7 +207,7 @@
 
 		const applyScroll = (value: number) => {
 			const clamped = Math.max(0, value);
-			updatePopcornTransforms(reduceMotion ? 0 : clamped);
+			updatePopcornTransforms(clamped);
 		};
 
 		const handleScroll = () => {
@@ -212,7 +234,7 @@
 		};
 
 		reduceMotion = motionQuery.matches;
-		applyScroll(reduceMotion ? 0 : window.scrollY);
+		applyScroll(window.scrollY);
 
 		motionQuery.addEventListener('change', handleMotionPreference);
 		window.addEventListener('scroll', handleScroll, { passive: true });

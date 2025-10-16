@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { getContext, onMount } from 'svelte';
   import { page } from '$app/stores';
   import { get } from 'svelte/store';
   import PlayerModal from '$lib/tv/PlayerModal.svelte';
@@ -33,6 +33,7 @@
   import { goto } from '$app/navigation';
   import { buildItemUrl, buildPageTitle, extractSeasonEpisodeFromPath, openExternalContent } from '$lib/tv/helpers/navigation';
   import { clampIndex, computeColumns, ensureVisibleSelection, isTypingTarget } from '$lib/tv/helpers/grid';
+  import { SCROLL_CONTEXT_KEY, type ScrollSubscription } from '$lib/scroll-context';
 
   export let initialItem: ContentItem | null = null;
   export let initialEpisodeNumber: number | null = null;
@@ -45,6 +46,8 @@
   let pageTitle: string | null = null;
   let logoTilt = 0;
   let columns = 1;
+
+  const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
 
   function nav(url: string, opts?: { replace?: boolean }) {
     goto(url, { replaceState: !!opts?.replace, noScroll: true, keepFocus: true });
@@ -233,25 +236,38 @@
 
     const maxTilt = 6.5;
     let rafId: number | null = null;
-    const updateLogoTilt = () => {
-      const raw = typeof window === 'undefined' ? 0 : window.scrollY;
+    const applyLogoTilt = (raw: number) => {
       const next = Math.min(maxTilt, Math.max(0, raw / 90));
       logoTilt = next;
     };
-    const handleScroll = () => {
+    const scheduleLogoTilt = (raw: number) => {
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
-        updateLogoTilt();
+        applyLogoTilt(raw);
         rafId = null;
       });
     };
-    updateLogoTilt();
-    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    const initialScroll = typeof window === 'undefined' ? 0 : window.scrollY;
+    applyLogoTilt(initialScroll);
+
+    const cleanupScroll = subscribeToScroll
+      ? subscribeToScroll((value) => scheduleLogoTilt(value))
+      : (() => {
+          const fallbackScroll = () => {
+            scheduleLogoTilt(window.scrollY);
+          };
+          window.addEventListener('scroll', fallbackScroll, { passive: true });
+          fallbackScroll();
+          return () => {
+            window.removeEventListener('scroll', fallbackScroll);
+          };
+        })();
 
     return () => {
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('resize', resizeHandler);
-      window.removeEventListener('scroll', handleScroll);
+      cleanupScroll?.();
       if (rafId !== null) cancelAnimationFrame(rafId);
       unsubPage();
     };

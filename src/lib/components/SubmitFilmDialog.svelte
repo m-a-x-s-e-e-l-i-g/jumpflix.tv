@@ -4,8 +4,9 @@
   import { tick } from "svelte";
   import XIcon from "@lucide/svelte/icons/x";
   import { Dialog } from "bits-ui";
+  import { m } from "$lib/paraglide/messages.js";
 
-  let { label = 'Submit a Film' } = $props<{ label?: string }>();
+  let { label = m.submit_film_dialog_title() } = $props<{ label?: string }>();
 
   let open = $state(false);
   let formEl: HTMLFormElement | null = null;
@@ -29,9 +30,9 @@
       }
 
       if (result.type === "failure") {
-        submitError = result.data?.message ?? "Something went wrong.";
+        submitError = result.data?.message ?? m.submit_film_error_generic();
       } else if (result.type === "error") {
-        submitError = "Network error. Please try again.";
+        submitError = m.submit_film_error_network();
       }
     };
   };
@@ -78,18 +79,18 @@
     >
       <button
         type="button"
-  class="absolute right-5 top-5 inline-flex size-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/20"
-  onclick={closeDialog}
+        class="absolute right-5 top-5 inline-flex size-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/20"
+        onclick={closeDialog}
       >
         <XIcon class="size-4" />
-        <span class="sr-only">Close dialog</span>
+        <span class="sr-only">{m.submit_film_close()}</span>
       </button>
 
       <div class="flex flex-col gap-6">
         <header class="space-y-2">
-          <Dialog.Title class="text-xl font-semibold text-white">Submit a Film</Dialog.Title>
+          <Dialog.Title class="text-xl font-semibold text-white">{m.submit_film_dialog_title()}</Dialog.Title>
           <p id="submit-film-description" class="text-sm text-white/60">
-            Share a parkour film, documentary, or series you think belongs on JUMPFLIX.
+            {m.submit_film_dialog_description()}
           </p>
         </header>
 
@@ -101,7 +102,7 @@
           onsubmit={handleSubmit}
         >
       <label class="space-y-2">
-        <span class="text-sm font-medium text-white/80">Title or URL</span>
+        <span class="text-sm font-medium text-white/80">{m.submit_film_field_label()}</span>
         <input
           bind:this={inputEl}
           type="text"
@@ -109,7 +110,7 @@
           required
           minlength="3"
           maxlength="300"
-          placeholder="e.g. Roof Culture Asia or https://youtube.com/watch?v=..."
+          placeholder={m.submit_film_placeholder()}
           class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-base text-white shadow-inner placeholder:text-white/50 focus:border-[#e50914] focus:outline-none focus:ring-2 focus:ring-[#e50914]/70"
         />
       </label>
@@ -122,7 +123,7 @@
               class={`${actionButtonBase} border border-white/20 bg-white/5 text-white/70 hover:border-white/40 hover:text-white`}
               onclick={closeDialog}
             >
-              Cancel
+                {m.submit_film_cancel()}
             </button>
             <button
               type="submit"
@@ -130,9 +131,9 @@
               class={`${actionButtonBase} bg-[#e50914] text-white shadow-[0_12px_32px_-18px_rgba(229,9,20,0.9)] hover:bg-[#ff1a27] disabled:bg-[#e50914]/80`}
             >
               {#if isSubmitting}
-                Sending…
+                  {m.submit_film_sending()}
               {:else}
-                Submit
+                  {m.submit_film_submit()}
               {/if}
             </button>
           </div>

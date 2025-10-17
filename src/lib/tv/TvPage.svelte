@@ -26,8 +26,7 @@
     closeDetailsPanel,
     selectedEpisode,
     openEpisode,
-    selectEpisode,
-    isPerformanceMode
+    selectEpisode
   } from '$lib/tv/store';
   import type { ContentItem } from '$lib/tv/types';
   import { browser } from '$app/environment';
@@ -47,8 +46,6 @@
   let pageTitle: string | null = null;
   let logoTilt = 0;
   let columns = 1;
-  let performanceMode = false;
-
   const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
 
   function nav(url: string, opts?: { replace?: boolean }) {
@@ -241,29 +238,20 @@
     let rafId: number | null = null;
     let lastLogoScroll = -1;
     const applyLogoTilt = (raw: number) => {
-      if (performanceMode) {
-        logoTilt = 0;
-        return;
-      }
-      const next = Math.min(maxTilt, Math.max(0, raw / 30));
-      logoTilt = next;
-    };
-    const scheduleLogoTilt = (raw: number, force = false) => {
-      if (performanceMode) {
-        lastLogoScroll = 0;
-        logoTilt = 0;
-        return;
-      }
-      if (!force && Math.abs(raw - lastLogoScroll) < LOGO_SCROLL_THRESHOLD) {
-        return;
-      }
-      lastLogoScroll = raw;
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        applyLogoTilt(raw);
-        rafId = null;
-      });
-    };
+        const next = Math.min(maxTilt, Math.max(0, raw / 30));
+        logoTilt = next;
+      };
+      const scheduleLogoTilt = (raw: number, force = false) => {
+        if (!force && Math.abs(raw - lastLogoScroll) < LOGO_SCROLL_THRESHOLD) {
+          return;
+        }
+        lastLogoScroll = raw;
+        if (rafId !== null) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          applyLogoTilt(raw);
+          rafId = null;
+        });
+      };
 
     const initialScroll = typeof window === 'undefined' ? 0 : window.scrollY;
     lastLogoScroll = initialScroll;
@@ -281,27 +269,12 @@
             window.removeEventListener('scroll', fallbackScroll);
           };
         })();
-    const unsubPerformance = isPerformanceMode.subscribe((value) => {
-      performanceMode = value;
-      if (performanceMode) {
-        if (rafId !== null) {
-          cancelAnimationFrame(rafId);
-          rafId = null;
-        }
-        logoTilt = 0;
-        lastLogoScroll = 0;
-      } else {
-        scheduleLogoTilt(typeof window === 'undefined' ? 0 : window.scrollY, true);
-      }
-    });
-
     return () => {
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('resize', resizeHandler);
       cleanupScroll?.();
       if (rafId !== null) cancelAnimationFrame(rafId);
       unsubPage();
-      unsubPerformance();
     };
   });
 
@@ -401,7 +374,7 @@
     --hero-glow-page-opacity: 0.6;
     --hero-overlay: radial-gradient(circle at 38% 24%, rgba(248, 113, 113, 0.22), transparent 55%),
       radial-gradient(circle at 70% 12%, rgba(59, 130, 246, 0.18), transparent 60%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.92) 100%);
+      linear-gradient(182deg, rgba(248, 250, 252, 0.95) 0%, rgba(248, 250, 252, 0.38) 72%, rgba(248, 250, 252, 0) 100%);
     --hero-overlay-blend: normal;
     --hero-logo-text-shadow: 0 10px 26px rgba(148, 163, 184, 0.35);
     --hero-title-gradient: linear-gradient(120deg, #0f172a 0%, #b91c1c 48%, #7c3aed 92%);
@@ -419,7 +392,7 @@
     --hero-glow-page-opacity: 0.72;
     --hero-overlay: radial-gradient(circle at 40% 20%, rgba(229, 9, 20, 0.34), transparent 55%),
       radial-gradient(circle at 70% 10%, rgba(59, 130, 246, 0.28), transparent 60%),
-      linear-gradient(180deg, rgba(5, 7, 18, 0.05) 0%, rgba(5, 7, 18, 0.85) 100%);
+      linear-gradient(182deg, rgba(5, 7, 18, 0.2) 0%, rgba(5, 7, 18, 0.12) 58%, rgba(5, 7, 18, 0) 100%);
     --hero-overlay-blend: screen;
     --hero-logo-text-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
     --hero-title-gradient: linear-gradient(120deg, rgba(255, 255, 255, 0.95), rgba(229, 9, 20, 0.95) 45%, rgba(244, 114, 182, 0.95) 90%);
@@ -433,11 +406,20 @@
     pointer-events: none;
     background: var(--hero-overlay);
     mix-blend-mode: var(--hero-overlay-blend);
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 70%, rgba(0, 0, 0, 0) 100%);
+    opacity: 0.98;
   }
 
-  :global(.performance-mode .hero-overlay) {
-    display: none;
+  .hero-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(182deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.42) 65%, rgba(255, 255, 255, 0) 100%);
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+  }
+
+  :global(.dark) .hero-overlay::after {
+    background: linear-gradient(182deg, rgba(5, 7, 18, 1) 0%, rgba(5, 7, 18, 0.28) 62%, rgba(5, 7, 18, 0) 100%);
   }
 
   @media (min-width: 768px) {

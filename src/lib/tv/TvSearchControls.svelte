@@ -4,7 +4,6 @@
   import * as m from '$lib/paraglide/messages';
   import { sortLabels } from '$lib/tv/utils';
   import type { SortBy } from '$lib/tv/types';
-  import { isPerformanceMode } from '$lib/tv/store';
 
   export let searchQuery: Writable<string>;
   export let showPaid: Writable<boolean>;
@@ -24,20 +23,9 @@
     sortBy.set(target.value as SortBy);
   }
 
-  let performanceMode = false;
-  $: performanceMode = $isPerformanceMode;
-
-  const defaultContainerClass = 'rounded-3xl border border-white/10 bg-white/70 p-6 shadow-[0_35px_90px_-40px_rgba(0,0,0,0.95)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/65';
-  const performanceContainerClass = 'rounded-2xl border border-slate-200/80 bg-white p-5 shadow-none dark:border-slate-700/70 dark:bg-slate-900';
-  $: containerClass = performanceMode ? performanceContainerClass : defaultContainerClass;
-
-  const defaultLabelClass = 'flex items-center gap-3 select-none rounded-2xl border border-white/15 bg-white/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-700 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 dark:text-gray-200';
-  const performanceLabelClass = 'flex items-center gap-3 select-none rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-gray-700 dark:border-slate-700/70 dark:bg-slate-900/80 dark:text-gray-200';
-  $: labelClass = performanceMode ? performanceLabelClass : defaultLabelClass;
-
-  const defaultSelectClass = 'appearance-none w-full rounded-2xl border border-white/30 bg-white/50 px-4 py-3 pr-10 text-sm font-semibold uppercase tracking-[0.12em] text-gray-800 transition focus:border-[#e50914]/80 focus:outline-none focus:ring-2 focus:ring-[#e50914]/70 dark:border-white/10 dark:bg-slate-900/70 dark:text-gray-100';
-  const performanceSelectClass = 'appearance-none w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-9 text-[13px] font-semibold uppercase tracking-[0.1em] text-gray-800 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100';
-  $: selectClass = performanceMode ? performanceSelectClass : defaultSelectClass;
+  const containerClass = 'tv-search-surface';
+  const labelClass = 'tv-search-toggle';
+  const selectClass = 'tv-search-select';
 </script>
 
 <div id="search" class="relative z-10 mx-auto mt-30 w-full max-w-5xl">
@@ -76,14 +64,14 @@
       </form>
 
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center lg:justify-end lg:pl-6">
-  <label class={labelClass}>
+        <label class={labelClass}>
           <span>{m.tv_showPaid()}</span>
           <Switch
             checked={$showPaid}
             ariaLabel={m.tv_showPaid()}
             on:change={(event) => showPaid.set(event.detail)}
           />
-        </label>
+  </label>
 
         <div class="relative min-w-[170px]">
           <select
@@ -101,3 +89,113 @@
     </div>
   </div>
 </div>
+
+<style>
+  .tv-search-surface {
+    position: relative;
+    border-radius: 28px;
+    padding: 1.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(248, 250, 252, 0.7));
+    box-shadow:
+      0 35px 90px -45px rgba(15, 23, 42, 0.6),
+      0 18px 40px -32px rgba(15, 23, 42, 0.35);
+    overflow: hidden;
+  }
+
+  .tv-search-surface::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0) 60%);
+    opacity: 0.7;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  :global(.dark) .tv-search-surface {
+    border-color: rgba(148, 163, 184, 0.15);
+    background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.68));
+    box-shadow:
+      0 35px 100px -50px rgba(2, 6, 23, 0.8),
+      0 18px 50px -38px rgba(2, 6, 23, 0.65);
+  }
+
+  :global(.dark) .tv-search-surface::before {
+    background: linear-gradient(130deg, rgba(59, 130, 246, 0.18), rgba(244, 114, 182, 0.14));
+    opacity: 0.85;
+  }
+
+  .tv-search-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.78), rgba(248, 250, 252, 0.55));
+    padding: 0.75rem 1rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(71, 85, 105, 0.95);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .tv-search-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 30px -22px rgba(15, 23, 42, 0.45);
+  }
+
+  :global(.dark) .tv-search-toggle {
+    border-color: rgba(148, 163, 184, 0.25);
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.66));
+    color: rgba(226, 232, 240, 0.9);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+
+  .tv-search-select {
+    appearance: none;
+    width: 100%;
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.88), rgba(248, 250, 252, 0.64));
+    padding: 0.65rem 2.6rem 0.65rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: rgba(30, 41, 59, 0.95);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .tv-search-select:focus {
+    outline: none;
+    border-color: rgba(229, 9, 20, 0.65);
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.16);
+  }
+
+  :global(.dark) .tv-search-select {
+    border-color: rgba(148, 163, 184, 0.35);
+    background: linear-gradient(150deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.76));
+    color: rgba(226, 232, 240, 0.95);
+  }
+
+  :global(.dark) .tv-search-select:focus {
+    border-color: rgba(244, 114, 182, 0.55);
+    box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.15);
+  }
+
+  @media (max-width: 640px) {
+    .tv-search-surface {
+      padding: 1.25rem;
+      border-radius: 24px;
+    }
+
+    .tv-search-select {
+      border-radius: 16px;
+    }
+  }
+</style>

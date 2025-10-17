@@ -1,7 +1,6 @@
 <script lang="ts">
   import SidebarDetails from '$lib/tv/SidebarDetails.svelte';
   import type { ContentItem, Episode } from '$lib/tv/types';
-  import { isPerformanceMode } from '$lib/tv/store';
 
   export let selected: ContentItem | null;
   export let openContent: (content: ContentItem) => void;
@@ -22,12 +21,7 @@
   export let initialSeasonNumber: number | null = null;
   export let isMobile = false;
 
-  let performanceMode = false;
-  $: performanceMode = $isPerformanceMode;
-
-  const defaultPanelClass = 'hidden md:flex w-[460px] border-l border-slate-200/70 dark:border-gray-700/50 px-6 pt-14 pb-6 fixed right-0 top-0 bottom-0 overflow-hidden flex-col bg-gradient-to-b from-white/90 via-white/75 to-white/55 dark:from-[#0f172a]/60 dark:via-[#0f172a]/35 dark:to-[#0f172a]/20 backdrop-blur-xl';
-  const performancePanelClass = 'hidden md:flex w-[420px] border-l border-slate-200/80 dark:border-gray-700/60 px-5 pt-12 pb-5 fixed right-0 top-0 bottom-0 overflow-hidden flex-col bg-white dark:bg-[#0f172a]';
-  $: panelClass = performanceMode ? performancePanelClass : defaultPanelClass;
+  const panelClass = 'hidden md:flex w-[460px] px-6 pt-14 pb-6 fixed right-0 top-0 bottom-0 overflow-hidden flex-col tv-details-panel';
 </script>
 
 <div class={panelClass}>
@@ -42,3 +36,25 @@
     initialSeason={initialSeasonNumber ?? undefined}
   />
 </div>
+
+<style>
+  .tv-details-panel {
+    border-left: 1px solid rgba(148, 163, 184, 0.22);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.72) 55%, rgba(255, 255, 255, 0.55) 100%);
+    box-shadow: -35px 0 70px -50px rgba(15, 23, 42, 0.34);
+  }
+
+  :global(.dark) .tv-details-panel {
+    border-color: rgba(71, 85, 105, 0.35);
+    background: linear-gradient(185deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.58) 55%, rgba(15, 23, 42, 0.38));
+    box-shadow: -35px 0 70px -55px rgba(2, 6, 23, 0.7);
+  }
+
+  @media (max-width: 1280px) {
+    .tv-details-panel {
+      width: 420px;
+      padding-right: 1.25rem;
+      padding-left: 1.25rem;
+    }
+  }
+</style>

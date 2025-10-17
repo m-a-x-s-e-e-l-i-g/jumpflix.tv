@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { onMount, setContext, onDestroy } from 'svelte';
+	import { onMount, setContext } from 'svelte';
 	import type { Action } from 'svelte/action';
 	import { Sheet as SheetRoot, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
 	import CogIcon from '@lucide/svelte/icons/cog';
@@ -9,13 +9,11 @@
 	import MonitorIcon from '@lucide/svelte/icons/monitor';
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
-	import SparklesIcon from '@lucide/svelte/icons/sparkles';
-	import GaugeIcon from '@lucide/svelte/icons/gauge';
 	import { Toaster, toast } from 'svelte-sonner';
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 	import TvPage from '$lib/tv/TvPage.svelte';
-	import { showDetailsPanel, visualMode, setVisualMode, type VisualMode } from '$lib/tv/store';
+	import { showDetailsPanel } from '$lib/tv/store';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import { SCROLL_CONTEXT_KEY, type ScrollSubscriber, type ScrollSubscription } from '$lib/scroll-context';
 	// We'll access the underlying custom element via a store reference set in the prompt component
@@ -32,7 +30,6 @@
 	let sheetOpen = $state(false);
 	let reduceMotion = $state(false);
 	let systemReduceMotion = $state(false);
-	let visualModeSelection = $state<VisualMode>('stunning');
 
 	let lastScrollY = 0;
 	const scrollSubscribers = new Set<ScrollSubscriber>();
@@ -54,7 +51,7 @@
 	}
 
 	function recomputeReduceMotion() {
-		const next = systemReduceMotion || visualModeSelection === 'performance';
+		const next = systemReduceMotion;
 		if (next === reduceMotion) {
 			return;
 		}
@@ -63,25 +60,6 @@
 			updatePopcornTransforms(reduceMotion ? 0 : window.scrollY, true);
 		}
 	}
-
-	const visualModeUnsub = visualMode.subscribe((value) => {
-		visualModeSelection = value;
-		if (typeof document !== 'undefined') {
-			document.documentElement.classList.toggle('performance-mode', value === 'performance');
-		}
-		if (typeof window !== 'undefined') {
-			try {
-				localStorage.setItem('visualMode', value);
-			} catch {
-				// no-op: storage might be unavailable
-			}
-		}
-		recomputeReduceMotion();
-	});
-
-	onDestroy(() => {
-		visualModeUnsub();
-	});
 	type ThemePreference = 'system' | 'light' | 'dark';
 
 	const langs = [
@@ -95,10 +73,6 @@
 		{ value: 'dark', icon: MoonIcon }
 	];
 
-	const visualModeOptions: { value: VisualMode; icon: typeof SparklesIcon | typeof GaugeIcon }[] = [
-		{ value: 'stunning', icon: SparklesIcon },
-		{ value: 'performance', icon: GaugeIcon }
-	];
 
 	type PopcornSpec = {
 		id: number;
@@ -215,30 +189,11 @@
 		return (themeCopy[currentLocale] ?? themeCopy.en).heading;
 	}
 
-	function visualModeHeading(): string {
-		return m.settings_visualMode();
-	}
-
-	function visualModeLabel(value: VisualMode): string {
-		return value === 'performance' ? m.settings_visualPerformance() : m.settings_visualStunning();
-	}
-
-	function visualModeDescription(value: VisualMode): string {
-		return value === 'performance'
-			? m.settings_visualPerformanceDescription()
-			: m.settings_visualStunningDescription();
-	}
-
 	if (typeof window !== 'undefined') {
 		isMobile = window.innerWidth < 768;
 		const storedTheme = localStorage.getItem('theme');
 		if (storedTheme === 'light' || storedTheme === 'dark') {
 			themePreference = storedTheme;
-		}
-		const storedVisualMode = localStorage.getItem('visualMode');
-		if (storedVisualMode === 'stunning' || storedVisualMode === 'performance') {
-			visualModeSelection = storedVisualMode as VisualMode;
-			setVisualMode(storedVisualMode as VisualMode);
 		}
 	}
 
@@ -375,12 +330,6 @@
 		toast.message(copy.toast(label));
 	}
 
-	function changeVisualMode(mode: VisualMode) {
-		if (visualModeSelection === mode) return;
-		visualModeSelection = mode;
-		setVisualMode(mode);
-	}
-
 	// Keep the <html lang> attribute in sync
 	$effect(() => {
 		if (typeof document !== 'undefined') {
@@ -429,7 +378,7 @@
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<div class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden" aria-hidden="true" style:display={visualModeSelection === 'performance' ? 'none' : undefined}>
+<div class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden" aria-hidden="true" style:display={reduceMotion ? 'none' : undefined}>
 		{#each activePopcorns as popcorn (popcorn.id)}
 		<div
 			class="popcorn-item"
@@ -457,7 +406,7 @@
 		<div class="absolute left-4 top-4 z-[var(--z-index-settings)]" class:hidden={$showDetailsPanel && isMobile}>
 			<SheetTrigger aria-label={m.settings_open()}>
 				<button
-					class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/80 text-foreground shadow-sm backdrop-blur transition hover:bg-muted/60 hover:-translate-y-0.5 hover:shadow-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+					class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:bg-muted/60 hover:-translate-y-0.5 hover:shadow-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
 				>
 					<CogIcon class="size-5" />
 					<span class="sr-only">{m.settings_open()}</span>
@@ -500,24 +449,6 @@
 						{/each}
 					</div>
 				</div>
-				<div class="mt-6">
-					<p class="mb-2 text-sm text-muted-foreground">{visualModeHeading()}</p>
-					<div class="flex flex-col gap-2">
-						{#each visualModeOptions as option}
-							<button
-								class={`group relative flex items-start gap-3 rounded-xl border border-border bg-background/80 p-3 text-left text-sm transition cursor-pointer hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${visualModeSelection === option.value ? 'border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 text-foreground shadow-[0_18px_32px_-16px_rgba(59,130,246,0.55)] ring-2 ring-primary/40' : 'text-muted-foreground'}`}
-								aria-pressed={visualModeSelection === option.value}
-								onclick={() => changeVisualMode(option.value)}
-							>
-								<option.icon class={`size-5 shrink-0 transition-colors ${visualModeSelection === option.value ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} aria-hidden="true" />
-								<span class="flex-1">
-									<span class={`block font-semibold leading-tight transition-colors ${visualModeSelection === option.value ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>{visualModeLabel(option.value)}</span>
-									<span class={`mt-1 block text-xs leading-snug transition-colors ${visualModeSelection === option.value ? 'text-muted-foreground/80' : 'text-muted-foreground group-hover:text-muted-foreground/90'}`}>{visualModeDescription(option.value)}</span>
-								</span>
-							</button>
-						{/each}
-					</div>
-				</div>
 				<!-- Project Links -->
 				<div class="mt-6">
 					<p class="mb-2 text-sm text-muted-foreground">{m.settings_links()}</p>
@@ -539,7 +470,7 @@
 			</div>
 
 			<!-- Bottom Credits Footer -->
-			<div class="border-t border-border text-muted-foreground text-xs flex items-center justify-between md:justify-end gap-3 p-4 bg-background/90 backdrop-blur">
+			<div class="border-t border-border text-muted-foreground text-xs flex items-center justify-between md:justify-end gap-3 p-4 bg-background/95">
 				<a href="https://maxmade.nl" target="_blank" rel="noopener noreferrer" title="MAXmade - Max Seelig" class="flex items-center gap-2">
 					<img src="/images/logo-MAXmade-light.svg" alt="MAXmade - Max Seelig" class="h-5 w-auto block dark:hidden" />
 					<img src="/images/logo-MAXmade-dark.svg" alt="MAXmade - Max Seelig" class="h-5 w-auto hidden dark:block" />

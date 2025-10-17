@@ -19,9 +19,6 @@ export const showDetailsPanel = writable(false);
 export const selectedIndex = writable(0);
 // When playing a single episode from a series, this holds the selected episode
 export const selectedEpisode = writable<Episode | null>(null);
-export type VisualMode = 'stunning' | 'performance';
-export const visualMode = writable<VisualMode>('stunning');
-export const isPerformanceMode = derived(visualMode, ($mode) => $mode === 'performance');
 
 // Track thumbnails that have successfully loaded so we can keep them cached
 export const loadedThumbnails = writable<Set<string>>(new Set());
@@ -146,6 +143,4 @@ export function closeDetailsPanel() { showDetailsPanel.set(false); }
 // Helper to update sort
 export function setSort(value: SortBy) { sortBy.set(value); }
 
-export function setVisualMode(value: VisualMode) {
-  visualMode.set(value);
-}
+

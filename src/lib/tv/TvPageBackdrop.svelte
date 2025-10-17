@@ -1,8 +1,5 @@
 <div class="page-backdrop" aria-hidden="true">
   <div class="hero-gradient hero-gradient--page"></div>
-  <div class="hero-glow hero-glow--one hero-glow--page"></div>
-  <div class="hero-glow hero-glow--two hero-glow--page"></div>
-  <div class="hero-grid hero-grid--page"></div>
 </div>
 
 <style>
@@ -17,105 +14,46 @@
   .hero-gradient {
     position: absolute;
     inset: 0;
-    background: var(--hero-gradient);
+    background:
+      radial-gradient(140% 96% at 18% 14%, rgba(255, 255, 255, 0.55), transparent 62%),
+      radial-gradient(120% 92% at 70% 18%, rgba(244, 114, 182, 0.22), transparent 74%),
+      radial-gradient(150% 110% at 90% 52%, rgba(14, 165, 233, 0.18), transparent 78%),
+      linear-gradient(190deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.18) 42%, transparent 82%),
+      var(--hero-gradient);
+    background-repeat: no-repeat;
     opacity: var(--hero-gradient-opacity);
+    transition: opacity 320ms ease;
   }
 
-  .hero-glow {
+  .hero-gradient::after {
+    content: '';
     position: absolute;
-    border-radius: 9999px;
-    filter: blur(120px);
-    opacity: 0.7;
-    mix-blend-mode: screen;
-    animation: heroGlow 14s ease-in-out infinite alternate;
-    will-change: transform, opacity;
+    inset: -12% -16% -20%;
+    background:
+      radial-gradient(150% 120% at 30% 18%, rgba(255, 255, 255, 0.36), transparent 68%),
+      linear-gradient(205deg, rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.28) 58%, rgba(15, 23, 42, 0.08) 100%);
+    mix-blend-mode: soft-light;
+    pointer-events: none;
   }
 
-  .hero-glow--one {
-    top: -28%;
-    right: 12%;
-    width: 420px;
-    height: 420px;
-    background: var(--hero-glow-one);
-    animation-delay: -3s;
+  :global(.dark) .hero-gradient {
+    background:
+      radial-gradient(135% 95% at 22% 18%, rgba(229, 9, 20, 0.38), transparent 68%),
+      radial-gradient(130% 88% at 72% 20%, rgba(59, 130, 246, 0.32), transparent 74%),
+      radial-gradient(140% 105% at 48% 65%, rgba(148, 163, 184, 0.14), transparent 78%),
+      linear-gradient(205deg, rgba(59, 130, 246, 0.22), rgba(5, 7, 18, 0.22) 45%, transparent 82%),
+      var(--hero-gradient);
   }
 
-  .hero-glow--two {
-    bottom: -30%;
-    left: 6%;
-    width: 520px;
-    height: 520px;
-    background: var(--hero-glow-two);
-    animation-delay: -8s;
-  }
-
-  .hero-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(to right, var(--hero-grid-line-x) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--hero-grid-line-y) 1px, transparent 1px);
-    background-size: 140px 140px;
-    mask-image: radial-gradient(circle at 40% 30%, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0) 70%);
-    opacity: var(--hero-grid-opacity);
-  }
-
-  .hero-gradient--page,
-  .hero-grid--page,
-  .hero-glow--page {
-    height: 100%;
+  :global(.dark) .hero-gradient::after {
+    background:
+      radial-gradient(150% 120% at 32% 24%, rgba(229, 9, 20, 0.34), transparent 72%),
+      radial-gradient(150% 120% at 68% 18%, rgba(59, 130, 246, 0.28), transparent 74%),
+      linear-gradient(215deg, rgba(5, 7, 18, 0.92), rgba(5, 7, 18, 0.46) 60%, rgba(5, 7, 18, 0.14) 100%);
   }
 
   .hero-gradient--page {
+    height: 100%;
     opacity: 1;
-  }
-
-  .hero-grid--page {
-    opacity: var(--hero-grid-opacity);
-    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.6) 65%, rgba(0, 0, 0, 0.2) 100%);
-  }
-
-  .hero-glow--page {
-    filter: blur(160px);
-    opacity: var(--hero-glow-page-opacity);
-    animation-duration: 20s;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .hero-glow {
-      animation: none;
-      opacity: 0.55;
-    }
-
-    .hero-grid {
-      mask-image: none;
-    }
-  }
-
-  :global(.performance-mode .hero-glow) {
-    animation: none;
-    opacity: 0.55;
-  }
-  :global(.performance-mode .hero-grid) {
-    mask-image: none;
-  }
-
-  :global(.performance-mode .hero-glow--page) {
-    display: none;
-  }
-
-  :global(.performance-mode .hero-gradient--page) {
-    opacity: 0.7;
-  }
-
-  @keyframes heroGlow {
-    from {
-      transform: translate3d(-12px, -10px, 0) scale(0.96);
-      opacity: 0.68;
-    }
-    to {
-      transform: translate3d(16px, 18px, 0) scale(1.04);
-      opacity: 0.85;
-    }
   }
 </style>

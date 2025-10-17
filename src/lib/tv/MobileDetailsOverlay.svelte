@@ -12,7 +12,6 @@
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { decode } from 'html-entities';
-  import { isPerformanceMode } from '$lib/tv/store';
 
   export let show = false;
   export let isMobile = false;
@@ -145,20 +144,9 @@
     }
   }
 
-  let performanceMode = false;
-  $: performanceMode = $isPerformanceMode;
-
-  const defaultOverlayClass = 'md:hidden fixed inset-0 z-40 bg-white/95 dark:bg-black/90 backdrop-blur-xl flex flex-col';
-  const performanceOverlayClass = 'md:hidden fixed inset-0 z-40 bg-white dark:bg-black flex flex-col';
-  $: overlayClass = performanceMode ? performanceOverlayClass : defaultOverlayClass;
-
-  const defaultHeaderClass = 'sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-black/70 backdrop-blur border-b border-black/10 dark:border-white/10';
-  const performanceHeaderClass = 'sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-white dark:bg-black border-b border-black/5 dark:border-white/10';
-  $: headerClass = performanceMode ? performanceHeaderClass : defaultHeaderClass;
-
-  const defaultActionsClass = 'mobile-overlay-actions bg-white/90 dark:bg-black/80 backdrop-blur border-t border-black/10 dark:border-white/10';
-  const performanceActionsClass = 'mobile-overlay-actions bg-white dark:bg-black border-t border-black/5 dark:border-white/10';
-  $: actionsClass = performanceMode ? performanceActionsClass : defaultActionsClass;
+  const overlayClass = 'mobile-overlay-surface';
+  const headerClass = 'mobile-overlay-header';
+  const actionsClass = 'mobile-overlay-actions';
 </script>
 
 {#if isMobile && show && selected}
@@ -308,9 +296,47 @@
 {/if}
 
 <style>
+  .mobile-overlay-surface {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(175deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.85));
+    backdrop-filter: none;
+  }
+
+  :global(.dark) .mobile-overlay-surface {
+    background: linear-gradient(180deg, rgba(10, 13, 24, 0.92), rgba(10, 13, 24, 0.82));
+  }
+
+  .mobile-overlay-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.82));
+    border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+  }
+
+  :global(.dark) .mobile-overlay-header {
+    background: linear-gradient(185deg, rgba(10, 13, 24, 0.94), rgba(10, 13, 24, 0.82));
+    border-color: rgba(71, 85, 105, 0.38);
+  }
+
   .mobile-overlay-actions {
     padding: 1rem;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.85));
+    border-top: 1px solid rgba(148, 163, 184, 0.28);
+  }
+
+  :global(.dark) .mobile-overlay-actions {
+    background: linear-gradient(180deg, rgba(10, 13, 24, 0.88), rgba(10, 13, 24, 0.78));
+    border-color: rgba(71, 85, 105, 0.4);
   }
 
   .mobile-overlay-content {

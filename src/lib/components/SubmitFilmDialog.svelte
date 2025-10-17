@@ -67,12 +67,12 @@
 
 <Dialog.Root bind:open={open}>
   <Dialog.Trigger
-    class="group inline-flex items-center gap-3 rounded-full border border-slate-900/10 bg-white/80 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-900 shadow-[0_14px_28px_-18px_rgba(15,23,42,0.3)] backdrop-blur transition hover:border-slate-900/20 hover:bg-white hover:text-slate-900 dark:border-white/30 dark:bg-white/10 dark:text-white/80 dark:hover:border-white/60 dark:hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-slate-900/40 dark:focus-visible:outline-white/70"
+    class="group inline-flex items-center gap-3 rounded-full border border-slate-900/10 bg-white/85 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-900 shadow-[0_14px_28px_-18px_rgba(15,23,42,0.3)] transition hover:border-slate-900/20 hover:bg-white hover:text-slate-900 dark:border-white/30 dark:bg-white/10 dark:text-white/80 dark:hover:border-white/60 dark:hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-slate-900/40 dark:focus-visible:outline-white/70"
   >
     {label}
   </Dialog.Trigger>
   <Dialog.Portal>
-    <Dialog.Overlay class="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
+    <Dialog.Overlay class="fixed inset-0 z-40 bg-black/78 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
     <Dialog.Content
       class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-900/10 bg-background px-6 py-7 text-foreground shadow-[0_40px_80px_-30px_rgba(15,23,42,0.28)] focus:outline-none dark:border-white/10 dark:shadow-[0_40px_80px_-30px_rgba(0,0,0,0.75)]"
       aria-describedby="submit-film-description"

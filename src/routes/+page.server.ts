@@ -21,7 +21,7 @@ export const actions: Actions = {
 
     const payload = {
       chat_id: CHANNEL_ID,
-      text: `🎬 New submission\n${submission}`,
+      text: `${submission}`,
       disable_web_page_preview: true,
     };
 

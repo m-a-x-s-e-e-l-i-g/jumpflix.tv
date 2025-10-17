@@ -100,6 +100,18 @@
     width: auto;
     filter: drop-shadow(0 25px 55px rgba(0, 0, 0, 0.5));
   }
+  :global(.performance-mode .hero-logo-link:hover) {
+    transform: none;
+    filter: none;
+  }
+  :global(.performance-mode .hero-logo) {
+    filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.35));
+  }
+  :global(.performance-mode .hero-logo-text > span) {
+    transform: none;
+    filter: saturate(100%) contrast(100%);
+    text-shadow: none;
+  }
   .hero-title-gradient {
     background-image: var(--hero-title-gradient);
     background-clip: text;

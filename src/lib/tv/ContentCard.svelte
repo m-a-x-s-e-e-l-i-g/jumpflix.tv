@@ -5,7 +5,7 @@
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { dev } from '$app/environment';
-  import { loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
+  import { loadedThumbnails, markThumbnailLoaded, isPerformanceMode } from '$lib/tv/store';
 
   export let item: ContentItem;
   export let isSelected = false;
@@ -33,29 +33,36 @@
   let loaded = false;
   $: alreadyLoaded = item.thumbnail ? $loadedThumbnails.has(item.thumbnail) : false;
   $: if (alreadyLoaded) loaded = true;
-  $: imageOpacityClass = loaded ? 'opacity-100' : 'opacity-0';
-  const baseImageClass = 'relative inset-0 w-full h-full object-cover z-10 transition-opacity duration-500 ease-out';
+  let performanceMode = false;
+  $: performanceMode = $isPerformanceMode;
+  $: imageOpacityClass = performanceMode ? 'opacity-100' : loaded ? 'opacity-100' : 'opacity-0';
+  $: baseImageClass = performanceMode
+    ? 'relative inset-0 w-full h-full object-cover z-10'
+    : 'relative inset-0 w-full h-full object-cover z-10 transition-opacity duration-500 ease-out';
 </script>
 
 <div 
   class="group cursor-pointer"
-  class:transform={!isMobile}
-  class:hover:scale-105={!isMobile}
-  class:transition-all={!isMobile}
-  class:duration-300={!isMobile}
-  class:scale-105={!isMobile && isSelected}
+  class:transform={!isMobile && !performanceMode}
+  class:hover:scale-105={!isMobile && !performanceMode}
+  class:transition-all={!isMobile && !performanceMode}
+  class:duration-300={!isMobile && !performanceMode}
+  class:transition-none={!isMobile && performanceMode}
+  class:scale-105={!isMobile && !performanceMode && isSelected}
   on:click={() => onSelect(item)}
   on:keydown={(e) => e.key === 'Enter' && onSelect(item)}
   tabindex="0"
   role="button"
 >
-  <div class="relative aspect-[2/3] bg-[#0f172a] dark:bg-gray-800 border border-gray-700/60 dark:border-gray-700 rounded-xl overflow-hidden mb-3 shadow-md transition-all duration-300"
-    class:group-hover:ring-4={!isMobile}
-    class:group-hover:ring-red-400={!isMobile}
+  <div class="relative aspect-[2/3] bg-[#0f172a] dark:bg-gray-800 border border-gray-700/60 dark:border-gray-700 rounded-xl overflow-hidden mb-3 shadow-md"
+    class:transition-all={!performanceMode}
+    class:duration-300={!performanceMode}
+    class:group-hover:ring-4={!isMobile && !performanceMode}
+    class:group-hover:ring-red-400={!isMobile && !performanceMode}
     class:ring-4={!isMobile && isSelected}
     class:ring-red-500={!isMobile && isSelected}
-    class:group-hover:border-none={!isMobile}
-    class:border-none={!isMobile && isSelected}
+  class:group-hover:border-none={!isMobile && !performanceMode}
+  class:border-none={!isMobile && isSelected}
     title={item.title}
   >
   <!-- Placeholder layer (always present, sits under the poster) -->

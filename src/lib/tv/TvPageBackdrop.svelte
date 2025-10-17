@@ -113,6 +113,19 @@
     }
   }
 
+  :global(.performance-mode .hero-glow) {
+    animation: none;
+    opacity: 0.55;
+  }
+
+  :global(.performance-mode .hero-noise) {
+    opacity: calc(var(--hero-noise-opacity) * 0.6);
+  }
+
+  :global(.performance-mode .hero-grid) {
+    mask-image: none;
+  }
+
   @keyframes heroGlow {
     from {
       transform: translate3d(-12px, -10px, 0) scale(0.96);

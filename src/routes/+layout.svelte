@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { onMount, setContext } from 'svelte';
+	import { onMount, setContext, onDestroy } from 'svelte';
 	import type { Action } from 'svelte/action';
 	import { Sheet as SheetRoot, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
 	import CogIcon from '@lucide/svelte/icons/cog';
@@ -9,11 +9,13 @@
 	import MonitorIcon from '@lucide/svelte/icons/monitor';
 	import SunIcon from '@lucide/svelte/icons/sun';
 	import MoonIcon from '@lucide/svelte/icons/moon';
+	import SparklesIcon from '@lucide/svelte/icons/sparkles';
+	import GaugeIcon from '@lucide/svelte/icons/gauge';
 	import { Toaster, toast } from 'svelte-sonner';
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 	import TvPage from '$lib/tv/TvPage.svelte';
-	import { showDetailsPanel } from '$lib/tv/store';
+	import { showDetailsPanel, visualMode, setVisualMode, type VisualMode } from '$lib/tv/store';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import { SCROLL_CONTEXT_KEY, type ScrollSubscriber, type ScrollSubscription } from '$lib/scroll-context';
 	// We'll access the underlying custom element via a store reference set in the prompt component
@@ -29,6 +31,8 @@
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
 	let sheetOpen = $state(false);
 	let reduceMotion = $state(false);
+	let systemReduceMotion = $state(false);
+	let visualModeSelection = $state<VisualMode>('stunning');
 
 	let lastScrollY = 0;
 	const scrollSubscribers = new Set<ScrollSubscriber>();
@@ -48,6 +52,36 @@
 			subscriber(value);
 		}
 	}
+
+	function recomputeReduceMotion() {
+		const next = systemReduceMotion || visualModeSelection === 'performance';
+		if (next === reduceMotion) {
+			return;
+		}
+		reduceMotion = next;
+		if (typeof window !== 'undefined') {
+			updatePopcornTransforms(reduceMotion ? 0 : window.scrollY, true);
+		}
+	}
+
+	const visualModeUnsub = visualMode.subscribe((value) => {
+		visualModeSelection = value;
+		if (typeof document !== 'undefined') {
+			document.documentElement.classList.toggle('performance-mode', value === 'performance');
+		}
+		if (typeof window !== 'undefined') {
+			try {
+				localStorage.setItem('visualMode', value);
+			} catch {
+				// no-op: storage might be unavailable
+			}
+		}
+		recomputeReduceMotion();
+	});
+
+	onDestroy(() => {
+		visualModeUnsub();
+	});
 	type ThemePreference = 'system' | 'light' | 'dark';
 
 	const langs = [
@@ -59,6 +93,11 @@
 		{ value: 'system', icon: MonitorIcon },
 		{ value: 'light', icon: SunIcon },
 		{ value: 'dark', icon: MoonIcon }
+	];
+
+	const visualModeOptions: { value: VisualMode; icon: typeof SparklesIcon | typeof GaugeIcon }[] = [
+		{ value: 'stunning', icon: SparklesIcon },
+		{ value: 'performance', icon: GaugeIcon }
 	];
 
 	type PopcornSpec = {
@@ -174,11 +213,30 @@
 		return (themeCopy[currentLocale] ?? themeCopy.en).heading;
 	}
 
+	function visualModeHeading(): string {
+		return m.settings_visualMode();
+	}
+
+	function visualModeLabel(value: VisualMode): string {
+		return value === 'performance' ? m.settings_visualPerformance() : m.settings_visualStunning();
+	}
+
+	function visualModeDescription(value: VisualMode): string {
+		return value === 'performance'
+			? m.settings_visualPerformanceDescription()
+			: m.settings_visualStunningDescription();
+	}
+
 	if (typeof window !== 'undefined') {
 		isMobile = window.innerWidth < 768;
 		const storedTheme = localStorage.getItem('theme');
 		if (storedTheme === 'light' || storedTheme === 'dark') {
 			themePreference = storedTheme;
+		}
+		const storedVisualMode = localStorage.getItem('visualMode');
+		if (storedVisualMode === 'stunning' || storedVisualMode === 'performance') {
+			visualModeSelection = storedVisualMode as VisualMode;
+			setVisualMode(storedVisualMode as VisualMode);
 		}
 	}
 
@@ -211,7 +269,7 @@
 
 		const applyScroll = (value: number) => {
 			const clamped = Math.max(0, value);
-			updatePopcornTransforms(clamped, true);
+			updatePopcornTransforms(reduceMotion ? 0 : clamped, true);
 		};
 
 		const handleScroll = () => {
@@ -225,7 +283,8 @@
 		};
 
 		const handleMotionPreference = (event: MediaQueryListEvent) => {
-			reduceMotion = event.matches;
+			systemReduceMotion = event.matches;
+			recomputeReduceMotion();
 			if (reduceMotion) {
 				if (rafId) {
 					window.cancelAnimationFrame(rafId);
@@ -237,7 +296,8 @@
 			}
 		};
 
-		reduceMotion = motionQuery.matches;
+		systemReduceMotion = motionQuery.matches;
+		recomputeReduceMotion();
 		applyScroll(window.scrollY);
 
 		motionQuery.addEventListener('change', handleMotionPreference);
@@ -313,6 +373,12 @@
 		toast.message(copy.toast(label));
 	}
 
+	function changeVisualMode(mode: VisualMode) {
+		if (visualModeSelection === mode) return;
+		visualModeSelection = mode;
+		setVisualMode(mode);
+	}
+
 	// Keep the <html lang> attribute in sync
 	$effect(() => {
 		if (typeof document !== 'undefined') {
@@ -361,7 +427,7 @@
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<div class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden" aria-hidden="true">
+<div class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden" aria-hidden="true" style:display={visualModeSelection === 'performance' ? 'none' : undefined}>
 	{#each popcorns as popcorn (popcorn.id)}
 		<div
 			class="popcorn-item"
@@ -428,6 +494,24 @@
 							>
 								<option.icon class={`size-5 shrink-0 transition-colors ${themePreference === option.value ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} aria-hidden="true" />
 								<span class={`flex-1 text-left font-medium leading-tight transition-colors ${themePreference === option.value ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>{themeLabel(option.value)}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+				<div class="mt-6">
+					<p class="mb-2 text-sm text-muted-foreground">{visualModeHeading()}</p>
+					<div class="flex flex-col gap-2">
+						{#each visualModeOptions as option}
+							<button
+								class={`group relative flex items-start gap-3 rounded-xl border border-border bg-background/80 p-3 text-left text-sm transition cursor-pointer hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${visualModeSelection === option.value ? 'border-primary/60 bg-gradient-to-br from-primary/15 to-primary/5 text-foreground shadow-[0_18px_32px_-16px_rgba(59,130,246,0.55)] ring-2 ring-primary/40' : 'text-muted-foreground'}`}
+								aria-pressed={visualModeSelection === option.value}
+								onclick={() => changeVisualMode(option.value)}
+							>
+								<option.icon class={`size-5 shrink-0 transition-colors ${visualModeSelection === option.value ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} aria-hidden="true" />
+								<span class="flex-1">
+									<span class={`block font-semibold leading-tight transition-colors ${visualModeSelection === option.value ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'}`}>{visualModeLabel(option.value)}</span>
+									<span class={`mt-1 block text-xs leading-snug transition-colors ${visualModeSelection === option.value ? 'text-muted-foreground/80' : 'text-muted-foreground group-hover:text-muted-foreground/90'}`}>{visualModeDescription(option.value)}</span>
+								</span>
 							</button>
 						{/each}
 					</div>

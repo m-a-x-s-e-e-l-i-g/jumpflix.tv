@@ -26,7 +26,8 @@
     closeDetailsPanel,
     selectedEpisode,
     openEpisode,
-    selectEpisode
+    selectEpisode,
+    isPerformanceMode
   } from '$lib/tv/store';
   import type { ContentItem } from '$lib/tv/types';
   import { browser } from '$app/environment';
@@ -46,6 +47,7 @@
   let pageTitle: string | null = null;
   let logoTilt = 0;
   let columns = 1;
+  let performanceMode = false;
 
   const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
 
@@ -239,10 +241,19 @@
     let rafId: number | null = null;
     let lastLogoScroll = -1;
     const applyLogoTilt = (raw: number) => {
+      if (performanceMode) {
+        logoTilt = 0;
+        return;
+      }
       const next = Math.min(maxTilt, Math.max(0, raw / 30));
       logoTilt = next;
     };
     const scheduleLogoTilt = (raw: number, force = false) => {
+      if (performanceMode) {
+        lastLogoScroll = 0;
+        logoTilt = 0;
+        return;
+      }
       if (!force && Math.abs(raw - lastLogoScroll) < LOGO_SCROLL_THRESHOLD) {
         return;
       }
@@ -270,6 +281,19 @@
             window.removeEventListener('scroll', fallbackScroll);
           };
         })();
+    const unsubPerformance = isPerformanceMode.subscribe((value) => {
+      performanceMode = value;
+      if (performanceMode) {
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+        logoTilt = 0;
+        lastLogoScroll = 0;
+      } else {
+        scheduleLogoTilt(typeof window === 'undefined' ? 0 : window.scrollY, true);
+      }
+    });
 
     return () => {
       document.removeEventListener('keydown', handleKeydown);
@@ -277,6 +301,7 @@
       cleanupScroll?.();
       if (rafId !== null) cancelAnimationFrame(rafId);
       unsubPage();
+      unsubPerformance();
     };
   });
 

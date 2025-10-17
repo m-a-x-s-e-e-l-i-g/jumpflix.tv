@@ -35,9 +35,9 @@
   import { clampIndex, computeColumns, ensureVisibleSelection, isTypingTarget } from '$lib/tv/helpers/grid';
   import { SCROLL_CONTEXT_KEY, type ScrollSubscription } from '$lib/scroll-context';
 
-  export let initialItem: ContentItem | null = null;
-  export let initialEpisodeNumber: number | null = null;
-  export let initialSeasonNumber: number | null = null;
+	export let initialItem: ContentItem | null = null;
+	export let initialEpisodeNumber: number | null = null;
+	export let initialSeasonNumber: number | null = null;
 
   let isMobile = false;
   let gridEl: HTMLElement | null = null;
@@ -310,9 +310,9 @@
 </script>
 
 <svelte:head>
-  {#if pageTitle}
-    <title>{pageTitle}</title>
-  {/if}
+	{#if pageTitle}
+		<title>{pageTitle}</title>
+	{/if}
 </svelte:head>
 
 <div class="relative isolate min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[460px]">
@@ -360,7 +360,12 @@
     />
   </div>
 </div>
-<PlayerModal show={$showPlayer} selected={$selectedContent} selectedEpisode={$selectedEpisode} close={closePlayer} />
+<PlayerModal
+	show={$showPlayer}
+	selected={$selectedContent}
+	selectedEpisode={$selectedEpisode}
+	close={closePlayer}
+/>
 
 <style>
   :global(.tv-page) {

@@ -19,8 +19,6 @@
     return async ({ result, update }) => {
       isSubmitting = false;
 
-      await update();
-
       if (result.type === "success") {
         open = false;
         submitError = null;
@@ -31,6 +29,8 @@
         return;
       }
 
+      await update({ invalidateAll: false });
+
       if (result.type === "failure") {
         submitError = result.data?.message ?? m.submit_film_error_generic();
       } else if (result.type === "error") {
@@ -38,14 +38,6 @@
       }
     };
   };
-
-  $effect(() => {
-    if (!formEl) return;
-    const cleanup = enhance(formEl, handleEnhance);
-    return () => {
-      cleanup?.destroy?.();
-    };
-  });
 
   $effect(() => {
     if (!open) return;
@@ -102,6 +94,7 @@
           bind:this={formEl}
           class="space-y-4"
           onsubmit={handleSubmit}
+          use:enhance={handleEnhance}
         >
       <label class="space-y-2">
         <span class="text-sm font-medium text-slate-700 dark:text-white/80">{m.submit_film_field_label()}</span>

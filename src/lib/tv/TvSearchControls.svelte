@@ -4,6 +4,7 @@
   import * as m from '$lib/paraglide/messages';
   import { sortLabels } from '$lib/tv/utils';
   import type { SortBy } from '$lib/tv/types';
+  import { isPerformanceMode } from '$lib/tv/store';
 
   export let searchQuery: Writable<string>;
   export let showPaid: Writable<boolean>;
@@ -22,10 +23,25 @@
     const target = event.target as HTMLSelectElement;
     sortBy.set(target.value as SortBy);
   }
+
+  let performanceMode = false;
+  $: performanceMode = $isPerformanceMode;
+
+  const defaultContainerClass = 'rounded-3xl border border-white/10 bg-white/70 p-6 shadow-[0_35px_90px_-40px_rgba(0,0,0,0.95)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/65';
+  const performanceContainerClass = 'rounded-2xl border border-slate-200/80 bg-white p-5 shadow-none dark:border-slate-700/70 dark:bg-slate-900';
+  $: containerClass = performanceMode ? performanceContainerClass : defaultContainerClass;
+
+  const defaultLabelClass = 'flex items-center gap-3 select-none rounded-2xl border border-white/15 bg-white/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-700 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 dark:text-gray-200';
+  const performanceLabelClass = 'flex items-center gap-3 select-none rounded-xl border border-slate-200/80 bg-white px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-gray-700 dark:border-slate-700/70 dark:bg-slate-900/80 dark:text-gray-200';
+  $: labelClass = performanceMode ? performanceLabelClass : defaultLabelClass;
+
+  const defaultSelectClass = 'appearance-none w-full rounded-2xl border border-white/30 bg-white/50 px-4 py-3 pr-10 text-sm font-semibold uppercase tracking-[0.12em] text-gray-800 transition focus:border-[#e50914]/80 focus:outline-none focus:ring-2 focus:ring-[#e50914]/70 dark:border-white/10 dark:bg-slate-900/70 dark:text-gray-100';
+  const performanceSelectClass = 'appearance-none w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-9 text-[13px] font-semibold uppercase tracking-[0.1em] text-gray-800 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100';
+  $: selectClass = performanceMode ? performanceSelectClass : defaultSelectClass;
 </script>
 
 <div id="search" class="relative z-10 mx-auto mt-30 w-full max-w-5xl">
-  <div class="rounded-3xl border border-white/10 bg-white/70 p-6 shadow-[0_35px_90px_-40px_rgba(0,0,0,0.95)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/65">
+  <div class={containerClass}>
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
       <form class="relative flex-1 min-w-[260px] group">
         <span class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-700 group-focus-within:text-[#e50914] dark:text-gray-400 dark:group-focus-within:text-[#f87171] transition-colors z-10">
@@ -60,7 +76,7 @@
       </form>
 
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center lg:justify-end lg:pl-6">
-        <label class="flex items-center gap-3 select-none rounded-2xl border border-white/15 bg-white/40 px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-700 backdrop-blur dark:border-white/10 dark:bg-slate-900/70 dark:text-gray-200">
+  <label class={labelClass}>
           <span>{m.tv_showPaid()}</span>
           <Switch
             checked={$showPaid}
@@ -73,7 +89,7 @@
           <select
             value={$sortBy}
             on:change={handleSortChange}
-            class="appearance-none w-full rounded-2xl border border-white/30 bg-white/50 px-4 py-3 pr-10 text-sm font-semibold uppercase tracking-[0.12em] text-gray-800 transition focus:border-[#e50914]/80 focus:outline-none focus:ring-2 focus:ring-[#e50914]/70 dark:border-white/10 dark:bg-slate-900/70 dark:text-gray-100"
+            class={selectClass}
           >
             {#each Object.entries(sortLabels) as [value, label]}
               <option value={value}>{label}</option>

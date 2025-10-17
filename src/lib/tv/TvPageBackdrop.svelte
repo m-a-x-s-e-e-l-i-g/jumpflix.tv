@@ -3,7 +3,6 @@
   <div class="hero-glow hero-glow--one hero-glow--page"></div>
   <div class="hero-glow hero-glow--two hero-glow--page"></div>
   <div class="hero-grid hero-grid--page"></div>
-  <div class="hero-noise hero-noise--page"></div>
 </div>
 
 <style>
@@ -61,20 +60,8 @@
     opacity: var(--hero-grid-opacity);
   }
 
-  .hero-noise {
-    position: absolute;
-    inset: -10px;
-    background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" preserveAspectRatio="none"%3E%3Cfilter id="n" x="0" y="0" width="1" height="1"%3E%3CfeTurbulence baseFrequency="0.9" numOctaves="3" stitchTiles="stitch" type="fractalNoise"/%3E%3CfeColorMatrix type="saturate" values="0"/%3E%3C/filter%3E%3Crect width="200" height="200" filter="url(%23n)" opacity="0.22"/%3E%3C/svg%3E');
-    background-size: 260px;
-    opacity: var(--hero-noise-opacity);
-    mix-blend-mode: soft-light;
-    pointer-events: none;
-    will-change: opacity;
-  }
-
   .hero-gradient--page,
   .hero-grid--page,
-  .hero-noise--page,
   .hero-glow--page {
     height: 100%;
   }
@@ -86,10 +73,6 @@
   .hero-grid--page {
     opacity: var(--hero-grid-opacity);
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.6) 65%, rgba(0, 0, 0, 0.2) 100%);
-  }
-
-  .hero-noise--page {
-    opacity: var(--hero-noise-opacity);
   }
 
   .hero-glow--page {
@@ -104,10 +87,6 @@
       opacity: 0.55;
     }
 
-    .hero-noise {
-      opacity: calc(var(--hero-noise-opacity) * 0.6);
-    }
-
     .hero-grid {
       mask-image: none;
     }
@@ -117,13 +96,16 @@
     animation: none;
     opacity: 0.55;
   }
-
-  :global(.performance-mode .hero-noise) {
-    opacity: calc(var(--hero-noise-opacity) * 0.6);
-  }
-
   :global(.performance-mode .hero-grid) {
     mask-image: none;
+  }
+
+  :global(.performance-mode .hero-glow--page) {
+    display: none;
+  }
+
+  :global(.performance-mode .hero-gradient--page) {
+    opacity: 0.7;
   }
 
   @keyframes heroGlow {

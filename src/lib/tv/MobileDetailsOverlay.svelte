@@ -12,6 +12,7 @@
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { decode } from 'html-entities';
+  import { isPerformanceMode } from '$lib/tv/store';
 
   export let show = false;
   export let isMobile = false;
@@ -143,12 +144,27 @@
       if (browser) window.history.pushState({}, '', url);
     }
   }
+
+  let performanceMode = false;
+  $: performanceMode = $isPerformanceMode;
+
+  const defaultOverlayClass = 'md:hidden fixed inset-0 z-40 bg-white/95 dark:bg-black/90 backdrop-blur-xl flex flex-col';
+  const performanceOverlayClass = 'md:hidden fixed inset-0 z-40 bg-white dark:bg-black flex flex-col';
+  $: overlayClass = performanceMode ? performanceOverlayClass : defaultOverlayClass;
+
+  const defaultHeaderClass = 'sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-black/70 backdrop-blur border-b border-black/10 dark:border-white/10';
+  const performanceHeaderClass = 'sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-white dark:bg-black border-b border-black/5 dark:border-white/10';
+  $: headerClass = performanceMode ? performanceHeaderClass : defaultHeaderClass;
+
+  const defaultActionsClass = 'mobile-overlay-actions bg-white/90 dark:bg-black/80 backdrop-blur border-t border-black/10 dark:border-white/10';
+  const performanceActionsClass = 'mobile-overlay-actions bg-white dark:bg-black border-t border-black/5 dark:border-white/10';
+  $: actionsClass = performanceMode ? performanceActionsClass : defaultActionsClass;
 </script>
 
 {#if isMobile && show && selected}
-  <div class="md:hidden fixed inset-0 z-40 bg-white/95 dark:bg-black/90 backdrop-blur-xl flex flex-col" transition:fade>
+  <div class={overlayClass} transition:fade>
     <div class="flex-1 overflow-y-auto">
-      <div class="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-black/70 backdrop-blur border-b border-black/10 dark:border-white/10">
+      <div class={headerClass}>
   <button on:click={handleBack} class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-white px-3 py-2 rounded-lg bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           { m.tv_back() }
@@ -266,7 +282,7 @@
         {/if}
       </div>
     </div>
-    <div class="mobile-overlay-actions bg-white/90 dark:bg-black/80 backdrop-blur border-t border-black/10 dark:border-white/10">
+  <div class={actionsClass}>
       <button on:click={() => {
         if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); return; }
         if (isInlinePlayable(selected)) openContent(selected);

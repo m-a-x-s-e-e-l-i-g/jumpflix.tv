@@ -63,6 +63,7 @@
     class:ring-red-500={!isMobile && isSelected}
   class:group-hover:border-none={!isMobile && !performanceMode}
   class:border-none={!isMobile && isSelected}
+    class:shadow-none={performanceMode}
     title={item.title}
   >
   <!-- Placeholder layer (always present, sits under the poster) -->

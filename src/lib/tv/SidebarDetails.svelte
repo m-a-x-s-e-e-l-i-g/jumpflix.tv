@@ -11,6 +11,7 @@
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { fade } from 'svelte/transition';
   import { decode } from 'html-entities';
+  import { isPerformanceMode } from '$lib/tv/store';
   export let selected: ContentItem | null;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
@@ -144,6 +145,17 @@
       if (browser) window.history.pushState({}, '', url);
     }
   }
+
+  let performanceMode = false;
+  $: performanceMode = $isPerformanceMode;
+
+  const defaultBackdropOverlay = 'absolute inset-0 backdrop-blur-2xl bg-white/70 dark:bg-black/70 border-l border-black/10 dark:border-white/10';
+  const performanceBackdropOverlay = 'absolute inset-0 bg-white border-l border-black/5 dark:bg-black dark:border-white/10';
+  $: backdropOverlayClass = performanceMode ? performanceBackdropOverlay : defaultBackdropOverlay;
+
+  const defaultHeroButtonClass = 'w-full bg-blue-600/90 hover:bg-blue-500 text-white py-4 px-6 rounded-2xl font-medium tracking-wide transition-colors flex items-center justify-center gap-3 cursor-pointer shadow-lg shadow-blue-900/30 backdrop-blur';
+  const performanceHeroButtonClass = 'w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 px-5 rounded-xl font-medium tracking-wide flex items-center justify-center gap-3 cursor-pointer shadow-md';
+  $: heroButtonClass = performanceMode ? performanceHeroButtonClass : defaultHeroButtonClass;
 </script>
 
 {#if selected}
@@ -162,7 +174,7 @@
     {:else}
       <div class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 scale-110" transition:fade={{ duration: 250 }}></div>
     {/if}
-    <div class="absolute inset-0 backdrop-blur-2xl bg-white/70 dark:bg-black/70 border-l border-black/10 dark:border-white/10"></div>
+  <div class={backdropOverlayClass}></div>
   </div>
   <div class="space-y-4 relative z-10 flex-1">
     <div>
@@ -327,7 +339,7 @@
       if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); return; }
       if (isInlinePlayable(selected)) openContent(selected);
       else if (selected?.externalUrl) openExternal(selected);
-    }} class="w-full bg-blue-600/90 hover:bg-blue-500 text-white py-4 px-6 rounded-2xl font-medium tracking-wide transition-colors flex items-center justify-center gap-3 cursor-pointer shadow-lg shadow-blue-900/30 backdrop-blur">
+    }} class={heroButtonClass}>
       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
         {#if selected?.type === 'series'}
         {#if selectedEpisode}

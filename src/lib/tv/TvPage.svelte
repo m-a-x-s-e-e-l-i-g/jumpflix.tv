@@ -403,7 +403,6 @@
       radial-gradient(circle at 70% 12%, rgba(59, 130, 246, 0.18), transparent 60%),
       linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.92) 100%);
     --hero-overlay-blend: normal;
-    --hero-noise-opacity: 0.12;
     --hero-logo-text-shadow: 0 10px 26px rgba(148, 163, 184, 0.35);
     --hero-title-gradient: linear-gradient(120deg, #0f172a 0%, #b91c1c 48%, #7c3aed 92%);
     --hero-title-shadow: 0 10px 22px rgba(148, 163, 184, 0.3);
@@ -422,7 +421,6 @@
       radial-gradient(circle at 70% 10%, rgba(59, 130, 246, 0.28), transparent 60%),
       linear-gradient(180deg, rgba(5, 7, 18, 0.05) 0%, rgba(5, 7, 18, 0.85) 100%);
     --hero-overlay-blend: screen;
-    --hero-noise-opacity: 0.26;
     --hero-logo-text-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
     --hero-title-gradient: linear-gradient(120deg, rgba(255, 255, 255, 0.95), rgba(229, 9, 20, 0.95) 45%, rgba(244, 114, 182, 0.95) 90%);
     --hero-title-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
@@ -436,6 +434,10 @@
     background: var(--hero-overlay);
     mix-blend-mode: var(--hero-overlay-blend);
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 70%, rgba(0, 0, 0, 0) 100%);
+  }
+
+  :global(.performance-mode .hero-overlay) {
+    display: none;
   }
 
   @media (min-width: 768px) {

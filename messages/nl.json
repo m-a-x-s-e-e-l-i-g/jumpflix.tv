@@ -1,7 +1,12 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"hello_world": "Hello, {name} from nl!",
-	"tv_description": "Ontdek parkour & freerunning films, documentaires en series.",
+	"tv_description": "JUMPFLIX bundelt parkourfilms, documentaires en series uit de wereldwijde community.",
+	"tv_heroHeading": "Parkour cinema, gecureerd voor de cultuur.",
+	"tv_heroTagline": "Bekijk documentaires, films en rauwe movement stories van freerunning crews wereldwijd.",
+	"tv_heroDescription": "Ontdek indie films, tour edits en community spotlights — voortdurend aangevuld door de scene.",
+	"tv_heroCtaWatch": "Start met kijken",
+	"tv_heroCtaSubmit": "Film insturen",
 	"tv_searchPlaceholder": "Zoek op titel, maker of atleet...",
 	"tv_back": "Terug",
 	"tv_playNow": "Nu afspelen",
@@ -37,6 +42,11 @@
 	,"settings_open": "Instellingen openen"
 	,"settings_credits": "Credits"
 	,"settings_links": "Links"
+	,"settings_visualMode": "Visuele modus"
+	,"settings_visualStunning": "Spectaculair"
+	,"settings_visualPerformance": "Prestaties"
+	,"settings_visualStunningDescription": "Alle effecten en filmische animaties."
+	,"settings_visualPerformanceDescription": "Minimale effecten voor soepel bladeren."
     ,"settings_languageChanged": "Taal gewijzigd naar {language}"
 	,"error_404_title": "Pagina Niet Gevonden"
 	,"error_404_description": "Deze pagina bestaat niet. Misschien is hij op parkour avontuur gegaan?"
@@ -63,4 +73,15 @@
 	,"install_error": "Installatie kan niet worden gestart"
 	,"install_not_available": "Installeren is nog niet beschikbaar. Probeer één keer te herladen."
 	,"install_dev": "Installeren werkt alleen in een productie-build met een geregistreerde service worker."
+	,"submit_film_dialog_title": "Film insturen"
+	,"submit_film_dialog_description": "Deel een parkourfilm, documentaire of serie die volgens jou op JUMPFLIX hoort."
+	,"submit_film_field_label": "Titel of URL"
+	,"submit_film_placeholder": "bijv. Roof Culture Asia of https://youtube.com/watch?v=..."
+	,"submit_film_cancel": "Annuleren"
+	,"submit_film_submit": "Insturen"
+	,"submit_film_sending": "Verzenden…"
+	,"submit_film_error_generic": "Er is iets misgegaan."
+	,"submit_film_error_network": "Netwerkfout. Probeer het opnieuw."
+	,"submit_film_close": "Dialoog sluiten"
+	,"submit_film_success": "Bedankt voor je inzending!"
 }

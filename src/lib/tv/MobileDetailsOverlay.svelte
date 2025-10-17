@@ -26,6 +26,14 @@
   export let onSelectEpisode: (videoId: string, title: string, episodeNumber?: number, seasonNumber?: number) => void;
   // Currently selected episode (for highlighting)
   export let selectedEpisode: Episode | null = null;
+  export let onBack: (() => void) | null = null;
+  function handleBack() {
+    if (onBack) {
+      onBack();
+    } else {
+      closeDetailsPanel();
+    }
+  }
 
   // Seasons & Episodes for series (fetched via API to avoid CORS)
   let episodes: Episode[] = [];
@@ -135,13 +143,17 @@
       if (browser) window.history.pushState({}, '', url);
     }
   }
+
+  const overlayClass = 'mobile-overlay-surface';
+  const headerClass = 'mobile-overlay-header';
+  const actionsClass = 'mobile-overlay-actions';
 </script>
 
 {#if isMobile && show && selected}
-  <div class="md:hidden fixed inset-0 z-40 bg-white/95 dark:bg-black/90 backdrop-blur-xl flex flex-col" transition:fade>
+  <div class={overlayClass} transition:fade>
     <div class="flex-1 overflow-y-auto">
-      <div class="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-black/70 backdrop-blur border-b border-black/10 dark:border-white/10">
-        <button on:click={closeDetailsPanel} class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-white px-3 py-2 rounded-lg bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20">
+      <div class={headerClass}>
+  <button on:click={handleBack} class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-white px-3 py-2 rounded-lg bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           { m.tv_back() }
         </button>
@@ -181,7 +193,7 @@
           </div>
         </div>
       </div>
-      <div class="px-4 pb-28 pt-4 space-y-6">
+  <div class="px-4 pb-28 pt-4 space-y-6 mobile-overlay-content">
         <div>
           <p class="text-gray-700 dark:text-gray-200 text-sm leading-relaxed">{selected.description}</p>
         </div>
@@ -258,7 +270,7 @@
         {/if}
       </div>
     </div>
-    <div class="p-4 bg-white/90 dark:bg-black/80 backdrop-blur border-t border-black/10 dark:border-white/10">
+  <div class={actionsClass}>
       <button on:click={() => {
         if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); return; }
         if (isInlinePlayable(selected)) openContent(selected);
@@ -282,3 +294,52 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .mobile-overlay-surface {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(175deg, #ffffff, #f1f5f9);
+    backdrop-filter: none;
+  }
+
+  :global(.dark) .mobile-overlay-surface {
+    background: linear-gradient(180deg, #050712, #0a1023);
+  }
+
+  .mobile-overlay-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+  }
+
+  :global(.dark) .mobile-overlay-header {
+    background: linear-gradient(185deg, #050712, #0a1023);
+    border-color: rgba(71, 85, 105, 0.38);
+  }
+
+  .mobile-overlay-actions {
+    padding: 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+    border-top: 1px solid rgba(148, 163, 184, 0.28);
+  }
+
+  :global(.dark) .mobile-overlay-actions {
+    background: linear-gradient(180deg, #050712, #0a1023);
+    border-color: rgba(71, 85, 105, 0.4);
+  }
+
+  .mobile-overlay-content {
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  }
+</style>

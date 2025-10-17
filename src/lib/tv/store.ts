@@ -142,3 +142,5 @@ export function closeDetailsPanel() { showDetailsPanel.set(false); }
 
 // Helper to update sort
 export function setSort(value: SortBy) { sortBy.set(value); }
+
+

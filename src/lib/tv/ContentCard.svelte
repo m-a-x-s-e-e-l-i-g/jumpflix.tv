@@ -34,25 +34,27 @@
   $: alreadyLoaded = item.thumbnail ? $loadedThumbnails.has(item.thumbnail) : false;
   $: if (alreadyLoaded) loaded = true;
   $: imageOpacityClass = loaded ? 'opacity-100' : 'opacity-0';
-  const baseImageClass = 'relative inset-0 w-full h-full object-cover z-10 transition-opacity duration-500 ease-out';
+  $: baseImageClass = 'relative inset-0 w-full h-full object-cover z-10 transition-opacity duration-500 ease-out';
 </script>
 
 <div 
   class="group cursor-pointer"
-  class:transform={!isMobile}
-  class:hover:scale-105={!isMobile}
-  class:transition-all={!isMobile}
-  class:duration-300={!isMobile}
-  class:scale-105={!isMobile && isSelected}
+    class:transform={!isMobile}
+    class:hover:scale-105={!isMobile}
+    class:transition-all={!isMobile}
+    class:duration-300={!isMobile}
+    class:scale-105={!isMobile && isSelected}
   on:click={() => onSelect(item)}
   on:keydown={(e) => e.key === 'Enter' && onSelect(item)}
   tabindex="0"
   role="button"
 >
-  <div class="relative aspect-[2/3] bg-[#0f172a] dark:bg-gray-800 border border-gray-700/60 dark:border-gray-700 rounded-xl overflow-hidden mb-3 shadow-md transition-all duration-300"
-    class:group-hover:ring-4={!isMobile}
-    class:group-hover:ring-red-400={!isMobile}
-    class:ring-4={!isMobile && isSelected}
+  <div class="relative aspect-[2/3] bg-[#0f172a] dark:bg-gray-800 border border-gray-700/60 dark:border-gray-700 rounded-xl overflow-hidden mb-3 shadow-md"
+      class:transition-all={!isMobile}
+      class:duration-300={!isMobile}
+      class:group-hover:ring-4={!isMobile}
+      class:group-hover:ring-red-400={!isMobile}
+      class:ring-4={!isMobile && isSelected}
     class:ring-red-500={!isMobile && isSelected}
     class:group-hover:border-none={!isMobile}
     class:border-none={!isMobile && isSelected}
@@ -94,7 +96,7 @@
     </div>
 
     <!-- Bottom-right info: duration for movies, episode count for series -->
-    <div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur px-2 py-1 rounded-md text-[10px] text-white/90 z-20">
+  <div class="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded-md text-[10px] text-white/90 z-20 border border-white/10 shadow-[0_6px_18px_-12px_rgba(0,0,0,0.8)]">
       {#if item.type === 'movie'}
         {item.duration}
       {:else}

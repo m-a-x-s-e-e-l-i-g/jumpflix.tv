@@ -144,6 +144,9 @@
       if (browser) window.history.pushState({}, '', url);
     }
   }
+
+  const backdropOverlayClass = 'details-backdrop-overlay';
+  const heroButtonClass = 'details-primary-button';
 </script>
 
 {#if selected}
@@ -162,7 +165,7 @@
     {:else}
       <div class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 scale-110" transition:fade={{ duration: 250 }}></div>
     {/if}
-    <div class="absolute inset-0 backdrop-blur-2xl bg-white/70 dark:bg-black/70 border-l border-black/10 dark:border-white/10"></div>
+  <div class={backdropOverlayClass}></div>
   </div>
   <div class="space-y-4 relative z-10 flex-1">
     <div>
@@ -327,7 +330,7 @@
       if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); return; }
       if (isInlinePlayable(selected)) openContent(selected);
       else if (selected?.externalUrl) openExternal(selected);
-    }} class="w-full bg-blue-600/90 hover:bg-blue-500 text-white py-4 px-6 rounded-2xl font-medium tracking-wide transition-colors flex items-center justify-center gap-3 cursor-pointer shadow-lg shadow-blue-900/30 backdrop-blur">
+  }} class={heroButtonClass}>
       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
         {#if selected?.type === 'series'}
         {#if selectedEpisode}
@@ -351,3 +354,46 @@
     <p>{m.tv_selectPlaceholder()}</p>
   </div>
 {/if}
+
+<style>
+  .details-backdrop-overlay {
+    position: absolute;
+    inset: 0;
+    border-left: 1px solid rgba(148, 163, 184, 0.2);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.62) 55%, rgba(255, 255, 255, 0.45) 100%);
+    pointer-events: none;
+  }
+
+  :global(.dark) .details-backdrop-overlay {
+    border-color: rgba(71, 85, 105, 0.4);
+    background: linear-gradient(185deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.68) 60%, rgba(15, 23, 42, 0.52) 100%);
+  }
+
+  .details-primary-button {
+    width: 100%;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(59, 130, 246, 0.92));
+    color: #fff;
+    padding: 0.95rem 1.5rem;
+    border-radius: 18px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.25s ease, background 0.25s ease;
+    box-shadow: 0 22px 40px -24px rgba(37, 99, 235, 0.6);
+  }
+
+  .details-primary-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 26px 45px -22px rgba(37, 99, 235, 0.66);
+  }
+
+  :global(.dark) .details-primary-button {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.88), rgba(59, 130, 246, 0.75));
+    box-shadow: 0 24px 45px -24px rgba(37, 99, 235, 0.55);
+  }
+</style>

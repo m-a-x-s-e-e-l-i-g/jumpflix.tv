@@ -302,12 +302,12 @@
     z-index: 40;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(175deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.85));
+    background: linear-gradient(175deg, #ffffff, #f1f5f9);
     backdrop-filter: none;
   }
 
   :global(.dark) .mobile-overlay-surface {
-    background: linear-gradient(180deg, rgba(10, 13, 24, 0.92), rgba(10, 13, 24, 0.82));
+    background: linear-gradient(180deg, #050712, #0a1023);
   }
 
   .mobile-overlay-header {
@@ -318,24 +318,24 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.85rem 1rem;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.82));
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
     border-bottom: 1px solid rgba(148, 163, 184, 0.28);
   }
 
   :global(.dark) .mobile-overlay-header {
-    background: linear-gradient(185deg, rgba(10, 13, 24, 0.94), rgba(10, 13, 24, 0.82));
+    background: linear-gradient(185deg, #050712, #0a1023);
     border-color: rgba(71, 85, 105, 0.38);
   }
 
   .mobile-overlay-actions {
     padding: 1rem;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.85));
+    background: linear-gradient(180deg, #f8fafc, #e2e8f0);
     border-top: 1px solid rgba(148, 163, 184, 0.28);
   }
 
   :global(.dark) .mobile-overlay-actions {
-    background: linear-gradient(180deg, rgba(10, 13, 24, 0.88), rgba(10, 13, 24, 0.78));
+    background: linear-gradient(180deg, #050712, #0a1023);
     border-color: rgba(71, 85, 105, 0.4);
   }
 

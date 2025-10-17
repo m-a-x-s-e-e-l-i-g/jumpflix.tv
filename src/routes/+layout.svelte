@@ -123,6 +123,8 @@
 		{ id: 5, left: 88, top: 70, size: 140, depth: 0.38, floatDuration: 22, floatDelay: -9, sway: 14, opacity: 0.35, rotateBase: 10, rotateFactor: -0.015 },
 		{ id: 6, left: 34, top: 78, size: 164, depth: 0.22, floatDuration: 27, floatDelay: -5, sway: -20, opacity: 0.44, rotateBase: -8, rotateFactor: 0.019 }
 	];
+	const mobilePopcorns = popcorns.slice(0, 4);
+	const activePopcorns = $derived(isMobile ? mobilePopcorns : popcorns);
 
 	const PARALLAX_STRENGTH = 0.06;
 	const SCROLL_UPDATE_THRESHOLD = 6; // Minimum scroll delta (px) before refreshing parallax to cut down style recalculations
@@ -428,7 +430,7 @@
 </svelte:head>
 
 <div class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden" aria-hidden="true" style:display={visualModeSelection === 'performance' ? 'none' : undefined}>
-	{#each popcorns as popcorn (popcorn.id)}
+		{#each activePopcorns as popcorn (popcorn.id)}
 		<div
 			class="popcorn-item"
 			use:popcornParallax={popcorn}
@@ -594,7 +596,7 @@
 	}
 
 	.popcorn-bob img {
-		filter: drop-shadow(0 16px 28px rgba(10, 13, 24, 0.28));
+		filter: drop-shadow(0 14px 24px rgba(10, 13, 24, 0.24));
 		user-select: none;
 	}
 
@@ -614,7 +616,7 @@
 
 	@media (max-width: 768px) {
 		.popcorn-bob img {
-			filter: drop-shadow(0 10px 20px rgba(10, 13, 24, 0.22));
+			filter: drop-shadow(0 8px 16px rgba(10, 13, 24, 0.2));
 		}
 	}
 

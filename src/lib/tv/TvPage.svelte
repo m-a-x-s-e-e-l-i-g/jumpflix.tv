@@ -46,6 +46,7 @@
   let pageTitle: string | null = null;
   let logoTilt = 0;
   let columns = 1;
+  let restoreMobileOverlay = false;
   const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
 
   function nav(url: string, opts?: { replace?: boolean }) {
@@ -217,8 +218,27 @@
     }
 
     const updateIsMobile = () => {
-      isMobile = window.innerWidth < 768;
-      if (!isMobile) showDetailsPanel.set(false);
+      const nextIsMobile = window.innerWidth < 768;
+      const leavingMobile = isMobile && !nextIsMobile;
+      if (leavingMobile) {
+        restoreMobileOverlay = get(showDetailsPanel);
+        if (restoreMobileOverlay) {
+          showDetailsPanel.set(false);
+        }
+      }
+
+      isMobile = nextIsMobile;
+
+      if (!nextIsMobile) {
+        showDetailsPanel.set(false);
+        return;
+      }
+
+      if (restoreMobileOverlay && get(selectedContent)) {
+        setMobileDetails(true);
+      }
+
+      restoreMobileOverlay = false;
     };
     updateIsMobile();
     columns = computeColumns(gridEl);

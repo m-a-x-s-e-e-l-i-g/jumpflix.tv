@@ -83,4 +83,5 @@
 	,"submit_film_error_generic": "Something went wrong."
 	,"submit_film_error_network": "Network error. Please try again."
 	,"submit_film_close": "Close dialog"
+	,"submit_film_success": "Thanks for the submission!"
 }

@@ -4,6 +4,7 @@
   import { tick } from "svelte";
   import XIcon from "@lucide/svelte/icons/x";
   import { Dialog } from "bits-ui";
+  import { toast } from "svelte-sonner";
   import { m } from "$lib/paraglide/messages.js";
 
   let { label = m.submit_film_dialog_title() } = $props<{ label?: string }>();
@@ -26,6 +27,7 @@
         formEl?.reset();
         await tick();
         inputEl?.focus();
+        toast.message(m.submit_film_success());
         return;
       }
 

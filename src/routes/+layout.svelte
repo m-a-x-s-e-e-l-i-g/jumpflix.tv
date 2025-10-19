@@ -175,7 +175,7 @@
 		}
 	};
 
-	let themePreference = $state<ThemePreference>('system');
+	let themePreference = $state<ThemePreference>('dark');
 	let prefersDarkQuery: MediaQueryList | null = null;
 
 	function themeLabel(value: ThemePreference): string {
@@ -192,8 +192,8 @@
 	if (typeof window !== 'undefined') {
 		isMobile = window.innerWidth < 768;
 		const storedTheme = localStorage.getItem('theme');
-		if (storedTheme === 'light' || storedTheme === 'dark') {
-			themePreference = storedTheme;
+		if (storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'system') {
+			themePreference = storedTheme as ThemePreference;
 		}
 	}
 
@@ -340,11 +340,7 @@
 	$effect(() => {
 		const pref = themePreference;
 		if (typeof window === 'undefined') return;
-		if (pref === 'system') {
-			localStorage.removeItem('theme');
-		} else {
-			localStorage.setItem('theme', pref);
-		}
+		localStorage.setItem('theme', pref);
 		applyTheme(pref);
 	});
 

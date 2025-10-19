@@ -20,12 +20,20 @@
 		<script>
 			(function(){
 				try {
-
 					const stored = localStorage.getItem('theme');
-					const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-					const isDark = stored === 'dark' || (!stored && prefersDark);
-					if(isDark) document.documentElement.classList.add('dark');
-					else document.documentElement.classList.remove('dark');
+					const prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+					const followSystem = stored === 'system';
+					let isDark = true;
+
+					if(stored === 'dark') {
+						isDark = true;
+					} else if(stored === 'light') {
+						isDark = false;
+					} else if(followSystem) {
+						isDark = prefersDarkQuery.matches;
+					}
+
+					document.documentElement.classList.toggle('dark', isDark);
 
 					// Sync theme-color meta to match current theme for better PWA splash on Android/Edge
 					const setThemeMeta = (dark) => {
@@ -38,10 +46,19 @@
 						meta.setAttribute('content', dark ? '#0b1220' : '#ffffff');
 					};
 					setThemeMeta(isDark);
-					// Keep in sync with system changes when no explicit theme stored
-					if(!stored){
+
+					if(followSystem){
+						const handleSystemTheme = (event) => {
+							const matches = event.matches;
+							document.documentElement.classList.toggle('dark', matches);
+							setThemeMeta(matches);
+						};
 						try {
-							window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e)=>setThemeMeta(e.matches));
+							if(typeof prefersDarkQuery.addEventListener === 'function') {
+								prefersDarkQuery.addEventListener('change', handleSystemTheme);
+							} else if(typeof prefersDarkQuery.addListener === 'function') {
+								prefersDarkQuery.addListener(handleSystemTheme);
+							}
 						} catch {}
 					}
 				} catch {}

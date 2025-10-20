@@ -46,6 +46,7 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/queen-city-parkour-female-poster.webp": "UFDvl%Nf00Mw.Tt6rWIV01xY%MR.R4t7IpjE",
   "/images/posters/robots-kipa-parkour-film-poster.webp": "U9H1^-.QE3=^~U5RIU^i5JWXxmxt5D?ZofOG",
   "/images/posters/roof-culture-asia-poster.webp": "U#EpcxIpNGf6_NIoR*ay%gNGfkay%MWVj[ay",
+  "/images/posters/run-it-back-our-house-parkour-film-poster.webp": "UlGk?%~pWCM{?u-;j]RkM{M|kCt7RPRjozt7",
   "/images/posters/run-poster.webp": "U#L.%{w^t5WC~SS2oejtTHoJNboKK3f6njfj",
   "/images/posters/running-a-family-commit-freerun-documentary.webp": "UFHB;uIpE3E2E2Iq%Mxu03_2_1t7o}~pflIV",
   "/images/posters/sabai-sabai-parkour-freerunning-movie-poster.webp": "UPJkMr?G9Yofb[j^xvRi~W%3ahR*IVRixuWD",

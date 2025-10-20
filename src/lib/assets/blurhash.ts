@@ -4,6 +4,7 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/6-underground-poster.webp": "UdFYfMMwW.Rj_4VrRjWBALskRPj[9$xtr=of",
   "/images/posters/all-of-the-above-geo-bartolucci-poster.webp": "UfH_YuROIUtS~VROaetS-:RiWBt8%MWBRjfl",
   "/images/posters/amsterdam-is-dead-poster.webp": "U28E6*bH00IU?cofRjRj00n*_4xv00M{xvxu",
+  "/images/posters/avanti-garda-poster-parkour-freerun-movie-film-czech.webp": "UGC$NFM_0JkCp{RPQ-t75jV@xbt8[CWBOsfk",
   "/images/posters/balancing-organisms-convoi-films-parkour-poster.webp": "UtF5%NayNGoL^-oes:fQ-=oeofayt8j[WBj[",
   "/images/posters/berlingo-kipa-swedish-parkour-film-poster.webp": "UJE{a,E--pjEKnNzxtV[01n#NGjJ#3w@IVs:",
   "/images/posters/bound-by-movement-poster.webp": "UGKno6%24.ad.9bGt7kD00NGxuj]~AWCIoV?",

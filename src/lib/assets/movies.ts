@@ -1027,5 +1027,36 @@ export const movies = [
 			'Joel Larsson',
 			'Levio'
 		]
+	},
+	{
+		id: 56,
+		title: 'AVANTI GARDA',
+		year: '2023',
+		description:
+			"Two years of Prague's biggest jumps, laughs, and bails captured through Venda Benda's lens, spotlighting the city's parkour community with an all-Czech soundtrack and crew.",
+		thumbnail: '/images/posters/avanti-garda-poster-parkour-freerun-movie-film-czech.webp',
+		videoId: 'MZtZyAFyGqA',
+		type: 'movie',
+		duration: '33m',
+		creators: ['Venda Benda', 'AVANTI GARDA'],
+		starring: [
+			'Oto Straka',
+			'Pavel Čačík',
+			'Kryštof Kolíbal',
+			'Dominik Hejduk',
+			'Mikeš Kořínek',
+			'Jáchym Holoubek',
+			'Vít Vyhlas',
+			'Pepa Vyhlas',
+			'Matyáš Bálek',
+			'Kryštof Bouřil',
+			'Kačka Krčmářová',
+			'Adam Flek',
+			'Šimon Strakatý',
+			'Oliver Zich',
+			'Venda Benda',
+			'Marek Malina',
+			'Jan Hranička'
+		]
 	}
 ];

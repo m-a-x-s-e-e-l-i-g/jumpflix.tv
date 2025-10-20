@@ -60,6 +60,7 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/the-commons-atonement-josh-malone-poster.webp": "U28D@Q%N009F=~j[EJae00Mx~W-=4,ae%4o#",
   "/images/posters/the-motus-projects-hazel-poster-freerunning.webp": "UAQ]+w00_3~q0000%M?b009F_3%M9Fxu~q%M",
   "/images/posters/the-motus-projects-sol-poster.webp": "U16keVtj00nm00bF~qt700RR~pNF0JRj~qoy",
+  "/images/posters/to-wander-and-to-fade-parkour-film-poster-hudson-lehr.webp": "U4AAHz^,01Fd00w[%fS#0eE1Z##k_NXT-A$%",
   "/images/posters/tracers-poster.webp": "UgMG;cV@_4WB~pRQtRxuETbHROof%htRxaRj",
   "/images/posters/tru-the-opening-parkour-freerunning-movie-poster.webp": "UIFrhS00js~V9a-:E1E14oD*xt9ZM|^*IV-:",
   "/images/posters/what-happened-myrm-parkour-documentary.webp": "U|I5b=s:a}fk~qofj[fQ%Mj[j[f7NGayayjt",

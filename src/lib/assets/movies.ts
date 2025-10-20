@@ -1004,5 +1004,28 @@ export const movies = [
 		duration: '7m',
 		creators: ['Our House', 'Christoph Erdmann', 'Alex Flatau'],
 		starring: ['Amir Kaiser', 'Andi Woehle', 'Silke Sollfrank', 'Luca Beaufort']
+	},
+	{
+		id: 55,
+		title: 'To Wander and to Fade',
+		year: '2022',
+		description:
+			'Shelved since 2022, this Europe tour cut finally surfaces—capturing friends wandering unfamiliar cities before the footage was left to fade.',
+		thumbnail: '/images/posters/to-wander-and-to-fade-parkour-film-poster-hudson-lehr.webp',
+		videoId: '0Rxo314VkpY',
+		type: 'movie',
+		duration: '8m',
+		creators: ['Ethan Rud'],
+		starring: [
+			'Hudson Lehr',
+			'Fynn Kaltstein',
+			'Jack Dodds',
+			'Luca Beaufort',
+			'Kelan Ryan',
+			'Kevin Franzén',
+			'Sophia Fitz',
+			'Joel Larsson',
+			'Levio'
+		]
 	}
 ];

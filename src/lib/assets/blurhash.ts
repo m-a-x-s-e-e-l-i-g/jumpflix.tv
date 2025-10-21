@@ -64,6 +64,8 @@ export const posterBlurhash: Record<string, string> = {
   "/images/posters/to-wander-and-to-fade-parkour-film-poster-hudson-lehr.webp": "U4AAHz^,01Fd00w[%fS#0eE1Z##k_NXT-A$%",
   "/images/posters/tracers-poster.webp": "UgMG;cV@_4WB~pRQtRxuETbHROof%htRxaRj",
   "/images/posters/tru-the-opening-parkour-freerunning-movie-poster.webp": "UIFrhS00js~V9a-:E1E14oD*xt9ZM|^*IV-:",
+  "/images/posters/turfcam-fields-of-joy-parkour-film-poster.webp": "U59QKp#Oxvnj%%Mb?HR*^,m*tSS2yFI9-oxa",
+  "/images/posters/turfcam-hayfever-parkour-film-poster.webp": "U7AAZ:^^4=IX~kx.NHn,04Sd%KxaV[s,t6Rl",
   "/images/posters/what-happened-myrm-parkour-documentary.webp": "U|I5b=s:a}fk~qofj[fQ%Mj[j[f7NGayayjt",
   "/images/posters/world-chase-tag-poster.webp": "UNC}e9s:I:jZ}Fj[R+WVwdWVjuj]RkWCfioJ",
 } as const;

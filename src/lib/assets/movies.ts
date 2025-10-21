@@ -1058,5 +1058,39 @@ export const movies = [
 			'Marek Malina',
 			'Jan Hranička'
 		]
+	},
+	{
+		id: 57,
+		title: 'HAYFEVER',
+		year: '2023',
+		description:
+			'A year-long TurfCam project marking a milestone for the crew—friends and creatives capturing a season of progress together.',
+		thumbnail: '/images/posters/turfcam-hayfever-parkour-film-poster.webp',
+		videoId: '_CAuOTnyJMw',
+		type: 'movie',
+		duration: '27m',
+		creators: ['TurfCam', 'Will Maker', 'Max Pattenden'],
+		starring: ['Cal Biddle', 'Will Acheson', 'Max Pattenden', 'Will Maker', 'George Prior']
+	},
+	{
+		id: 58,
+		title: 'FIELDS OF JOY',
+		year: '2024',
+		description:
+			'TurfCam follow-up celebrating countryside sessions, playful lines, and the crew’s shared joy in movement.',
+		thumbnail: '/images/posters/turfcam-fields-of-joy-parkour-film-poster.webp',
+		videoId: '8weOJxME_rs',
+		type: 'movie',
+		duration: '14m',
+		creators: ['Max Pattenden', 'TurfCam'],
+		starring: [
+			'Callan Biddle',
+			'Xabi Philp',
+			'Max Pattenden',
+			'Will Acheson',
+			'Will Maker',
+			'Richard Comerford',
+			'George Prior'
+		]
 	}
 ];

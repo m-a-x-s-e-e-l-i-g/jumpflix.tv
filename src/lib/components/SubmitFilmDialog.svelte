@@ -56,12 +56,12 @@
   }
 
   const actionButtonBase =
-    "inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-medium uppercase tracking-[0.2em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-slate-900/40 dark:focus-visible:outline-white/70 disabled:cursor-not-allowed disabled:opacity-60";
+    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-medium uppercase tracking-[0.2em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-slate-900/40 dark:focus-visible:outline-white/70 disabled:cursor-not-allowed disabled:opacity-60";
 </script>
 
 <Dialog.Root bind:open={open}>
   <Dialog.Trigger
-    class="group inline-flex items-center gap-3 rounded-full border border-slate-900/10 bg-white/85 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-900 shadow-[0_14px_28px_-18px_rgba(15,23,42,0.3)] transition hover:border-slate-900/20 hover:bg-white hover:text-slate-900 dark:border-white/30 dark:bg-white/10 dark:text-white/80 dark:hover:border-white/60 dark:hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-slate-900/40 dark:focus-visible:outline-white/70"
+    class="group inline-flex cursor-pointer items-center gap-3 rounded-full border border-slate-900/10 bg-white/85 px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-900 shadow-[0_14px_28px_-18px_rgba(15,23,42,0.3)] transition hover:border-slate-900/20 hover:bg-white hover:text-slate-900 dark:border-white/30 dark:bg-white/10 dark:text-white/80 dark:hover:border-white/60 dark:hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-slate-900/40 dark:focus-visible:outline-white/70"
   >
     {label}
   </Dialog.Trigger>
@@ -73,7 +73,7 @@
     >
       <button
         type="button"
-        class="absolute right-5 top-5 inline-flex size-8 items-center justify-center rounded-full border border-slate-900/10 bg-white/80 text-slate-500 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:text-white dark:focus-visible:ring-white/70 dark:focus-visible:ring-offset-black/20"
+        class="absolute right-5 top-5 inline-flex size-8 cursor-pointer items-center justify-center rounded-full border border-slate-900/10 bg-white/80 text-slate-500 transition hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-white/10 dark:bg-white/5 dark:text-white/70 dark:hover:text-white dark:focus-visible:ring-white/70 dark:focus-visible:ring-offset-black/20"
         onclick={closeDialog}
       >
         <XIcon class="size-4" />

@@ -1,192 +1,148 @@
 <script lang="ts">
-	import ParkourAnimation from '$lib/components/ParkourAnimation.svelte';
 	import { m } from '$lib/paraglide/messages.js';
 	import { goto } from '$app/navigation';
 
-	export let status: number = 500;
-	export let message: string = '';
-	export let title: string = '';
+	let { status = 500, title = '', message: _unusedMessage = '' } = $props<{ status?: number; title?: string; message?: string }>();
 
-	// Auto-determine title and message based on status code if not provided
-	$: displayTitle = title || getDefaultTitle(status);
-	$: displayMessage = message ? translateMessage(message) : getDefaultMessage(status);
+	const statusLabel = $derived(getStatusLabel(status));
+	const displayTitle = $derived(title?.trim() || statusLabel);
+	const displayDescription = $derived(`Error ${status}`);
+	const metaDescription = $derived(`${status} - ${statusLabel}`);
 
-	function translateMessage(msg: string): string {
-		// Check if message is a translation key
-		if (msg === 'error_server_404') {
-			return m.error_server_404();
-		}
-		return msg;
-	}
-
-	function getDefaultTitle(code: number): string {
+	function getStatusLabel(code: number): string {
 		switch (code) {
+			case 400:
+				return 'Bad request';
+			case 401:
+				return 'Unauthorized';
+			case 403:
+				return 'Access blocked';
 			case 404:
-				return m.error_404_title();
+				return 'Page not found';
 			case 500:
-				return m.error_500_title();
+				return 'Server hiccup';
+			case 503:
+				return 'Service unavailable';
 			default:
-				return m.error_general_title();
-		}
-	}
-
-	function getDefaultMessage(code: number): string {
-		switch (code) {
-			case 404:
-				return m.error_404_description();
-			case 500:
-				return m.error_500_description();
-			default:
-				return m.error_general_description();
+				return 'Something went wrong';
 		}
 	}
 
 	function goHome() {
 		goto('/');
 	}
-
-	function tryAgain() {
-		window.location.reload();
-	}
-
-	function getStatusEmoji(code: number): string {
-		switch (code) {
-			case 404:
-				return '🏃‍♂️💨'; // Person running away (like the page)
-			case 500:
-				return '🤸‍♂️💥'; // Person doing acrobatics with crash
-			case 403:
-				return '🚫🏃‍♂️'; // No entry + runner
-			default:
-				return '⚠️🆘'; // Warning + SOS
-		}
-	}
 </script>
 
 <svelte:head>
 	<title>Error {status} - JUMPFLIX</title>
-	<meta name="description" content={displayMessage} />
+	<meta name="description" content={metaDescription} />
 </svelte:head>
 
-<div class="min-h-screen bg-background text-foreground flex items-center justify-center p-6 relative overflow-hidden">
-	<!-- Animated background elements -->
-	<div class="absolute inset-0 -z-10">
-		<div class="absolute top-20 left-10 w-2 h-2 bg-primary/20 rounded-full animate-ping" style="animation-delay: 0s; animation-duration: 3s;"></div>
-		<div class="absolute top-32 right-20 w-1 h-1 bg-accent/30 rounded-full animate-ping" style="animation-delay: 1s; animation-duration: 4s;"></div>
-		<div class="absolute bottom-40 left-1/4 w-1.5 h-1.5 bg-primary/15 rounded-full animate-ping" style="animation-delay: 2s; animation-duration: 5s;"></div>
-		<div class="absolute bottom-20 right-1/3 w-2 h-2 bg-accent/20 rounded-full animate-ping" style="animation-delay: 0.5s; animation-duration: 3.5s;"></div>
-		<div class="absolute -top-40 -right-32 w-80 h-80 bg-primary/5 rounded-full animate-pulse" style="animation-duration: 4s;"></div>
-		<div class="absolute -bottom-40 -left-32 w-96 h-96 bg-accent/5 rounded-full animate-pulse" style="animation-duration: 6s; animation-delay: 2s;"></div>
-	</div>
+<div class="error-page" role="alert" aria-live="polite">
+	<section class="error-card">
+		<img src="/images/sad-jumpflix.webp" alt="JUMPFLIX error" class="error-logo" loading="eager" />
 
-	<div class="max-w-2xl mx-auto text-center space-y-8 relative z-10">
-		<!-- Logo -->
-		<div class="flex justify-center mb-8">
-			<a href="/" aria-label="Go to homepage" class="transition-all duration-300 hover:scale-105 hover:drop-shadow-lg">
-				<img
-					src="/images/jumpflix.webp"
-					alt="JUMPFLIX parkour tv"
-					class="filter drop-shadow-md"
-					style="height: 120px; width: auto; max-height: 120px;"
-					loading="eager"
-				/>
-			</a>
-		</div>
+		<h1 class="error-heading">{displayTitle}</h1>
+		<p class="error-description">{displayDescription}</p>
 
-		<!-- Error Status with Glass Effect -->
-		<div class="space-y-6">
-			<div class="relative">
-				<div class="text-8xl md:text-9xl font-mono font-black text-primary/10 select-none">
-					{status}
-				</div>
-				<div class="absolute inset-0 flex items-center justify-center">
-					<div class="text-4xl md:text-5xl font-bold text-primary/80 backdrop-blur-sm bg-background/30 px-6 py-2 rounded-2xl border border-border/50">
-						{status}
-					</div>
-				</div>
-			</div>
-			<div class="text-6xl md:text-7xl animate-bounce-gentle">
-				{#if status === 404}
-					<div class="flex justify-center mb-4">
-						<ParkourAnimation size={120} />
-					</div>
-				{:else}
-					{getStatusEmoji(status)}
-				{/if}
-			</div>
-		</div>
-
-		<!-- Error Content with Glass Card -->
-		<div class="backdrop-blur-sm bg-card/30 border border-border/50 rounded-3xl p-8 space-y-6 shadow-2xl">
-			<h1 class="text-3xl md:text-5xl font-bold text-foreground leading-tight">
-				{displayTitle}
-			</h1>
-			<p class="text-lg md:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
-				{displayMessage}
-			</p>
-		</div>
-
-		<!-- Action Buttons with Enhanced Design -->
-		<div class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
-			<button 
-				type="button"
-				class="inline-flex items-center justify-center gap-2 font-medium rounded-md transition-all duration-300 transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-6 text-base min-w-[180px] shadow-lg hover:shadow-xl" 
-				on:click={goHome}
-			>
-				<span class="text-lg">🏠</span> {m.error_backHome()}
+		<div class="error-actions">
+			<button type="button" class="primary-action" onclick={goHome}>
+				<span>{m.error_backHome()}</span>
 			</button>
-			
-			{#if status !== 404}
-				<span class="text-muted-foreground text-sm font-medium px-3">{m.error_or()}</span>
-				<button 
-					type="button"
-					class="inline-flex items-center justify-center gap-2 font-medium rounded-md transition-all duration-300 transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50 disabled:pointer-events-none border border-border bg-background hover:bg-muted/40 h-11 px-6 text-base min-w-[180px] shadow-md hover:shadow-lg" 
-					on:click={tryAgain}
-				>
-					<span class="text-lg animate-spin-slow">🔄</span> {m.error_tryAgain()}
-				</button>
-			{/if}
 		</div>
-	</div>
+	</section>
 </div>
 
 <style>
-	/* Enhanced bounce animation for emoji */
-	.animate-bounce-gentle {
-		animation: bounceGentle 3s ease-in-out infinite;
+	.error-page {
+		position: fixed;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem;
+		background: hsl(var(--background));
+		color: hsl(var(--foreground));
 	}
 
-	@keyframes bounceGentle {
-		0%, 20%, 53%, 80%, 100% {
-			transform: translateY(0px) scale(1);
-		}
-		40%, 43% {
-			transform: translateY(-15px) scale(1.05);
-		}
-		70% {
-			transform: translateY(-8px) scale(1.02);
-		}
-		90% {
-			transform: translateY(-3px) scale(1.01);
-		}
+	.error-card {
+		width: min(480px, 100%);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1.5rem;
+		background: hsl(var(--card));
+		border: 1px solid hsl(var(--border));
+		border-radius: 1.25rem;
+		padding: clamp(1.75rem, 4vw, 2.5rem);
+		text-align: center;
 	}
 
-	/* Slow spin animation */
-	.animate-spin-slow {
-		animation: spin 3s linear infinite;
+	.error-logo {
+		height: clamp(120px, 12vw, 120px);
+		width: auto;
 	}
 
-	@keyframes spin {
-		from {
-			transform: rotate(0deg);
-		}
-		to {
-			transform: rotate(360deg);
-		}
+	.error-heading {
+		font-size: clamp(2.2rem, 5vw, 3rem);
+		font-weight: 700;
+		line-height: 1;
+		letter-spacing: -0.02em;
+		color: hsl(var(--foreground));
 	}
 
-	/* Glass effect enhancement */
-	.backdrop-blur-sm {
-		backdrop-filter: blur(4px);
+	.error-description {
+		font-size: 1rem;
+		font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
+		color: hsl(var(--muted-foreground));
+	}
+
+	.error-actions {
+		display: flex;
+		justify-content: center;
+		width: 100%;
+	}
+
+	.primary-action {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.85rem 2.75rem;
+		border-radius: 999px;
+		font-weight: 600;
+		font-size: 0.95rem;
+		text-transform: uppercase;
+		letter-spacing: 0.18em;
+		cursor: pointer;
+		border: none;
+		background: #e50914;
+		color: #ffffff;
+		box-shadow: 0 24px 48px -22px rgba(229, 9, 20, 0.7);
+		transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+	}
+
+	.primary-action:hover {
+		background: #ff1a27;
+		transform: translateY(-1px);
+		box-shadow: 0 28px 56px -24px rgba(229, 9, 20, 0.72);
+	}
+
+	.primary-action:focus-visible {
+		outline: 2px solid hsl(var(--ring));
+		outline-offset: 3px;
+		box-shadow: 0 24px 48px -22px rgba(229, 9, 20, 0.7), 0 0 0 4px rgba(229, 9, 20, 0.2);
+	}
+
+	@media (min-width: 640px) {
+		.error-card {
+			gap: 1.75rem;
+		}
+
+		.error-actions {
+			max-width: none;
+		}
 	}
 </style>

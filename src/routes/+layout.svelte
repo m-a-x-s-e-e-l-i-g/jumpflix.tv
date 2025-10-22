@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { onMount, setContext } from 'svelte';
 	import type { Action } from 'svelte/action';
+	import { page } from '$app/stores';
 	import { Sheet as SheetRoot, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '$lib/components/ui/sheet';
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import GithubIcon from '@lucide/svelte/icons/github';
@@ -477,8 +478,12 @@
 
 	{#key currentLocale}
 		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
-		<TvPage initialItem={data?.item ?? null} initialEpisodeNumber={data?.initialEpisodeNumber ?? null} initialSeasonNumber={data?.initialSeasonNumber ?? null} />
-		{@render children?.()}
+		{#if $page.error}
+			{@render children?.()}
+		{:else}
+			<TvPage initialItem={data?.item ?? null} initialEpisodeNumber={data?.initialEpisodeNumber ?? null} initialSeasonNumber={data?.initialSeasonNumber ?? null} />
+			{@render children?.()}
+		{/if}
 	{/key}
 
 	<!-- Global toast container -->

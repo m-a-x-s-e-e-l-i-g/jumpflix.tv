@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, onMount } from 'svelte';
+  import { getContext, onMount, tick } from 'svelte';
   import { page } from '$app/stores';
   import { get } from 'svelte/store';
   import PlayerModal from '$lib/tv/PlayerModal.svelte';
@@ -48,6 +48,25 @@
   let columns = 1;
   let restoreMobileOverlay = false;
   const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
+  let shouldScrollToResults = false;
+  let scrollQueued = false;
+
+  async function scrollToSearchResults() {
+    if (!browser) return;
+    await tick();
+    const target = document.getElementById('search') ?? document.getElementById('catalog');
+    if (!target) return;
+    target.scrollIntoView({ block: 'start' });
+  }
+
+  function requestScrollToResults() {
+    if (!browser || scrollQueued) return;
+    scrollQueued = true;
+    queueMicrotask(async () => {
+      scrollQueued = false;
+      await scrollToSearchResults();
+    });
+  }
 
   if (browser) {
     const initialPage = get(page);
@@ -55,6 +74,10 @@
       const initialQuery = initialPage.url.searchParams.get('q') ?? '';
       if (initialQuery !== get(searchQuery)) {
         searchQuery.set(initialQuery);
+      }
+      if (initialQuery) {
+        shouldScrollToResults = true;
+        requestScrollToResults();
       }
     }
   }
@@ -219,6 +242,12 @@
         const nextQuery = p.url.searchParams.get('q') ?? '';
         if (nextQuery !== get(searchQuery)) {
           searchQuery.set(nextQuery);
+          if (nextQuery) {
+            requestScrollToResults();
+          }
+        }
+        if (!nextQuery) {
+          shouldScrollToResults = false;
         }
       }
     });
@@ -302,6 +331,10 @@
             window.removeEventListener('scroll', fallbackScroll);
           };
         })();
+    if (shouldScrollToResults) {
+      requestScrollToResults();
+      shouldScrollToResults = false;
+    }
     return () => {
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('resize', resizeHandler);

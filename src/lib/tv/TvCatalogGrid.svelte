@@ -18,7 +18,18 @@
 <div id="catalog" class="container mx-auto px-6 py-10 tv-main -mt-16 z-20">
   <div bind:this={gridElement} class="grid auto-fit-grid gap-6">
     {#if visibleContent.length === 0}
-      <div class="col-span-full text-center text-gray-400 py-8">{m.tv_noResults()}</div>
+      <div class="col-span-full flex flex-col items-center gap-6 py-10 text-center text-gray-400">
+        <img
+          src="/images/searching-jumpflix-logo.webp"
+          alt="Searching Jumpflix"
+          width="220"
+          height="160"
+          class="h-auto w-48 max-w-full opacity-90"
+          loading="lazy"
+          decoding="async"
+        />
+        <div>{m.tv_noResults()}</div>
+      </div>
     {:else}
       {#each sortedAllContent as item (keyFor(item))}
         <div class:hidden={!visibleKeys.has(keyFor(item))} class="w-full">

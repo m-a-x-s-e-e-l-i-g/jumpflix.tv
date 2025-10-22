@@ -32,30 +32,7 @@ export const handleError: HandleServerError = async ({ error, event, status, mes
 
 	// Return user-friendly error object
 	return {
-		message: getErrorMessage(status),
+		message: 'Something went wrong on our end. Please try refreshing the page.',
 		errorId
 	};
 };
-
-function getErrorMessage(status: number): string {
-	switch (status) {
-		case 400:
-			return 'Bad request. Please check your input.';
-		case 401:
-			return 'Unauthorized. Please sign in.';
-		case 403:
-			return 'Access forbidden. You don\'t have permission to view this.';
-		case 404:
-			return 'error_server_404'; // Will be translated on client side
-		case 429:
-			return 'Too many requests. Please slow down and try again.';
-		case 500:
-			return 'Internal server error. Our servers are taking a breather.';
-		case 502:
-			return 'Bad gateway. Our servers are having connection issues.';
-		case 503:
-			return 'Service unavailable. We\'re performing maintenance.';
-		default:
-			return 'An unexpected error occurred. Please try again later.';
-	}
-}

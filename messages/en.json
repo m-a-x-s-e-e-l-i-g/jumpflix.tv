@@ -1,6 +1,5 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"hello_world": "Hello, {name} from en!",
 	"tv_description": "JUMPFLIX spotlights global parkour cinema—films, docs, and series for the movement community.",
 	"tv_heroHeading": "Parkour cinema, curated for the culture.",
 	"tv_heroTagline": "Watch documentaries, movies, and raw movement stories shaped by freerunning crews worldwide.",
@@ -49,11 +48,6 @@
 	,"settings_visualPerformanceDescription": "Minimize effects for smoother browsing."
 	,"settings_languageChanged": "Language changed to {language}"
 	,"error_backHome": "Back to JUMPFLIX"
-	,"error_movie_404_title": "Movie Not Found"
-	,"error_movie_404_description": "This movie seems to have jumped away! Maybe it's practicing some new moves?"
-	,"error_playlist_404_title": "Playlist Not Found"
-	,"error_playlist_404_description": "This playlist took a leap of faith and disappeared! Let's find another one."
-	,"error_server_404": "Page not found. This content might have jumped to another location!"
 	,"tv_episodes": "Episodes"
 	,"tv_playSelectedEpisode": "Play selected episode"
 	,"settings_install": "Install"

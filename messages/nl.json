@@ -1,6 +1,5 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"hello_world": "Hello, {name} from nl!",
 	"tv_description": "JUMPFLIX bundelt parkourfilms, documentaires en series uit de wereldwijde community.",
 	"tv_heroHeading": "Parkour cinema, gecureerd voor de cultuur.",
 	"tv_heroTagline": "Bekijk documentaires, films en rauwe movement stories van freerunning crews wereldwijd.",
@@ -49,11 +48,6 @@
 	,"settings_visualPerformanceDescription": "Minimale effecten voor soepel bladeren."
     ,"settings_languageChanged": "Taal gewijzigd naar {language}"
 	,"error_backHome": "Terug naar JUMPFLIX"
-	,"error_movie_404_title": "Film Niet Gevonden"
-	,"error_movie_404_description": "Deze film lijkt weggesprongen te zijn! Misschien oefent hij nieuwe bewegingen?"
-	,"error_playlist_404_title": "Afspeellijst Niet Gevonden"
-	,"error_playlist_404_description": "Deze afspeellijst nam een sprong in het diepe en verdween! Laten we een andere zoeken."
-	,"error_server_404": "Pagina niet gevonden. Deze inhoud is misschien naar een andere locatie gesprongen!"
 	,"tv_episodes": "Afleveringen"
 	,"tv_playSelectedEpisode": "Aflevering afspelen"
 	,"settings_install": "Installeren"

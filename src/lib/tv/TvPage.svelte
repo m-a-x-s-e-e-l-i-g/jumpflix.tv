@@ -49,6 +49,16 @@
   let restoreMobileOverlay = false;
   const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
 
+  if (browser) {
+    const initialPage = get(page);
+    if (initialPage.url.pathname === '/') {
+      const initialQuery = initialPage.url.searchParams.get('q') ?? '';
+      if (initialQuery !== get(searchQuery)) {
+        searchQuery.set(initialQuery);
+      }
+    }
+  }
+
   function nav(url: string, opts?: { replace?: boolean }) {
     goto(url, { replaceState: !!opts?.replace, noScroll: true, keepFocus: true });
   }
@@ -205,10 +215,13 @@
     currentPath = `${get(page).url.pathname}${get(page).url.search}`;
     const unsubPage = page.subscribe((p) => {
       currentPath = `${p.url.pathname}${p.url.search}`;
+      if (p.url.pathname === '/') {
+        const nextQuery = p.url.searchParams.get('q') ?? '';
+        if (nextQuery !== get(searchQuery)) {
+          searchQuery.set(nextQuery);
+        }
+      }
     });
-
-    const q = get(page).url.searchParams.get('q') ?? '';
-    if (q) searchQuery.set(q);
 
     if (initialItem && (initialItem as any).type === 'series') {
       if (initialEpisodeNumber && Number.isFinite(initialEpisodeNumber)) {

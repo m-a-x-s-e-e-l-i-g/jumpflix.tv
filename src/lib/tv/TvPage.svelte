@@ -50,6 +50,7 @@
   const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
   let shouldScrollToResults = false;
   let scrollQueued = false;
+  let catalogMinHeight = 0;
 
   async function scrollToSearchResults() {
     if (!browser) return;
@@ -259,6 +260,14 @@
       }
     }
 
+    const updateCatalogMinHeight = () => {
+      if (!browser) return;
+      const searchEl = document.getElementById('search');
+      const searchHeight = searchEl?.getBoundingClientRect().height ?? 0;
+      const viewportHeight = window.innerHeight;
+      catalogMinHeight = Math.max(0, viewportHeight - searchHeight);
+    };
+
     const updateIsMobile = () => {
       const nextIsMobile = window.innerWidth < 768;
       const leavingMobile = isMobile && !nextIsMobile;
@@ -284,10 +293,20 @@
     };
     updateIsMobile();
     columns = computeColumns(gridEl);
+    updateCatalogMinHeight();
+
+    const searchEl = document.getElementById('search');
+    const searchHeightObserver = (typeof ResizeObserver !== 'undefined')
+      ? new ResizeObserver(() => updateCatalogMinHeight())
+      : null;
+    if (searchHeightObserver && searchEl) {
+      searchHeightObserver.observe(searchEl);
+    }
 
     const resizeHandler = () => {
       updateIsMobile();
       columns = computeColumns(gridEl);
+      updateCatalogMinHeight();
     };
     window.addEventListener('resize', resizeHandler);
     document.addEventListener('keydown', handleKeydown);
@@ -338,6 +357,7 @@
     return () => {
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('resize', resizeHandler);
+      searchHeightObserver?.disconnect();
       cleanupScroll?.();
       if (rafId !== null) cancelAnimationFrame(rafId);
       unsubPage();
@@ -390,7 +410,7 @@
 
     <TvSearchControls {searchQuery} {showPaid} {sortBy} />
   </section>
-  <div>
+  <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
     <TvCatalogGrid
       bind:gridElement={gridEl}
       sortedAllContent={$sortedAllContent}

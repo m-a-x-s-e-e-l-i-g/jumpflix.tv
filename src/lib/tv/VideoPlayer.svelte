@@ -29,7 +29,10 @@
 
   onMount(() => {
     mounted = true;
+    const body = typeof document !== 'undefined' ? document.body : null;
+    body?.classList.add('hide-popcorn');
     return () => {
+      body?.classList.remove('hide-popcorn');
       try {
         playerEl?.destroy?.();
       } catch {

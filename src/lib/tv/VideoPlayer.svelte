@@ -129,6 +129,11 @@
         <div class="controls-surface">
           <media-controls-group class="controls-group scrub">
             <media-time-slider class="time-slider" aria-label={title ? `Scrub through ${title}` : 'Scrub through video'}>
+              <div class="slider-track" aria-hidden="true">
+                <div class="slider-track-progress"></div>
+                <div class="slider-track-fill"></div>
+              </div>
+              <div class="slider-thumb" aria-hidden="true"></div>
               <media-slider-preview class="slider-preview">
                 <media-slider-value class="slider-value"></media-slider-value>
               </media-slider-preview>
@@ -175,6 +180,11 @@
               </media-mute-button>
 
               <media-volume-slider class="volume-slider" aria-label="Adjust volume">
+                <div class="slider-track" aria-hidden="true">
+                  <div class="slider-track-progress"></div>
+                  <div class="slider-track-fill"></div>
+                </div>
+                <div class="slider-thumb" aria-hidden="true"></div>
                 <media-slider-preview class="slider-preview">
                   <media-slider-value class="slider-value"></media-slider-value>
                 </media-slider-preview>
@@ -388,27 +398,71 @@
     width: 100%;
     display: block;
     --media-slider-track-height: 6px;
-    --media-slider-thumb-size: 16px;
+    position: relative;
   }
 
-  :global(media-time-slider.time-slider [part~='track']) {
-    background: rgba(148, 163, 215, 0.28);
+  .time-slider .slider-track,
+  .volume-slider .slider-track {
+    position: relative;
+    inline-size: 100%;
+    block-size: var(--media-slider-track-height, 6px);
+    background: rgba(148, 163, 215, 0.25);
+    border-radius: 999px;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .time-slider .slider-track-progress,
+  .volume-slider .slider-track-progress {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    inline-size: var(--slider-progress, 0%);
+    background: rgba(255, 255, 255, 0.28);
+  }
+
+  .time-slider .slider-track-fill,
+  .volume-slider .slider-track-fill {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    inline-size: var(--slider-fill, 0%);
+    background: linear-gradient(90deg, #60a5fa 0%, #c084fc 100%);
+  }
+
+  .time-slider .slider-thumb,
+  .volume-slider .slider-thumb {
+    position: absolute;
+    inline-size: var(--media-slider-thumb-size, 16px);
+    block-size: var(--media-slider-thumb-size, 16px);
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.35);
+  box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.18);
+  transform: translate(-50%, -50%);
+  inset-inline-start: var(--slider-fill, 0%);
+    inset-block-start: 50%;
+    pointer-events: none;
+  }
+
+  :global(media-time-slider.time-slider [part='track']) {
+    background: rgba(148, 163, 215, 0.45);
     height: var(--media-slider-track-height);
     border-radius: 999px;
     overflow: hidden;
   }
 
-  :global(media-time-slider.time-slider [part~='track-progress']) {
-    background: rgba(255, 255, 255, 0.28);
-  }
-
-  :global(media-time-slider.time-slider [part~='track-fill']) {
+  :global(media-time-slider.time-slider [part='track-fill']) {
     background: linear-gradient(90deg, #60a5fa 0%, #c084fc 100%);
   }
 
+  :global(media-time-slider.time-slider [part='track-progress']) {
+    background: rgba(255, 255, 255, 0.28);
+  }
+
   :global(media-time-slider.time-slider [part='thumb']) {
-    width: var(--media-slider-thumb-size);
-    height: var(--media-slider-thumb-size);
+    width: 16px;
+    height: 16px;
     border-radius: 999px;
     background: #ffffff;
     border: 1px solid rgba(15, 23, 42, 0.4);
@@ -438,30 +492,18 @@
     --media-slider-thumb-bg: #ffffff;
     --media-slider-thumb-border: 1px solid rgba(15, 23, 42, 0.35);
     inline-size: clamp(110px, 12vw, 160px);
+    position: relative;
   }
 
-  :global(media-volume-slider.volume-slider [part~='track']) {
-    background: rgba(148, 163, 215, 0.25);
-    height: var(--media-slider-track-height);
-    border-radius: 999px;
-    overflow: hidden;
-  }
-
-  :global(media-volume-slider.volume-slider [part~='track-progress']) {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  :global(media-volume-slider.volume-slider [part~='track-fill']) {
-    background: linear-gradient(90deg, #facc15 0%, #f97316 100%);
-  }
-
-  :global(media-volume-slider.volume-slider [part='thumb']) {
-    width: var(--media-slider-thumb-size);
-    height: var(--media-slider-thumb-size);
-    border-radius: 999px;
-    background: #ffffff;
-    border: 1px solid rgba(15, 23, 42, 0.35);
+  :global(media-volume-slider.volume-slider .vds-slider-thumb) {
     box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.18);
+  }
+
+  :global(media-volume-slider.volume-slider .vds-slider-preview) {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 0.45rem;
+    padding: 0.2rem 0.5rem;
   }
 
   @media (max-width: 840px) {

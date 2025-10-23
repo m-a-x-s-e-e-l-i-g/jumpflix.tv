@@ -1,5 +1,10 @@
 <script lang="ts">
 	import '../app.css';
+	import 'vidstack/player/styles/default/theme.css';
+	import 'vidstack/player/styles/default/layouts/video.css';
+	import 'vidstack/player';
+	import 'vidstack/player/layouts/default';
+	import 'vidstack/icons';
 	import { onMount, setContext } from 'svelte';
 	import type { Action } from 'svelte/action';
 	import { page } from '$app/stores';

@@ -499,6 +499,10 @@
     box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.18);
   }
 
+  :global(iframe.vds-vimeo) {
+    height: initial;
+  }
+
   :global(media-volume-slider.volume-slider .vds-slider-preview) {
     background: rgba(15, 23, 42, 0.9);
     border: 1px solid rgba(148, 163, 184, 0.35);

@@ -499,6 +499,11 @@
     box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.18);
   }
 
+  /* Prevent user from interacting with youtube/vimeo through iframe */
+  :global(div.vds-blocker) {
+    height: 100vh;
+  }
+
   :global(iframe.vds-vimeo) {
     height: initial;
   }

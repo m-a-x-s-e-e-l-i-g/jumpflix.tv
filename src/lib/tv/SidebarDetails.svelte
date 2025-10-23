@@ -11,6 +11,7 @@
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { fade } from 'svelte/transition';
   import { decode } from 'html-entities';
+  import { showPlayer } from '$lib/tv/store';
   export let selected: ContentItem | null;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
@@ -326,7 +327,8 @@
     {/if}
   </div>
   <div class="relative z-10 pt-4">
-    <button on:click={() => {
+    {#if !$showPlayer}
+      <button on:click={() => {
       if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); return; }
       if (isInlinePlayable(selected)) openContent(selected);
       else if (selected?.externalUrl) openExternal(selected);
@@ -346,6 +348,7 @@
         {/if}
       {/if}
     </button>
+    {/if}
   </div>
 {:else}
   <div class="absolute inset-0 z-0 bg-white dark:bg-gray-800 border-l border-black/10 dark:border-white/10"></div>

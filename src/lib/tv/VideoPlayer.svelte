@@ -963,7 +963,7 @@
                 aria-label="Jump back 10 seconds"
               >
                 <span class="icon"><SkipBackIcon /></span>
-                <span class="label">10s</span>
+                <span class="label">-10s</span>
               </media-seek-button>
 
               <media-seek-button
@@ -972,7 +972,7 @@
                 aria-label="Jump forward 10 seconds"
               >
                 <span class="icon"><SkipForwardIcon /></span>
-                <span class="label">10s</span>
+                <span class="label">+10s</span>
               </media-seek-button>
 
               <div class="time-display" aria-hidden="true">

@@ -8,6 +8,7 @@
   export let selected: ContentItem | null = null;
   export let selectedEpisode: Episode | null = null;
   export let close: () => void;
+  let playerContainer: HTMLElement | null = null;
   let isDesktop = false;
   let layoutVersion = 0;
   let overlayStyle = '';

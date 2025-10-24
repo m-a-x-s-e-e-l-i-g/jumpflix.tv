@@ -959,7 +959,7 @@
                 aria-label="Jump back 10 seconds"
               >
                 <span class="icon"><SkipBackIcon /></span>
-                <span class="badge">10s</span>
+                <span class="label">10s</span>
               </media-seek-button>
 
               <media-seek-button
@@ -968,7 +968,7 @@
                 aria-label="Jump forward 10 seconds"
               >
                 <span class="icon"><SkipForwardIcon /></span>
-                <span class="badge">10s</span>
+                <span class="label">10s</span>
               </media-seek-button>
 
               <div class="time-display" aria-hidden="true">
@@ -1236,17 +1236,14 @@
     display: inline-flex;
   }
 
-  .control-button .badge {
+  .control-button .label {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.1rem 0.45rem;
-    border-radius: 999px;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.04em;
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(226, 232, 240, 0.18);
+    color: rgba(226, 232, 240, 0.85);
   }
 
   .time-display {
@@ -1460,13 +1457,15 @@
     }
 
     .control-button {
-      inline-size: 2.55rem;
+      inline-size: auto;
+      min-inline-size: 2.55rem;
+      padding-inline: 0.6rem;
       block-size: 2.55rem;
       border-radius: 0.75rem;
     }
 
-    .control-button .badge {
-      display: none;
+    .control-button .label {
+      display: inline-flex;
     }
 
     :global(media-volume-slider.volume-slider) {

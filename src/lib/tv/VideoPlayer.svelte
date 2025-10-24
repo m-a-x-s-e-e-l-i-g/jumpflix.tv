@@ -50,6 +50,13 @@
   let pointerActiveOnControls = false;
   let autoHidePlayer: MediaPlayerElement | null = null;
   let isPaused = true;
+  const MOBILE_VIEWPORT_QUERY = '(max-width: 640px)';
+  const FULL_VOLUME = 1;
+  const VOLUME_TOLERANCE = 1e-3;
+
+  let isMobileViewport = false;
+  let mobileQuery: MediaQueryList | null = null;
+  let cleanupMobileQuery: (() => void) | null = null;
 
   $: if (browser && playerEl) {
     cleanupGestures?.();
@@ -68,10 +75,13 @@
   }
 
   onDestroy(() => {
-  cleanupGestures?.();
-  cleanupGestures = null;
-  cleanupAutoHide?.();
-  cleanupAutoHide = null;
+    cleanupGestures?.();
+    cleanupGestures = null;
+    cleanupAutoHide?.();
+    cleanupAutoHide = null;
+    cleanupMobileQuery?.();
+    cleanupMobileQuery = null;
+    mobileQuery = null;
   });
 
   function setupGestureHandlers(player: MediaPlayerElement) {
@@ -581,6 +591,26 @@
     };
   }
 
+  function enforceMobileVolume(player: MediaPlayerElement) {
+    const withVolume = player as unknown as { volume?: number; muted?: boolean };
+    if (typeof withVolume.volume === 'number' && Math.abs(withVolume.volume - FULL_VOLUME) > VOLUME_TOLERANCE) {
+      withVolume.volume = FULL_VOLUME;
+    }
+    if (typeof withVolume.muted === 'boolean' && withVolume.muted) {
+      withVolume.muted = false;
+    }
+
+    const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+    if (mediaEl) {
+      if (Math.abs(mediaEl.volume - FULL_VOLUME) > VOLUME_TOLERANCE) {
+        mediaEl.volume = FULL_VOLUME;
+      }
+      if (mediaEl.muted) {
+        mediaEl.muted = false;
+      }
+    }
+  }
+
   function isEventFromControls(event: MouseEvent | PointerEvent) {
     const path = event.composedPath();
     for (const node of path) {
@@ -749,10 +779,38 @@
 
   onMount(() => {
     mounted = true;
+
+    if (browser && typeof window !== 'undefined') {
+      cleanupMobileQuery?.();
+      const query = window.matchMedia(MOBILE_VIEWPORT_QUERY);
+      mobileQuery = query;
+
+      const handleMobileViewportChange = (event: MediaQueryListEvent) => {
+        isMobileViewport = event.matches;
+      };
+
+      isMobileViewport = query.matches;
+
+      if (typeof query.addEventListener === 'function') {
+        query.addEventListener('change', handleMobileViewportChange);
+        cleanupMobileQuery = () => {
+          query.removeEventListener('change', handleMobileViewportChange);
+        };
+      } else {
+        query.addListener(handleMobileViewportChange);
+        cleanupMobileQuery = () => {
+          query.removeListener(handleMobileViewportChange);
+        };
+      }
+    }
+
     const body = typeof document !== 'undefined' ? document.body : null;
     body?.classList.add('hide-popcorn');
     return () => {
       body?.classList.remove('hide-popcorn');
+      cleanupMobileQuery?.();
+      cleanupMobileQuery = null;
+      mobileQuery = null;
       try {
         if (playerEl) {
           playerEl.pause?.();
@@ -763,6 +821,10 @@
       }
     };
   });
+
+  $: if (playerEl && isMobileViewport) {
+    enforceMobileVolume(playerEl);
+  }
 
   function ensureProtocol(url: string) {
     if (HAS_PROTOCOL.test(url)) return url;
@@ -917,21 +979,23 @@
             </media-controls-group>
 
             <media-controls-group class="controls-group right">
-              <media-mute-button class="control-button" aria-label="Toggle mute">
-                <span class="icon icon-muted"><VolumeXIcon /></span>
-                <span class="icon icon-unmuted"><Volume2Icon /></span>
-              </media-mute-button>
+              {#if !isMobileViewport}
+                <media-mute-button class="control-button" aria-label="Toggle mute">
+                  <span class="icon icon-muted"><VolumeXIcon /></span>
+                  <span class="icon icon-unmuted"><Volume2Icon /></span>
+                </media-mute-button>
 
-              <media-volume-slider class="volume-slider" aria-label="Adjust volume">
-                <div class="slider-track" aria-hidden="true">
-                  <div class="slider-track-progress"></div>
-                  <div class="slider-track-fill"></div>
-                </div>
-                <div class="slider-thumb" aria-hidden="true"></div>
-                <media-slider-preview class="slider-preview">
-                  <media-slider-value class="slider-value"></media-slider-value>
-                </media-slider-preview>
-              </media-volume-slider>
+                <media-volume-slider class="volume-slider" aria-label="Adjust volume">
+                  <div class="slider-track" aria-hidden="true">
+                    <div class="slider-track-progress"></div>
+                    <div class="slider-track-fill"></div>
+                  </div>
+                  <div class="slider-thumb" aria-hidden="true"></div>
+                  <media-slider-preview class="slider-preview">
+                    <media-slider-value class="slider-value"></media-slider-value>
+                  </media-slider-preview>
+                </media-volume-slider>
+              {/if}
 
               <media-fullscreen-button class="control-button" aria-label="Toggle fullscreen">
                 <span class="icon icon-enter"><Maximize2Icon /></span>

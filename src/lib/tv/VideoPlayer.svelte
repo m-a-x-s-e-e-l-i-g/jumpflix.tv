@@ -12,6 +12,8 @@
   import SkipBackIcon from 'lucide-svelte/icons/skip-back';
   import SkipForwardIcon from 'lucide-svelte/icons/skip-forward';
   import XIcon from 'lucide-svelte/icons/x';
+  import AirplayIcon from 'lucide-svelte/icons/airplay';
+  import CastIcon from 'lucide-svelte/icons/cast';
 
   export let src: string | null = null;
   export let title: string | null = null;
@@ -628,7 +630,9 @@
         tagName === 'MEDIA-PLAY-BUTTON' ||
         tagName === 'MEDIA-SEEK-BUTTON' ||
         tagName === 'MEDIA-MUTE-BUTTON' ||
-        tagName === 'MEDIA-FULLSCREEN-BUTTON'
+        tagName === 'MEDIA-FULLSCREEN-BUTTON' ||
+        tagName === 'MEDIA-AIRPLAY-BUTTON' ||
+        tagName === 'MEDIA-GOOGLE-CAST-BUTTON'
       ) {
         return true;
       }
@@ -997,6 +1001,22 @@
                 </media-volume-slider>
               {/if}
 
+              <media-airplay-button
+                class="control-button"
+                aria-label="Stream via AirPlay"
+                data-jumpflix-gesture-ignore="true"
+              >
+                <span class="icon"><AirplayIcon /></span>
+              </media-airplay-button>
+
+              <media-google-cast-button
+                class="control-button"
+                aria-label="Cast to device"
+                data-jumpflix-gesture-ignore="true"
+              >
+                <span class="icon"><CastIcon /></span>
+              </media-google-cast-button>
+
               <media-fullscreen-button class="control-button" aria-label="Toggle fullscreen">
                 <span class="icon icon-enter"><Maximize2Icon /></span>
                 <span class="icon icon-exit"><Minimize2Icon /></span>
@@ -1204,6 +1224,22 @@
     display: none;
     align-items: center;
     justify-content: center;
+  }
+
+  :global(media-airplay-button.control-button .icon),
+  :global(media-google-cast-button.control-button .icon) {
+    display: inline-flex;
+  }
+
+  :global(media-airplay-button.control-button[aria-hidden='true']),
+  :global(media-google-cast-button.control-button[aria-hidden='true']) {
+    display: none;
+  }
+
+  :global(media-airplay-button.control-button[data-active]),
+  :global(media-google-cast-button.control-button[data-active]) {
+    background: rgba(46, 120, 255, 0.55);
+    border-color: rgba(180, 217, 255, 0.75);
   }
 
   :global(.control-button svg) {

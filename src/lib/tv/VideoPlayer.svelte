@@ -837,11 +837,6 @@
     opacity: 1;
   }
 
-  .time-slider[data-pointing] .slider-thumb,
-  .volume-slider[data-pointing] .slider-thumb {
-    opacity: 1;
-  }
-
   :global(media-volume-slider.volume-slider) {
     --media-slider-height: 48px;
     --media-slider-track-height: 5px;

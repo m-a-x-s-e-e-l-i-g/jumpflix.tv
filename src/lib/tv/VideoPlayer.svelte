@@ -618,6 +618,7 @@
     width: 100%;
     gap: clamp(0.75rem, 2vw, 1.5rem);
     flex-wrap: wrap;
+    margin-block-end: max(clamp(0.65rem, 2vw, 1.5rem), env(safe-area-inset-bottom, 0px));
   }
 
   .controls-group {
@@ -625,6 +626,7 @@
     align-items: center;
     gap: clamp(0.65rem, 1.4vw, 1.25rem);
     pointer-events: auto;
+    margin: 0 10px;
   }
 
   .controls-group.scrub {

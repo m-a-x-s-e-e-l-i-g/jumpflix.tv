@@ -786,14 +786,14 @@
     border-radius: 999px;
     background: #ffffff;
     border: 1px solid rgba(15, 23, 42, 0.35);
-  box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.18);
-  transform: translate(-50%, -50%);
-  inset-inline-start: var(--slider-fill, 0%);
+    box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.18);
+    transform: translate(-50%, -50%);
+    inset-inline-start: var(--slider-fill, 0%);
     inset-block-start: 50%;
     pointer-events: none;
-  }
-
-  :global(media-time-slider.time-slider [part='track']) {
+    opacity: 0;
+    transition: opacity 200ms ease-in-out;
+  }  :global(media-time-slider.time-slider [part='track']) {
     background: rgba(148, 163, 215, 0.45);
     height: var(--media-slider-track-height);
     border-radius: 999px;
@@ -815,6 +815,12 @@
     background: #ffffff;
     border: 1px solid rgba(15, 23, 42, 0.4);
     box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.18);
+    opacity: 0;
+    transition: opacity 200ms ease-in-out;
+  }
+
+  :global(media-time-slider.time-slider[data-pointing] [part='thumb']) {
+    opacity: 1;
   }
 
   :global(media-slider-preview.slider-preview) {
@@ -823,12 +829,17 @@
     border: 1px solid rgba(148, 163, 184, 0.4);
     padding: 0.25rem 0.6rem;
     box-shadow: 0 12px 24px rgba(10, 16, 36, 0.35);
+    opacity: 0;
+    transition: opacity 200ms ease-in-out;
   }
 
-  :global(media-slider-value.slider-value) {
-    font-size: 0.75rem;
-    font-variant-numeric: tabular-nums;
-    color: #f8fafc;
+  :global(media-slider-preview.slider-preview[data-visible]) {
+    opacity: 1;
+  }
+
+  .time-slider[data-pointing] .slider-thumb,
+  .volume-slider[data-pointing] .slider-thumb {
+    opacity: 1;
   }
 
   :global(media-volume-slider.volume-slider) {
@@ -845,6 +856,12 @@
 
   :global(media-volume-slider.volume-slider .vds-slider-thumb) {
     box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.18);
+    opacity: 0;
+    transition: opacity 200ms ease-in-out;
+  }
+
+  :global(media-volume-slider.volume-slider[data-pointing] .vds-slider-thumb) {
+    opacity: 1;
   }
 
   /* Prevent user from interacting with youtube/vimeo through iframe */
@@ -862,6 +879,12 @@
     border: 1px solid rgba(148, 163, 184, 0.35);
     border-radius: 0.45rem;
     padding: 0.2rem 0.5rem;
+    opacity: 0;
+    transition: opacity 200ms ease-in-out;
+  }
+
+  :global(media-volume-slider.volume-slider .vds-slider-preview[data-visible]) {
+    opacity: 1;
   }
 
   @media (max-width: 840px) {

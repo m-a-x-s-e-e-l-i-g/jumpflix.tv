@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { browser } from '$app/environment';
   import type { MediaPlayerElement } from 'vidstack/elements';
   import PlayIcon from 'lucide-svelte/icons/play';
@@ -21,6 +21,350 @@
   let mounted = false;
   let playerEl: MediaPlayerElement | null = null;
 
+  type RemoteControl = {
+    setTarget?: (target: EventTarget | null) => void;
+    setPlayer?: (player: MediaPlayerElement | null) => void;
+    togglePaused?: (trigger?: Event) => void;
+    toggleFullscreen?: (target?: string, trigger?: Event) => void;
+    changePlaybackRate?: (rate: number, trigger?: Event) => void;
+    play?: (trigger?: Event) => void;
+    pause?: (trigger?: Event) => void;
+    enterFullscreen?: (target?: string, trigger?: Event) => void;
+    exitFullscreen?: (target?: string, trigger?: Event) => void;
+  } & Record<string, unknown>;
+
+  const DOUBLE_CLICK_DELAY = 220;
+  const LONG_PRESS_DELAY = 350;
+  const SLOW_MOTION_RATE = 0.3;
+  const REMOTE_FALLBACK_DELAY = 260;
+
+  let cleanupGestures: (() => void) | null = null;
+
+  $: if (browser && playerEl) {
+    cleanupGestures?.();
+    cleanupGestures = setupGestureHandlers(playerEl);
+  } else if (!browser || !playerEl) {
+    cleanupGestures?.();
+    cleanupGestures = null;
+  }
+
+  onDestroy(() => {
+    cleanupGestures?.();
+    cleanupGestures = null;
+  });
+
+  function setupGestureHandlers(player: MediaPlayerElement) {
+    if (!browser) return () => {};
+    const remote = getRemote(player);
+    remote?.setPlayer?.(player);
+    remote?.setTarget?.(player);
+
+    // Add click handler to media-provider for YouTube/Vimeo video area
+    const provider = player.querySelector('media-provider');
+    let providerClickHandler: ((event: Event) => void) | null = null;
+    if (provider) {
+      providerClickHandler = (event: Event) => {
+        event.stopPropagation();
+        if (suppressNextClick) {
+          suppressNextClick = false;
+          return;
+        }
+        const remote = getRemote(player) || (provider as any)?.remoteControl;
+        togglePlayback(player, remote);
+      };
+      provider.addEventListener('click', providerClickHandler);
+    }    let clickTimer: number | null = null;
+    let longPressTimer: number | null = null;
+    let longPressActive = false;
+    let suppressNextClick = false;
+    let handledDoubleInClick = false;
+    let activePointerId: number | null = null;
+    let previousPlaybackRate = getPlaybackRate(player);
+
+    const clearClickTimer = () => {
+      if (clickTimer !== null) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+      }
+    };
+
+    const clearLongPressTimer = () => {
+      if (longPressTimer !== null) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+    };
+
+    const finishLongPress = () => {
+      const wasActive = longPressActive;
+      longPressActive = false;
+      clearLongPressTimer();
+      if (wasActive) {
+        setPlaybackRate(player, remote, previousPlaybackRate);
+      }
+    };
+
+    const shouldHandle = (event: MouseEvent | PointerEvent) => {
+      if (event.defaultPrevented) return false;
+      return !isEventFromControls(event);
+    };
+
+    const onClick = (event: MouseEvent) => {
+      if (!isPrimaryClick(event) || !shouldHandle(event)) return;
+
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        clearClickTimer();
+        return;
+      }
+
+      if (event.detail === 1) {
+        clearClickTimer();
+        clickTimer = window.setTimeout(() => {
+          togglePlayback(player, remote);
+        }, DOUBLE_CLICK_DELAY);
+      } else if (event.detail === 2) {
+        handledDoubleInClick = true;
+        clearClickTimer();
+        toggleFullscreen(player, remote);
+      }
+    };
+
+    const onDblClick = (event: MouseEvent) => {
+      if (!isPrimaryClick(event) || !shouldHandle(event)) return;
+
+      if (handledDoubleInClick) {
+        handledDoubleInClick = false;
+        return;
+      }
+
+      clearClickTimer();
+      toggleFullscreen(player, remote);
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!isPrimaryPointer(event) || !shouldHandle(event)) return;
+
+      activePointerId = event.pointerId;
+      handledDoubleInClick = false;
+      previousPlaybackRate = getPlaybackRate(player);
+      longPressActive = false;
+      suppressNextClick = false;
+      clearClickTimer();
+      clearLongPressTimer();
+
+      longPressTimer = window.setTimeout(() => {
+        longPressTimer = null;
+        longPressActive = true;
+        suppressNextClick = true;
+        if (Math.abs(previousPlaybackRate - SLOW_MOTION_RATE) > 1e-3) {
+          setPlaybackRate(player, remote, SLOW_MOTION_RATE);
+        }
+      }, LONG_PRESS_DELAY);
+    };
+
+    const onPointerUp = (event: PointerEvent) => {
+      if (activePointerId === null || event.pointerId !== activePointerId) return;
+      activePointerId = null;
+      finishLongPress();
+    };
+
+    const onPointerCancel = (event: PointerEvent) => {
+      if (activePointerId === null || event.pointerId !== activePointerId) return;
+      activePointerId = null;
+      suppressNextClick = false;
+      finishLongPress();
+    };
+
+    const onPointerLeave = (event: PointerEvent) => {
+      if (activePointerId === null || event.pointerId !== activePointerId) return;
+      if (event.buttons === 0) {
+        activePointerId = null;
+        finishLongPress();
+      }
+    };
+
+    player.addEventListener('click', onClick);
+    player.addEventListener('dblclick', onDblClick);
+    player.addEventListener('pointerdown', onPointerDown);
+    player.addEventListener('pointerup', onPointerUp);
+    player.addEventListener('pointercancel', onPointerCancel);
+    player.addEventListener('pointerleave', onPointerLeave);
+
+    return () => {
+      clearClickTimer();
+      finishLongPress();
+      activePointerId = null;
+      suppressNextClick = false;
+      handledDoubleInClick = false;
+      remote?.setTarget?.(null);
+      player.removeEventListener('click', onClick);
+      player.removeEventListener('dblclick', onDblClick);
+      player.removeEventListener('pointerdown', onPointerDown);
+      player.removeEventListener('pointerup', onPointerUp);
+      player.removeEventListener('pointercancel', onPointerCancel);
+      player.removeEventListener('pointerleave', onPointerLeave);
+      if (provider && providerClickHandler) {
+        provider.removeEventListener('click', providerClickHandler);
+      }
+    };
+  }
+
+  function isEventFromControls(event: MouseEvent | PointerEvent) {
+    const path = event.composedPath();
+    for (const node of path) {
+      if (!(node instanceof HTMLElement)) continue;
+
+      if (node.dataset.jumpflixGestureIgnore === 'true') {
+        return true;
+      }
+
+      const tagName = node.tagName;
+      if (
+        tagName === 'MEDIA-CONTROLS-GROUP' ||
+        tagName === 'MEDIA-TIME-SLIDER' ||
+        tagName === 'MEDIA-VOLUME-SLIDER' ||
+        tagName === 'MEDIA-PLAY-BUTTON' ||
+        tagName === 'MEDIA-SEEK-BUTTON' ||
+        tagName === 'MEDIA-MUTE-BUTTON' ||
+        tagName === 'MEDIA-FULLSCREEN-BUTTON'
+      ) {
+        return true;
+      }
+
+      if (tagName === 'BUTTON' || tagName === 'A' || tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA') {
+        return true;
+      }
+
+      if (node.classList.contains('control-button') || node.classList.contains('time-slider') || node.classList.contains('volume-slider')) {
+        return true;
+      }
+
+      const roleAttr = node.getAttribute('role');
+      if (roleAttr === 'slider' || roleAttr === 'button') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+  function togglePlayback(player: MediaPlayerElement, remote: RemoteControl | null) {
+    const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+    const initialPaused = getPausedState(player, mediaEl);
+    if (remote?.play && remote?.pause) {
+      if (initialPaused) {
+        remote.play();
+      } else {
+        remote.pause();
+      }
+    } else {
+      togglePlaybackManually(mediaEl);
+    }
+  }
+
+  function togglePlaybackManually(mediaEl: HTMLMediaElement | null) {
+    if (!mediaEl) return;
+
+    if (mediaEl.paused) {
+      void mediaEl.play().catch(() => {});
+    } else {
+      mediaEl.pause();
+    }
+  }
+
+  function getPausedState(player: MediaPlayerElement, mediaEl: HTMLMediaElement | null) {
+    const withState = player as unknown as {
+      state?: { paused?: boolean };
+      paused?: boolean;
+    };
+
+    if (typeof withState.state?.paused === 'boolean') {
+      return withState.state.paused;
+    }
+
+    if (typeof withState.paused === 'boolean') {
+      return withState.paused;
+    }
+
+    return mediaEl?.paused ?? true;
+  }
+
+  function toggleFullscreen(player: MediaPlayerElement, remote: RemoteControl | null) {
+    if (remote?.toggleFullscreen) {
+      remote.toggleFullscreen('prefer-media');
+      return;
+    }
+
+    const doc = player.ownerDocument ?? document;
+    if (doc.fullscreenElement) {
+      doc.exitFullscreen?.();
+    } else {
+      if (typeof player.requestFullscreen === 'function') {
+        void player.requestFullscreen();
+      } else {
+        const mediaEl = player.querySelector('video, audio') as HTMLVideoElement | HTMLAudioElement | null;
+        void mediaEl?.requestFullscreen?.();
+      }
+    }
+  }
+
+  function setPlaybackRate(player: MediaPlayerElement, remote: RemoteControl | null, rate: number) {
+    if (remote?.changePlaybackRate) {
+      remote.changePlaybackRate(rate);
+      return;
+    }
+
+    const target = player as unknown as { playbackRate?: number };
+    if (typeof target.playbackRate === 'number' && !Number.isNaN(target.playbackRate)) {
+      target.playbackRate = rate;
+      return;
+    }
+
+    const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+    if (mediaEl) {
+      mediaEl.playbackRate = rate;
+    }
+  }
+
+  function getPlaybackRate(player: MediaPlayerElement) {
+    const withState = player as unknown as {
+      state?: { playbackRate?: number };
+      playbackRate?: number;
+    };
+
+    const stateRate = withState.state?.playbackRate;
+    if (typeof stateRate === 'number' && !Number.isNaN(stateRate)) {
+      return stateRate;
+    }
+
+    const propRate = withState.playbackRate;
+    if (typeof propRate === 'number' && !Number.isNaN(propRate)) {
+      return propRate;
+    }
+
+    const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+    if (mediaEl && !Number.isNaN(mediaEl.playbackRate)) {
+      return mediaEl.playbackRate;
+    }
+
+    return 1;
+  }
+
+  function getRemote(player: MediaPlayerElement | null) {
+    return (player as unknown as { remoteControl?: RemoteControl })?.remoteControl ?? null;
+  }
+
+  function isPrimaryPointer(event: PointerEvent) {
+    if (event.pointerType === 'mouse' || event.pointerType === 'pen') {
+      return event.button === 0;
+    }
+    return event.isPrimary ?? true;
+  }
+
+  function isPrimaryClick(event: MouseEvent) {
+    return event.button === 0 || event.button === undefined;
+  }
   const YOUTUBE_SHORT = /^youtube\/([^\s]+.*)$/i;
   const VIMEO_SHORT = /^vimeo\/([^\s]+.*)$/i;
   const YOUTUBE_DOMAIN = /^(?:https?:\/\/)?(?:(?:www|m)\.)?(?:youtube\.com|youtu\.be|youtube-nocookie\.com)/i;
@@ -125,7 +469,7 @@
     >
       <media-provider data-no-controls></media-provider>
 
-  <media-controls class="player-controls">
+  <media-controls class="player-controls" data-jumpflix-gesture-ignore="true">
         <div class="controls-surface">
           <media-controls-group class="controls-group scrub">
             <media-time-slider class="time-slider" aria-label={title ? `Scrub through ${title}` : 'Scrub through video'}>
@@ -211,6 +555,7 @@
     inline-size: 100%;
     block-size: 100%;
     background: #000;
+    position: relative;
   }
 
   .player-loader {
@@ -502,6 +847,7 @@
   /* Prevent user from interacting with youtube/vimeo through iframe */
   :global(div.vds-blocker) {
     height: 100vh;
+    pointer-events: auto !important;
   }
 
   :global(iframe.vds-vimeo) {

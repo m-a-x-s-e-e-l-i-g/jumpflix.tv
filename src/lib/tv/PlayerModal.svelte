@@ -136,9 +136,6 @@
       on:click|stopPropagation
       role="presentation"
     >
-      <button on:click={close} class="player-close" aria-label="Close player">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
       {#if playerView?.kind === 'video'}
         <VideoPlayer
           src={playerView.src}
@@ -146,6 +143,7 @@
           poster={playerView.poster ?? null}
           keySeed={playerView.key}
           autoPlay={playerView.autoPlay}
+          onClose={close}
         />
       {:else if playerView?.kind === 'message'}
         <div class="player-fallback"><p>{playerView.text}</p></div>
@@ -205,22 +203,6 @@
     flex: 1 1 auto;
   }
 
-  .player-close {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    z-index: 10;
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
-    padding: 0.5rem;
-    border-radius: 9999px;
-    transition: background-color 0.2s ease;
-  }
-
-  .player-close:hover {
-    background: rgba(0, 0, 0, 0.8);
-  }
-
   .player-fallback {
     display: flex;
     align-items: center;
@@ -238,9 +220,5 @@
       padding: 0;
     }
 
-    .player-close {
-      top: 1.25rem;
-      right: 1.25rem;
-    }
   }
 </style>

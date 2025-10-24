@@ -11,12 +11,14 @@
   import Minimize2Icon from 'lucide-svelte/icons/minimize-2';
   import SkipBackIcon from 'lucide-svelte/icons/skip-back';
   import SkipForwardIcon from 'lucide-svelte/icons/skip-forward';
+  import XIcon from 'lucide-svelte/icons/x';
 
   export let src: string | null = null;
   export let title: string | null = null;
   export let poster: string | null = null;
   export let keySeed: string | number = '';
   export let autoPlay = false;
+  export let onClose: (() => void) | null = null;
 
   let mounted = false;
   let playerEl: MediaPlayerElement | null = null;
@@ -497,7 +499,12 @@
         return true;
       }
 
-      if (node.classList.contains('control-button') || node.classList.contains('time-slider') || node.classList.contains('volume-slider')) {
+      if (
+        node.classList.contains('control-button') ||
+        node.classList.contains('time-slider') ||
+        node.classList.contains('volume-slider') ||
+        node.classList.contains('player-close-button')
+      ) {
         return true;
       }
 
@@ -739,6 +746,21 @@
         data-hidden={controlsVisible ? undefined : ''}
         bind:this={controlsEl}
       >
+        {#if typeof onClose === 'function'}
+          <div class="controls-top">
+            <media-controls-group class="controls-group top">
+              <button
+                type="button"
+                class="player-close-button"
+                aria-label="Close player"
+                data-jumpflix-gesture-ignore="true"
+                on:click={onClose}
+              >
+                <span class="icon" aria-hidden="true"><XIcon /></span>
+              </button>
+            </media-controls-group>
+          </div>
+        {/if}
         <div class="controls-surface">
           <media-controls-group class="controls-group scrub">
             <media-time-slider class="time-slider" aria-label={title ? `Scrub through ${title}` : 'Scrub through video'}>
@@ -870,6 +892,65 @@
 
   .player-controls[data-hidden]::before {
     opacity: 0;
+  }
+
+  .controls-top {
+    position: absolute;
+    inset-inline: clamp(0.9rem, 3vw, 1.75rem);
+    top: clamp(0.9rem, 3vw, 1.75rem);
+    display: flex;
+    justify-content: flex-end;
+    z-index: 2;
+  }
+
+  .controls-group.top {
+    pointer-events: auto;
+    margin: 0;
+    gap: clamp(0.5rem, 1vw, 0.75rem);
+  }
+
+  .player-close-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: clamp(2.25rem, 2.9vw, 2.75rem);
+    block-size: clamp(2.25rem, 2.9vw, 2.75rem);
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(10, 16, 40, 0.6);
+    color: #f1f5f9;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease,
+      transform 140ms ease,
+      color 140ms ease;
+    cursor: pointer;
+    box-shadow: 0 12px 28px rgba(10, 16, 40, 0.35);
+  }
+
+  .player-close-button .icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .player-close-button :global(svg) {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+  }
+
+  .player-close-button:hover,
+  .player-close-button:focus-visible {
+    background: rgba(46, 120, 255, 0.55);
+    border-color: rgba(180, 217, 255, 0.75);
+    transform: translateY(-1px);
+  }
+
+  .player-close-button:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px rgba(24, 36, 84, 0.9),
+      0 0 0 4px rgba(104, 183, 255, 0.6);
   }
 
   .controls-surface {
@@ -1177,6 +1258,16 @@
 
     .player-controls {
       padding: 0.65rem;
+    }
+
+    .controls-top {
+      inset-inline: 0.65rem;
+      top: 0.65rem;
+    }
+
+    .player-close-button {
+      inline-size: 2.35rem;
+      block-size: 2.35rem;
     }
 
     .controls-group.left {

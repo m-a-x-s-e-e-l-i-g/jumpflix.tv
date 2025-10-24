@@ -199,7 +199,6 @@
     </div>
     {#if selected.type === 'movie'}
       <div class="space-y-2 text-sm">
-        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Type:</span><span class="text-gray-900 dark:text-white">Documentary</span></div>
         {#if selected.paid}
           <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Provider:</span><span class="text-gray-900 dark:text-white">{selected.provider || 'External'}</span></div>
         {/if}

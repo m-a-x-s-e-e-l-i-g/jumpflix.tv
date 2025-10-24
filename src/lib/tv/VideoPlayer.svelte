@@ -283,19 +283,33 @@
     clearHideControlsTimer();
 
     const doc = player.ownerDocument ?? document;
+    const resolveMediaEl = () => player.querySelector('video, audio') as HTMLMediaElement | null;
 
-    const updatePausedState = () => {
-      const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
-      isPaused = getPausedState(player, mediaEl);
+    type PlayerWithSubscribe = MediaPlayerElement & {
+      subscribe?: (callback: (state: { paused?: boolean }) => void) => unknown;
+    };
+
+    let cleanupStateSubscription: (() => void) | null = null;
+
+    const applyPausedState = (nextPaused?: boolean) => {
+      const resolved =
+        typeof nextPaused === 'boolean' ? nextPaused : getPausedState(player, resolveMediaEl());
+
+      if (resolved === isPaused) {
+        return;
+      }
+
+      isPaused = resolved;
+
       if (isPaused) {
         clearHideControlsTimer();
         controlsVisible = true;
       } else {
-        scheduleHideControls();
+        showControls();
       }
     };
 
-    updatePausedState();
+    applyPausedState(getPausedState(player, resolveMediaEl()));
     showControls();
 
     const handlePointerActivity = () => {
@@ -374,37 +388,39 @@
     };
 
     const handlePlay = () => {
-      isPaused = false;
-      showControls();
+      applyPausedState(false);
     };
 
     const handlePause = () => {
-      isPaused = true;
-      clearHideControlsTimer();
-      controlsVisible = true;
+      applyPausedState(true);
     };
 
     const handleEnded = () => {
-      handlePause();
+      applyPausedState(true);
     };
 
+    const playerWithSubscribe = player as PlayerWithSubscribe;
+    const maybeUnsubscribe = playerWithSubscribe.subscribe?.(({ paused }) => {
+      applyPausedState(paused);
+    });
+
+    if (typeof maybeUnsubscribe === 'function') {
+      cleanupStateSubscription = () => {
+        maybeUnsubscribe();
+      };
+    }
+
     const mutationObserver = new MutationObserver(() => {
-      const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+      const mediaEl = resolveMediaEl();
       const nextPaused = getPausedState(player, mediaEl);
       if (nextPaused !== isPaused) {
-        isPaused = nextPaused;
-        if (isPaused) {
-          clearHideControlsTimer();
-          controlsVisible = true;
-        } else {
-          showControls();
-        }
+        applyPausedState(nextPaused);
       }
     });
 
     mutationObserver.observe(player, { attributes: true, attributeFilter: ['data-paused'] });
 
-    const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+    const mediaEl = resolveMediaEl();
     if (mediaEl) {
       mediaEl.addEventListener('play', handlePlay);
       mediaEl.addEventListener('playing', handlePlay);
@@ -470,6 +486,8 @@
       doc.removeEventListener('pointerup', handleDocumentPointerUp);
       doc.removeEventListener('pointercancel', handleDocumentPointerUp);
       doc.removeEventListener('keydown', handleKeyDown, true);
+      cleanupStateSubscription?.();
+      cleanupStateSubscription = null;
     };
   }
 

@@ -77,6 +77,9 @@
   function setupGestureHandlers(player: MediaPlayerElement) {
     if (!browser) return () => {};
     const remote = getRemote(player);
+    const resolveRemote = () => getRemote(player) ?? remote;
+    const doc = player.ownerDocument ?? document;
+    const controls = player.querySelector('media-controls');
     remote?.setPlayer?.(player);
     remote?.setTarget?.(player);
 
@@ -90,17 +93,23 @@
           suppressNextClick = false;
           return;
         }
-        const remote = getRemote(player) || (provider as any)?.remoteControl;
-        togglePlayback(player, remote);
+        const providerRemote = (provider as unknown as { remoteControl?: RemoteControl })?.remoteControl ?? null;
+        const activeRemote = resolveRemote() ?? providerRemote;
+        togglePlayback(player, activeRemote);
       };
       provider.addEventListener('click', providerClickHandler);
-    }    let clickTimer: number | null = null;
+    }
+
+    let clickTimer: number | null = null;
     let longPressTimer: number | null = null;
     let longPressActive = false;
     let suppressNextClick = false;
     let handledDoubleInClick = false;
     let activePointerId: number | null = null;
     let previousPlaybackRate = getPlaybackRate(player);
+    let spaceSlowTimer: number | null = null;
+    let spaceSlowActive = false;
+    let previousSpacePlaybackRate = getPlaybackRate(player);
 
     const clearClickTimer = () => {
       if (clickTimer !== null) {
@@ -121,7 +130,7 @@
       longPressActive = false;
       clearLongPressTimer();
       if (wasActive) {
-        setPlaybackRate(player, remote, previousPlaybackRate);
+        setPlaybackRate(player, resolveRemote(), previousPlaybackRate);
       }
     };
 
@@ -142,12 +151,12 @@
       if (event.detail === 1) {
         clearClickTimer();
         clickTimer = window.setTimeout(() => {
-          togglePlayback(player, remote);
+          togglePlayback(player, resolveRemote());
         }, DOUBLE_CLICK_DELAY);
       } else if (event.detail === 2) {
         handledDoubleInClick = true;
         clearClickTimer();
-        toggleFullscreen(player, remote);
+        toggleFullscreen(player, resolveRemote());
       }
     };
 
@@ -160,7 +169,7 @@
       }
 
       clearClickTimer();
-      toggleFullscreen(player, remote);
+      toggleFullscreen(player, resolveRemote());
     };
 
     const onPointerDown = (event: PointerEvent) => {
@@ -179,7 +188,7 @@
         longPressActive = true;
         suppressNextClick = true;
         if (Math.abs(previousPlaybackRate - SLOW_MOTION_RATE) > 1e-3) {
-          setPlaybackRate(player, remote, SLOW_MOTION_RATE);
+          setPlaybackRate(player, resolveRemote(), SLOW_MOTION_RATE);
         }
       }, LONG_PRESS_DELAY);
     };
@@ -205,12 +214,89 @@
       }
     };
 
+    const clearSpaceSlowTimer = () => {
+      if (spaceSlowTimer !== null) {
+        clearTimeout(spaceSlowTimer);
+        spaceSlowTimer = null;
+      }
+    };
+
+    const stopSpaceSlowMotion = () => {
+      if (!spaceSlowActive) return;
+      const activeRemote = resolveRemote();
+      const targetRate = previousSpacePlaybackRate;
+      if (Math.abs(getPlaybackRate(player) - targetRate) > 1e-3) {
+        setPlaybackRate(player, activeRemote, targetRate);
+      }
+      spaceSlowActive = false;
+    };
+
+    const isSpaceKey = (key: string) => key === ' ' || key === 'Spacebar' || key === 'Space';
+
+    const shouldHandleSpaceKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return false;
+      const target = event.target as HTMLElement | null;
+      if (!target) return true;
+      const tagName = target.tagName;
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') return false;
+      if (target.isContentEditable) return false;
+      if (controls && controls.contains(target)) return false;
+      if (target.closest('[data-jumpflix-gesture-ignore="true"]')) return false;
+      return true;
+    };
+
+    const onSpaceKeyDown = (event: KeyboardEvent) => {
+      if (!isSpaceKey(event.key) || !shouldHandleSpaceKey(event)) return;
+
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      event.preventDefault();
+
+      if (event.repeat) {
+        return;
+      }
+
+      if (spaceSlowActive || spaceSlowTimer !== null) {
+        return;
+      }
+
+      previousSpacePlaybackRate = getPlaybackRate(player);
+      spaceSlowTimer = window.setTimeout(() => {
+        spaceSlowTimer = null;
+        const activeRemote = resolveRemote();
+        if (Math.abs(previousSpacePlaybackRate - SLOW_MOTION_RATE) > 1e-3) {
+          setPlaybackRate(player, activeRemote, SLOW_MOTION_RATE);
+        }
+        spaceSlowActive = true;
+      }, LONG_PRESS_DELAY);
+    };
+
+    const onSpaceKeyUp = (event: KeyboardEvent) => {
+      if (!isSpaceKey(event.key) || !shouldHandleSpaceKey(event)) return;
+
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      event.preventDefault();
+
+      if (spaceSlowTimer !== null) {
+        clearSpaceSlowTimer();
+        togglePlayback(player, resolveRemote());
+        return;
+      }
+
+      if (spaceSlowActive) {
+        stopSpaceSlowMotion();
+      }
+    };
+
     player.addEventListener('click', onClick);
     player.addEventListener('dblclick', onDblClick);
     player.addEventListener('pointerdown', onPointerDown);
     player.addEventListener('pointerup', onPointerUp);
     player.addEventListener('pointercancel', onPointerCancel);
     player.addEventListener('pointerleave', onPointerLeave);
+    doc.addEventListener('keydown', onSpaceKeyDown, true);
+    doc.addEventListener('keyup', onSpaceKeyUp, true);
 
     return () => {
       clearClickTimer();
@@ -218,6 +304,10 @@
       activePointerId = null;
       suppressNextClick = false;
       handledDoubleInClick = false;
+      clearSpaceSlowTimer();
+      stopSpaceSlowMotion();
+      doc.removeEventListener('keydown', onSpaceKeyDown, true);
+      doc.removeEventListener('keyup', onSpaceKeyUp, true);
       remote?.setTarget?.(null);
       player.removeEventListener('click', onClick);
       player.removeEventListener('dblclick', onDblClick);

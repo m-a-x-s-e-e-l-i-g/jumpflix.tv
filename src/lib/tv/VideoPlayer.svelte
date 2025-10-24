@@ -239,7 +239,9 @@
   function shouldAutoHide() {
     if (!browser) return false;
     if (!autoHidePlayer) return false;
-    if (isPaused) return false;
+    const mediaEl = autoHidePlayer.querySelector('video, audio') as HTMLMediaElement | null;
+    const currentlyPaused = getPausedState(autoHidePlayer, mediaEl);
+    if (currentlyPaused) return false;
     if (controlsFocusWithin) return false;
     if (pointerOverControls) return false;
     if (pointerActiveOnControls) return false;

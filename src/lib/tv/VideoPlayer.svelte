@@ -378,7 +378,10 @@
     return () => {
       body?.classList.remove('hide-popcorn');
       try {
-        playerEl?.destroy?.();
+        if (playerEl) {
+          playerEl.pause?.();
+          playerEl.destroy?.();
+        }
       } catch {
         /* no-op */
       }

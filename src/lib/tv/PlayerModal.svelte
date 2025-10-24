@@ -8,10 +8,10 @@
   export let selected: ContentItem | null = null;
   export let selectedEpisode: Episode | null = null;
   export let close: () => void;
-  let playerContainer: HTMLElement;
   let isDesktop = false;
   let layoutVersion = 0;
   let overlayStyle = '';
+  let isFullscreen = false;
   type PlayerView =
     | { kind: 'video'; src: string; title: string; poster?: string | null; autoPlay: boolean; key: string }
     | { kind: 'message'; text: string };
@@ -54,9 +54,14 @@
       updateOverlayStyle();
     };
     window.addEventListener('resize', handleResize);
+    const handleFullscreenChange = () => {
+      isFullscreen = !!document.fullscreenElement;
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => {
       mq.removeEventListener('change', handleMatch);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   });
 
@@ -117,7 +122,11 @@
     role="dialog"
     aria-modal="true"
     tabindex="0"
-    on:keydown={(e)=> e.key==='Escape' && close()}
+    on:keydown={(e)=> {
+      if (e.key === 'Escape' && !document.fullscreenElement) {
+        close();
+      }
+    }}
   >
     <div
       class="player-shell"

@@ -1432,6 +1432,12 @@
       padding: 0.65rem;
     }
 
+    .controls-row {
+      flex-wrap: nowrap;
+      align-items: center;
+      gap: clamp(0.5rem, 4vw, 1rem);
+    }
+
     .controls-top {
       inset-inline: 0.65rem;
       top: 0.65rem;
@@ -1444,6 +1450,13 @@
 
     .controls-group.left {
       gap: 0.55rem;
+    }
+
+    .controls-group.right {
+      flex: 0 0 auto;
+      justify-content: flex-end;
+      gap: clamp(0.45rem, 3vw, 0.75rem);
+      margin-inline-start: auto;
     }
 
     .control-button {

@@ -36,9 +36,18 @@
   const DOUBLE_CLICK_DELAY = 220;
   const LONG_PRESS_DELAY = 350;
   const SLOW_MOTION_RATE = 0.3;
-  const REMOTE_FALLBACK_DELAY = 260;
+  const CONTROLS_HIDE_DELAY = 2000;
 
   let cleanupGestures: (() => void) | null = null;
+  let cleanupAutoHide: (() => void) | null = null;
+  let controlsEl: HTMLElement | null = null;
+  let hideControlsTimer: ReturnType<typeof setTimeout> | null = null;
+  let controlsVisible = true;
+  let controlsFocusWithin = false;
+  let pointerOverControls = false;
+  let pointerActiveOnControls = false;
+  let autoHidePlayer: MediaPlayerElement | null = null;
+  let isPaused = true;
 
   $: if (browser && playerEl) {
     cleanupGestures?.();
@@ -48,9 +57,19 @@
     cleanupGestures = null;
   }
 
+  $: if (browser && playerEl && controlsEl) {
+    cleanupAutoHide?.();
+    cleanupAutoHide = setupControlAutoHide(playerEl, controlsEl);
+  } else if (!browser || !playerEl || !controlsEl) {
+    cleanupAutoHide?.();
+    cleanupAutoHide = null;
+  }
+
   onDestroy(() => {
-    cleanupGestures?.();
-    cleanupGestures = null;
+  cleanupGestures?.();
+  cleanupGestures = null;
+  cleanupAutoHide?.();
+  cleanupAutoHide = null;
   });
 
   function setupGestureHandlers(player: MediaPlayerElement) {
@@ -207,6 +226,246 @@
       if (provider && providerClickHandler) {
         provider.removeEventListener('click', providerClickHandler);
       }
+    };
+  }
+
+  function clearHideControlsTimer() {
+    if (hideControlsTimer !== null) {
+      clearTimeout(hideControlsTimer);
+      hideControlsTimer = null;
+    }
+  }
+
+  function shouldAutoHide() {
+    if (!browser) return false;
+    if (!autoHidePlayer) return false;
+    if (isPaused) return false;
+    if (controlsFocusWithin) return false;
+    if (pointerOverControls) return false;
+    if (pointerActiveOnControls) return false;
+    return true;
+  }
+
+  function scheduleHideControls() {
+    if (!browser) return;
+    clearHideControlsTimer();
+    if (!shouldAutoHide()) return;
+    hideControlsTimer = setTimeout(() => {
+      if (shouldAutoHide()) {
+        controlsVisible = false;
+      }
+    }, CONTROLS_HIDE_DELAY);
+  }
+
+  function showControls() {
+    if (!browser) return;
+    controlsVisible = true;
+    scheduleHideControls();
+  }
+
+  function markControlsInteractionEnd() {
+    pointerActiveOnControls = false;
+    scheduleHideControls();
+  }
+
+  function setupControlAutoHide(player: MediaPlayerElement, controls: HTMLElement) {
+    if (!browser) return () => {};
+
+    autoHidePlayer = player;
+    pointerOverControls = false;
+    pointerActiveOnControls = false;
+    controlsFocusWithin = controls.matches(':focus-within');
+    controlsVisible = true;
+    clearHideControlsTimer();
+
+    const doc = player.ownerDocument ?? document;
+
+    const updatePausedState = () => {
+      const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+      isPaused = getPausedState(player, mediaEl);
+      if (isPaused) {
+        clearHideControlsTimer();
+        controlsVisible = true;
+      } else {
+        scheduleHideControls();
+      }
+    };
+
+    updatePausedState();
+    showControls();
+
+    const handlePointerActivity = () => {
+      showControls();
+    };
+
+    const handlePointerLeavePlayer = () => {
+      scheduleHideControls();
+    };
+
+    const handleControlsPointerEnter = () => {
+      pointerOverControls = true;
+      showControls();
+    };
+
+    const handleControlsPointerLeave = () => {
+      pointerOverControls = false;
+      scheduleHideControls();
+    };
+
+    const handleControlsPointerDown = () => {
+      pointerActiveOnControls = true;
+      showControls();
+    };
+
+    const handleControlsPointerUp = () => {
+      markControlsInteractionEnd();
+    };
+
+    const handleDocumentPointerUp = () => {
+      if (pointerActiveOnControls) {
+        markControlsInteractionEnd();
+      }
+    };
+
+    const handleFocusIn = () => {
+      controlsFocusWithin = true;
+      showControls();
+    };
+
+    const runAfterFocusChange = (fn: () => void) => {
+      if (typeof queueMicrotask === 'function') {
+        queueMicrotask(fn);
+      } else {
+        setTimeout(fn, 0);
+      }
+    };
+
+    const handleFocusOut = () => {
+      runAfterFocusChange(() => {
+        const active = doc.activeElement as Node | null;
+        controlsFocusWithin = !!(active && controls.contains(active));
+        if (!controlsFocusWithin) {
+          scheduleHideControls();
+        }
+      });
+    };
+
+    const keyboardTriggerKeys = new Set([' ', 'Spacebar', 'Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'MediaPlayPause', 'MediaStop', 'MediaTrackNext', 'MediaTrackPrevious']);
+    const keyboardTriggerLetters = new Set(['k', 'j', 'l', 'f', 'm']);
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) {
+          return;
+        }
+      }
+
+      const key = event.key;
+      const lower = key.length === 1 ? key.toLowerCase() : key;
+      if (keyboardTriggerKeys.has(key) || keyboardTriggerKeys.has(lower) || keyboardTriggerLetters.has(lower)) {
+        showControls();
+      }
+    };
+
+    const handlePlay = () => {
+      isPaused = false;
+      showControls();
+    };
+
+    const handlePause = () => {
+      isPaused = true;
+      clearHideControlsTimer();
+      controlsVisible = true;
+    };
+
+    const handleEnded = () => {
+      handlePause();
+    };
+
+    const mutationObserver = new MutationObserver(() => {
+      const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+      const nextPaused = getPausedState(player, mediaEl);
+      if (nextPaused !== isPaused) {
+        isPaused = nextPaused;
+        if (isPaused) {
+          clearHideControlsTimer();
+          controlsVisible = true;
+        } else {
+          showControls();
+        }
+      }
+    });
+
+    mutationObserver.observe(player, { attributes: true, attributeFilter: ['data-paused'] });
+
+    const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+    if (mediaEl) {
+      mediaEl.addEventListener('play', handlePlay);
+      mediaEl.addEventListener('playing', handlePlay);
+      mediaEl.addEventListener('pause', handlePause);
+      mediaEl.addEventListener('ended', handleEnded);
+    }
+
+    player.addEventListener('play', handlePlay);
+    player.addEventListener('playing', handlePlay);
+    player.addEventListener('pause', handlePause);
+    player.addEventListener('ended', handleEnded);
+    player.addEventListener('pointermove', handlePointerActivity, { passive: true });
+    player.addEventListener('pointerdown', handlePointerActivity);
+    player.addEventListener('pointerenter', handlePointerActivity);
+    player.addEventListener('pointerleave', handlePointerLeavePlayer);
+
+  controls.addEventListener('pointerenter', handleControlsPointerEnter);
+  controls.addEventListener('pointerleave', handleControlsPointerLeave);
+  controls.addEventListener('pointerdown', handleControlsPointerDown);
+  controls.addEventListener('pointerup', handleControlsPointerUp);
+  controls.addEventListener('pointercancel', handleControlsPointerUp);
+    controls.addEventListener('focusin', handleFocusIn);
+    controls.addEventListener('focusout', handleFocusOut);
+
+    doc.addEventListener('pointerup', handleDocumentPointerUp);
+    doc.addEventListener('pointercancel', handleDocumentPointerUp);
+    doc.addEventListener('keydown', handleKeyDown, true);
+
+    return () => {
+      mutationObserver.disconnect();
+      clearHideControlsTimer();
+      pointerOverControls = false;
+      pointerActiveOnControls = false;
+      controlsFocusWithin = false;
+      if (autoHidePlayer === player) {
+        autoHidePlayer = null;
+      }
+
+      if (mediaEl) {
+        mediaEl.removeEventListener('play', handlePlay);
+        mediaEl.removeEventListener('playing', handlePlay);
+        mediaEl.removeEventListener('pause', handlePause);
+        mediaEl.removeEventListener('ended', handleEnded);
+      }
+
+      player.removeEventListener('play', handlePlay);
+      player.removeEventListener('playing', handlePlay);
+      player.removeEventListener('pause', handlePause);
+      player.removeEventListener('ended', handleEnded);
+      player.removeEventListener('pointermove', handlePointerActivity);
+      player.removeEventListener('pointerdown', handlePointerActivity);
+      player.removeEventListener('pointerenter', handlePointerActivity);
+      player.removeEventListener('pointerleave', handlePointerLeavePlayer);
+
+  controls.removeEventListener('pointerenter', handleControlsPointerEnter);
+  controls.removeEventListener('pointerleave', handleControlsPointerLeave);
+  controls.removeEventListener('pointerdown', handleControlsPointerDown);
+  controls.removeEventListener('pointerup', handleControlsPointerUp);
+  controls.removeEventListener('pointercancel', handleControlsPointerUp);
+      controls.removeEventListener('focusin', handleFocusIn);
+      controls.removeEventListener('focusout', handleFocusOut);
+
+      doc.removeEventListener('pointerup', handleDocumentPointerUp);
+      doc.removeEventListener('pointercancel', handleDocumentPointerUp);
+      doc.removeEventListener('keydown', handleKeyDown, true);
     };
   }
 
@@ -472,7 +731,12 @@
     >
       <media-provider data-no-controls></media-provider>
 
-  <media-controls class="player-controls" data-jumpflix-gesture-ignore="true">
+      <media-controls
+        class="player-controls"
+        data-jumpflix-gesture-ignore="true"
+        data-hidden={controlsVisible ? undefined : ''}
+        bind:this={controlsEl}
+      >
         <div class="controls-surface">
           <media-controls-group class="controls-group scrub">
             <media-time-slider class="time-slider" aria-label={title ? `Scrub through ${title}` : 'Scrub through video'}>
@@ -581,7 +845,6 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: clamp(0.75rem, 2vw, 1.5rem);
     opacity: 1;
     pointer-events: auto;
     transition: opacity 160ms ease-in-out;
@@ -598,8 +861,13 @@
     pointer-events: none;
   }
 
-  .player-controls:not([data-visible]) {
-    opacity: 1;
+  .player-controls[data-hidden] {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .player-controls[data-hidden]::before {
+    opacity: 0;
   }
 
   .controls-surface {

@@ -359,7 +359,6 @@
 
 	function applyTheme() {
 		if (typeof document === 'undefined') return;
-		document.documentElement.classList.add('dark');
 		updateThemeMeta();
 	}
 

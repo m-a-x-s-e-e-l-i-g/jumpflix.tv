@@ -28,10 +28,10 @@
   </div>
 
   <div class="flex flex-col items-center gap-4">
-    <h1 class="text-center text-4xl font-black uppercase tracking-tight text-slate-900 drop-shadow-[0_12px_28px_rgba(148,163,184,0.35)] dark:text-white dark:drop-shadow-[0_12px_30px_rgba(0,0,0,0.65)] sm:text-5xl md:text-6xl">
+    <h1 class="text-center text-4xl font-black uppercase tracking-tight text-white drop-shadow-[0_12px_30px_rgba(0,0,0,0.65)] sm:text-5xl md:text-6xl">
       <span class="hero-title-gradient">{m.tv_heroHeading()}</span>
     </h1>
-    <p class="max-w-2xl text-sm font-medium uppercase tracking-[0.28em] text-slate-600 dark:text-white/60 sm:text-xs">
+    <p class="max-w-2xl text-sm font-medium uppercase tracking-[0.28em] text-white/60 sm:text-xs">
       {m.tv_heroTagline()}
     </p>
   </div>

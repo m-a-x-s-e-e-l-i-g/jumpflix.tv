@@ -39,13 +39,7 @@
 
 <style>
   .tv-details-panel {
-    border-left: 1px solid rgba(148, 163, 184, 0.22);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.72) 55%, rgba(255, 255, 255, 0.55) 100%);
-    box-shadow: -35px 0 70px -50px rgba(15, 23, 42, 0.34);
-  }
-
-  :global(.dark) .tv-details-panel {
-    border-color: rgba(71, 85, 105, 0.35);
+    border-left: 1px solid rgba(71, 85, 105, 0.35);
     background: linear-gradient(185deg, rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.58) 55%, rgba(15, 23, 42, 0.38));
     box-shadow: -35px 0 70px -55px rgba(2, 6, 23, 0.7);
   }

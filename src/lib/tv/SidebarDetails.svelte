@@ -164,14 +164,14 @@
         ></div>
       {/key}
     {:else}
-      <div class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 scale-110" transition:fade={{ duration: 250 }}></div>
+      <div class="w-full h-full bg-gradient-to-br from-blue-600 to-purple-700 scale-110" transition:fade={{ duration: 250 }}></div>
     {/if}
   <div class={backdropOverlayClass}></div>
   </div>
   <div class="space-y-4 relative z-10 flex-1">
     <div>
-  <h2 class="text-3xl font-serif font-light text-gray-900 dark:text-gray-100 tracking-wide mb-4">{selected.title}</h2>
-      <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+  <h2 class="text-3xl font-serif font-light text-gray-100 tracking-wide mb-4">{selected.title}</h2>
+      <div class="flex items-center gap-4 text-sm text-gray-400 mb-4">
         {#if selected.type === 'movie'}
           <span class="bg-blue-600 px-2 py-1 rounded text-white text-xs">MOVIE</span>
           {#if selected.paid}<span class="bg-yellow-500 text-black px-2 py-1 rounded text-xs font-bold">PAID</span>{/if}
@@ -195,19 +195,19 @@
     </div>
     <div>
       <br />
-  <p class="text-gray-700 dark:text-gray-300 leading-relaxed text-sm font-sans">{selected.description}</p>
+  <p class="text-gray-300 leading-relaxed text-sm font-sans">{selected.description}</p>
     </div>
     {#if selected.type === 'movie'}
       <div class="space-y-2 text-sm">
         {#if selected.paid}
-          <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Provider:</span><span class="text-gray-900 dark:text-white">{selected.provider || 'External'}</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Provider:</span><span class="text-white">{selected.provider || 'External'}</span></div>
         {/if}
         {#if (selected as any).creators?.length}
           <div class="space-y-1">
-            <span class="text-gray-500 dark:text-gray-400 block">Creators:</span>
+            <span class="text-gray-500 block">Creators:</span>
             <div class="flex flex-wrap gap-1">
               {#each (showAllCreators ? (selected as any).creators : (selected as any).creators.slice(0, MAX_NAMES)) as c}
-                <span class="px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-medium">{c}</span>
+                <span class="px-2 py-0.5 rounded-full bg-gray-700 text-white text-xs font-medium">{c}</span>
               {/each}
               {#if (selected as any).creators.length > MAX_NAMES}
                 <button class="px-2 py-0.5 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition" on:click={() => showAllCreators = !showAllCreators} title={showAllCreators ? 'Show fewer' : 'Show all'}>
@@ -220,10 +220,10 @@
         {/if}
         {#if (selected as any).starring?.length}
           <div class="space-y-1">
-            <span class="text-gray-500 dark:text-gray-400 block">Starring:</span>
+            <span class="text-gray-500 block">Starring:</span>
             <div class="flex flex-wrap gap-1">
               {#each (showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES)) as s}
-                <span class="px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-medium">{s}</span>
+                <span class="px-2 py-0.5 rounded-full bg-gray-700 text-white text-xs font-medium">{s}</span>
               {/each}
               {#if (selected as any).starring.length > MAX_NAMES}
                 <button class="px-2 py-0.5 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition" on:click={() => showAllStarring = !showAllStarring} title={showAllStarring ? 'Show fewer' : 'Show all'}>
@@ -239,10 +239,10 @@
       <div class="space-y-2 text-sm">
         {#if (selected as any).creators?.length}
           <div class="space-y-1">
-            <span class="text-gray-500 dark:text-gray-400 block">Creators:</span>
+            <span class="text-gray-500 block">Creators:</span>
             <div class="flex flex-wrap gap-1">
               {#each (showAllCreators ? (selected as any).creators : (selected as any).creators.slice(0, MAX_NAMES)) as c}
-                <span class="px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-medium">{c}</span>
+                <span class="px-2 py-0.5 rounded-full bg-gray-700 text-white text-xs font-medium">{c}</span>
               {/each}
               {#if (selected as any).creators.length > MAX_NAMES}
                 <button class="px-2 py-0.5 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition" on:click={() => showAllCreators = !showAllCreators} title={showAllCreators ? 'Show fewer' : 'Show all'}>
@@ -255,10 +255,10 @@
         {/if}
         {#if (selected as any).starring?.length}
           <div class="space-y-1">
-            <span class="text-gray-500 dark:text-gray-400 block">Starring:</span>
+            <span class="text-gray-500 block">Starring:</span>
             <div class="flex flex-wrap gap-1">
               {#each (showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES)) as s}
-                <span class="px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-medium">{s}</span>
+                <span class="px-2 py-0.5 rounded-full bg-gray-700 text-white text-xs font-medium">{s}</span>
               {/each}
               {#if (selected as any).starring.length > MAX_NAMES}
                 <button class="px-2 py-0.5 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition" on:click={() => showAllStarring = !showAllStarring} title={showAllStarring ? 'Show fewer' : 'Show all'}>
@@ -271,7 +271,7 @@
         {/if}
       </div>
     <div class="mt-6">
-       <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">{m.tv_episodes()}</h3>
+       <h3 class="text-base font-semibold text-gray-200 mb-3">{m.tv_episodes()}</h3>
       {#if (selected as any).seasons?.length > 0}
         <div class="mb-2">
           <select
@@ -289,32 +289,32 @@
             }}
           >
             {#each (selected as any).seasons as s}
-              <option value={s.seasonNumber} class="bg-white dark:bg-black text-gray-900 dark:text-gray-100">Season {s.seasonNumber}</option>
+              <option value={s.seasonNumber} class="bg-black text-gray-100">Season {s.seasonNumber}</option>
             {/each}
           </select>
         </div>
       {/if}
      
         {#if loadingEpisodes}
-          <p class="text-gray-500 dark:text-gray-400 text-sm">Loading episodes…</p>
+          <p class="text-gray-500 text-sm">Loading episodes…</p>
         {:else if episodes.length === 0}
-          <p class="text-gray-500 dark:text-gray-400 text-sm">No episodes found.</p>
+          <p class="text-gray-500 text-sm">No episodes found.</p>
         {:else}
           <ul class="max-h-64 overflow-auto pr-2 space-y-2" bind:this={episodesListEl}>
             {#each episodes as ep}
               <li>
-                <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition text-left border-2 border-transparent outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-50 dark:bg-red-900/30 border-2 border-red-500/60' : ''}"
+                <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-white/10 transition text-left border-2 border-transparent outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-900/30 border-2 border-red-500/60' : ''}"
                   on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeason)}>
                   <div class="relative w-20 h-12 flex-shrink-0 overflow-hidden rounded">
                     {#if ep.thumbnail}
                       <img src={ep.thumbnail} alt={decode(ep.title)} class="w-full h-full object-cover" loading="lazy" decoding="async" />
                     {:else}
-                      <div class="w-full h-full bg-gray-300 dark:bg-gray-700"></div>
+                      <div class="w-full h-full bg-gray-300"></div>
                     {/if}
                   </div>
                   <div class="flex-1 min-w-0">
-                    <div class="text-[13px] text-gray-600 dark:text-gray-400">Ep {ep.position}</div>
-                    <div class="text-base text-gray-900 dark:text-gray-100 truncate">{decode(ep.title)}</div>
+                    <div class="text-[13px] text-gray-400">Ep {ep.position}</div>
+                    <div class="text-base text-gray-100 truncate">{decode(ep.title)}</div>
                   </div>
                   
                 </button>
@@ -350,8 +350,8 @@
     {/if}
   </div>
 {:else}
-  <div class="absolute inset-0 z-0 bg-white dark:bg-gray-800 border-l border-black/10 dark:border-white/10"></div>
-  <div class="text-center text-gray-500 dark:text-gray-400 py-12 relative z-10">
+  <div class="absolute inset-0 z-0 bg-gray-800 border-l border-white/10"></div>
+  <div class="text-center text-gray-500 py-12 relative z-10">
     <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
     <p>{m.tv_selectPlaceholder()}</p>
   </div>
@@ -364,16 +364,13 @@
     border-left: 1px solid rgba(148, 163, 184, 0.2);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.62) 55%, rgba(255, 255, 255, 0.45) 100%);
     pointer-events: none;
-  }
-
-  :global(.dark) .details-backdrop-overlay {
     border-color: rgba(71, 85, 105, 0.4);
     background: linear-gradient(185deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.68) 60%, rgba(15, 23, 42, 0.52) 100%);
   }
 
   .details-primary-button {
     width: 100%;
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(59, 130, 246, 0.92));
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.88), rgba(59, 130, 246, 0.75));
     color: #fff;
     padding: 0.95rem 1.5rem;
     border-radius: 18px;
@@ -386,16 +383,11 @@
     gap: 0.75rem;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.25s ease, background 0.25s ease;
-    box-shadow: 0 22px 40px -24px rgba(37, 99, 235, 0.6);
+    box-shadow: 0 24px 45px -24px rgba(37, 99, 235, 0.55);
   }
 
   .details-primary-button:hover {
     transform: translateY(-1px);
     box-shadow: 0 26px 45px -22px rgba(37, 99, 235, 0.66);
-  }
-
-  :global(.dark) .details-primary-button {
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.88), rgba(59, 130, 246, 0.75));
-    box-shadow: 0 24px 45px -24px rgba(37, 99, 235, 0.55);
   }
 </style>

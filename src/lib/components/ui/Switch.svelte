@@ -21,7 +21,3 @@
   <div class="absolute left-0 top-0 h-full w-full rounded-full border border-transparent focus-visible:ring-[3px]"></div>
   <div class="pointer-events-none block size-4 rounded-full bg-background shadow transform transition-transform" style={`translate: ${checked ? 'calc(100% - 2px)' : '0'}`}></div>
 </div>
-
-<style>
-  :global(.dark) .bg-input { background-color: oklch(var(--input)); }
-</style>

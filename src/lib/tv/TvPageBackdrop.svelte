@@ -30,26 +30,25 @@
     position: absolute;
     inset: -12% -16% -20%;
     background:
-      radial-gradient(150% 120% at 30% 18%, rgba(255, 255, 255, 0.36), transparent 68%),
-      linear-gradient(205deg, rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.28) 58%, rgba(15, 23, 42, 0.08) 100%);
-    mix-blend-mode: soft-light;
-    pointer-events: none;
-  }
-
-  :global(.dark) .hero-gradient {
-    background:
       radial-gradient(135% 95% at 22% 18%, rgba(229, 9, 20, 0.38), transparent 68%),
       radial-gradient(130% 88% at 72% 20%, rgba(59, 130, 246, 0.32), transparent 74%),
       radial-gradient(140% 105% at 48% 65%, rgba(148, 163, 184, 0.14), transparent 78%),
       linear-gradient(205deg, rgba(59, 130, 246, 0.22), rgba(5, 7, 18, 0.22) 45%, transparent 82%),
       var(--hero-gradient);
+    mix-blend-mode: soft-light;
+    pointer-events: none;
   }
 
-  :global(.dark) .hero-gradient::after {
+  .hero-gradient::after {
+    content: '';
+    position: absolute;
+    inset: -12% -16% -20%;
     background:
       radial-gradient(150% 120% at 32% 24%, rgba(229, 9, 20, 0.34), transparent 72%),
       radial-gradient(150% 120% at 68% 18%, rgba(59, 130, 246, 0.28), transparent 74%),
       linear-gradient(215deg, rgba(5, 7, 18, 0.92), rgba(5, 7, 18, 0.46) 60%, rgba(5, 7, 18, 0.14) 100%);
+    mix-blend-mode: soft-light;
+    pointer-events: none;
   }
 
   .hero-gradient--page {

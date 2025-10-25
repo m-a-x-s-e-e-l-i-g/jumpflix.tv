@@ -153,11 +153,11 @@
   <div class={overlayClass} transition:fade>
     <div class="flex-1 overflow-y-auto">
       <div class={headerClass}>
-  <button on:click={handleBack} class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-white px-3 py-2 rounded-lg bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20">
+  <button on:click={handleBack} class="flex items-center gap-2 text-sm font-medium text-gray-700 px-3 py-2 rounded-lg bg-black/5 hover:bg-black/10">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           { m.tv_back() }
         </button>
-        <h2 class="text-base line-clamp-2 pr-2 pl-2 text-gray-900 dark:text-white" style="margin:0;font-size:.9em!important;">{selected.title}</h2>
+        <h2 class="text-base line-clamp-2 pr-2 pl-2 text-white" style="margin:0;font-size:.9em!important;">{selected.title}</h2>
       </div>
       <div class="relative">
         <!-- BlurHash placeholder layer for hero -->
@@ -167,10 +167,10 @@
         {#if isImage(selected.thumbnail)}
           <Image src={selected.thumbnail} alt={selected.title + ' background'} class="w-full h-72 object-cover opacity-60" layout="fullWidth" aspectRatio={2/3} sizes="100vw" cdn={dev ? undefined : 'netlify'} />
         {/if}
-        <div class="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-white/10 dark:from-black dark:via-black/60 dark:to-black/10"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/10"></div>
         <div class="absolute bottom-4 left-4 right-4">
-          <h1 class="mb-2 text-gray-900 dark:text-white font-light" style="font-size:2em!important;font-family: 'Merriweather', serif;">{selected.title}</h1>
-          <div class="flex flex-wrap items-center gap-2 text-xs text-gray-700 dark:text-gray-300 mb-3">
+          <h1 class="mb-2 text-white font-light" style="font-size:2em!important;font-family: 'Merriweather', serif;">{selected.title}</h1>
+          <div class="flex flex-wrap items-center gap-2 text-xs text-gray-700 mb-3">
             {#if selected.type === 'movie'}
               <span class="bg-blue-600 px-2 py-1 rounded text-white">MOVIE</span>
               {#if selected.paid}<span class="bg-yellow-400 text-black px-2 py-1 rounded font-bold">PAID</span>{/if}
@@ -195,34 +195,34 @@
       </div>
   <div class="px-4 pb-28 pt-4 space-y-6 mobile-overlay-content">
         <div>
-          <p class="text-gray-700 dark:text-gray-200 text-sm leading-relaxed">{selected.description}</p>
+          <p class="text-gray-700 text-sm leading-relaxed">{selected.description}</p>
         </div>
         {#if selected.type === 'movie'}
           <div>
-            <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-1" style="padding-left:0;">
+            <ul class="text-xs text-gray-300 space-y-1" style="padding-left:0;">
               {#if selected.paid}
-                <li class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Provider</span><span>{selected.provider || 'External'}</span></li>
+                <li class="flex justify-between"><span class="text-gray-500">Provider</span><span>{selected.provider || 'External'}</span></li>
               {/if}
               {#if (selected as any).creators?.length}
-                <li class="flex flex-col gap-1"><span class="text-gray-500 dark:text-gray-400">Creators</span><span>{(selected as any).creators.join(', ')}</span></li>
+                <li class="flex flex-col gap-1"><span class="text-gray-500">Creators</span><span>{(selected as any).creators.join(', ')}</span></li>
               {/if}
               {#if (selected as any).starring?.length}
-                <li class="flex flex-col gap-1"><span class="text-gray-500 dark:text-gray-400">Starring</span><span>{(selected as any).starring.join(', ')}</span></li>
+                <li class="flex flex-col gap-1"><span class="text-gray-500">Starring</span><span>{(selected as any).starring.join(', ')}</span></li>
               {/if}
             </ul>
           </div>
         {:else}
           <div>
-            <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-1" style="padding-left:0;">
+            <ul class="text-xs text-gray-300 space-y-1" style="padding-left:0;">
               {#if (selected as any).creators?.length}
-                <li class="flex flex-col"><span class="text-gray-500 dark:text-gray-400">Creators</span><span>{(selected as any).creators.join(', ')}</span></li>
+                <li class="flex flex-col"><span class="text-gray-500">Creators</span><span>{(selected as any).creators.join(', ')}</span></li>
               {/if}
               {#if (selected as any).starring?.length}
-                <li class="flex flex-col gap-1"><span class="text-gray-500 dark:text-gray-400">Starring</span><span>{(selected as any).starring.join(', ')}</span></li>
+                <li class="flex flex-col gap-1"><span class="text-gray-500">Starring</span><span>{(selected as any).starring.join(', ')}</span></li>
               {/if}
             </ul>
             <div class="mt-4">
-              <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">{m.tv_episodes()}</h3>
+              <h3 class="text-base font-semibold text-gray-200 mb-3">{m.tv_episodes()}</h3>
               {#if (selected as any).seasons?.length > 0}
                 <div class="mb-3">
                   <select
@@ -239,25 +239,25 @@
                 </div>
               {/if}
               {#if loadingEpisodes}
-                <p class="text-gray-500 dark:text-gray-400 text-sm">Loading episodes…</p>
+                <p class="text-gray-500 text-sm">Loading episodes…</p>
               {:else if episodes.length === 0}
-                <p class="text-gray-500 dark:text-gray-400 text-sm">No episodes found.</p>
+                <p class="text-gray-500 text-sm">No episodes found.</p>
               {:else}
                 <ul class="space-y-2 max-h-64 overflow-auto pr-1" bind:this={episodesListEl}>
                   {#each episodes as ep}
                     <li>
-                      <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 transition text-left outline-none border-2 border-transparent focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-50 dark:bg-red-900/30 border-2 border-red-500/60' : ''}"
+                      <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-white/10 transition text-left outline-none border-2 border-transparent focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-900/30 border-2 border-red-500/60' : ''}"
                         on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeasonNum)}>
                         <div class="relative w-24 h-14 flex-shrink-0 overflow-hidden rounded">
                           {#if ep.thumbnail}
                             <img src={ep.thumbnail} alt={decode(ep.title)} class="w-full h-full object-cover" loading="lazy" decoding="async" />
                           {:else}
-                            <div class="w-full h-full bg-gray-300 dark:bg-gray-700"></div>
+                            <div class="w-full h-full bg-gray-300"></div>
                           {/if}
                         </div>
                         <div class="flex-1 min-w-0">
-                          <div class="text-[13px] text-gray-600 dark:text-gray-400">Ep {ep.position}</div>
-                          <div class="text-base text-gray-900 dark:text-gray-100 truncate">{decode(ep.title)}</div>
+                          <div class="text-[13px] text-gray-600">Ep {ep.position}</div>
+                          <div class="text-base text-gray-900 truncate">{decode(ep.title)}</div>
                         </div>
                         
                       </button>
@@ -302,12 +302,8 @@
     z-index: 40;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(175deg, #ffffff, #f1f5f9);
-    backdrop-filter: none;
-  }
-
-  :global(.dark) .mobile-overlay-surface {
     background: linear-gradient(180deg, #050712, #0a1023);
+    backdrop-filter: none;
   }
 
   .mobile-overlay-header {
@@ -318,25 +314,15 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.85rem 1rem;
-    background: linear-gradient(180deg, #ffffff, #f8fafc);
-    border-bottom: 1px solid rgba(148, 163, 184, 0.28);
-  }
-
-  :global(.dark) .mobile-overlay-header {
     background: linear-gradient(185deg, #050712, #0a1023);
-    border-color: rgba(71, 85, 105, 0.38);
+    border-bottom: 1px solid rgba(71, 85, 105, 0.38);
   }
 
   .mobile-overlay-actions {
     padding: 1rem;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(180deg, #f8fafc, #e2e8f0);
-    border-top: 1px solid rgba(148, 163, 184, 0.28);
-  }
-
-  :global(.dark) .mobile-overlay-actions {
     background: linear-gradient(180deg, #050712, #0a1023);
-    border-color: rgba(71, 85, 105, 0.4);
+    border-top: 1px solid rgba(71, 85, 105, 0.4);
   }
 
   .mobile-overlay-content {

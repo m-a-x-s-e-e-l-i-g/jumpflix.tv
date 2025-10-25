@@ -18,6 +18,7 @@
 	let isSticky = $state(false);
 	let searchElement: HTMLElement | null = null;
 	let searchOffsetTop = 0;
+	let stickyHeight = $state(0);
 
 	function clearSearch() {
 		searchQuery.set('');
@@ -50,7 +51,23 @@
 
 			// Update sticky state based on scroll position
 			const scrollTop = window.scrollY || document.documentElement.scrollTop;
-			isSticky = scrollTop > searchOffsetTop - 20; // Add small buffer
+			const shouldBeSticky = scrollTop > searchOffsetTop - 20; // Add small buffer
+
+			if (shouldBeSticky !== isSticky) {
+				isSticky = shouldBeSticky;
+
+				// Update sticky height when becoming sticky
+				if (isSticky) {
+					// Wait for next frame to get accurate height after sticky class is applied
+					requestAnimationFrame(() => {
+						if (searchElement) {
+							stickyHeight = searchElement.offsetHeight;
+						}
+					});
+				} else {
+					stickyHeight = 0;
+				}
+			}
 		};
 
 		const updateOffset = () => {
@@ -152,6 +169,11 @@
 		</div>
 	</div>
 </div>
+
+<!-- Spacer to prevent content from jumping when search bar becomes sticky -->
+{#if isSticky}
+	<div class="sticky-spacer" style:height={`${stickyHeight}px`}></div>
+{/if}
 
 <style>
 	.search-wrapper {
@@ -315,6 +337,11 @@
 	:global(.dark) .tv-search-select:focus {
 		border-color: rgba(244, 114, 182, 0.55);
 		box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.15);
+	}
+
+	.sticky-spacer {
+		width: 100%;
+		transition: height 0.3s ease;
 	}
 
 	@media (max-width: 640px) {

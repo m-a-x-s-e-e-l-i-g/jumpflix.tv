@@ -123,8 +123,8 @@
           suppressNextClick = false;
           return;
         }
-        // On mobile, only allow tap-to-play/pause when controls are visible
-        if (isMobileViewport && !controlsVisible) {
+        // On mobile, only allow tap-to-play/pause when controls were visible at gesture start
+        if (isMobileViewport && !controlsVisibleAtGestureStart) {
           return;
         }
         const providerRemote = (provider as unknown as { remoteControl?: RemoteControl })?.remoteControl ?? null;
@@ -144,6 +144,7 @@
     let spaceSlowTimer: number | null = null;
     let spaceSlowActive = false;
     let previousSpacePlaybackRate = getPlaybackRate(player);
+    let controlsVisibleAtGestureStart = true;
 
     const clearClickTimer = () => {
       if (clickTimer !== null) {
@@ -185,8 +186,8 @@
       if (event.detail === 1) {
         clearClickTimer();
         clickTimer = window.setTimeout(() => {
-          // On mobile, only allow tap-to-play/pause when controls are visible
-          if (isMobileViewport && !controlsVisible) {
+          // On mobile, only allow tap-to-play/pause when controls were visible at gesture start
+          if (isMobileViewport && !controlsVisibleAtGestureStart) {
             return;
           }
           togglePlayback(player, resolveRemote());
@@ -220,6 +221,9 @@
       suppressNextClick = false;
       clearClickTimer();
       clearLongPressTimer();
+      
+      // Capture controls visibility state at the start of the gesture
+      controlsVisibleAtGestureStart = controlsVisible;
 
       longPressTimer = window.setTimeout(() => {
         longPressTimer = null;

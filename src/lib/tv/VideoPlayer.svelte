@@ -71,6 +71,7 @@
   let isMobileViewport = false;
   let mobileQuery: MediaQueryList | null = null;
   let cleanupMobileQuery: (() => void) | null = null;
+  let controlsJustShown = false;
 
   $: if (browser && playerEl) {
     cleanupGestures?.();
@@ -123,8 +124,9 @@
           suppressNextClick = false;
           return;
         }
-        // On mobile, only allow tap-to-play/pause when controls were visible at gesture start
-        if (isMobileViewport && !controlsVisibleAtGestureStart) {
+        // On mobile, if controls were just shown, don't toggle playback
+        if (isMobileViewport && controlsJustShown) {
+          controlsJustShown = false;
           return;
         }
         const providerRemote = (provider as unknown as { remoteControl?: RemoteControl })?.remoteControl ?? null;
@@ -144,7 +146,6 @@
     let spaceSlowTimer: number | null = null;
     let spaceSlowActive = false;
     let previousSpacePlaybackRate = getPlaybackRate(player);
-    let controlsVisibleAtGestureStart = controlsVisible;
 
     const clearClickTimer = () => {
       if (clickTimer !== null) {
@@ -186,8 +187,9 @@
       if (event.detail === 1) {
         clearClickTimer();
         clickTimer = window.setTimeout(() => {
-          // On mobile, only allow tap-to-play/pause when controls were visible at gesture start
-          if (isMobileViewport && !controlsVisibleAtGestureStart) {
+          // On mobile, if controls were just shown, don't toggle playback
+          if (isMobileViewport && controlsJustShown) {
+            controlsJustShown = false;
             return;
           }
           togglePlayback(player, resolveRemote());
@@ -221,9 +223,6 @@
       suppressNextClick = false;
       clearClickTimer();
       clearLongPressTimer();
-      
-      // Capture controls visibility state at the start of the gesture
-      controlsVisibleAtGestureStart = controlsVisible;
 
       longPressTimer = window.setTimeout(() => {
         longPressTimer = null;
@@ -395,7 +394,11 @@
 
   function showControls() {
     if (!browser) return;
+    const wasHidden = !controlsVisible;
     controlsVisible = true;
+    if (wasHidden && isMobileViewport) {
+      controlsJustShown = true;
+    }
     scheduleHideControls();
   }
 

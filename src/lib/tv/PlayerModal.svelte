@@ -141,6 +141,7 @@
           src={playerView.src}
           title={playerView.title}
           poster={playerView.poster ?? null}
+          introSrc="/video/jumpflix-intro.webm"
           keySeed={playerView.key}
           autoPlay={playerView.autoPlay}
           onClose={close}

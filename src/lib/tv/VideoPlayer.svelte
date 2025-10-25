@@ -144,7 +144,7 @@
     let spaceSlowTimer: number | null = null;
     let spaceSlowActive = false;
     let previousSpacePlaybackRate = getPlaybackRate(player);
-    let controlsVisibleAtGestureStart = true;
+    let controlsVisibleAtGestureStart = controlsVisible;
 
     const clearClickTimer = () => {
       if (clickTimer !== null) {

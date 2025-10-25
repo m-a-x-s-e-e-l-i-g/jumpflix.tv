@@ -71,6 +71,7 @@
   let isMobileViewport = false;
   let mobileQuery: MediaQueryList | null = null;
   let cleanupMobileQuery: (() => void) | null = null;
+  let controlsJustShown = false;
 
   $: if (browser && playerEl) {
     cleanupGestures?.();
@@ -121,6 +122,11 @@
         event.stopPropagation();
         if (suppressNextClick) {
           suppressNextClick = false;
+          return;
+        }
+        // On mobile, if controls were just shown, don't toggle playback
+        if (isMobileViewport && controlsJustShown) {
+          controlsJustShown = false;
           return;
         }
         const providerRemote = (provider as unknown as { remoteControl?: RemoteControl })?.remoteControl ?? null;
@@ -181,6 +187,11 @@
       if (event.detail === 1) {
         clearClickTimer();
         clickTimer = window.setTimeout(() => {
+          // On mobile, if controls were just shown, don't toggle playback
+          if (isMobileViewport && controlsJustShown) {
+            controlsJustShown = false;
+            return;
+          }
           togglePlayback(player, resolveRemote());
         }, DOUBLE_CLICK_DELAY);
       } else if (event.detail === 2) {
@@ -383,7 +394,11 @@
 
   function showControls() {
     if (!browser) return;
+    const wasHidden = !controlsVisible;
     controlsVisible = true;
+    if (wasHidden && isMobileViewport) {
+      controlsJustShown = true;
+    }
     scheduleHideControls();
   }
 

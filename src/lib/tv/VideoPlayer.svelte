@@ -54,7 +54,7 @@
 	const SLOW_MOTION_RATE = 0.3;
 	const CONTROLS_HIDE_DELAY = 2000;
 	const SPEED_RAMP_DURATION = 250; // ms - duration for speed transition
-	const SPEED_RAMP_STEP_INTERVAL = 16; // ms - ~60fps update rate
+	const SPEED_RAMP_RATE_TOLERANCE = 0.01; // minimum rate difference to trigger ramping
 
 	let cleanupGestures: (() => void) | null = null;
 	let cleanupAutoHide: (() => void) | null = null;
@@ -110,7 +110,12 @@
 		cancelSpeedRamp();
 	});
 
-	// Easing function for smooth speed transitions (ease-in-out)
+	/**
+	 * Cubic ease-in-out easing function for smooth speed transitions.
+	 * @param t - Normalized time value from 0 to 1
+	 * @returns Eased progress value from 0 to 1
+	 * Creates smooth acceleration at start and deceleration at end
+	 */
 	function easeInOutCubic(t: number): number {
 		return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 	}
@@ -128,7 +133,10 @@
 		remote: RemoteControl | null,
 		targetRate: number
 	) {
-		if (!browser) return;
+		if (!browser) {
+			cancelSpeedRamp();
+			return;
+		}
 
 		cancelSpeedRamp();
 
@@ -136,7 +144,7 @@
 		const rateDelta = targetRate - startRate;
 
 		// If the difference is negligible, just set it directly
-		if (Math.abs(rateDelta) < 0.01) {
+		if (Math.abs(rateDelta) < SPEED_RAMP_RATE_TOLERANCE) {
 			setPlaybackRate(player, remote, targetRate);
 			return;
 		}

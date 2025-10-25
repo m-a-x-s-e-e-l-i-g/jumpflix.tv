@@ -123,6 +123,10 @@
           suppressNextClick = false;
           return;
         }
+        // On mobile, only allow tap-to-play/pause when controls are visible
+        if (isMobileViewport && !controlsVisible) {
+          return;
+        }
         const providerRemote = (provider as unknown as { remoteControl?: RemoteControl })?.remoteControl ?? null;
         const activeRemote = resolveRemote() ?? providerRemote;
         togglePlayback(player, activeRemote);
@@ -181,6 +185,10 @@
       if (event.detail === 1) {
         clearClickTimer();
         clickTimer = window.setTimeout(() => {
+          // On mobile, only allow tap-to-play/pause when controls are visible
+          if (isMobileViewport && !controlsVisible) {
+            return;
+          }
           togglePlayback(player, resolveRemote());
         }, DOUBLE_CLICK_DELAY);
       } else if (event.detail === 2) {

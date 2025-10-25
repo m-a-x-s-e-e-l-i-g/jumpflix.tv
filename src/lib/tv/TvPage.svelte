@@ -505,6 +505,9 @@
     background: linear-gradient(182deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.42) 65%, rgba(255, 255, 255, 0) 100%);
     mix-blend-mode: soft-light;
     pointer-events: none;
+  }
+
+  :global(.dark) .hero-overlay::after {
     background: linear-gradient(182deg, rgba(5, 7, 18, 1) 0%, rgba(5, 7, 18, 0.28) 62%, rgba(5, 7, 18, 0) 100%);
   }
 

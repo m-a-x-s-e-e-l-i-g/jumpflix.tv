@@ -2,6 +2,8 @@
 
 @import 'tw-animate-css';
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
 	/* Use dark mode color scheme by default */
 	color-scheme: dark;
@@ -49,6 +51,14 @@
 	--z-index-dialog: 40;
 	--z-index-modal: 50;
 	--z-index-toast: 60;
+}
+
+.dark {
+	/* Keep .dark class for compatibility with existing styles */
+	color-scheme: dark;
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in oklch, var(--foreground) 35%, transparent)
+		color-mix(in oklch, var(--background) 85%, transparent);
 }
 
 @theme inline {

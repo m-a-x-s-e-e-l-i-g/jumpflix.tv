@@ -1,5 +1,10 @@
 <script lang="ts">
 	import '../app.css';
+	import 'vidstack/player/styles/default/theme.css';
+	import 'vidstack/player/styles/default/layouts/video.css';
+	import 'vidstack/player';
+	import 'vidstack/player/layouts/default';
+	import 'vidstack/icons';
 	import { onMount, setContext } from 'svelte';
 	import type { Action } from 'svelte/action';
 	import { page } from '$app/stores';
@@ -375,7 +380,11 @@
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<div class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden" aria-hidden="true" style:display={reduceMotion ? 'none' : undefined}>
+<div
+	class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden"
+	aria-hidden="true"
+	class:popcorn-hidden={reduceMotion}
+>
 		{#each activePopcorns as popcorn (popcorn.id)}
 		<div
 			class="popcorn-item"
@@ -504,6 +513,21 @@
 		-webkit-mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0.25) 60%, rgba(0, 0, 0, 0) 80%);
 		contain: layout paint;
 		backface-visibility: hidden;
+		opacity: 1;
+		visibility: visible;
+		transition: opacity 220ms ease-in-out, visibility 0s linear 0s;
+	}
+
+	.popcorn-layer.popcorn-hidden {
+		opacity: 0;
+		visibility: hidden;
+		transition: opacity 220ms ease-in-out, visibility 0s linear 220ms;
+	}
+
+	:global(body.hide-popcorn .popcorn-layer) {
+		opacity: 0;
+		visibility: hidden;
+		transition: opacity 220ms ease-in-out, visibility 0s linear 220ms;
 	}
 
 	:global(.dark .popcorn-layer) {
@@ -564,7 +588,8 @@
 		}
 
 		.popcorn-layer {
-			display: none;
+			opacity: 0;
+			visibility: hidden;
 		}
 	}
 </style>

@@ -310,9 +310,7 @@
     };
     window.addEventListener('resize', resizeHandler);
     document.addEventListener('keydown', handleKeydown);
-    document.addEventListener('fullscreenchange', () => {
-      if (!document.fullscreenElement) closePlayer();
-    });
+    // Removed fullscreenchange listener that was closing player on fullscreen exit
 
   const maxTilt = 6.5;
   const LOGO_SCROLL_THRESHOLD = 6; // Only retune tilt when scroll shifts enough to matter visually

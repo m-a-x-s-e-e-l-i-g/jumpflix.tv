@@ -112,21 +112,13 @@ export function filterAndSortContent(all: ContentItem[], rankMap: Map<string, nu
   return sorted;
 }
 
-// Embed URL helpers
-export function getYouTubeEmbedUrl(videoId: string) {
-  return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&fs=1&modestbranding=1&controls=1`;
-}
-export function getVimeoEmbedUrl(vimeoId: string) {
-  return `https://player.vimeo.com/video/${vimeoId}?autoplay=1&title=0&byline=0&portrait=0`;
-}
-export function getPlaylistEmbedUrl(playlistId: string) {
-  return `https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1&fs=1&modestbranding=1&controls=1`;
-}
-
 export function isInlinePlayable(content: ContentItem | null | undefined) {
   if (!content) return false;
   if (content.type === 'movie') return Boolean((content as any).videoId || (content as any).vimeoId);
-  if (content.type === 'series') return Boolean((content as any).playlistId);
+  if (content.type === 'series') {
+    const series = content as any;
+    return Boolean(series.playlistId || series.seasons?.some((s: any) => s?.playlistId));
+  }
   return false;
 }
 

@@ -72,6 +72,7 @@
   let mobileQuery: MediaQueryList | null = null;
   let cleanupMobileQuery: (() => void) | null = null;
   let controlsJustShown = false;
+  let isLongPressSlowMotionActive = false;
 
   $: if (browser && playerEl) {
     cleanupGestures?.();
@@ -164,6 +165,7 @@
     const finishLongPress = () => {
       const wasActive = longPressActive;
       longPressActive = false;
+      isLongPressSlowMotionActive = false;
       clearLongPressTimer();
       if (wasActive) {
         setPlaybackRate(player, resolveRemote(), previousPlaybackRate);
@@ -227,6 +229,8 @@
       longPressTimer = window.setTimeout(() => {
         longPressTimer = null;
         longPressActive = true;
+        isLongPressSlowMotionActive = true;
+        controlsVisible = false;
         suppressNextClick = true;
         if (Math.abs(previousPlaybackRate - SLOW_MOTION_RATE) > 1e-3) {
           setPlaybackRate(player, resolveRemote(), SLOW_MOTION_RATE);
@@ -270,6 +274,7 @@
         setPlaybackRate(player, activeRemote, targetRate);
       }
       spaceSlowActive = false;
+      isLongPressSlowMotionActive = false;
     };
 
     const isSpaceKey = (key: string) => key === ' ' || key === 'Spacebar' || key === 'Space';
@@ -309,6 +314,8 @@
           setPlaybackRate(player, activeRemote, SLOW_MOTION_RATE);
         }
         spaceSlowActive = true;
+        isLongPressSlowMotionActive = true;
+        controlsVisible = false;
       }, LONG_PRESS_DELAY);
     };
 
@@ -394,6 +401,7 @@
 
   function showControls() {
     if (!browser) return;
+    if (isLongPressSlowMotionActive) return;
     const wasHidden = !controlsVisible;
     controlsVisible = true;
     if (wasHidden && isMobileViewport) {

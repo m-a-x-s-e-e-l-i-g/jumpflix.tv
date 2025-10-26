@@ -951,13 +951,6 @@
   }
   $: introGuardActive = !!resolvedIntroSrc && (introPlaying || introRequestPending);
 
-  // Ensure intro video stays paused when it shouldn't be playing
-  $: if (introVideoEl && !introPlaying && !introRequestPending) {
-    if (!introVideoEl.paused) {
-      introVideoEl.pause();
-    }
-  }
-
   $: if (introRequestPending && introVideoEl && !introPlaying) {
     attemptIntroStart();
   }
@@ -1104,6 +1097,13 @@
     finishIntroPlayback();
   }
 
+  function handleIntroLoadedMetadata() {
+    // Ensure video is paused when loaded, preventing auto-play
+    if (introVideoEl && !introPlaying && !introRequestPending) {
+      introVideoEl.pause();
+    }
+  }
+
   function startIntroPlayback() {
     if (!browser || !resolvedIntroSrc || !introVideoEl) return false;
 
@@ -1192,6 +1192,7 @@
             src={resolvedIntroSrc}
             preload="auto"
             playsinline
+            on:loadedmetadata={handleIntroLoadedMetadata}
             on:ended={handleIntroEnded}
             on:pause={handleIntroPause}
             on:error={handleIntroError}

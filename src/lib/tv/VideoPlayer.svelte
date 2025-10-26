@@ -951,6 +951,13 @@
   }
   $: introGuardActive = !!resolvedIntroSrc && (introPlaying || introRequestPending);
 
+  // Ensure intro video stays paused when it shouldn't be playing
+  $: if (introVideoEl && !introPlaying && !introRequestPending) {
+    if (!introVideoEl.paused) {
+      introVideoEl.pause();
+    }
+  }
+
   $: if (introRequestPending && introVideoEl && !introPlaying) {
     attemptIntroStart();
   }

@@ -266,12 +266,6 @@
 		};
 	}
 
-	function initializeTheme(): () => void {
-		if (typeof window === 'undefined') return () => {};
-		applyTheme();
-		return () => {};
-	}
-
 	function setupScrollEffects(): () => void {
 		if (typeof window === 'undefined') return () => {};
 		const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -325,7 +319,7 @@
 
 	onMount(() => {
 		if (typeof window === 'undefined') return;
-		const cleanupFns = [addEventListeners(), initializeTheme(), setupScrollEffects()];
+		const cleanupFns = [addEventListeners(), setupScrollEffects()];
 		return () => {
 			for (const cleanup of cleanupFns) {
 				cleanup?.();
@@ -344,23 +338,6 @@
 		const lang = langs.find((l) => l.code === code);
 		const label = lang?.label ?? code.toUpperCase();
 		toast.message(m.settings_languageChanged({ language: label }));
-	}
-
-	function updateThemeMeta() {
-		if (typeof document === 'undefined') return;
-		let meta = document.querySelector('meta[name="theme-color"]');
-		if (!meta) {
-			meta = document.createElement('meta');
-			meta.setAttribute('name', 'theme-color');
-			document.head.appendChild(meta);
-		}
-		meta.setAttribute('content', '#0b1220');
-	}
-
-	function applyTheme() {
-		if (typeof document === 'undefined') return;
-		document.documentElement.classList.add('dark');
-		updateThemeMeta();
 	}
 
 	// Keep the <html lang> attribute in sync

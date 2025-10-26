@@ -49,7 +49,7 @@
   tabindex="0"
   role="button"
 >
-  <div class="relative aspect-[2/3] bg-[#0f172a] dark:bg-gray-800 border border-gray-700/60 dark:border-gray-700 rounded-xl overflow-hidden mb-3 shadow-md"
+  <div class="relative aspect-[2/3] bg-gray-800 border border-gray-700 rounded-xl overflow-hidden mb-3 shadow-md"
       class:transition-all={!isMobile}
       class:duration-300={!isMobile}
       class:group-hover:ring-4={!isMobile}

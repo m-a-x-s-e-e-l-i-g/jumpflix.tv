@@ -535,7 +535,7 @@
 		inset: 0;
 		pointer-events: none;
 		overflow: hidden;
-		mix-blend-mode: overlay;
+		mix-blend-mode: soft-light;
 		mask-image: radial-gradient(
 			circle at center,
 			rgba(0, 0, 0, 1) 0%,
@@ -573,10 +573,6 @@
 		transition:
 			opacity 220ms ease-in-out,
 			visibility 0s linear 220ms;
-	}
-
-	:global(.dark .popcorn-layer) {
-		mix-blend-mode: soft-light;
 	}
 
 	.popcorn-item {

@@ -15,6 +15,7 @@
 	import XIcon from 'lucide-svelte/icons/x';
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
 	import CastIcon from 'lucide-svelte/icons/cast';
+	import { updateWatchProgress, getResumePosition } from '$lib/tv/watchHistory';
 
 	export let src: string | null = null;
 	export let title: string | null = null;
@@ -77,6 +78,12 @@
 	let isLongPressSlowMotionActive = false;
 	let speedRampAnimationId: number | null = null;
 
+	// Watch progress tracking
+	let lastProgressUpdate = 0;
+	let progressUpdateTimer: ReturnType<typeof setTimeout> | null = null;
+	const PROGRESS_UPDATE_INTERVAL = 5000; // 5 seconds
+	let hasResumed = false;
+
 	$: if (browser && playerEl) {
 		cleanupGestures?.();
 		cleanupGestures = setupGestureHandlers(playerEl);
@@ -105,10 +112,105 @@
 		introVideoEl = null;
 		pendingPlayTrigger = null;
 		clearResumeRetryTimer();
+		clearProgressTimer();
 		introRequestPending = false;
 		autoIntroScheduledFor = null;
 		cancelSpeedRamp();
 	});
+
+	/**
+	 * Get media ID from keySeed for watch progress tracking
+	 */
+	function getMediaId(): string | null {
+		if (!keySeed) return null;
+		return String(keySeed);
+	}
+
+	/**
+	 * Get media type from keySeed
+	 */
+	function getMediaType(): 'movie' | 'series' | 'episode' {
+		const id = getMediaId();
+		if (!id) return 'movie';
+		if (id.includes(':ep:')) return 'episode';
+		if (id.startsWith('series:')) return 'series';
+		return 'movie';
+	}
+
+	/**
+	 * Track playback progress to localStorage
+	 */
+	function trackProgress(currentTime: number, duration: number) {
+		if (!browser) return;
+		const mediaId = getMediaId();
+		if (!mediaId || !duration || duration <= 0) return;
+
+		const mediaType = getMediaType();
+		updateWatchProgress(mediaId, mediaType, currentTime, duration);
+	}
+
+	/**
+	 * Clear progress update timer
+	 */
+	function clearProgressTimer() {
+		if (progressUpdateTimer) {
+			clearTimeout(progressUpdateTimer);
+			progressUpdateTimer = null;
+		}
+	}
+
+	/**
+	 * Handle timeupdate event to track progress periodically
+	 */
+	function handleTimeUpdate(event: Event) {
+		const target = event.target as HTMLMediaElement;
+		const now = Date.now();
+
+		// Throttle updates to every 5 seconds
+		if (now - lastProgressUpdate >= PROGRESS_UPDATE_INTERVAL) {
+			lastProgressUpdate = now;
+			trackProgress(target.currentTime, target.duration);
+		}
+	}
+
+	/**
+	 * Handle pause event to save progress
+	 */
+	function handlePauseProgress(event: Event) {
+		const target = event.target as HTMLMediaElement;
+		trackProgress(target.currentTime, target.duration);
+	}
+
+	/**
+	 * Handle ended event to mark as watched
+	 */
+	function handleEndedProgress(event: Event) {
+		const target = event.target as HTMLMediaElement;
+		trackProgress(target.duration, target.duration); // Mark as fully watched
+	}
+
+	/**
+	 * Try to resume from saved position
+	 */
+	function tryResumeFromSaved(player: MediaPlayerElement) {
+		if (!browser || hasResumed) return;
+		const mediaId = getMediaId();
+		if (!mediaId) return;
+
+		const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+		if (!mediaEl || !mediaEl.duration || mediaEl.duration <= 0) return;
+
+		const resumePos = getResumePosition(mediaId, mediaEl.duration);
+		if (resumePos !== null && resumePos > 0) {
+			try {
+				mediaEl.currentTime = resumePos;
+				hasResumed = true;
+			} catch (e) {
+				console.warn('Failed to resume playback:', e);
+			}
+		}
+		hasResumed = true;
+	}
 
 	/**
 	 * Cubic ease-in-out easing function for smooth speed transitions.
@@ -652,6 +754,11 @@
 			mediaEl.addEventListener('playing', handlePlay);
 			mediaEl.addEventListener('pause', handlePause);
 			mediaEl.addEventListener('ended', handleEnded);
+			// Watch progress tracking
+			mediaEl.addEventListener('timeupdate', handleTimeUpdate, { passive: true });
+			mediaEl.addEventListener('pause', handlePauseProgress);
+			mediaEl.addEventListener('ended', handleEndedProgress);
+			mediaEl.addEventListener('loadedmetadata', () => tryResumeFromSaved(player));
 		}
 
 		player.addEventListener('play', handlePlay);
@@ -690,6 +797,10 @@
 				mediaEl.removeEventListener('playing', handlePlay);
 				mediaEl.removeEventListener('pause', handlePause);
 				mediaEl.removeEventListener('ended', handleEnded);
+				// Watch progress tracking cleanup
+				mediaEl.removeEventListener('timeupdate', handleTimeUpdate);
+				mediaEl.removeEventListener('pause', handlePauseProgress);
+				mediaEl.removeEventListener('ended', handleEndedProgress);
 			}
 
 			player.removeEventListener('play', handlePlay);
@@ -1043,6 +1154,8 @@
 		pendingPlayTrigger = null;
 		introRequestPending = false;
 		autoIntroScheduledFor = null;
+		hasResumed = false; // Reset resume flag for new content
+		lastProgressUpdate = 0; // Reset progress tracking
 	}
 	$: introGuardActive = !!resolvedIntroSrc && (introPlaying || introRequestPending);
 

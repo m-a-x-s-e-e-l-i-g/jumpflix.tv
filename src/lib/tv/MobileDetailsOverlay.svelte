@@ -81,6 +81,22 @@
     updateWatchProgress();
   }
 
+  let progressPollInterval: ReturnType<typeof setInterval> | null = null;
+
+  // Start/stop polling based on whether overlay is visible and has selection
+  $: if (browser && show && selected) {
+    // Start polling if not already running
+    if (!progressPollInterval) {
+      progressPollInterval = setInterval(updateWatchProgress, 2000);
+    }
+  } else {
+    // Stop polling when overlay hidden or no selection
+    if (progressPollInterval) {
+      clearInterval(progressPollInterval);
+      progressPollInterval = null;
+    }
+  }
+
   onMount(() => {
     updateWatchProgress();
     // Update when localStorage changes (from other tabs or components)
@@ -90,16 +106,15 @@
       }
     };
     window.addEventListener('storage', handleStorageChange);
+    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      if (progressPollInterval) {
+        clearInterval(progressPollInterval);
+        progressPollInterval = null;
+      }
     };
   });
-
-  // Poll for updates every 2 seconds when visible (for same-tab updates)
-  $: if (browser && selected && show) {
-    const interval = setInterval(updateWatchProgress, 2000);
-    return () => clearInterval(interval);
-  }
 
   $: hasProgress = watchProgress && watchProgress.percent > 0 && !watchProgress.isWatched;
 

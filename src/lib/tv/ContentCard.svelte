@@ -46,15 +46,15 @@
       }
     };
     window.addEventListener('storage', handleStorageChange);
+    
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
   });
 
-  // Poll for updates every 2 seconds when visible (for same-tab updates)
-  $: if (browser) {
-    const interval = setInterval(updateWatchProgress, 2000);
-    return () => clearInterval(interval);
+  // React to item changes
+  $: if (browser && item) {
+    updateWatchProgress();
   }
 
   $: isWatched = watchProgress?.isWatched || false;

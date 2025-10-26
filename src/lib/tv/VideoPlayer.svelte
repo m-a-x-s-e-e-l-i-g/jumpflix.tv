@@ -948,6 +948,10 @@
     pendingPlayTrigger = null;
     introRequestPending = false;
     autoIntroScheduledFor = null;
+    // Unmute intro video for the next playback
+    if (introVideoEl && resolvedIntroSrc) {
+      introVideoEl.muted = false;
+    }
   }
   $: introGuardActive = !!resolvedIntroSrc && (introPlaying || introRequestPending);
 

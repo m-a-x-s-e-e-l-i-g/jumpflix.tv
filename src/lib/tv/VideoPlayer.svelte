@@ -1072,6 +1072,10 @@
     stopIntroPlayback(false);
     introPlayed = true;
     introRequestPending = false;
+    // Mute the intro video to prevent audio playing again
+    if (introVideoEl) {
+      introVideoEl.muted = true;
+    }
     clearResumeRetryTimer();
     resumeRetryTimer = setTimeout(() => {
       resumeRetryTimer = null;

@@ -32,7 +32,6 @@ The goal: an elegant, fast, mobile‑friendly discovery hub honoring the culture
 - Keyboard navigation (arrow keys + Enter)
 - Mobile details overlay & desktop live sidebar panel
 - Accessibility minded (focus handling, escape to close, reduced clutter)
-- Light/Dark adaptive artwork
 - Internationalization (English + Dutch via Paraglide i18n)
 - Type‑safe content model (`Movie`, `Series`) & utility helpers
 - Zero backend: purely static deployable (edge/CDN friendly)

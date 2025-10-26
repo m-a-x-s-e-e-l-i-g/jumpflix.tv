@@ -6,12 +6,16 @@
   import { browser } from '$app/environment';
   import { toast } from 'svelte-sonner';
   import Link2Icon from '@lucide/svelte/icons/link-2';
+  import CheckIcon from '@lucide/svelte/icons/check';
+  import XIcon from '@lucide/svelte/icons/x';
   import { getUrlForItem, getEpisodeUrl } from './slug';
   import { Image } from '@unpic/svelte';
   import { dev } from '$app/environment';
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { decode } from 'html-entities';
+  import { getWatchProgress, setWatchedStatus } from '$lib/tv/watchHistory';
+  import { onMount } from 'svelte';
 
   export let show = false;
   export let isMobile = false;
@@ -27,6 +31,7 @@
   // Currently selected episode (for highlighting)
   export let selectedEpisode: Episode | null = null;
   export let onBack: (() => void) | null = null;
+  
   function handleBack() {
     if (onBack) {
       onBack();
@@ -34,6 +39,69 @@
       closeDetailsPanel();
     }
   }
+
+  // Watch progress tracking
+  let watchProgress: { percent: number; isWatched: boolean; position: number } | null = null;
+  
+  function updateWatchProgress() {
+    if (!browser || !selected) return;
+    const mediaId = `${selected.type}:${selected.id}`;
+    const progress = getWatchProgress(mediaId);
+    if (progress) {
+      watchProgress = { 
+        percent: progress.percent, 
+        isWatched: progress.isWatched,
+        position: progress.position 
+      };
+    } else {
+      watchProgress = null;
+    }
+  }
+
+  function toggleWatchedStatus() {
+    if (!browser || !selected) return;
+    const mediaId = `${selected.type}:${selected.id}`;
+    const newStatus = !watchProgress?.isWatched;
+    setWatchedStatus(mediaId, selected.type, newStatus);
+    updateWatchProgress();
+    toast.message(newStatus ? 'Marked as watched' : 'Marked as unwatched');
+  }
+
+  function formatTime(seconds: number): string {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  $: if (selected) {
+    updateWatchProgress();
+  }
+
+  onMount(() => {
+    updateWatchProgress();
+    // Update when localStorage changes (from other tabs or components)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'jumpflix-watch-history' || e.key === null) {
+        updateWatchProgress();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  });
+
+  // Poll for updates every 2 seconds when visible (for same-tab updates)
+  $: if (browser && selected && show) {
+    const interval = setInterval(updateWatchProgress, 2000);
+    return () => clearInterval(interval);
+  }
+
+  $: hasProgress = watchProgress && watchProgress.percent > 0 && !watchProgress.isWatched;
 
   // Seasons & Episodes for series (fetched via API to avoid CORS)
   let episodes: Episode[] = [];
@@ -197,6 +265,40 @@
         <div>
           <p class="text-gray-200 text-sm leading-relaxed">{selected.description}</p>
         </div>
+
+        <!-- Watch Progress Bar -->
+        {#if hasProgress}
+          <div class="relative w-full">
+            <div class="h-1.5 bg-gray-700/60 rounded-full overflow-hidden">
+              <div class="h-full bg-red-500 transition-all duration-300" style:width="{watchProgress?.percent || 0}%"></div>
+            </div>
+            <div class="text-xs text-gray-400 mt-1.5 flex justify-between items-center">
+              <span>Progress: {Math.round(watchProgress?.percent || 0)}%</span>
+              {#if watchProgress?.position}
+                <span>Resume at {formatTime(watchProgress.position)}</span>
+              {/if}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Watch Status Toggle -->
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all {watchProgress?.isWatched ? 'bg-green-700/20 text-green-400 active:bg-green-700/30 border border-green-600/40' : 'bg-gray-700/40 text-gray-300 active:bg-gray-700/60 border border-gray-600/40'}"
+            on:click={toggleWatchedStatus}
+            title={watchProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+          >
+            {#if watchProgress?.isWatched}
+              <CheckIcon class="w-4 h-4" />
+              <span>Watched</span>
+            {:else}
+              <XIcon class="w-4 h-4" />
+              <span>Mark as watched</span>
+            {/if}
+          </button>
+        </div>
+
         {#if selected.type === 'movie'}
           <div>
             <ul class="text-xs text-gray-300 space-y-1" style="padding-left:0;">
@@ -285,7 +387,11 @@
           {/if}
         {:else}
           {#if isInlinePlayable(selected)}
-            { m.tv_playNow() }
+            {#if hasProgress}
+              Continue watching
+            {:else}
+              { m.tv_playNow() }
+            {/if}
           {:else}
             { m.tv_watchOn() } {selected?.provider || 'External'}
           {/if}

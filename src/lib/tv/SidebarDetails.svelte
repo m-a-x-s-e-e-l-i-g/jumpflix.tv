@@ -76,18 +76,21 @@
   }
 
   let progressPollInterval: ReturnType<typeof setInterval> | null = null;
+  let isPolling = false;
 
   // Start/stop polling based on whether component is active
   $: if (browser && selected) {
     // Start polling if not already running
-    if (!progressPollInterval) {
+    if (!isPolling) {
+      isPolling = true;
       progressPollInterval = setInterval(updateWatchProgress, 2000);
     }
   } else {
     // Stop polling when no selection
-    if (progressPollInterval) {
+    if (isPolling && progressPollInterval) {
       clearInterval(progressPollInterval);
       progressPollInterval = null;
+      isPolling = false;
     }
   }
 
@@ -106,6 +109,7 @@
       if (progressPollInterval) {
         clearInterval(progressPollInterval);
         progressPollInterval = null;
+        isPolling = false;
       }
     };
   });

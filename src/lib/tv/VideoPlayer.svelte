@@ -1176,8 +1176,8 @@
   on:media-play-request={handleMediaPlayRequest}
   on:media-pause-request={handleMediaPauseRequest}
     >
-      {#if resolvedIntroSrc && introGuardActive}
-        <div class="intro-overlay" data-active aria-hidden="true">
+      {#if resolvedIntroSrc}
+        <div class="intro-overlay" data-active={introGuardActive ? '' : undefined} aria-hidden="true">
           <!-- svelte-ignore a11y-media-has-caption -->
           <video
             bind:this={introVideoEl}

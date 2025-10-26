@@ -453,24 +453,6 @@
 
 <style>
   :global(.tv-page) {
-    --hero-gradient: linear-gradient(150deg, #eef2ff 5%, #fdeff7 45%, #fff6e5 100%);
-    --hero-gradient-opacity: 0.96;
-    --hero-glow-one: radial-gradient(circle at center, rgba(248, 113, 113, 0.4), rgba(248, 113, 113, 0));
-    --hero-glow-two: radial-gradient(circle at center, rgba(14, 165, 233, 0.3), rgba(14, 165, 233, 0));
-    --hero-grid-line-x: rgba(15, 23, 42, 0.12);
-    --hero-grid-line-y: rgba(15, 23, 42, 0.08);
-    --hero-grid-opacity: 0.4;
-    --hero-glow-page-opacity: 0.6;
-    --hero-overlay: radial-gradient(circle at 38% 24%, rgba(248, 113, 113, 0.22), transparent 55%),
-      radial-gradient(circle at 70% 12%, rgba(59, 130, 246, 0.18), transparent 60%),
-      linear-gradient(182deg, rgba(248, 250, 252, 0.95) 0%, rgba(248, 250, 252, 0.38) 72%, rgba(248, 250, 252, 0) 100%);
-    --hero-overlay-blend: normal;
-    --hero-logo-text-shadow: 0 10px 26px rgba(148, 163, 184, 0.35);
-    --hero-title-gradient: linear-gradient(120deg, #0f172a 0%, #b91c1c 48%, #7c3aed 92%);
-    --hero-title-shadow: 0 10px 22px rgba(148, 163, 184, 0.3);
-  }
-
-  :global(.dark .tv-page) {
     --hero-gradient: linear-gradient(150deg, #050712 5%, #0c1430 45%, #1a233e 100%);
     --hero-gradient-opacity: 0.98;
     --hero-glow-one: radial-gradient(circle at center, rgba(229, 9, 20, 0.7), rgba(229, 9, 20, 0));
@@ -502,13 +484,9 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(182deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.42) 65%, rgba(255, 255, 255, 0) 100%);
+    background: linear-gradient(182deg, rgba(5, 7, 18, 1) 0%, rgba(5, 7, 18, 0.28) 62%, rgba(5, 7, 18, 0) 100%);
     mix-blend-mode: soft-light;
     pointer-events: none;
-  }
-
-  :global(.dark) .hero-overlay::after {
-    background: linear-gradient(182deg, rgba(5, 7, 18, 1) 0%, rgba(5, 7, 18, 0.28) 62%, rgba(5, 7, 18, 0) 100%);
   }
 
   @media (min-width: 768px) {

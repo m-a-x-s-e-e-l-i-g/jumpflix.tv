@@ -17,55 +17,7 @@
 
 			gtag('config', 'G-SJ77H41T0Q');
 		</script>
-		<script>
-			(function(){
-				try {
-					const stored = localStorage.getItem('theme');
-					const prefersDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
-					const followSystem = stored === 'system';
-					let isDark = true;
-
-					if(stored === 'dark') {
-						isDark = true;
-					} else if(stored === 'light') {
-						isDark = false;
-					} else if(followSystem) {
-						isDark = prefersDarkQuery.matches;
-					}
-
-					document.documentElement.classList.toggle('dark', isDark);
-
-					// Sync theme-color meta to match current theme for better PWA splash on Android/Edge
-					const setThemeMeta = (dark) => {
-						let meta = document.querySelector('meta[name="theme-color"]');
-						if(!meta){
-							meta = document.createElement('meta');
-							meta.name = 'theme-color';
-							document.head.appendChild(meta);
-						}
-						meta.setAttribute('content', dark ? '#0b1220' : '#ffffff');
-					};
-					setThemeMeta(isDark);
-
-					if(followSystem){
-						const handleSystemTheme = (event) => {
-							const matches = event.matches;
-							document.documentElement.classList.toggle('dark', matches);
-							setThemeMeta(matches);
-						};
-						try {
-							if(typeof prefersDarkQuery.addEventListener === 'function') {
-								prefersDarkQuery.addEventListener('change', handleSystemTheme);
-							} else if(typeof prefersDarkQuery.addListener === 'function') {
-								prefersDarkQuery.addListener(handleSystemTheme);
-							}
-						} catch {}
-					}
-				} catch {}
-			})();
-		</script>
-		<meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
-		<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+		<meta name="theme-color" content="#0b1220">
 		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" sizes="180x180">
 		<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
 		%sveltekit.head%

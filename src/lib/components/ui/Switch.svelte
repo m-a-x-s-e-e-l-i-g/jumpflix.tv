@@ -23,5 +23,7 @@
 </div>
 
 <style>
-  :global(.dark) .bg-input { background-color: oklch(var(--input)); }
+  :global(.bg-input) {
+    background-color: oklch(var(--input));
+  }
 </style>

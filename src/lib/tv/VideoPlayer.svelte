@@ -80,9 +80,9 @@
 
 	// Watch progress tracking
 	let lastProgressUpdate = 0;
-	let progressUpdateTimer: ReturnType<typeof setTimeout> | null = null;
 	const PROGRESS_UPDATE_INTERVAL = 5000; // 5 seconds
 	let hasResumed = false;
+	let cleanupWatchProgress: (() => void) | null = null;
 
 	$: if (browser && playerEl) {
 		cleanupGestures?.();
@@ -100,6 +100,14 @@
 		cleanupAutoHide = null;
 	}
 
+	$: if (browser && playerEl) {
+		cleanupWatchProgress?.();
+		cleanupWatchProgress = setupWatchProgress(playerEl);
+	} else if (!browser || !playerEl) {
+		cleanupWatchProgress?.();
+		cleanupWatchProgress = null;
+	}
+
 	onDestroy(() => {
 		cleanupGestures?.();
 		cleanupGestures = null;
@@ -112,7 +120,8 @@
 		introVideoEl = null;
 		pendingPlayTrigger = null;
 		clearResumeRetryTimer();
-		clearProgressTimer();
+		cleanupWatchProgress?.();
+		cleanupWatchProgress = null;
 		introRequestPending = false;
 		autoIntroScheduledFor = null;
 		cancelSpeedRamp();
@@ -149,64 +158,232 @@
 		updateWatchProgress(mediaId, mediaType, currentTime, duration);
 	}
 
-	/**
-	 * Clear progress update timer
-	 */
-	function clearProgressTimer() {
-		if (progressUpdateTimer) {
-			clearTimeout(progressUpdateTimer);
-			progressUpdateTimer = null;
+	type PlayerStateSnapshot = {
+		paused?: boolean;
+		ended?: boolean;
+		currentTime?: number;
+		realCurrentTime?: number;
+		duration?: number;
+		seekableEnd?: number;
+		intrinsicDuration?: number;
+		providedDuration?: number;
+	};
+
+	type PlayerStateSubscriber = (state: PlayerStateSnapshot) => void;
+
+	type PlayerWithInternals = MediaPlayerElement & {
+		subscribe?: (callback: PlayerStateSubscriber) => (() => void) | void;
+		state?: PlayerStateSnapshot;
+		currentTime?: number;
+		duration?: number;
+	};
+
+	function toPositiveFiniteNumber(value: unknown): number {
+		if (typeof value !== 'number') return 0;
+		if (!Number.isFinite(value)) return 0;
+		return value > 0 ? value : 0;
+	}
+
+	function resolvePlayerDuration(
+		player: PlayerWithInternals,
+		state?: PlayerStateSnapshot,
+		provider?: HTMLMediaElement | null
+	): number {
+		const candidates: unknown[] = [];
+		if (state) {
+			candidates.push(state.duration, state.seekableEnd, state.intrinsicDuration, state.providedDuration);
 		}
-	}
 
-	/**
-	 * Handle timeupdate event to track progress periodically
-	 */
-	function handleTimeUpdate(event: Event) {
-		const target = event.target as HTMLMediaElement;
-		const now = Date.now();
-
-		// Throttle updates to every 5 seconds
-		if (now - lastProgressUpdate >= PROGRESS_UPDATE_INTERVAL) {
-			lastProgressUpdate = now;
-			trackProgress(target.currentTime, target.duration);
+		const liveState = player.state;
+		if (liveState && liveState !== state) {
+			candidates.push(
+				liveState.duration,
+				liveState.seekableEnd,
+				liveState.intrinsicDuration,
+				liveState.providedDuration
+			);
 		}
+
+		const directDuration = (player as { duration?: number }).duration;
+		candidates.push(directDuration);
+
+		if (provider) {
+			candidates.push(provider.duration);
+		}
+
+		for (const candidate of candidates) {
+			const duration = toPositiveFiniteNumber(candidate);
+			if (duration > 0) {
+				return duration;
+			}
+		}
+
+		return 0;
 	}
 
-	/**
-	 * Handle pause event to save progress
-	 */
-	function handlePauseProgress(event: Event) {
-		const target = event.target as HTMLMediaElement;
-		trackProgress(target.currentTime, target.duration);
+	function resolvePlayerCurrentTime(
+		player: PlayerWithInternals,
+		state?: PlayerStateSnapshot,
+		provider?: HTMLMediaElement | null
+	): number {
+		const candidates: unknown[] = [];
+		if (state) {
+			candidates.push(state.currentTime, state.realCurrentTime);
+		}
+
+		const directTime = (player as { currentTime?: number }).currentTime;
+		candidates.push(directTime);
+
+		if (provider) {
+			candidates.push(provider.currentTime);
+		}
+
+		for (const candidate of candidates) {
+			if (typeof candidate === 'number' && candidate >= 0 && Number.isFinite(candidate)) {
+				return candidate;
+			}
+		}
+
+		return 0;
 	}
 
-	/**
-	 * Handle ended event to mark as watched
-	 */
-	function handleEndedProgress(event: Event) {
-		const target = event.target as HTMLMediaElement;
-		trackProgress(target.duration, target.duration); // Mark as fully watched
+	function setupWatchProgress(player: MediaPlayerElement) {
+		if (!browser) return () => {};
+		const mediaId = getMediaId();
+		if (!mediaId) return () => {};
+
+		const playerWithInternals = player as PlayerWithInternals;
+		const providerEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+
+		let lastPaused: boolean | null = null;
+		let lastEnded = false;
+		let lastKnownTime = 0;
+		let lastKnownDuration = 0;
+
+		const flushProgress = (paused: boolean, ended: boolean) => {
+			if (!lastKnownDuration) return;
+			const now = Date.now();
+			if (!paused && !ended && now - lastProgressUpdate >= PROGRESS_UPDATE_INTERVAL) {
+				lastProgressUpdate = now;
+				trackProgress(lastKnownTime, lastKnownDuration);
+			}
+			if (paused && !ended && lastPaused === false) {
+				trackProgress(lastKnownTime, lastKnownDuration);
+			}
+			if (ended && !lastEnded) {
+				trackProgress(lastKnownDuration, lastKnownDuration);
+			}
+		};
+
+		const handleStateUpdate = (state: PlayerStateSnapshot) => {
+			const duration = resolvePlayerDuration(playerWithInternals, state, providerEl);
+			if (duration > 0) {
+				lastKnownDuration = duration;
+				tryResumeFromSaved(playerWithInternals, duration);
+			}
+
+			const currentTime = resolvePlayerCurrentTime(playerWithInternals, state, providerEl);
+			if (currentTime >= 0) {
+				lastKnownTime = currentTime;
+			}
+
+			const paused = !!state?.paused;
+			const ended = !!state?.ended;
+			flushProgress(paused, ended);
+			lastPaused = paused;
+			lastEnded = ended;
+		};
+
+		let unsubscribe: (() => void) | null = null;
+		if (typeof playerWithInternals.subscribe === 'function') {
+			const result = playerWithInternals.subscribe(handleStateUpdate);
+			if (typeof result === 'function') {
+				unsubscribe = result;
+			}
+		}
+
+		const initialState = playerWithInternals.state;
+		if (initialState) {
+			handleStateUpdate(initialState);
+		} else {
+			const duration = resolvePlayerDuration(playerWithInternals, undefined, providerEl);
+			if (duration > 0) {
+				lastKnownDuration = duration;
+				tryResumeFromSaved(playerWithInternals, duration);
+			}
+		}
+
+		const handleLoadedMetadata = () => {
+			const duration = resolvePlayerDuration(playerWithInternals, undefined, providerEl);
+			if (duration > 0) {
+				lastKnownDuration = duration;
+				tryResumeFromSaved(playerWithInternals, duration);
+			}
+		};
+
+		if (providerEl) {
+			providerEl.addEventListener('loadedmetadata', handleLoadedMetadata);
+		}
+
+		const handleVisibilityChange = () => {
+			if (typeof document === 'undefined') {
+				return;
+			}
+			if (document.visibilityState === 'hidden' && lastKnownDuration > 0) {
+				trackProgress(lastKnownTime, lastKnownDuration);
+			}
+		};
+
+		if (typeof document !== 'undefined') {
+			document.addEventListener('visibilitychange', handleVisibilityChange, { passive: true });
+		}
+
+		return () => {
+			unsubscribe?.();
+			if (providerEl) {
+				providerEl.removeEventListener('loadedmetadata', handleLoadedMetadata);
+			}
+			if (typeof document !== 'undefined') {
+				document.removeEventListener('visibilitychange', handleVisibilityChange);
+			}
+			if (lastKnownDuration > 0) {
+				trackProgress(lastKnownTime, lastKnownDuration);
+			}
+			lastPaused = null;
+			lastEnded = false;
+		};
 	}
 
 	/**
 	 * Try to resume from saved position
 	 */
-	function tryResumeFromSaved(player: MediaPlayerElement) {
+	function tryResumeFromSaved(player: MediaPlayerElement, durationHint?: number) {
 		if (!browser || hasResumed) return;
 		const mediaId = getMediaId();
 		if (!mediaId) return;
 
-		const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
-		if (!mediaEl || !mediaEl.duration || mediaEl.duration <= 0) return;
+		const playerWithInternals = player as PlayerWithInternals;
+		const providerEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+		const duration =
+			typeof durationHint === 'number' && Number.isFinite(durationHint) && durationHint > 0
+				? durationHint
+				: resolvePlayerDuration(playerWithInternals, undefined, providerEl);
 
-		const resumePos = getResumePosition(mediaId, mediaEl.duration);
+		if (!duration) return;
+
+		const resumePos = getResumePosition(mediaId, duration);
 		if (resumePos !== null && resumePos > 0) {
 			try {
-				mediaEl.currentTime = resumePos;
-				hasResumed = true;
-			} catch (e) {
-				console.warn('Failed to resume playback:', e);
+				(playerWithInternals as { currentTime?: number }).currentTime = resumePos;
+			} catch {
+				/* no-op */
+			}
+			if (providerEl) {
+				try {
+					providerEl.currentTime = resumePos;
+				} catch {
+					/* no-op */
+				}
 			}
 		}
 		hasResumed = true;
@@ -754,11 +931,6 @@
 			mediaEl.addEventListener('playing', handlePlay);
 			mediaEl.addEventListener('pause', handlePause);
 			mediaEl.addEventListener('ended', handleEnded);
-			// Watch progress tracking
-			mediaEl.addEventListener('timeupdate', handleTimeUpdate, { passive: true });
-			mediaEl.addEventListener('pause', handlePauseProgress);
-			mediaEl.addEventListener('ended', handleEndedProgress);
-			mediaEl.addEventListener('loadedmetadata', () => tryResumeFromSaved(player));
 		}
 
 		player.addEventListener('play', handlePlay);
@@ -797,10 +969,6 @@
 				mediaEl.removeEventListener('playing', handlePlay);
 				mediaEl.removeEventListener('pause', handlePause);
 				mediaEl.removeEventListener('ended', handleEnded);
-				// Watch progress tracking cleanup
-				mediaEl.removeEventListener('timeupdate', handleTimeUpdate);
-				mediaEl.removeEventListener('pause', handlePauseProgress);
-				mediaEl.removeEventListener('ended', handleEndedProgress);
 			}
 
 			player.removeEventListener('play', handlePlay);

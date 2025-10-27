@@ -102,16 +102,25 @@
 
   onMount(() => {
     updateWatchProgress();
-    // Update when localStorage changes (from other tabs or components)
+    
+    // Update when localStorage changes (from other tabs)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'jumpflix-watch-history' || e.key === null) {
         updateWatchProgress();
       }
     };
+    
+    // Update when progress changes in the same tab
+    const handleProgressChange = () => {
+      updateWatchProgress();
+    };
+    
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('jumpflix-progress-change', handleProgressChange);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('jumpflix-progress-change', handleProgressChange);
       if (progressPollInterval) {
         clearInterval(progressPollInterval);
         progressPollInterval = null;

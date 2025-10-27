@@ -21,6 +21,16 @@ const RESUME_OFFSET = 1; // seconds to subtract when resuming
 const END_CLAMP_OFFSET = 15; // max seconds from end for resume
 
 /**
+ * Custom event to notify components in the same tab about progress changes
+ */
+const PROGRESS_CHANGE_EVENT = 'jumpflix-progress-change';
+
+function dispatchWatchProgressEvent() {
+	if (!browser) return;
+	window.dispatchEvent(new CustomEvent(PROGRESS_CHANGE_EVENT));
+}
+
+/**
  * Get all watch history from localStorage
  */
 function getAllProgress(): Map<string, WatchProgress> {
@@ -82,6 +92,7 @@ export function updateWatchProgress(
 	
 	allProgress.set(mediaId, progress);
 	saveAllProgress(allProgress);
+	dispatchWatchProgressEvent(); // Notify same-tab components
 	
 	return progress;
 }
@@ -101,15 +112,16 @@ export function setWatchedStatus(
 	const progress: WatchProgress = {
 		mediaId,
 		type,
-		position: watched ? 0 : (existing?.position || 0),
+		position: watched ? 0 : 0, // Clear position for both watched and unwatched
 		duration: duration || existing?.duration || 0,
-		percent: watched ? 100 : (existing?.percent || 0),
+		percent: watched ? 100 : 0, // 100% when watched, 0% when unwatched
 		isWatched: watched,
 		watchedAt: new Date().toISOString()
 	};
 	
 	allProgress.set(mediaId, progress);
 	saveAllProgress(allProgress);
+	dispatchWatchProgressEvent(); // Notify same-tab components
 	
 	return progress;
 }
@@ -143,6 +155,7 @@ export function clearWatchProgress(mediaId: string): void {
 	const allProgress = getAllProgress();
 	allProgress.delete(mediaId);
 	saveAllProgress(allProgress);
+	dispatchWatchProgressEvent(); // Notify same-tab components
 }
 
 /**

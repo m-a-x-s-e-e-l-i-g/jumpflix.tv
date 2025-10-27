@@ -58,6 +58,30 @@ function saveAllProgress(progressMap: Map<string, WatchProgress>): void {
 	}
 }
 
+function parseWatchedAt(value: string | undefined | null): number {
+	if (!value) return 0;
+	const timestamp = Date.parse(value);
+	return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function selectLatestProgress(
+	current: WatchProgress | null,
+	candidate: WatchProgress
+): WatchProgress {
+	if (!current) return candidate;
+	const currentTime = parseWatchedAt(current.watchedAt);
+	const candidateTime = parseWatchedAt(candidate.watchedAt);
+	if (candidateTime > currentTime) return candidate;
+	if (candidateTime < currentTime) return current;
+	return candidate.percent > current.percent ? candidate : current;
+}
+
+function progressMatchesBaseId(entryId: string, baseId: string): boolean {
+	if (entryId === baseId) return true;
+	if (!baseId) return false;
+	return entryId.startsWith(`${baseId}:`);
+}
+
 /**
  * Get watch progress for a specific media item
  */
@@ -177,3 +201,19 @@ export function getAllWatchProgress(): WatchProgress[] {
 	const allProgress = getAllProgress();
 	return Array.from(allProgress.values());
 }
+
+/**
+ * Get the most recently updated watch progress entry for a given base media identifier.
+ * Matches both exact IDs and prefixed variants like `${baseId}:variant`.
+ */
+export function getLatestWatchProgressByBaseId(baseId: string): WatchProgress | null {
+	if (!baseId) return null;
+	const allProgress = getAllProgress();
+	let latest: WatchProgress | null = null;
+	for (const [entryId, progress] of allProgress.entries()) {
+		if (!progressMatchesBaseId(entryId, baseId)) continue;
+		latest = selectLatestProgress(latest, progress);
+	}
+	return latest;
+}
+

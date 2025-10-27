@@ -6,7 +6,7 @@
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { dev } from '$app/environment';
   import { loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
-  import { getWatchProgress } from '$lib/tv/watchHistory';
+  import { getWatchProgress, getLatestWatchProgressByBaseId } from '$lib/tv/watchHistory';
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
 
@@ -26,10 +26,36 @@
   // Watch progress tracking
   let watchProgress: { percent: number; isWatched: boolean } | null = null;
   
+  function buildBaseId(content: ContentItem | null): string | null {
+    if (!content) return null;
+    return `${content.type}:${content.id}`;
+  }
+
   function updateWatchProgress() {
     if (!browser) return;
-    const mediaId = `${item.type}:${item.id}`;
-    const progress = getWatchProgress(mediaId);
+    const baseId = buildBaseId(item);
+    if (!baseId) {
+      watchProgress = null;
+      return;
+    }
+
+    const candidateIds: string[] = [];
+    if (item.type === 'movie') {
+      const movie = item as any;
+      if (movie.videoId) candidateIds.push(`${baseId}:yt:${movie.videoId}`);
+      if (movie.vimeoId) candidateIds.push(`${baseId}:vimeo:${movie.vimeoId}`);
+    }
+
+    let progress: ReturnType<typeof getWatchProgress> | null = null;
+    for (const id of candidateIds) {
+      progress = getWatchProgress(id);
+      if (progress) break;
+    }
+
+    if (!progress) {
+      progress = getLatestWatchProgressByBaseId(baseId);
+    }
+
     if (progress) {
       watchProgress = { percent: progress.percent, isWatched: progress.isWatched };
     } else {

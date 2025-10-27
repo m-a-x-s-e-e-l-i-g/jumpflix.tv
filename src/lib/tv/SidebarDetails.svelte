@@ -7,14 +7,14 @@
   import * as Select from "$lib/components/ui/select/index.js";
   import Link2Icon from '@lucide/svelte/icons/link-2';
   import CheckIcon from '@lucide/svelte/icons/check';
-  import XIcon from '@lucide/svelte/icons/x';
+  import EyeIcon from '@lucide/svelte/icons/eye';
   import * as m from '$lib/paraglide/messages';  
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { fade } from 'svelte/transition';
   import { decode } from 'html-entities';
   import { showPlayer } from '$lib/tv/store';
-  import { getWatchProgress, setWatchedStatus } from '$lib/tv/watchHistory';
+  import { getWatchProgress, getLatestWatchProgressByBaseId, setWatchedStatus } from '$lib/tv/watchHistory';
   import { onMount } from 'svelte';
   
   export let selected: ContentItem | null;
@@ -37,15 +37,50 @@
   // Watch progress tracking
   let watchProgress: { percent: number; isWatched: boolean; position: number } | null = null;
   
-  function updateWatchProgress() {
-    if (!browser || !selected) return;
-    const mediaId = `${selected.type}:${selected.id}`;
-    const progress = getWatchProgress(mediaId);
+  function buildBaseId(item: ContentItem | null): string | null {
+    if (!item) return null;
+    return `${item.type}:${item.id}`;
+  }
+
+  function getWatchProgressForSelected(): void {
+    if (!browser || !selected) {
+      watchProgress = null;
+      return;
+    }
+
+    const baseId = buildBaseId(selected);
+    if (!baseId) {
+      watchProgress = null;
+      return;
+    }
+
+    const candidateIds: string[] = [];
+
+    if (selected.type === 'movie') {
+      const movie = selected as any;
+      if (movie.videoId) candidateIds.push(`${baseId}:yt:${movie.videoId}`);
+      if (movie.vimeoId) candidateIds.push(`${baseId}:vimeo:${movie.vimeoId}`);
+    }
+
+    if (selected.type === 'series' && selectedEpisode?.id) {
+      candidateIds.push(`${baseId}:ep:${selectedEpisode.id}`);
+    }
+
+    let progress: ReturnType<typeof getWatchProgress> | null = null;
+    for (const id of candidateIds) {
+      progress = getWatchProgress(id);
+      if (progress) break;
+    }
+
+    if (!progress) {
+      progress = getLatestWatchProgressByBaseId(baseId);
+    }
+
     if (progress) {
-      watchProgress = { 
-        percent: progress.percent, 
+      watchProgress = {
+        percent: progress.percent,
         isWatched: progress.isWatched,
-        position: progress.position 
+        position: progress.position
       };
     } else {
       watchProgress = null;
@@ -54,11 +89,26 @@
 
   function toggleWatchedStatus() {
     if (!browser || !selected) return;
-    const mediaId = `${selected.type}:${selected.id}`;
-    const newStatus = !watchProgress?.isWatched;
-    setWatchedStatus(mediaId, selected.type, newStatus);
-    updateWatchProgress();
-    toast.message(newStatus ? 'Marked as watched' : 'Marked as unwatched');
+    const baseId = buildBaseId(selected);
+    if (!baseId) return;
+
+    const preferredId = (() => {
+      if (selected.type === 'movie') {
+        const movie = selected as any;
+        if (movie.videoId) return `${baseId}:yt:${movie.videoId}`;
+        if (movie.vimeoId) return `${baseId}:vimeo:${movie.vimeoId}`;
+      }
+      if (selected.type === 'series' && selectedEpisode?.id) {
+        return `${baseId}:ep:${selectedEpisode.id}`;
+      }
+      return baseId;
+    })();
+
+  const targetType = preferredId.includes(':ep:') ? 'episode' : selected.type;
+  const newStatus = !watchProgress?.isWatched;
+  setWatchedStatus(preferredId, targetType, newStatus);
+  getWatchProgressForSelected();
+  toast.message(newStatus ? m.tv_markWatched() : m.tv_markUnwatched());
   }
 
   function formatTime(seconds: number): string {
@@ -71,8 +121,14 @@
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
-  $: if (selected) {
-    updateWatchProgress();
+  $: {
+    const dependencyKey = selected ? `${selected.type}:${selected.id}:${selectedEpisode?.id ?? ''}` : '';
+    dependencyKey; // ensure Svelte tracks selectedEpisode changes
+    if (selected) {
+      getWatchProgressForSelected();
+    } else {
+      watchProgress = null;
+    }
   }
 
   let progressPollInterval: ReturnType<typeof setInterval> | null = null;
@@ -83,7 +139,7 @@
     // Start polling if not already running
     if (!isPolling) {
       isPolling = true;
-      progressPollInterval = setInterval(updateWatchProgress, 2000);
+  progressPollInterval = setInterval(getWatchProgressForSelected, 2000);
     }
   } else {
     // Stop polling when no selection
@@ -95,18 +151,18 @@
   }
 
   onMount(() => {
-    updateWatchProgress();
+    getWatchProgressForSelected();
     
     // Update when localStorage changes (from other tabs)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'jumpflix-watch-history' || e.key === null) {
-        updateWatchProgress();
+  getWatchProgressForSelected();
       }
     };
     
     // Update when progress changes in the same tab
     const handleProgressChange = () => {
-      updateWatchProgress();
+      getWatchProgressForSelected();
     };
     
     window.addEventListener('storage', handleStorageChange);
@@ -315,14 +371,14 @@
         type="button"
         class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all {watchProgress?.isWatched ? 'bg-green-700/20 text-green-400 hover:bg-green-700/30 border border-green-600/40' : 'bg-gray-700/40 text-gray-300 hover:bg-gray-700/60 border border-gray-600/40'}"
         on:click={toggleWatchedStatus}
-        title={watchProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+        title={watchProgress?.isWatched ? m.tv_markUnwatched() : m.tv_markWatched()}
       >
         {#if watchProgress?.isWatched}
           <CheckIcon class="w-4 h-4" />
-          <span>Watched</span>
+          <span>{m.tv_markUnwatched()}</span>
         {:else}
-          <XIcon class="w-4 h-4" />
-          <span>Mark as watched</span>
+          <EyeIcon class="w-4 h-4" />
+          <span>{m.tv_markWatched()}</span>
         {/if}
       </button>
     </div>

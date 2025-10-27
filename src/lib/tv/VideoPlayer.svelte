@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import type { MediaPauseRequestEvent, MediaPlayRequestEvent } from 'vidstack';
 	import type { MediaPlayerElement } from 'vidstack/elements';
 	import PlayIcon from 'lucide-svelte/icons/play';
 	import PauseIcon from 'lucide-svelte/icons/pause';
@@ -19,23 +18,12 @@
 	export let src: string | null = null;
 	export let title: string | null = null;
 	export let poster: string | null = null;
-	export let introSrc: string | null = null;
 	export let keySeed: string | number = '';
 	export let autoPlay = false;
 	export let onClose: (() => void) | null = null;
 
 	let mounted = false;
 	let playerEl: MediaPlayerElement | null = null;
-	let introVideoEl: HTMLVideoElement | null = null;
-
-	let introPlaying = false;
-	let introPlayed = false;
-	let lastPlaybackToken: string | null = null;
-	let introGuardActive = false;
-	let resumeRetryTimer: ReturnType<typeof setTimeout> | null = null;
-	let pendingPlayTrigger: Event | null = null;
-	let introRequestPending = false;
-	let autoIntroScheduledFor: string | null = null;
 
 	type RemoteControl = {
 		setTarget?: (target: EventTarget | null) => void;
@@ -101,12 +89,6 @@
 		cleanupMobileQuery?.();
 		cleanupMobileQuery = null;
 		mobileQuery = null;
-		stopIntroPlayback(false);
-		introVideoEl = null;
-		pendingPlayTrigger = null;
-		clearResumeRetryTimer();
-		introRequestPending = false;
-		autoIntroScheduledFor = null;
 		cancelSpeedRamp();
 	});
 
@@ -1034,228 +1016,7 @@
 	$: resolvedPoster = poster ?? undefined;
 	$: playerTitle = title ?? undefined;
 	$: shouldRender = mounted && browser && !!resolvedSrc;
-	$: resolvedIntroSrc = introSrc ? normalizeSource(introSrc) : undefined;
-	$: playbackToken = `${keySeed ?? ''}:${resolvedSrc ?? ''}:${resolvedIntroSrc ?? ''}`;
-	$: if (playbackToken !== lastPlaybackToken) {
-		lastPlaybackToken = playbackToken;
-		introPlayed = !resolvedIntroSrc;
-		stopIntroPlayback();
-		pendingPlayTrigger = null;
-		introRequestPending = false;
-		autoIntroScheduledFor = null;
-	}
-	$: introGuardActive = !!resolvedIntroSrc && (introPlaying || introRequestPending);
 
-	$: if (introRequestPending && introVideoEl && !introPlaying) {
-		attemptIntroStart();
-	}
-
-	$: if (
-		resolvedIntroSrc &&
-		autoPlay &&
-		shouldRender &&
-		!introPlayed &&
-		!introPlaying &&
-		playbackToken &&
-		autoIntroScheduledFor !== playbackToken
-	) {
-		autoIntroScheduledFor = playbackToken;
-		requestIntroPlayback(null);
-	}
-
-	function clearResumeRetryTimer() {
-		if (resumeRetryTimer) {
-			clearTimeout(resumeRetryTimer);
-			resumeRetryTimer = null;
-		}
-	}
-
-	function stopIntroPlayback(resetTime = true) {
-		clearResumeRetryTimer();
-		if (introVideoEl) {
-			introVideoEl.pause();
-			if (resetTime) {
-				try {
-					introVideoEl.currentTime = 0;
-				} catch {
-					/* no-op */
-				}
-			}
-		}
-		introPlaying = false;
-	}
-
-	function requestIntroPlayback(trigger: Event | null) {
-		if (!resolvedIntroSrc || introPlayed) {
-			return;
-		}
-
-		if (trigger) {
-			pendingPlayTrigger = trigger;
-		}
-
-		if (introPlaying) {
-			introRequestPending = true;
-			return;
-		}
-
-		introRequestPending = true;
-		attemptIntroStart();
-	}
-
-	function attemptIntroStart() {
-		if (!browser || !resolvedIntroSrc) return false;
-		if (!introRequestPending) return false;
-		if (introPlaying) return true;
-		if (!introVideoEl) return false;
-
-		const started = startIntroPlayback();
-		if (started) {
-			introRequestPending = false;
-		}
-
-		return started;
-	}
-
-	function resumeMainPlayback(attempt = 0) {
-		const player = playerEl;
-		if (!player) return;
-
-		const remote = getRemote(player);
-		const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
-		const playPromises: Promise<unknown>[] = [];
-		const trigger = pendingPlayTrigger ?? undefined;
-		pendingPlayTrigger = null;
-
-		const attemptPlay = (fn: (() => Promise<unknown> | unknown) | null | undefined) => {
-			if (!fn) return;
-			try {
-				const result = fn();
-				if (result && typeof (result as Promise<unknown>).then === 'function') {
-					playPromises.push(result as Promise<unknown>);
-				}
-			} catch {
-				/* no-op */
-			}
-		};
-
-		attemptPlay(() => remote?.play?.(trigger));
-		attemptPlay(() => mediaEl?.play());
-
-		if (playPromises.length === 0 && !remote?.play) {
-			try {
-				mediaEl?.play();
-			} catch {
-				/* no-op */
-			}
-		}
-
-		Promise.allSettled(playPromises).finally(() => {
-			const stillPaused = getPausedState(player, mediaEl);
-			if (stillPaused && attempt < 4) {
-				resumeRetryTimer = setTimeout(
-					() => {
-						resumeRetryTimer = null;
-						resumeMainPlayback(attempt + 1);
-					},
-					attempt === 0 ? 80 : 180
-				);
-			}
-		});
-	}
-
-	function finishIntroPlayback() {
-		if (introPlayed) return;
-		stopIntroPlayback(false);
-		introPlayed = true;
-		introRequestPending = false;
-		clearResumeRetryTimer();
-		resumeRetryTimer = setTimeout(() => {
-			resumeRetryTimer = null;
-			resumeMainPlayback();
-		}, 40);
-	}
-
-	function handleIntroEnded() {
-		finishIntroPlayback();
-	}
-
-	function handleIntroPause() {
-		if (!introVideoEl) return;
-		if (introVideoEl.ended) {
-			return;
-		}
-		if (introPlaying && introVideoEl.paused) {
-			introPlaying = false;
-		}
-	}
-
-	function handleIntroError() {
-		finishIntroPlayback();
-	}
-
-	function startIntroPlayback() {
-		if (!browser || !resolvedIntroSrc || !introVideoEl) return false;
-
-		try {
-			introVideoEl.currentTime = 0;
-		} catch {
-			/* no-op */
-		}
-
-		try {
-			introVideoEl.muted = false;
-			introVideoEl.volume = 1;
-		} catch {
-			/* no-op */
-		}
-
-		introPlaying = true;
-
-		try {
-			const playResult = introVideoEl.play();
-			if (playResult && typeof playResult.catch === 'function') {
-				playResult.catch(() => {
-					handleIntroError();
-				});
-			}
-		} catch {
-			handleIntroError();
-			return false;
-		}
-
-		return true;
-	}
-
-	function handleMediaPlayRequest(event: MediaPlayRequestEvent) {
-		if (!resolvedIntroSrc) {
-			return;
-		}
-
-		if (introPlayed && !introPlaying) {
-			return;
-		}
-
-		event.preventDefault();
-		const trigger = (event as unknown as { detail?: { trigger?: Event } }).detail?.trigger ?? event;
-		requestIntroPlayback(trigger ?? null);
-	}
-
-	function handleMediaPauseRequest(event: MediaPauseRequestEvent) {
-		if (!resolvedIntroSrc) {
-			return;
-		}
-
-		if (!introPlaying) {
-			return;
-		}
-
-		event.preventDefault();
-		stopIntroPlayback();
-		introPlayed = false;
-		introRequestPending = false;
-		pendingPlayTrigger = null;
-	}
 </script>
 
 {#if shouldRender}
@@ -1268,26 +1029,8 @@
 			poster={resolvedPoster}
 			playsinline
 			load="idle"
-			autoplay={!resolvedIntroSrc && autoPlay ? true : undefined}
-			data-intro-active={introGuardActive ? '' : undefined}
-			on:media-play-request={handleMediaPlayRequest}
-			on:media-pause-request={handleMediaPauseRequest}
+			autoplay={autoPlay ? true : undefined}
 		>
-			{#if resolvedIntroSrc && introGuardActive}
-				<div class="intro-overlay" data-active aria-hidden="true">
-					<!-- svelte-ignore a11y-media-has-caption -->
-					<video
-						bind:this={introVideoEl}
-						class="intro-video"
-						src={resolvedIntroSrc}
-						preload="auto"
-						playsinline
-						on:ended={handleIntroEnded}
-						on:pause={handleIntroPause}
-						on:error={handleIntroError}
-					></video>
-				</div>
-			{/if}
 			<media-provider data-no-controls></media-provider>
 
 			<media-controls
@@ -1432,38 +1175,6 @@
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 	}
-	.intro-overlay {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background: #000;
-		opacity: 0;
-		pointer-events: none;
-		transition: opacity 160ms ease-in-out;
-		z-index: 3;
-	}
-
-	.intro-overlay[data-active] {
-		opacity: 1;
-	}
-
-	.intro-video {
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
-	}
-
-	:global(media-player[data-intro-active] media-provider) {
-		opacity: 0;
-	}
-
-	:global(media-player[data-intro-active] media-controls) {
-		opacity: 0;
-		pointer-events: none;
-	}
-
 	.player-controls {
 		position: absolute;
 		inset: 0;

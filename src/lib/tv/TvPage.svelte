@@ -10,24 +10,25 @@
   import TvPageBackdrop from '$lib/tv/TvPageBackdrop.svelte';
   import TvDesktopDetailsPanel from '$lib/tv/TvDesktopDetailsPanel.svelte';
   import {
-    visibleContent,
-    visibleKeys,
-    sortedAllContent,
-    searchQuery,
-    showPaid,
-    sortBy,
-    selectedContent,
-    showPlayer,
-    showDetailsPanel,
-    selectedIndex,
-    selectContent,
-    openContent,
-    closePlayer,
-    closeDetailsPanel,
-    selectedEpisode,
-    openEpisode,
-    selectEpisode
-  } from '$lib/tv/store';
+      visibleContent,
+      visibleKeys,
+      sortedAllContent,
+      searchQuery,
+  showPaid,
+  sortBy,
+  showWatched,
+      selectedContent,
+      showPlayer,
+      showDetailsPanel,
+      selectedIndex,
+      selectContent,
+      openContent,
+      closePlayer,
+      closeDetailsPanel,
+      selectedEpisode,
+      openEpisode,
+      selectEpisode
+    } from '$lib/tv/store';
   import type { ContentItem } from '$lib/tv/types';
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
@@ -406,7 +407,7 @@
 
     <TvHeroSection {logoTilt} />
 
-    <TvSearchControls {searchQuery} {showPaid} {sortBy} />
+  <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} />
   </section>
   <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
     <TvCatalogGrid

@@ -948,10 +948,6 @@
     pendingPlayTrigger = null;
     introRequestPending = false;
     autoIntroScheduledFor = null;
-    // Unmute intro video for the next playback
-    if (introVideoEl && resolvedIntroSrc) {
-      introVideoEl.muted = false;
-    }
   }
   $: introGuardActive = !!resolvedIntroSrc && (introPlaying || introRequestPending);
 
@@ -1076,10 +1072,6 @@
     stopIntroPlayback(false);
     introPlayed = true;
     introRequestPending = false;
-    // Mute the intro video to prevent audio playing again
-    if (introVideoEl) {
-      introVideoEl.muted = true;
-    }
     clearResumeRetryTimer();
     resumeRetryTimer = setTimeout(() => {
       resumeRetryTimer = null;
@@ -1103,13 +1095,6 @@
 
   function handleIntroError() {
     finishIntroPlayback();
-  }
-
-  function handleIntroLoadedMetadata() {
-    // Ensure video is paused when loaded, preventing auto-play
-    if (introVideoEl && !introPlaying && !introRequestPending) {
-      introVideoEl.pause();
-    }
   }
 
   function startIntroPlayback() {
@@ -1194,17 +1179,18 @@
       {#if resolvedIntroSrc}
         <div class="intro-overlay" data-active={introGuardActive ? '' : undefined} aria-hidden="true">
           <!-- svelte-ignore a11y-media-has-caption -->
-          <video
-            bind:this={introVideoEl}
-            class="intro-video"
-            src={resolvedIntroSrc}
-            preload="auto"
-            playsinline
-            on:loadedmetadata={handleIntroLoadedMetadata}
-            on:ended={handleIntroEnded}
-            on:pause={handleIntroPause}
-            on:error={handleIntroError}
-          ></video>
+          {#key playbackToken}
+            <video
+              bind:this={introVideoEl}
+              class="intro-video"
+              src={resolvedIntroSrc}
+              preload="auto"
+              playsinline
+              on:ended={handleIntroEnded}
+              on:pause={handleIntroPause}
+              on:error={handleIntroError}
+            ></video>
+          {/key}
         </div>
       {/if}
       <media-provider data-no-controls></media-provider>

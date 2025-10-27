@@ -157,7 +157,7 @@
         decoding="async"
         width={230}
         height={345}
-        class={`${baseImageClass} ${imageOpacityClass} ${isWatched ? 'opacity-40' : ''}`}
+        class={`${baseImageClass} ${imageOpacityClass} ${isWatched ? 'opacity-30' : ''}`}
         cdn={dev ? undefined : 'netlify'}
         layout="constrained"
         onload={handleLoaded}
@@ -167,7 +167,7 @@
 
     <!-- Watched dimming overlay -->
     {#if isWatched}
-      <div class="absolute inset-0 bg-black/50 z-10 pointer-events-none"></div>
+      <div class="absolute inset-0 bg-black/80 z-10 pointer-events-none"></div>
     {/if}
 
     <div class="absolute top-2 left-2 flex gap-2 z-20">

@@ -270,10 +270,12 @@
             {#if selected.type === 'movie'}
               <span class="bg-blue-600 px-2 py-1 rounded text-white">MOVIE</span>
               {#if selected.paid}<span class="bg-yellow-400 text-black px-2 py-1 rounded font-bold">PAID</span>{/if}
+              {#if watchProgress?.isWatched}<span class="bg-green-600 text-white px-2 py-1 rounded font-bold">WATCHED</span>{/if}
               <span>{(selected as any).year}</span>
               <span>{(selected as any).duration}</span>
             {:else}
               <span class="bg-red-600 px-2 py-1 rounded">SERIES</span>
+              {#if watchProgress?.isWatched}<span class="bg-green-600 text-white px-2 py-1 rounded font-bold">WATCHED</span>{/if}
               <span>{(selected as any).videoCount || '?'} episodes</span>
             {/if}
             {#if selected.type === 'movie' && (selected as any).trakt}

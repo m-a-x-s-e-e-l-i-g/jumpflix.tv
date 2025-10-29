@@ -7,14 +7,15 @@
   import { toast } from 'svelte-sonner';
   import Link2Icon from '@lucide/svelte/icons/link-2';
   import CheckIcon from '@lucide/svelte/icons/check';
-  import XIcon from '@lucide/svelte/icons/x';
+  import EyeIcon from '@lucide/svelte/icons/eye';
   import { getUrlForItem, getEpisodeUrl } from './slug';
   import { Image } from '@unpic/svelte';
   import { dev } from '$app/environment';
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { decode } from 'html-entities';
-  import { getWatchProgress, setWatchedStatus } from '$lib/tv/watchHistory';
+  import { setWatchedStatus, getAllWatchProgress } from '$lib/tv/watchHistory';
+  import type { WatchProgress } from '$lib/tv/watchHistory';
   import { onMount } from 'svelte';
 
   export let show = false;
@@ -40,31 +41,148 @@
     }
   }
 
-  // Watch progress tracking
+  // Watch progress tracking for movies and episodes
   let watchProgress: { percent: number; isWatched: boolean; position: number } | null = null;
+  let watchProgressMap: Map<string, WatchProgress> = new Map();
+
+  function refreshWatchProgressMap() {
+    if (!browser) {
+      watchProgressMap = new Map();
+      return;
+    }
+    const entries = getAllWatchProgress();
+    const next = new Map<string, WatchProgress>();
+    for (const entry of entries) {
+      next.set(entry.mediaId, entry);
+    }
+    watchProgressMap = next;
+  }
+
+  function buildBaseId(item: ContentItem | null): string | null {
+    if (!item) return null;
+    return `${item.type}:${item.id}`;
+  }
+
+  function parseWatchedAt(value: string | undefined | null): number {
+    if (!value) return 0;
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
+
+  function pickLatestProgress(current: WatchProgress | null, candidate: WatchProgress): WatchProgress {
+    if (!current) return candidate;
+    const currentTime = parseWatchedAt(current.watchedAt);
+    const candidateTime = parseWatchedAt(candidate.watchedAt);
+    if (candidateTime > currentTime) return candidate;
+    if (candidateTime < currentTime) return current;
+    return candidate.percent > current.percent ? candidate : current;
+  }
   
   function updateWatchProgress() {
-    if (!browser || !selected) return;
-    const mediaId = `${selected.type}:${selected.id}`;
-    const progress = getWatchProgress(mediaId);
+    if (!browser || !selected) {
+      watchProgress = null;
+      watchProgressMap = new Map();
+      return;
+    }
+
+    refreshWatchProgressMap();
+
+    const baseId = buildBaseId(selected);
+    if (!baseId) {
+      watchProgress = null;
+      return;
+    }
+
+    const candidateIds: string[] = [];
+
+    if (selected.type === 'movie') {
+      const movie: any = selected;
+      if (movie.videoId) candidateIds.push(`${baseId}:yt:${movie.videoId}`);
+      if (movie.vimeoId) candidateIds.push(`${baseId}:vimeo:${movie.vimeoId}`);
+    }
+
+    if (selected.type === 'series' && selectedEpisode?.id) {
+      candidateIds.push(`${baseId}:ep:${selectedEpisode.id}`);
+    }
+
+    let progress: WatchProgress | null = null;
+
+    for (const id of candidateIds) {
+      const candidate = watchProgressMap.get(id) ?? null;
+      if (candidate) {
+        progress = candidate;
+        break;
+      }
+    }
+
+    if (!progress) {
+      const basePrefix = `${baseId}:`;
+      for (const entry of watchProgressMap.values()) {
+        if (entry.mediaId === baseId || entry.mediaId.startsWith(basePrefix)) {
+          progress = pickLatestProgress(progress, entry);
+        }
+      }
+    }
+
     if (progress) {
-      watchProgress = { 
-        percent: progress.percent, 
+      watchProgress = {
+        percent: progress.percent,
         isWatched: progress.isWatched,
-        position: progress.position 
+        position: progress.position
       };
     } else {
       watchProgress = null;
     }
   }
 
+  // Build an episode-specific media id for series episodes
+  function buildEpisodeMediaId(ep: Episode): string | null {
+    if (!selected || selected.type !== 'series') return null;
+    if (!ep?.id) return null;
+    return `${selected.type}:${selected.id}:ep:${ep.id}`;
+  }
+
+  function getEpisodeProgress(ep: Episode) {
+    const mediaId = buildEpisodeMediaId(ep);
+    if (!mediaId) return null;
+    return watchProgressMap.get(mediaId) ?? null;
+  }
+
+  function isEpisodeWatched(ep: Episode): boolean {
+    return !!getEpisodeProgress(ep)?.isWatched;
+  }
+
+  function getEpisodePercent(ep: Episode): number {
+    return getEpisodeProgress(ep)?.percent ?? 0;
+  }
+
+  // Toggle watched status for movies (movie-level toggle)
   function toggleWatchedStatus() {
-    if (!browser || !selected) return;
-    const mediaId = `${selected.type}:${selected.id}`;
+    if (!browser || !selected || selected.type !== 'movie') return;
+    const baseId = buildBaseId(selected);
+    if (!baseId) return;
+    const preferredId = (() => {
+      const movie: any = selected;
+      if (movie.videoId) return `${baseId}:yt:${movie.videoId}`;
+      if (movie.vimeoId) return `${baseId}:vimeo:${movie.vimeoId}`;
+      return baseId;
+    })();
     const newStatus = !watchProgress?.isWatched;
-    setWatchedStatus(mediaId, selected.type, newStatus);
+    setWatchedStatus(preferredId, 'movie', newStatus);
     updateWatchProgress();
-    toast.message(newStatus ? 'Marked as watched' : 'Marked as unwatched');
+    toast.message(newStatus ? m.tv_markWatched() : m.tv_markUnwatched());
+  }
+
+  function toggleEpisodeWatched(ep: Episode) {
+    if (!browser || !selected || selected.type !== 'series') return;
+    const mediaId = buildEpisodeMediaId(ep);
+    if (!mediaId) return;
+    const existing = getEpisodeProgress(ep);
+    const nextStatus = existing ? !existing.isWatched : true;
+    setWatchedStatus(mediaId, 'episode', nextStatus, existing?.duration);
+    // Refresh any top-level progress view
+    updateWatchProgress();
+    toast.message(nextStatus ? 'Marked as watched' : 'Marked as unwatched');
   }
 
   function formatTime(seconds: number): string {
@@ -77,8 +195,15 @@
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
-  $: if (selected) {
+  let selectedProgressKey: string | null = null;
+
+  $: selectedProgressKey = selected ? `${selected.type}:${selected.id}:${selectedEpisode?.id ?? ''}` : null;
+
+  $: if (selectedProgressKey) {
     updateWatchProgress();
+  } else {
+    watchProgress = null;
+    watchProgressMap = new Map();
   }
 
   let progressPollInterval: ReturnType<typeof setInterval> | null = null;
@@ -311,23 +436,25 @@
           </div>
         {/if}
 
-        <!-- Watch Status Toggle -->
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all {watchProgress?.isWatched ? 'bg-green-700/20 text-green-400 active:bg-green-700/30 border border-green-600/40' : 'bg-gray-700/40 text-gray-300 active:bg-gray-700/60 border border-gray-600/40'}"
-            on:click={toggleWatchedStatus}
-            title={watchProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
-          >
-            {#if watchProgress?.isWatched}
-              <CheckIcon class="w-4 h-4" />
-              <span>Watched</span>
-            {:else}
-              <XIcon class="w-4 h-4" />
-              <span>Mark as watched</span>
-            {/if}
-          </button>
-        </div>
+        <!-- Watch Status Toggle (movies only). For series we provide per-episode toggles below. -->
+        {#if selected.type === 'movie'}
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all {watchProgress?.isWatched ? 'bg-green-700/20 text-green-400 active:bg-green-700/30 border border-green-600/40' : 'bg-gray-700/40 text-gray-300 active:bg-gray-700/60 border border-gray-600/40'}"
+              on:click={toggleWatchedStatus}
+              title={watchProgress?.isWatched ? m.tv_markUnwatched() : m.tv_markWatched()}
+            >
+              {#if watchProgress?.isWatched}
+                <CheckIcon class="w-4 h-4" />
+                <span>{m.tv_markUnwatched()}</span>
+              {:else}
+                <EyeIcon class="w-4 h-4" />
+                <span>{m.tv_markWatched()}</span>
+              {/if}
+            </button>
+          </div>
+        {/if}
 
         {#if selected.type === 'movie'}
           <div>
@@ -380,18 +507,47 @@
                     <li>
                       <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-white/10 transition text-left outline-none border-2 border-transparent focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-900/30 border-2 border-red-500/60' : ''}"
                         on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeasonNum)}>
-                        <div class="relative w-24 h-14 flex-shrink-0 overflow-hidden rounded">
+                        <div class="relative w-24 h-14 flex-shrink-0 overflow-hidden rounded {isEpisodeWatched(ep) ? 'opacity-60' : ''}">
                           {#if ep.thumbnail}
                             <img src={ep.thumbnail} alt={decode(ep.title)} class="w-full h-full object-cover" loading="lazy" decoding="async" />
                           {:else}
                             <div class="w-full h-full bg-gray-700"></div>
                           {/if}
+                          {#if isEpisodeWatched(ep)}
+                            <div class="absolute inset-0 bg-gray-900/65"></div>
+                          {:else if getEpisodePercent(ep) > 0}
+                            <div class="absolute inset-x-0 bottom-0 h-1 bg-gray-700/80">
+                              <div class="h-full bg-red-500" style:width={`${Math.min(100, Math.round(getEpisodePercent(ep)))}%`}></div>
+                            </div>
+                          {/if}
                         </div>
                         <div class="flex-1 min-w-0">
                           <div class="text-[13px] text-gray-400">Ep {ep.position}</div>
-                          <div class="text-base text-gray-100 truncate">{decode(ep.title)}</div>
+                          <div class="text-base text-gray-100 truncate {isEpisodeWatched(ep) ? 'opacity-60' : ''}">{decode(ep.title)}</div>
                         </div>
-                        
+                        <div class="ml-auto flex items-center">
+                          <span
+                            role="button"
+                            tabindex="0"
+                            class="inline-flex items-center gap-1 rounded-md border border-gray-600/40 px-2 py-1 text-xs font-medium text-gray-300 hover:bg-gray-700/60"
+                            on:click|stopPropagation={() => toggleEpisodeWatched(ep)}
+                            on:keydown|stopPropagation={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                toggleEpisodeWatched(ep);
+                              }
+                            }}
+                            title={isEpisodeWatched(ep) ? m.tv_markUnwatched() : m.tv_markWatched()}
+                          >
+                            {#if isEpisodeWatched(ep)}
+                              <CheckIcon class="w-3.5 h-3.5" />
+                              <span>{m.tv_markUnwatched()}</span>
+                            {:else}
+                              <EyeIcon class="w-3.5 h-3.5" />
+                              <span>{m.tv_markWatched()}</span>
+                            {/if}
+                          </span>
+                        </div>
                       </button>
                     </li>
                   {/each}

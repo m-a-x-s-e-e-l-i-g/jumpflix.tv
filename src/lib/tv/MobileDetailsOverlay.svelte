@@ -77,6 +77,23 @@
     if (candidateTime < currentTime) return current;
     return candidate.percent > current.percent ? candidate : current;
   }
+
+  function applyProgressUpdate(entry: WatchProgress | null) {
+    if (!entry) return;
+    const nextMap = new Map(watchProgressMap);
+    nextMap.set(entry.mediaId, entry);
+    watchProgressMap = nextMap;
+
+    const baseId = buildBaseId(selected);
+    if (!baseId) return;
+    const matchesSelected = entry.mediaId === baseId || entry.mediaId.startsWith(`${baseId}:`);
+    if (!matchesSelected) return;
+    watchProgress = {
+      percent: entry.percent,
+      isWatched: entry.isWatched,
+      position: entry.position
+    };
+  }
   
   function updateWatchProgress() {
     if (!browser || !selected) {
@@ -168,7 +185,8 @@
       return baseId;
     })();
     const newStatus = !watchProgress?.isWatched;
-    setWatchedStatus(preferredId, 'movie', newStatus);
+    const progress = setWatchedStatus(preferredId, 'movie', newStatus);
+    applyProgressUpdate(progress);
     updateWatchProgress();
     toast.message(newStatus ? m.tv_markWatched() : m.tv_markUnwatched());
   }
@@ -179,7 +197,8 @@
     if (!mediaId) return;
     const existing = getEpisodeProgress(ep);
     const nextStatus = existing ? !existing.isWatched : true;
-    setWatchedStatus(mediaId, 'episode', nextStatus, existing?.duration);
+    const progress = setWatchedStatus(mediaId, 'episode', nextStatus, existing?.duration);
+    applyProgressUpdate(progress);
     // Refresh any top-level progress view
     updateWatchProgress();
     toast.message(nextStatus ? 'Marked as watched' : 'Marked as unwatched');

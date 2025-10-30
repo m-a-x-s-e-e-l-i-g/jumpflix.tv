@@ -15,8 +15,6 @@
   import { decode } from 'html-entities';
   import { showPlayer } from '$lib/tv/store';
   import {
-    getWatchProgress,
-    getLatestWatchProgressByBaseId,
     getAllWatchProgress,
     setWatchedStatus
   } from '$lib/tv/watchHistory';
@@ -62,6 +60,38 @@
     return `${item.type}:${item.id}`;
   }
 
+  function parseWatchedAt(value: string | undefined | null): number {
+    if (!value) return 0;
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
+
+  function pickLatestProgress(current: WatchProgress | null, candidate: WatchProgress): WatchProgress {
+    if (!current) return candidate;
+    const currentTime = parseWatchedAt(current.watchedAt);
+    const candidateTime = parseWatchedAt(candidate.watchedAt);
+    if (candidateTime > currentTime) return candidate;
+    if (candidateTime < currentTime) return current;
+    return candidate.percent > current.percent ? candidate : current;
+  }
+
+  function applyProgressUpdate(entry: WatchProgress | null) {
+    if (!entry) return;
+    const nextMap = new Map(watchProgressMap);
+    nextMap.set(entry.mediaId, entry);
+    watchProgressMap = nextMap;
+
+    const baseId = buildBaseId(selected);
+    if (!baseId) return;
+    const matchesSelected = entry.mediaId === baseId || entry.mediaId.startsWith(`${baseId}:`);
+    if (!matchesSelected) return;
+    watchProgress = {
+      percent: entry.percent,
+      isWatched: entry.isWatched,
+      position: entry.position
+    };
+  }
+
   function getWatchProgressForSelected(): void {
     if (!browser || !selected) {
       watchProgress = null;
@@ -89,14 +119,19 @@
       candidateIds.push(`${baseId}:ep:${selectedEpisode.id}`);
     }
 
-    let progress: ReturnType<typeof getWatchProgress> | null = null;
+    let progress: WatchProgress | null = null;
     for (const id of candidateIds) {
-      progress = getWatchProgress(id);
+      progress = watchProgressMap.get(id) ?? null;
       if (progress) break;
     }
 
     if (!progress) {
-      progress = getLatestWatchProgressByBaseId(baseId);
+      const basePrefix = `${baseId}:`;
+      for (const entry of watchProgressMap.values()) {
+        if (entry.mediaId === baseId || entry.mediaId.startsWith(basePrefix)) {
+          progress = pickLatestProgress(progress, entry);
+        }
+      }
     }
 
     if (progress) {
@@ -123,7 +158,8 @@
     })();
 
     const newStatus = !watchProgress?.isWatched;
-    setWatchedStatus(preferredId, 'movie', newStatus);
+    const progress = setWatchedStatus(preferredId, 'movie', newStatus);
+    applyProgressUpdate(progress);
     getWatchProgressForSelected();
     toast.message(newStatus ? m.tv_markWatched() : m.tv_markUnwatched());
   }
@@ -154,7 +190,8 @@
     if (!mediaId) return;
     const existing = getEpisodeProgress(ep);
     const nextStatus = existing ? !existing.isWatched : true;
-    setWatchedStatus(mediaId, 'episode', nextStatus, existing?.duration);
+    const progress = setWatchedStatus(mediaId, 'episode', nextStatus, existing?.duration);
+    applyProgressUpdate(progress);
     getWatchProgressForSelected();
     toast.message(nextStatus ? m.tv_markWatched() : m.tv_markUnwatched());
   }

@@ -376,7 +376,7 @@
 	<meta name="robots" content="index, follow, max-image-preview:large" />
 	<meta name="theme-color" content="#0b1220" />
 	<!-- PWA: iOS/Apple support -->
-	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 	<meta name="apple-mobile-web-app-title" content="JUMPFLIX" />
 	<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -424,13 +424,12 @@
 			class="absolute top-4 left-4 z-[var(--z-index-settings)]"
 			class:hidden={$showDetailsPanel && isMobile}
 		>
-			<SheetTrigger aria-label={m.settings_open()}>
-				<button
-					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-				>
-					<CogIcon class="size-5" />
-					<span class="sr-only">{m.settings_open()}</span>
-				</button>
+			<SheetTrigger 
+				aria-label={m.settings_open()}
+				class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+			>
+				<CogIcon class="size-5" />
+				<span class="sr-only">{m.settings_open()}</span>
 			</SheetTrigger>
 		</div>
 

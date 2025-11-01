@@ -29,13 +29,19 @@
 		type ScrollSubscriber,
 		type ScrollSubscription
 	} from '$lib/scroll-context';
+	import type { ContentItem } from '$lib/tv/types';
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
 
 	// data from +layout.ts
 	let { children, data } = $props<{
 		children: any;
-		data: { item: any; initialEpisodeNumber: number | null; initialSeasonNumber: number | null };
+		data: {
+			content?: ContentItem[];
+			item: ContentItem | null;
+			initialEpisodeNumber: number | null;
+			initialSeasonNumber: number | null;
+		};
 	}>();
 
 	let isMobile = $state(false);
@@ -55,6 +61,7 @@
 			scrollSubscribers.delete(subscriber);
 		};
 	};
+
 
 	setContext(SCROLL_CONTEXT_KEY, subscribeToScroll);
 
@@ -514,6 +521,7 @@
 			{@render children?.()}
 		{:else}
 			<TvPage
+				content={data?.content ?? []}
 				initialItem={data?.item ?? null}
 				initialEpisodeNumber={data?.initialEpisodeNumber ?? null}
 				initialSeasonNumber={data?.initialSeasonNumber ?? null}

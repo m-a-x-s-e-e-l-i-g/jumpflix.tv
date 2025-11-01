@@ -4,4 +4,7 @@
 declare module "$env/static/private" {
   export const TELEGRAM_BOT_TOKEN: string;
   export const TELEGRAM_CHANNEL_ID: string;
+  export const SUPABASE_URL: string;
+  export const SUPABASE_SERVICE_ROLE_KEY: string;
+  export const SUPABASE_ANON_KEY: string;
 }

@@ -28,7 +28,7 @@
   const selectClass = 'tv-search-select';
 </script>
 
-<div id="search" class="relative z-10 mx-auto mt-30 w-full max-w-5xl">
+<div id="tv-search-controls" class="relative z-10 mx-auto mt-30 w-full max-w-5xl">
   <div class={containerClass}>
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
       <form class="relative flex-1 min-w-[260px] group" on:submit|preventDefault>

@@ -1,13 +1,12 @@
 import { writable, derived, type Readable, get } from 'svelte/store';
-import { movies } from '$lib/assets/movies';
-import { series } from '$lib/assets/series';
 import type { ContentItem, Episode, SortBy } from './types';
 import { buildRankMap, filterAndSortContent, isInlinePlayable, keyFor } from './utils';
 
-// Base data (static for now)
+// Base data (loaded at runtime)
 const seed = new Date().toISOString().slice(0, 10);
-export const allContent: ContentItem[] = ([...(movies as any), ...(series as any)] as ContentItem[]);
-const rankMap = buildRankMap(allContent, seed);
+const baseContent = writable<ContentItem[]>([]);
+const rankMapStore = derived(baseContent, ($content) => buildRankMap($content, seed));
+export const allContent = derived(baseContent, ($content) => $content);
 
 // UI state stores
 export const searchQuery = writable('');
@@ -43,17 +42,18 @@ const debouncedSearch = debounceStore(searchQuery, 160);
 
 // Derived filtered + sorted content
 export const visibleContent = derived(
-  [debouncedSearch, showPaid, sortBy],
-  ([$search, $showPaid, $sortBy]) => filterAndSortContent(allContent, rankMap, {
-    searchQuery: $search,
-    showPaid: $showPaid,
-    sortBy: $sortBy
-  })
+  [baseContent, rankMapStore, debouncedSearch, showPaid, sortBy],
+  ([$content, $rankMap, $search, $showPaid, $sortBy]) =>
+    filterAndSortContent($content, $rankMap, {
+      searchQuery: $search,
+      showPaid: $showPaid,
+      sortBy: $sortBy
+    })
 );
 
 // All items, only sorted (no filtering). Useful to keep DOM stable by hiding non-matching items.
-export const sortedAllContent = derived([sortBy], ([$sortBy]) =>
-  filterAndSortContent(allContent, rankMap, {
+export const sortedAllContent = derived([baseContent, rankMapStore, sortBy], ([$content, $rankMap, $sortBy]) =>
+  filterAndSortContent($content, $rankMap, {
     searchQuery: '',
     showPaid: true,
     sortBy: $sortBy
@@ -92,7 +92,7 @@ visibleContent.subscribe((list) => {
 export function selectContent(item: ContentItem) {
   selectedContent.set(item);
   // IMPORTANT: Use the current visibleContent ordering (which can be filtered & sorted)
-  // rather than the original allContent ordering. Using allContent caused keyboard
+  // rather than the full catalog ordering. Using the full list caused keyboard
   // navigation to "jump" after clicking a card because selectedIndex did not match
   // the position within the displayed grid.
   let currentList: ContentItem[] = [];
@@ -142,5 +142,9 @@ export function closeDetailsPanel() { showDetailsPanel.set(false); }
 
 // Helper to update sort
 export function setSort(value: SortBy) { sortBy.set(value); }
+
+export function setContent(items: ContentItem[]) {
+  baseContent.set(items);
+}
 
 

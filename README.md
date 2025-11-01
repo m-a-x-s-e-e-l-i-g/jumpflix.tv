@@ -45,18 +45,20 @@ The goal: an elegant, fast, mobile‑friendly discovery hub honoring the culture
 | UI Bits | `bits-ui`, custom small components |
 | i18n | `@inlang/paraglide-js` (messages generated from `/messages/*.json`) |
 | Tooling | Vite, TypeScript, ESLint, Prettier, svelte-check |
-| Content | Curated static arrays (`movies.ts`, `series.ts`) |
+| Content | Supabase (PostgreSQL) |
 
 ## 🗂 Directory Glimpse
 
 ```text
 src/
   lib/
-  assets/        # Static curated movie & series data
+    server/        # Supabase client + content service
     tv/            # TV page components, store, types & utils
     paraglide/     # Generated i18n runtime (do not edit manually)
   routes/
     +page.svelte   # Main TV experience
+supabase/          # SQL schema for Supabase project
+scripts/           # Seed & utility scripts (blurhash, favicons, sitemap)
 messages/          # Source translation JSON (en, nl)
 project.inlang/    # Paraglide project settings
 ```
@@ -97,6 +99,27 @@ npm run build
 npm run preview   # locally preview built output
 ```
 
+## 🗄 Supabase Setup
+
+The app expects content to come from Supabase. Create a Supabase project, then:
+
+1. Apply the schema in `supabase/schema.sql` (Supabase SQL editor or CLI).
+2. Generate service and anon keys under Project Settings → API.
+3. Copy values into environment variables (see `.env.example` guidance below).
+4. Seed the catalog by running the script once the tables exist.
+
+### Environment variables
+
+Create a `.env` (or populate your deployment provider) with:
+
+```bash
+SUPABASE_URL="https://YOUR-PROJECT.supabase.co"
+SUPABASE_ANON_KEY="public-anon-key"
+SUPABASE_SERVICE_ROLE_KEY="service-role-key" # server-only
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` must never ship to the browser—it's reserved for privileged server-side operations.
+
 ## 🌐 Internationalization (Paraglide)
 
 Messages live in `/messages/{locale}.json`. Paraglide generates runtime modules into `src/lib/paraglide/` at build/dev time via the Vite plugin. Add a locale:
@@ -114,6 +137,7 @@ Defined in `src/lib/tv/types.ts`:
 interface Movie { id: number|string; title: string; year?: string; duration?: string; videoId?: string; vimeoId?: string; /* ... */ }
 interface Series { id: number|string; title: string; playlistId?: string; videoCount?: number; /* ... */ }
 ```
+
 Helper utilities (`utils.ts`) provide deterministic shuffling, sorting, search matching, and embed URL builders.
 
 ## 🎮 Keyboard Shortcuts

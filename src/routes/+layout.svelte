@@ -29,13 +29,19 @@
 		type ScrollSubscriber,
 		type ScrollSubscription
 	} from '$lib/scroll-context';
+	import type { ContentItem } from '$lib/tv/types';
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
 
 	// data from +layout.ts
 	let { children, data } = $props<{
 		children: any;
-		data: { item: any; initialEpisodeNumber: number | null; initialSeasonNumber: number | null };
+		data: {
+			content?: ContentItem[];
+			item: ContentItem | null;
+			initialEpisodeNumber: number | null;
+			initialSeasonNumber: number | null;
+		};
 	}>();
 
 	let isMobile = $state(false);
@@ -55,6 +61,7 @@
 			scrollSubscribers.delete(subscriber);
 		};
 	};
+
 
 	setContext(SCROLL_CONTEXT_KEY, subscribeToScroll);
 
@@ -369,7 +376,7 @@
 	<meta name="robots" content="index, follow, max-image-preview:large" />
 	<meta name="theme-color" content="#0b1220" />
 	<!-- PWA: iOS/Apple support -->
-	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 	<meta name="apple-mobile-web-app-title" content="JUMPFLIX" />
 	<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -417,13 +424,12 @@
 			class="absolute top-4 left-4 z-[var(--z-index-settings)]"
 			class:hidden={$showDetailsPanel && isMobile}
 		>
-			<SheetTrigger aria-label={m.settings_open()}>
-				<button
-					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-				>
-					<CogIcon class="size-5" />
-					<span class="sr-only">{m.settings_open()}</span>
-				</button>
+			<SheetTrigger 
+				aria-label={m.settings_open()}
+				class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+			>
+				<CogIcon class="size-5" />
+				<span class="sr-only">{m.settings_open()}</span>
 			</SheetTrigger>
 		</div>
 
@@ -514,6 +520,7 @@
 			{@render children?.()}
 		{:else}
 			<TvPage
+				content={data?.content ?? []}
 				initialItem={data?.item ?? null}
 				initialEpisodeNumber={data?.initialEpisodeNumber ?? null}
 				initialSeasonNumber={data?.initialSeasonNumber ?? null}
@@ -523,7 +530,7 @@
 	{/key}
 
 	<!-- Global toast container -->
-	<Toaster richColors position="bottom-center" />
+	<Toaster richColors position="bottom-center" theme="dark" />
 
 	<!-- Global PWA install prompt (auto-managed, suppressed after dismissal for 2 weeks) -->
 	<PWAInstallPrompt />

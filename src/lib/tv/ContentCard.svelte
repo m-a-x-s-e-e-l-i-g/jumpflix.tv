@@ -3,7 +3,6 @@
   import { isImage } from './utils';
   import { Image } from '@unpic/svelte';
   import { blurhashToCssGradientString } from '@unpic/placeholder';
-  import { posterBlurhash } from '$lib/assets/blurhash';
   import { dev } from '$app/environment';
   import { loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
 
@@ -15,7 +14,7 @@
   export let priority = false;
 
   let error = false;
-  $: blurhash = item.blurhash || (item.thumbnail ? posterBlurhash[item.thumbnail] : undefined);
+  $: blurhash = item.blurhash;
   $: background = blurhash ? blurhashToCssGradientString(blurhash) : undefined;
 
   $: altSuffix = item.type === 'movie' ? ' poster' : ' thumbnail';

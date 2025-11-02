@@ -530,7 +530,7 @@
 	{/key}
 
 	<!-- Global toast container -->
-	<Toaster richColors position="bottom-center" />
+	<Toaster richColors position="bottom-center" theme="dark" />
 
 	<!-- Global PWA install prompt (auto-managed, suppressed after dismissal for 2 weeks) -->
 	<PWAInstallPrompt />

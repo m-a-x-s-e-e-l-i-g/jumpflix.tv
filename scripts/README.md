@@ -4,7 +4,7 @@ Interactive command-line tool for managing movies, series, and episodes in your 
 
 ## Setup
 
-1. **Create `.env.local` file** with your Supabase credentials:
+1. **Create `.env` file** with your Supabase credentials:
 
 ```bash
 PUBLIC_SUPABASE_URL=https://your-project.supabase.co
@@ -96,6 +96,6 @@ Remove content from your database (cascades to seasons/episodes)
 
 ## Security
 
-⚠️ This tool is meant for **local admin use only**. Never commit your `.env.local` file or expose your service role key.
+⚠️ This tool is meant for **local admin use only**. Never commit your `.env` file or expose your service role key.
 
-The `.env.local` file is already in `.gitignore` to prevent accidental commits.
+The `.env` file is already in `.gitignore` to prevent accidental commits.

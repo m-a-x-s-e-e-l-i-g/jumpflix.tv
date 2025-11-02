@@ -24,6 +24,7 @@
 	import TvPage from '$lib/tv/TvPage.svelte';
 	import { showDetailsPanel } from '$lib/tv/store';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
+	import UserProfileButton from '$lib/components/UserProfileButton.svelte';
 	import {
 		SCROLL_CONTEXT_KEY,
 		type ScrollSubscriber,
@@ -414,7 +415,7 @@
 	<!-- Top-left settings cog that opens a left-side sheet -->
 	<SheetRoot bind:open={sheetOpen}>
 		<div
-			class="absolute top-4 left-4 z-[var(--z-index-settings)]"
+			class="absolute top-4 left-4 z-[var(--z-index-settings)] flex gap-2"
 			class:hidden={$showDetailsPanel && isMobile}
 		>
 			<SheetTrigger aria-label={m.settings_open()}>
@@ -425,6 +426,8 @@
 					<span class="sr-only">{m.settings_open()}</span>
 				</button>
 			</SheetTrigger>
+			
+			<UserProfileButton />
 		</div>
 
 		<SheetContent side="left" class="flex h-full flex-col p-0">

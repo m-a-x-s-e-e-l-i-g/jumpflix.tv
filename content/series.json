@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "title": "Example Series",
+    "description": "An amazing series about...",
+    "thumbnail": "/images/posters/example-series.jpg",
+    "paid": false,
+    "provider": "YouTube",
+    "externalUrl": null,
+    "creators": ["Creator Name"],
+    "starring": ["Star 1", "Star 2"],
+    "videoCount": 10,
+    "seasons": [
+      {
+        "seasonNumber": 1,
+        "playlistId": "PLxxxxxxxxxxxxxxxxx"
+      }
+    ]
+  }
+]

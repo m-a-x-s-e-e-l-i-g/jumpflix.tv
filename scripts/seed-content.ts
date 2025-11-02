@@ -1,11 +1,16 @@
 #!/usr/bin/env tsx
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
-import { movies } from '../src/lib/assets/movies';
-import { series } from '../src/lib/assets/series';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { posterBlurhash } from '../src/lib/assets/blurhash';
 import { slugify } from '../src/lib/tv/slug';
 import { fetchYouTubePlaylistEpisodes } from '../src/lib/tv/episodes';
+
+// Load content from JSON files
+const contentDir = join(process.cwd(), 'content');
+const movies = JSON.parse(readFileSync(join(contentDir, 'movies.json'), 'utf-8'));
+const series = JSON.parse(readFileSync(join(contentDir, 'series.json'), 'utf-8'));
 
 type MediaItemRow = {
   id: number;

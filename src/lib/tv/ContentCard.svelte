@@ -6,7 +6,7 @@
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { dev } from '$app/environment';
   import { loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
-  import { getWatchProgress, getLatestWatchProgressByBaseId } from '$lib/tv/watchHistory';
+  import { getWatchProgress, getLatestWatchProgressByBaseId, getAllWatchProgress } from '$lib/tv/watchHistory';
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
 
@@ -39,6 +39,59 @@
       return;
     }
 
+    // For series, check if ALL episodes are watched
+    if (item.type === 'series') {
+      const series = item as any;
+      const allProgressArray = getAllWatchProgress();
+      
+      // Collect all episode progress for this series
+      const episodeProgressMap = new Map<string, { percent: number; isWatched: boolean }>();
+      
+      for (const progress of allProgressArray) {
+        if (progress.mediaId.startsWith(`${baseId}:ep:`)) {
+          episodeProgressMap.set(progress.mediaId, {
+            percent: progress.percent,
+            isWatched: progress.isWatched
+          });
+        }
+      }
+      
+      const episodeCount = episodeProgressMap.size;
+      
+      // If no episodes have been tracked yet, show no progress
+      if (episodeCount === 0) {
+        watchProgress = null;
+        return;
+      }
+      
+      // Count watched episodes and calculate average progress
+      let watchedEpisodes = 0;
+      let totalProgress = 0;
+      
+      for (const ep of episodeProgressMap.values()) {
+        if (ep.isWatched) {
+          watchedEpisodes++;
+        }
+        totalProgress += ep.percent;
+      }
+      
+      // Calculate average progress across tracked episodes
+      const avgPercent = totalProgress / episodeCount;
+      
+      // For series, we consider it "watched" only if ALL tracked episodes are marked as watched
+      // Note: Since we don't have metadata about total episode count from the database,
+      // we can only work with episodes that have been started/tracked.
+      // A series is fully watched when all episodes that have progress are marked watched.
+      const allWatched = watchedEpisodes === episodeCount;
+      
+      watchProgress = {
+        percent: avgPercent,
+        isWatched: allWatched
+      };
+      return;
+    }
+
+    // For movies, use existing logic
     const candidateIds: string[] = [];
     if (item.type === 'movie') {
       const movie = item as any;

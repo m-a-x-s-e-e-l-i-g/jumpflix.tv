@@ -7,6 +7,7 @@
 
   export let searchQuery: Writable<string>;
   export let showPaid: Writable<boolean>;
+  export let showWatched: Writable<boolean>;
   export let sortBy: Writable<SortBy>;
 
   function clearSearch() {
@@ -71,7 +72,16 @@
             ariaLabel={m.tv_showPaid()}
             on:change={(event) => showPaid.set(event.detail)}
           />
-  </label>
+        </label>
+
+        <label class={labelClass}>
+          <span>{m.tv_showWatched()}</span>
+          <Switch
+            checked={$showWatched}
+            ariaLabel={m.tv_showWatched()}
+            on:change={(event) => showWatched.set(event.detail)}
+          />
+        </label>
 
         <div class="relative min-w-[170px]">
           <select

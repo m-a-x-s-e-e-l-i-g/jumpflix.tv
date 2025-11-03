@@ -6,6 +6,9 @@
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { dev } from '$app/environment';
   import { loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
+  import { getWatchProgress, getLatestWatchProgressByBaseId } from '$lib/tv/watchHistory';
+  import { browser } from '$app/environment';
+  import { onMount } from 'svelte';
 
   export let item: ContentItem;
   export let isSelected = false;
@@ -19,6 +22,79 @@
   $: background = blurhash ? blurhashToCssGradientString(blurhash) : undefined;
 
   $: altSuffix = item.type === 'movie' ? ' poster' : ' thumbnail';
+
+  // Watch progress tracking
+  let watchProgress: { percent: number; isWatched: boolean } | null = null;
+  
+  function buildBaseId(content: ContentItem | null): string | null {
+    if (!content) return null;
+    return `${content.type}:${content.id}`;
+  }
+
+  function updateWatchProgress() {
+    if (!browser) return;
+    const baseId = buildBaseId(item);
+    if (!baseId) {
+      watchProgress = null;
+      return;
+    }
+
+    const candidateIds: string[] = [];
+    if (item.type === 'movie') {
+      const movie = item as any;
+      if (movie.videoId) candidateIds.push(`${baseId}:yt:${movie.videoId}`);
+      if (movie.vimeoId) candidateIds.push(`${baseId}:vimeo:${movie.vimeoId}`);
+    }
+
+    let progress: ReturnType<typeof getWatchProgress> | null = null;
+    for (const id of candidateIds) {
+      progress = getWatchProgress(id);
+      if (progress) break;
+    }
+
+    if (!progress) {
+      progress = getLatestWatchProgressByBaseId(baseId);
+    }
+
+    if (progress) {
+      watchProgress = { percent: progress.percent, isWatched: progress.isWatched };
+    } else {
+      watchProgress = null;
+    }
+  }
+
+  onMount(() => {
+    updateWatchProgress();
+    
+    // Update when localStorage changes (from other tabs)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'jumpflix-watch-history' || e.key === null) {
+        updateWatchProgress();
+      }
+    };
+    
+    // Update when progress changes in the same tab
+    const handleProgressChange = () => {
+      updateWatchProgress();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('jumpflix-progress-change', handleProgressChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('jumpflix-progress-change', handleProgressChange);
+    };
+  });
+
+  // React to item changes
+  $: if (browser && item) {
+    updateWatchProgress();
+  }
+
+  $: isWatched = watchProgress?.isWatched || false;
+  $: progressPercent = watchProgress?.percent || 0;
+  $: hasProgress = !isWatched && progressPercent > 0 && progressPercent < 85;
 
   // no loading lifecycle needed
 
@@ -34,7 +110,7 @@
   $: alreadyLoaded = item.thumbnail ? $loadedThumbnails.has(item.thumbnail) : false;
   $: if (alreadyLoaded) loaded = true;
   $: imageOpacityClass = loaded ? 'opacity-100' : 'opacity-0';
-  $: baseImageClass = 'relative inset-0 w-full h-full object-cover z-10 transition-opacity duration-500 ease-out';
+  $: baseImageClass = `relative inset-0 w-full h-full object-cover z-10 transition-opacity duration-500 ease-out ${isWatched ? 'opacity-30' : ''}`;
 </script>
 
 <div 
@@ -89,9 +165,17 @@
       />
     {/if}
 
+    <!-- Watched dimming overlay -->
+    {#if isWatched}
+      <div class="absolute inset-0 bg-black/80 z-10 pointer-events-none"></div>
+    {/if}
+
     <div class="absolute top-2 left-2 flex gap-2 z-20">
       {#if item.paid}
         <span class="bg-yellow-500 text-black px-2 py-1 rounded text-[10px] font-bold">PAID</span>
+      {/if}
+      {#if isWatched}
+        <span class="bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold">WATCHED</span>
       {/if}
     </div>
 
@@ -103,5 +187,12 @@
         {(item as any).videoCount || '?'} eps
       {/if}
     </div>
+
+    <!-- Progress bar at bottom -->
+    {#if hasProgress}
+      <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-700/80 z-20">
+        <div class="h-full bg-red-500 transition-all duration-300" style:width="{progressPercent}%"></div>
+      </div>
+    {/if}
   </div>
 </div>

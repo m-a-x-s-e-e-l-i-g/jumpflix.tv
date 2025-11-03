@@ -1,8 +1,10 @@
 import { writable, derived, type Readable, get } from 'svelte/store';
+import { browser } from '$app/environment';
 import { movies } from '$lib/assets/movies';
 import { series } from '$lib/assets/series';
 import type { ContentItem, Episode, SortBy } from './types';
 import { buildRankMap, filterAndSortContent, isInlinePlayable, keyFor } from './utils';
+import { getAllWatchProgress, type WatchProgress } from '$lib/tv/watchHistory';
 
 // Base data (static for now)
 const seed = new Date().toISOString().slice(0, 10);
@@ -13,6 +15,7 @@ const rankMap = buildRankMap(allContent, seed);
 export const searchQuery = writable('');
 export const showPaid = writable(true);
 export const sortBy = writable<SortBy>('default');
+export const showWatched = writable(true);
 export const selectedContent = writable<ContentItem | null>(null);
 export const showPlayer = writable(false);
 export const showDetailsPanel = writable(false);
@@ -32,6 +35,49 @@ export function markThumbnailLoaded(src?: string) {
   });
 }
 
+const watchedBaseIds = writable<Set<string>>(new Set());
+
+function baseIdFromMediaId(mediaId: string): string {
+  if (!mediaId) return mediaId;
+  const first = mediaId.indexOf(':');
+  if (first === -1) return mediaId;
+  const second = mediaId.indexOf(':', first + 1);
+  if (second === -1) return mediaId;
+  return mediaId.slice(0, second);
+}
+
+function shouldCountAsWatched(progress: WatchProgress): boolean {
+  if (!progress.isWatched) return false;
+  if (progress.type === 'episode') return false;
+  return true;
+}
+
+function refreshWatchedBaseIds() {
+  if (!browser) return;
+  const entries = getAllWatchProgress();
+  const next = new Set<string>();
+  for (const entry of entries) {
+    if (!shouldCountAsWatched(entry)) continue;
+    const baseId = baseIdFromMediaId(entry.mediaId);
+    if (baseId) {
+      next.add(baseId);
+    }
+  }
+  watchedBaseIds.set(next);
+}
+
+if (browser) {
+  refreshWatchedBaseIds();
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === 'jumpflix-watch-history') {
+      refreshWatchedBaseIds();
+    }
+  };
+  const handleProgressChange = () => refreshWatchedBaseIds();
+  window.addEventListener('storage', handleStorage);
+  window.addEventListener('jumpflix-progress-change', handleProgressChange);
+}
+
 // Debounced search to avoid filtering on every keystroke
 function debounceStore<T>(src: Readable<T>, delay = 150): Readable<T> {
   return derived(src, ($v, set) => {
@@ -43,12 +89,15 @@ const debouncedSearch = debounceStore(searchQuery, 160);
 
 // Derived filtered + sorted content
 export const visibleContent = derived(
-  [debouncedSearch, showPaid, sortBy],
-  ([$search, $showPaid, $sortBy]) => filterAndSortContent(allContent, rankMap, {
-    searchQuery: $search,
-    showPaid: $showPaid,
-    sortBy: $sortBy
-  })
+  [debouncedSearch, showPaid, sortBy, showWatched, watchedBaseIds],
+  ([$search, $showPaid, $sortBy, $showWatched, $watchedBaseIds]) =>
+    filterAndSortContent(allContent, rankMap, {
+      searchQuery: $search,
+      showPaid: $showPaid,
+      sortBy: $sortBy,
+      showWatched: $showWatched,
+      watchedBaseIds: $watchedBaseIds
+    })
 );
 
 // All items, only sorted (no filtering). Useful to keep DOM stable by hiding non-matching items.

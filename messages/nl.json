@@ -18,6 +18,7 @@
 	"tv_playlistBadge": "Afspeellijst",
 	"tv_noResults": "Geen resultaten. Pas filters aan.",
 	"tv_showPaid": "Betaald",
+	"tv_showWatched": "bekeken",
 	"tv_close": "Sluiten",
 	"tv_noPlayer": "Geen speler beschikbaar"
 	,"tv_sort_random": "Sorteren: Willekeurig"
@@ -70,4 +71,6 @@
 	,"submit_film_error_network": "Netwerkfout. Probeer het opnieuw."
 	,"submit_film_close": "Dialoog sluiten"
 	,"submit_film_success": "Bedankt voor je inzending!"
+	,"tv_markWatched": "Markeren als bekeken"
+	,"tv_markUnwatched": "Markeren als onbekeken"
 }

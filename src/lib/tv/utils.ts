@@ -87,7 +87,14 @@ export function matchesSearch(item: ContentItem, q: string): boolean {
 export function filterAndSortContent(all: ContentItem[], rankMap: Map<string, number>, state: TvState): ContentItem[] {
   const filtered = all
     .filter(item => state.showPaid ? true : !item.paid)
-    .filter(item => matchesSearch(item, state.searchQuery));
+    .filter(item => matchesSearch(item, state.searchQuery))
+    .filter(item => {
+      const includeWatched = state.showWatched ?? true;
+      if (includeWatched) return true;
+      const watchedSet = state.watchedBaseIds;
+      if (!watchedSet || watchedSet.size === 0) return true;
+      return !watchedSet.has(keyFor(item));
+    });
 
   const sorted = [...filtered];
   switch (state.sortBy) {

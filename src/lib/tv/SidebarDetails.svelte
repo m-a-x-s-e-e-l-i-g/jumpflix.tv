@@ -6,12 +6,20 @@
   import { toast } from 'svelte-sonner';
   import * as Select from "$lib/components/ui/select/index.js";
   import Link2Icon from '@lucide/svelte/icons/link-2';
+  import CheckIcon from '@lucide/svelte/icons/check';
+  import EyeIcon from '@lucide/svelte/icons/eye';
   import * as m from '$lib/paraglide/messages';  
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { fade } from 'svelte/transition';
   import { decode } from 'html-entities';
   import { showPlayer } from '$lib/tv/store';
+  import {
+    getAllWatchProgress,
+    setWatchedStatus
+  } from '$lib/tv/watchHistory';
+  import type { WatchProgress } from '$lib/tv/watchHistory';
+  import { onMount } from 'svelte';
   export let selected: ContentItem | null;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
@@ -28,6 +36,143 @@
   let showAllCreators = false;
   let showAllStarring = false;
   const MAX_NAMES = 8; // number of names to show before collapsing
+
+  // Watch progress tracking
+  let watchProgress: { percent: number; isWatched: boolean; position: number } | null = null;
+  let watchProgressMap: Map<string, WatchProgress> = new Map();
+
+  function refreshWatchProgressMap() {
+    if (!browser) {
+      watchProgressMap = new Map();
+      return;
+    }
+    const entries = getAllWatchProgress();
+    const next = new Map<string, WatchProgress>();
+    for (const entry of entries) {
+      next.set(entry.mediaId, entry);
+    }
+    watchProgressMap = next;
+  }
+
+  function buildBaseId(item: ContentItem | null): string | null {
+    if (!item) return null;
+    return `${item.type}:${item.id}`;
+  }
+
+  function parseWatchedAt(value: string | undefined | null): number {
+    if (!value) return 0;
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
+
+  function pickLatestProgress(current: WatchProgress | null, candidate: WatchProgress): WatchProgress {
+    if (!current) return candidate;
+    const currentTime = parseWatchedAt(current.watchedAt);
+    const candidateTime = parseWatchedAt(candidate.watchedAt);
+    if (candidateTime > currentTime) return candidate;
+    if (candidateTime < currentTime) return current;
+    return candidate.percent > current.percent ? candidate : current;
+  }
+
+  function getWatchProgressForSelected(): void {
+    if (!browser || !selected) {
+      watchProgress = null;
+      watchProgressMap = new Map();
+      return;
+    }
+
+    refreshWatchProgressMap();
+
+    const baseId = buildBaseId(selected);
+    if (!baseId) {
+      watchProgress = null;
+      return;
+    }
+
+    const candidateIds: string[] = [];
+
+    if (selected.type === 'movie') {
+      const movie = selected as any;
+      if (movie.videoId) candidateIds.push(`${baseId}:yt:${movie.videoId}`);
+      if (movie.vimeoId) candidateIds.push(`${baseId}:vimeo:${movie.vimeoId}`);
+    }
+
+    if (selected.type === 'series' && selectedEpisode?.id) {
+      candidateIds.push(`${baseId}:ep:${selectedEpisode.id}`);
+    }
+
+    let progress: WatchProgress | null = null;
+    for (const id of candidateIds) {
+      progress = watchProgressMap.get(id) ?? null;
+      if (progress) break;
+    }
+
+    if (!progress) {
+      const basePrefix = `${baseId}:`;
+      for (const entry of watchProgressMap.values()) {
+        if (entry.mediaId === baseId || entry.mediaId.startsWith(basePrefix)) {
+          progress = pickLatestProgress(progress, entry);
+        }
+      }
+    }
+
+    if (progress) {
+      watchProgress = {
+        percent: progress.percent,
+        isWatched: progress.isWatched,
+        position: progress.position
+      };
+    } else {
+      watchProgress = null;
+    }
+  }
+
+  function toggleWatchedStatus() {
+    if (!browser || !selected || selected.type !== 'movie') return;
+    const baseId = buildBaseId(selected);
+    if (!baseId) return;
+
+    const preferredId = (() => {
+      const movie = selected as any;
+      if (movie.videoId) return `${baseId}:yt:${movie.videoId}`;
+      if (movie.vimeoId) return `${baseId}:vimeo:${movie.vimeoId}`;
+      return baseId;
+    })();
+
+    const newStatus = !watchProgress?.isWatched;
+    setWatchedStatus(preferredId, 'movie', newStatus);
+    toast.success(newStatus ? 'Marked as watched' : 'Marked as unwatched');
+  }
+
+  onMount(() => {
+    getWatchProgressForSelected();
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'jumpflix-watch-history' || e.key === null) {
+        getWatchProgressForSelected();
+      }
+    };
+    
+    const handleProgressChange = () => {
+      getWatchProgressForSelected();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('jumpflix-progress-change', handleProgressChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('jumpflix-progress-change', handleProgressChange);
+    };
+  });
+
+  $: if (browser && selected) {
+    getWatchProgressForSelected();
+  }
+
+  $: if (browser && selectedEpisode) {
+    getWatchProgressForSelected();
+  }
 
   // Reset expansion state when selection changes
   $: if (selected) {
@@ -197,6 +342,40 @@
       <br />
   <p class="text-gray-300 leading-relaxed text-sm font-sans">{selected.description}</p>
     </div>
+
+    <!-- Watch Progress Toggle (Movies only) -->
+    {#if selected.type === 'movie'}
+      <div class="mt-4">
+        <button
+          type="button"
+          on:click={toggleWatchedStatus}
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 {watchProgress?.isWatched ? 'bg-green-600/20 text-green-400 border border-green-600/50 hover:bg-green-600/30 focus-visible:ring-green-500' : 'bg-gray-700/50 text-gray-300 border border-gray-600/50 hover:bg-gray-700 focus-visible:ring-gray-500'}"
+        >
+          {#if watchProgress?.isWatched}
+            <CheckIcon class="w-4 h-4" />
+            <span>{m.tv_markUnwatched()}</span>
+          {:else}
+            <EyeIcon class="w-4 h-4" />
+            <span>{m.tv_markWatched()}</span>
+          {/if}
+        </button>
+        {#if watchProgress && watchProgress.percent > 0 && watchProgress.percent < 85}
+          <div class="mt-3 space-y-1">
+            <div class="flex justify-between text-xs text-gray-400">
+              <span>Progress</span>
+              <span>{Math.round(watchProgress.percent)}%</span>
+            </div>
+            <div class="w-full h-2 bg-gray-700/50 rounded-full overflow-hidden">
+              <div 
+                class="h-full bg-red-500 transition-all duration-300 rounded-full" 
+                style:width="{watchProgress.percent}%"
+              ></div>
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
+
     {#if selected.type === 'movie'}
       <div class="space-y-2 text-sm">
         {#if selected.paid}

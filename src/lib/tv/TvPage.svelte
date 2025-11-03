@@ -15,6 +15,7 @@
     sortedAllContent,
     searchQuery,
     showPaid,
+    showWatched,
     sortBy,
     selectedContent,
     showPlayer,
@@ -406,7 +407,7 @@
 
     <TvHeroSection {logoTilt} />
 
-    <TvSearchControls {searchQuery} {showPaid} {sortBy} />
+    <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} />
   </section>
   <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
     <TvCatalogGrid

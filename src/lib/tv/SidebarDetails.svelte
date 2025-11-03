@@ -8,6 +8,7 @@
   import Link2Icon from '@lucide/svelte/icons/link-2';
   import CheckIcon from '@lucide/svelte/icons/check';
   import EyeIcon from '@lucide/svelte/icons/eye';
+  import EyeOffIcon from '@lucide/svelte/icons/eye-off';
   import * as m from '$lib/paraglide/messages';  
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { posterBlurhash } from '$lib/assets/blurhash';
@@ -125,6 +126,46 @@
     } else {
       watchProgress = null;
     }
+  }
+
+  function getEpisodeWatchProgress(episodeId: string): { isWatched: boolean; percent: number } | null {
+    if (!browser || !selected || selected.type !== 'series') return null;
+    const baseId = buildBaseId(selected);
+    if (!baseId) return null;
+    
+    const fullId = `${baseId}:ep:${episodeId}`;
+    const progress = watchProgressMap.get(fullId);
+    
+    if (progress) {
+      return {
+        isWatched: progress.isWatched,
+        percent: progress.percent
+      };
+    }
+    return null;
+  }
+
+  function toggleEpisodeWatchedStatus(episodeId: string, event: Event) {
+    event.stopPropagation(); // Prevent episode selection
+    if (!browser || !selected || selected.type !== 'series') return;
+    const baseId = buildBaseId(selected);
+    if (!baseId) return;
+
+    const fullId = `${baseId}:ep:${episodeId}`;
+    const currentProgress = getEpisodeWatchProgress(episodeId);
+    const newStatus = !currentProgress?.isWatched;
+
+    setWatchedStatus(fullId, 'episode', newStatus);
+    
+    // Force refresh by reassigning the map
+    refreshWatchProgressMap();
+    // Also update the selected progress
+    getWatchProgressForSelected();
+    
+    // Force reactivity by creating a new episodes array reference
+    episodes = [...episodes];
+    
+    toast.success(newStatus ? 'Episode marked as watched' : 'Episode marked as unwatched');
   }
 
   function toggleWatchedStatus() {
@@ -481,22 +522,46 @@
         {:else}
           <ul class="max-h-64 overflow-auto pr-2 space-y-2" bind:this={episodesListEl}>
             {#each episodes as ep}
-              <li>
-                <button type="button" class="w-full flex items-center gap-3 p-1.5 rounded hover:bg-white/10 transition text-left border-2 border-transparent outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-900/30 border-2 border-red-500/60' : ''}"
-                  on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeason)}>
-                  <div class="relative w-20 h-12 flex-shrink-0 overflow-hidden rounded">
-                    {#if ep.thumbnail}
-                      <img src={ep.thumbnail} alt={decode(ep.title)} class="w-full h-full object-cover" loading="lazy" decoding="async" />
+              {@const epProgress = getEpisodeWatchProgress(ep.id)}
+              <li class="overflow-hidden">
+                <div class="flex items-center gap-2 overflow-hidden">
+                  <button type="button" class="flex-1 flex items-center gap-3 p-1.5 rounded hover:bg-white/10 transition text-left border-2 border-transparent outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 overflow-hidden min-w-0 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-900/30 border-2 border-red-500/60' : ''}"
+                    on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeason)}>
+                    <div class="relative w-20 h-12 flex-shrink-0 overflow-hidden rounded">
+                      {#if ep.thumbnail}
+                        <img src={ep.thumbnail} alt={decode(ep.title)} class="w-full h-full object-cover {epProgress?.isWatched ? 'opacity-30' : ''}" loading="lazy" decoding="async" />
+                      {:else}
+                        <div class="w-full h-full bg-gray-700"></div>
+                      {/if}
+                      {#if epProgress?.isWatched}
+                        <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <CheckIcon class="w-5 h-5 text-green-400" />
+                        </div>
+                      {:else if epProgress && epProgress.percent > 0 && epProgress.percent < 85}
+                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-700/80">
+                          <div class="h-full bg-red-500" style:width="{epProgress.percent}%"></div>
+                        </div>
+                      {/if}
+                    </div>
+                    <div class="flex-1 min-w-0 overflow-hidden">
+                      <div class="text-[13px] text-gray-400">Ep {ep.position}</div>
+                      <div class="text-base text-gray-100 truncate">{decode(ep.title)}</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    on:click={(e) => toggleEpisodeWatchedStatus(ep.id, e)}
+                    class="flex-shrink-0 p-2 rounded-lg transition-all hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 text-gray-500 hover:text-gray-400 focus-visible:ring-gray-500"
+                    title={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+                    aria-label={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+                  >
+                    {#if epProgress?.isWatched}
+                      <EyeOffIcon class="w-5 h-5" />
                     {:else}
-                      <div class="w-full h-full bg-gray-700"></div>
+                      <EyeIcon class="w-5 h-5" />
                     {/if}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="text-[13px] text-gray-400">Ep {ep.position}</div>
-                    <div class="text-base text-gray-100 truncate">{decode(ep.title)}</div>
-                  </div>
-                  
-                </button>
+                  </button>
+                </div>
               </li>
             {/each}
           </ul>

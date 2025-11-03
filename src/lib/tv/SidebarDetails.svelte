@@ -537,9 +537,10 @@
                         <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
                           <CheckIcon class="w-5 h-5 text-green-400" />
                         </div>
-                      {:else if epProgress && epProgress.percent > 0 && epProgress.percent < 85}
+                      {/if}
+                      {#if epProgress && epProgress.percent > 0}
                         <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-700/80">
-                          <div class="h-full bg-red-500" style:width="{epProgress.percent}%"></div>
+                          <div class="h-full bg-red-500 transition-all duration-300" style:width="{epProgress.percent}%"></div>
                         </div>
                       {/if}
                     </div>

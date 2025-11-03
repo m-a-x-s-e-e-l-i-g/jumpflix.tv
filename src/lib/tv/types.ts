@@ -63,6 +63,7 @@ export interface TvState {
   sortBy: SortBy;
   showWatched?: boolean;
   watchedBaseIds?: Set<string>;
+  inProgressBaseIds?: Set<string>;
 }
 
 export const DEFAULT_TV_STATE: TvState = {

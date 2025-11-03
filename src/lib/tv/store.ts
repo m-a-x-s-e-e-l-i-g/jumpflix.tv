@@ -36,6 +36,7 @@ export function markThumbnailLoaded(src?: string) {
 }
 
 const watchedBaseIds = writable<Set<string>>(new Set());
+const inProgressBaseIds = writable<Set<string>>(new Set());
 
 function baseIdFromMediaId(mediaId: string): string {
   if (!mediaId) return mediaId;
@@ -52,28 +53,51 @@ function shouldCountAsWatched(progress: WatchProgress): boolean {
   return true;
 }
 
-function refreshWatchedBaseIds() {
+function refreshProgressSets() {
   if (!browser) return;
   const entries = getAllWatchProgress();
-  const next = new Set<string>();
+  const watched = new Set<string>();
+  const progressSummary = new Map<string, { tracked: number; watchedCount: number; hasPartial: boolean }>();
+
   for (const entry of entries) {
-    if (!shouldCountAsWatched(entry)) continue;
     const baseId = baseIdFromMediaId(entry.mediaId);
-    if (baseId) {
-      next.add(baseId);
+    if (!baseId) continue;
+
+    if (shouldCountAsWatched(entry)) {
+      watched.add(baseId);
+    }
+
+    const summary = progressSummary.get(baseId) ?? { tracked: 0, watchedCount: 0, hasPartial: false };
+    summary.tracked += 1;
+    if (entry.isWatched) summary.watchedCount += 1;
+    if (entry.percent > 0 && !entry.isWatched) summary.hasPartial = true;
+    progressSummary.set(baseId, summary);
+  }
+
+  const inProgress = new Set<string>();
+  for (const [baseId, summary] of progressSummary.entries()) {
+    if (watched.has(baseId)) continue;
+    if (summary.hasPartial) {
+      inProgress.add(baseId);
+      continue;
+    }
+    if (summary.watchedCount > 0 && summary.watchedCount < summary.tracked) {
+      inProgress.add(baseId);
     }
   }
-  watchedBaseIds.set(next);
+
+  watchedBaseIds.set(watched);
+  inProgressBaseIds.set(inProgress);
 }
 
 if (browser) {
-  refreshWatchedBaseIds();
+  refreshProgressSets();
   const handleStorage = (event: StorageEvent) => {
     if (event.key === null || event.key === 'jumpflix-watch-history') {
-      refreshWatchedBaseIds();
+      refreshProgressSets();
     }
   };
-  const handleProgressChange = () => refreshWatchedBaseIds();
+  const handleProgressChange = () => refreshProgressSets();
   window.addEventListener('storage', handleStorage);
   window.addEventListener('jumpflix-progress-change', handleProgressChange);
 }
@@ -89,23 +113,25 @@ const debouncedSearch = debounceStore(searchQuery, 160);
 
 // Derived filtered + sorted content
 export const visibleContent = derived(
-  [debouncedSearch, showPaid, sortBy, showWatched, watchedBaseIds],
-  ([$search, $showPaid, $sortBy, $showWatched, $watchedBaseIds]) =>
+  [debouncedSearch, showPaid, sortBy, showWatched, watchedBaseIds, inProgressBaseIds],
+  ([$search, $showPaid, $sortBy, $showWatched, $watchedBaseIds, $inProgressBaseIds]) =>
     filterAndSortContent(allContent, rankMap, {
       searchQuery: $search,
       showPaid: $showPaid,
       sortBy: $sortBy,
       showWatched: $showWatched,
-      watchedBaseIds: $watchedBaseIds
+      watchedBaseIds: $watchedBaseIds,
+      inProgressBaseIds: $inProgressBaseIds
     })
 );
 
 // All items, only sorted (no filtering). Useful to keep DOM stable by hiding non-matching items.
-export const sortedAllContent = derived([sortBy], ([$sortBy]) =>
+export const sortedAllContent = derived([sortBy, inProgressBaseIds], ([$sortBy, $inProgressBaseIds]) =>
   filterAndSortContent(allContent, rankMap, {
     searchQuery: '',
     showPaid: true,
-    sortBy: $sortBy
+    sortBy: $sortBy,
+    inProgressBaseIds: $inProgressBaseIds
   })
 );
 

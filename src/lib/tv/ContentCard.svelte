@@ -148,6 +148,9 @@
   $: isWatched = watchProgress?.isWatched || false;
   $: progressPercent = watchProgress?.percent || 0;
   $: hasProgress = !isWatched && progressPercent > 0 && progressPercent < 85;
+  $: progressDisplayPercent =
+    progressPercent <= 0 ? 0 : Math.min(99, Math.max(1, Math.round(progressPercent)));
+  $: progressBarWidth = Math.min(100, Math.max(progressPercent, 4));
 
   // no loading lifecycle needed
 
@@ -243,8 +246,16 @@
 
     <!-- Progress bar at bottom -->
     {#if hasProgress}
-      <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-700/80 z-20">
-        <div class="h-full bg-red-500 transition-all duration-300" style:width="{progressPercent}%"></div>
+      <div class="absolute inset-x-2 bottom-2 z-20" aria-label={`Continue watching at ${progressDisplayPercent}%`}>
+        <div class="rounded-lg border border-white/10 bg-black/70 px-3 py-2 shadow-[0_12px_30px_-18px_rgba(0,0,0,0.85)] backdrop-blur-md">
+          <div class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.15em] text-white/90">
+            <span>CONTINUE</span>
+            <span>{progressDisplayPercent}%</span>
+          </div>
+          <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/15">
+            <div class="h-full rounded-full bg-red-500 transition-[width] duration-300 ease-out" style:width={`${progressBarWidth}%`}></div>
+          </div>
+        </div>
       </div>
     {/if}
   </div>

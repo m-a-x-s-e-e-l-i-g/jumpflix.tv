@@ -97,24 +97,33 @@ export function filterAndSortContent(all: ContentItem[], rankMap: Map<string, nu
     });
 
   const sorted = [...filtered];
+  const inProgressSet = state.inProgressBaseIds;
+  const isInProgress = (item: ContentItem) => Boolean(inProgressSet && inProgressSet.has(keyFor(item)));
+  const compareWithPriorities = (compareFn: (a: ContentItem, b: ContentItem) => number) => (a: ContentItem, b: ContentItem) => {
+    const progressDiff = Number(isInProgress(b)) - Number(isInProgress(a));
+    if (progressDiff !== 0) return progressDiff;
+    const posterDiff = Number(hasPoster(b)) - Number(hasPoster(a));
+    if (posterDiff !== 0) return posterDiff;
+    return compareFn(a, b);
+  };
   switch (state.sortBy) {
     case 'title-asc':
-      sorted.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      sorted.sort(compareWithPriorities((a, b) => (a.title || '').localeCompare(b.title || '')));
       break;
     case 'year-desc':
-      sorted.sort((a, b) => parseYear(b) - parseYear(a));
+      sorted.sort(compareWithPriorities((a, b) => parseYear(b) - parseYear(a)));
       break;
     case 'year-asc':
-      sorted.sort((a, b) => parseYear(a) - parseYear(b));
+      sorted.sort(compareWithPriorities((a, b) => parseYear(a) - parseYear(b)));
       break;
     case 'duration-asc':
-      sorted.sort((a, b) => parseDurationToMinutes((a as any).duration) - parseDurationToMinutes((b as any).duration));
+      sorted.sort(compareWithPriorities((a, b) => parseDurationToMinutes((a as any).duration) - parseDurationToMinutes((b as any).duration)));
       break;
     case 'duration-desc':
-      sorted.sort((a, b) => parseDurationToMinutes((b as any).duration) - parseDurationToMinutes((a as any).duration));
+      sorted.sort(compareWithPriorities((a, b) => parseDurationToMinutes((b as any).duration) - parseDurationToMinutes((a as any).duration)));
       break;
     default:
-      sorted.sort((a, b) => (rankMap.get(keyFor(a)) ?? 0) - (rankMap.get(keyFor(b)) ?? 0));
+      sorted.sort(compareWithPriorities((a, b) => (rankMap.get(keyFor(a)) ?? 0) - (rankMap.get(keyFor(b)) ?? 0)));
   }
   return sorted;
 }
@@ -131,6 +140,10 @@ export function isInlinePlayable(content: ContentItem | null | undefined) {
 
 export function isImage(src?: string) {
   return !!src && (src.startsWith('http') || src.startsWith('/'));
+}
+
+export function hasPoster(item: ContentItem) {
+  return typeof item.thumbnail === 'string' && item.thumbnail.includes('/images/posters/');
 }
 
 export const sortLabels: Record<SortBy, string> = {

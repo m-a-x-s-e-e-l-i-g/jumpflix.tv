@@ -147,7 +147,7 @@ export function hasPoster(item: ContentItem) {
 }
 
 export const sortLabels: Record<SortBy, string> = {
-  default: 'Sort: Random',
+  default: 'Sort: Default',
   'title-asc': 'Title A–Z',
   'year-desc': 'Year (newest)',
   'year-asc': 'Year (oldest)',

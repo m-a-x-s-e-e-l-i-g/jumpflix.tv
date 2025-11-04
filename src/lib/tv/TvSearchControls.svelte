@@ -170,12 +170,18 @@
     letter-spacing: 0.11em;
     color: rgba(226, 232, 240, 0.95);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    color-scheme: dark;
   }
 
   .tv-search-select:focus {
     outline: none;
     border-color: rgba(244, 114, 182, 0.55);
     box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.15);
+  }
+
+  .tv-search-select option {
+    background-color: rgb(15, 23, 42);
+    color: rgb(226, 232, 240);
   }
 
   @media (max-width: 640px) {

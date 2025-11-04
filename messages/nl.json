@@ -19,9 +19,9 @@
 	"tv_noResults": "Geen resultaten. Pas filters aan.",
 	"tv_showPaid": "Betaald",
 	"tv_showWatched": "bekeken",
-	"tv_close": "Sluiten",
-	"tv_noPlayer": "Geen speler beschikbaar"
-	,"tv_sort_random": "Sorteren: Willekeurig"
+	,"tv_close": "Sluiten"
+	,"tv_noPlayer": "Geen speler beschikbaar"
+	,"tv_sort_random": "Sorteren: Standaard"
 	,"tv_sort_titleAsc": "Titel A–Z"
 	,"tv_sort_yearDesc": "Jaar (nieuwste)"
 	,"tv_sort_yearAsc": "Jaar (oudste)"

@@ -27,16 +27,18 @@ export async function getUserRating(mediaId: number | string): Promise<number | 
 			.select('rating')
 			.eq('media_id', numericId)
 			.eq('user_id', user.id)
-			.single();
+			.maybeSingle();
 
 		if (error) {
-			if (error.code === 'PGRST116') return null; // No rating found
-			throw error;
+			// Suppress common "not found" errors
+			if (error.code === 'PGRST116' || error.message?.includes('406')) return null;
+			console.error('Error fetching user rating:', error);
+			return null;
 		}
 
 		return data?.rating ?? null;
 	} catch (error) {
-		console.error('Error fetching user rating:', error);
+		// Silently return null for common errors
 		return null;
 	}
 }
@@ -128,20 +130,29 @@ export async function getMediaRatingSummary(
 			.from('media_ratings_summary')
 			.select('average_rating, rating_count')
 			.eq('media_id', numericId)
-			.single();
+			.maybeSingle();
 
 		if (error) {
-			if (error.code === 'PGRST116') return { averageRating: 0, ratingCount: 0 }; // No ratings yet
-			throw error;
+			// Suppress common "not found" errors - return empty summary
+			if (error.code === 'PGRST116' || error.message?.includes('406')) {
+				return { averageRating: 0, ratingCount: 0 };
+			}
+			console.error('Error fetching rating summary:', error);
+			return { averageRating: 0, ratingCount: 0 };
+		}
+
+		// If no data, return empty summary (no ratings yet)
+		if (!data) {
+			return { averageRating: 0, ratingCount: 0 };
 		}
 
 		return {
-			averageRating: data?.average_rating ?? 0,
-			ratingCount: data?.rating_count ?? 0
+			averageRating: data.average_rating ?? 0,
+			ratingCount: data.rating_count ?? 0
 		};
 	} catch (error) {
-		console.error('Error fetching rating summary:', error);
-		return null;
+		// Silently return empty summary for any errors
+		return { averageRating: 0, ratingCount: 0 };
 	}
 }
 

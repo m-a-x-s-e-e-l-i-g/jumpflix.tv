@@ -29,7 +29,7 @@
 					button_label: 'Sign in',
 					loading_button_label: 'Signing in…',
 					social_provider_text: 'Sign in with {{provider}}',
-					link_text: "Don't have an account? Sign up"
+					link_text: 'Already have an account? Sign in'
 				},
 				sign_up: {
 					email_label: 'Email address',
@@ -39,7 +39,7 @@
 					button_label: 'Sign up',
 					loading_button_label: 'Signing up…',
 					social_provider_text: 'Continue with {{provider}}',
-					link_text: 'Already have an account? Sign in',
+					link_text: "Don't have an account? Sign up",
 					confirmation_text: 'Check your email for the confirmation link'
 				},
 				magic_link: {
@@ -90,7 +90,7 @@
 					button_label: 'Inloggen',
 					loading_button_label: 'Bezig met inloggen…',
 					social_provider_text: 'Inloggen met {{provider}}',
-					link_text: 'Nog geen account? Registreren'
+					link_text: 'Heb je al een account? Inloggen'
 				},
 				sign_up: {
 					email_label: 'E-mailadres',
@@ -100,7 +100,7 @@
 					button_label: 'Account aanmaken',
 					loading_button_label: 'Account aanmaken…',
 					social_provider_text: 'Aanmelden met {{provider}}',
-					link_text: 'Heb je al een account? Inloggen',
+					link_text: 'Nog geen account? Registreren',
 					confirmation_text: 'Controleer je e-mail voor de bevestigingslink'
 				},
 				magic_link: {

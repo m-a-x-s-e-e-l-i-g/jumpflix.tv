@@ -23,7 +23,7 @@
   import type { WatchProgress } from '$lib/tv/watchHistory';
   import { onMount } from 'svelte';
   import { user as authUser } from '$lib/stores/authStore';
-  import BangerMeter from '$lib/components/BangerMeter.svelte';
+  import BangerMeter from '$lib/components/Bangerometer.svelte';
   import { getUserRating, saveRating, getMediaRatingSummary } from '$lib/ratings';
   import AuthDialog from '$lib/components/AuthDialog.svelte';
 
@@ -428,7 +428,7 @@
           <p class="text-gray-200 text-sm leading-relaxed">{selected.description}</p>
         </div>
 
-        <!-- Banger Meter Rating Component -->
+        <!-- Bangerometer Rating Component -->
         <div>
           <BangerMeter
             mediaId={selected.id}

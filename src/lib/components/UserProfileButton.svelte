@@ -104,16 +104,19 @@
 		{/if}
 	</div>
 {:else}
-	<AuthDialog bind:open={authDialogOpen}>
-		<SheetTrigger>
-			<button
-				class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-				aria-label="Sign In"
-			>
-				<UserIcon class="size-5" />
-			</button>
-		</SheetTrigger>
-	</AuthDialog>
+	<div class="flex items-center gap-2">
+		<AuthDialog bind:open={authDialogOpen}>
+			<SheetTrigger>
+				<button
+					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					aria-label="Sign In"
+				>
+					<UserIcon class="size-5" />
+				</button>
+			</SheetTrigger>
+		</AuthDialog>
+		<span class="text-xs font-medium text-muted-foreground">{m.help_tip_login()}</span>
+	</div>
 {/if}
 
 <style>

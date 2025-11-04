@@ -9,8 +9,7 @@
 	let buttonRef: HTMLButtonElement | undefined = $state(undefined);
 
 	const tips = $derived([
-		m.help_tip_slowMotion(),
-		m.help_tip_login()
+		m.help_tip_slowMotion()
 	]);
 
 	function toggleMenu() {

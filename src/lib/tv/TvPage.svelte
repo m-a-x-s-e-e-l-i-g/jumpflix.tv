@@ -400,7 +400,7 @@
 	{/if}
 </svelte:head>
 
-<div class="relative isolate min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[460px]">
+<div class="relative isolate min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[420px] xl:pr-[460px]">
   <TvPageBackdrop />
   <section class="relative isolate overflow-hidden px-6 pt-24 pb-16 sm:pt-32 sm:pb-20">
     <div class="hero-overlay" aria-hidden="true"></div>

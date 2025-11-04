@@ -10,6 +10,8 @@ export interface BaseContent {
   paid?: boolean;
   provider?: string;
   externalUrl?: string;
+  averageRating?: number;
+  ratingCount?: number;
 }
 
 export interface Movie extends BaseContent {
@@ -56,7 +58,9 @@ export type SortBy =
   | 'year-desc'
   | 'year-asc'
   | 'duration-asc'
-  | 'duration-desc';
+  | 'duration-desc'
+  | 'rating-desc'
+  | 'rating-asc';
 
 export interface TvState {
   searchQuery: string;

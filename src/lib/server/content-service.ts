@@ -5,7 +5,11 @@ import type { ContentItem, Episode, Movie, Season, Series } from '$lib/tv/types'
 type MediaItemRow = Database['public']['Tables']['media_items']['Row'];
 type SeriesSeasonRow = Database['public']['Tables']['series_seasons']['Row'];
 type SeriesEpisodeRow = Database['public']['Tables']['series_episodes']['Row'];
-type MediaItemWithSeasons = MediaItemRow & { series_seasons?: SeriesSeasonRow[] | null };
+type MediaRatingSummaryRow = Database['public']['Views']['media_ratings_summary']['Row'];
+type MediaItemWithSeasons = MediaItemRow & { 
+	series_seasons?: SeriesSeasonRow[] | null;
+	media_ratings_summary?: MediaRatingSummaryRow[] | null;
+};
 type SeriesSeasonWithEpisodes = SeriesSeasonRow & { episodes?: SeriesEpisodeRow[] | null };
 
 // Helper to remove undefined values for SvelteKit serialization
@@ -19,7 +23,11 @@ function removeUndefined<T extends Record<string, any>>(obj: T): T {
 	return result as T;
 }
 
-function mapMovie(row: MediaItemRow): Movie {
+function mapMovie(row: MediaItemWithSeasons): Movie {
+	const ratingSummary = Array.isArray(row.media_ratings_summary) && row.media_ratings_summary.length > 0
+		? row.media_ratings_summary[0]
+		: null;
+	
 	return removeUndefined({
 		id: row.id,
 		slug: row.slug,
@@ -37,7 +45,9 @@ function mapMovie(row: MediaItemRow): Movie {
 		vimeoId: row.vimeo_id ?? undefined,
 		trakt: row.trakt ?? undefined,
 		creators: row.creators && row.creators.length ? row.creators : undefined,
-		starring: row.starring && row.starring.length ? row.starring : undefined
+		starring: row.starring && row.starring.length ? row.starring : undefined,
+		averageRating: ratingSummary?.average_rating ?? undefined,
+		ratingCount: ratingSummary?.rating_count ?? undefined
 	});
 }
 
@@ -54,6 +64,10 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 		.map((season) => mapSeason(season))
 		.sort((a, b) => a.seasonNumber - b.seasonNumber);
 
+	const ratingSummary = Array.isArray(row.media_ratings_summary) && row.media_ratings_summary.length > 0
+		? row.media_ratings_summary[0]
+		: null;
+
 	return removeUndefined({
 		id: row.id,
 		slug: row.slug,
@@ -68,7 +82,9 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 		creators: row.creators && row.creators.length ? row.creators : undefined,
 		starring: row.starring && row.starring.length ? row.starring : undefined,
 		videoCount: row.video_count ?? undefined,
-		seasons
+		seasons,
+		averageRating: ratingSummary?.average_rating ?? undefined,
+		ratingCount: ratingSummary?.rating_count ?? undefined
 	});
 }
 
@@ -85,6 +101,10 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 						series_id,
 						season_number,
 						playlist_id
+					),
+					media_ratings_summary (
+						average_rating,
+						rating_count
 					)
 				`
 				);

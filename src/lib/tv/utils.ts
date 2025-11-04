@@ -122,6 +122,12 @@ export function filterAndSortContent(all: ContentItem[], rankMap: Map<string, nu
     case 'duration-desc':
       sorted.sort(compareWithPriorities((a, b) => parseDurationToMinutes((b as any).duration) - parseDurationToMinutes((a as any).duration)));
       break;
+    case 'rating-desc':
+      sorted.sort(compareWithPriorities((a, b) => (b.averageRating ?? 5.5) - (a.averageRating ?? 5.5)));
+      break;
+    case 'rating-asc':
+      sorted.sort(compareWithPriorities((a, b) => (a.averageRating ?? 5.5) - (b.averageRating ?? 5.5)));
+      break;
     default:
       sorted.sort(compareWithPriorities((a, b) => (rankMap.get(keyFor(a)) ?? 0) - (rankMap.get(keyFor(b)) ?? 0)));
   }
@@ -152,5 +158,7 @@ export const sortLabels: Record<SortBy, string> = {
   'year-desc': 'Year (newest)',
   'year-asc': 'Year (oldest)',
   'duration-asc': 'Duration (short → long)',
-  'duration-desc': 'Duration (long → short)'
+  'duration-desc': 'Duration (long → short)',
+  'rating-desc': 'Rating (high → low)',
+  'rating-asc': 'Rating (low → high)'
 };

@@ -25,6 +25,7 @@
 	import { showDetailsPanel } from '$lib/tv/store';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import UserProfileButton from '$lib/components/UserProfileButton.svelte';
+	import HelpTipsButton from '$lib/components/HelpTipsButton.svelte';
 	import {
 		SCROLL_CONTEXT_KEY,
 		type ScrollSubscriber,
@@ -428,6 +429,8 @@
 					<span class="sr-only">{m.settings_open()}</span>
 				</button>
 			</SheetTrigger>
+
+			<HelpTipsButton />
 			
 			<UserProfileButton />
 		</div>

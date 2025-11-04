@@ -73,4 +73,10 @@
 	,"submit_film_success": "Bedankt voor je inzending!"
 	,"tv_markWatched": "Markeren als bekeken"
 	,"tv_markUnwatched": "Markeren als onbekeken"
+	,"help_buttonLabel": "Snelle tips tonen"
+	,"help_dialogLabel": "JUMPFLIX snelle tips"
+	,"help_title": "Snelle tips"
+	,"help_close": "Tips sluiten"
+	,"help_tip_slowMotion": "Houd de spatiebalk ingedrukt in de speler voor slow motion, of houd de muisknop ingedrukt."
+	,"help_tip_login": "Log in om je kijkvoortgang bij te houden."
 }

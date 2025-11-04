@@ -73,4 +73,10 @@
 	,"submit_film_success": "Thanks for the submission!"
 	,"tv_markWatched": "Mark as watched"
 	,"tv_markUnwatched": "Mark as unwatched"
+	,"help_buttonLabel": "Show quick tips"
+	,"help_dialogLabel": "JUMPFLIX quick tips"
+	,"help_title": "Quick tips"
+	,"help_close": "Close tips"
+	,"help_tip_slowMotion": "Hold spacebar in the player for slow motion, or hold the mouse button down."
+	,"help_tip_login": "Log in to track watch progress across devices."
 }

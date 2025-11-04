@@ -23,6 +23,11 @@
   import { flushWatchHistoryNow } from '$lib/tv/watchHistory';
   import type { WatchProgress } from '$lib/tv/watchHistory';
   import { onMount } from 'svelte';
+  import { user as authUser } from '$lib/stores/authStore';
+
+  let isAuthenticated = false;
+
+  $: isAuthenticated = Boolean($authUser);
 
   export let show = false;
   export let isMobile = false;
@@ -155,7 +160,7 @@
 
   function toggleEpisodeWatchedStatus(episodeId: string, event: Event) {
     event.stopPropagation(); // Prevent episode selection
-    if (!browser || !selected || selected.type !== 'series') return;
+    if (!browser || !selected || selected.type !== 'series' || !isAuthenticated) return;
     const baseId = buildBaseId(selected);
     if (!baseId) return;
 
@@ -178,7 +183,7 @@
   }
 
   function toggleWatchedStatus() {
-    if (!browser || !selected || selected.type !== 'movie') return;
+    if (!browser || !selected || selected.type !== 'movie' || !isAuthenticated) return;
     const baseId = buildBaseId(selected);
     if (!baseId) return;
 
@@ -381,7 +386,7 @@
         </div>
 
         <!-- Watch Progress Toggle (Movies only) -->
-        {#if selected.type === 'movie'}
+        {#if isAuthenticated && selected.type === 'movie'}
           <div>
             <button
               type="button"
@@ -488,19 +493,21 @@
                             <div class="text-base text-gray-100 truncate">{decode(ep.title)}</div>
                           </div>
                         </button>
-                        <button
-                          type="button"
-                          on:click={(e) => toggleEpisodeWatchedStatus(ep.id, e)}
-                          class="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 text-gray-500 active:text-gray-400 focus-visible:ring-gray-500"
-                          title={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
-                          aria-label={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
-                        >
-                          {#if epProgress?.isWatched}
-                            <EyeOffIcon class="w-6 h-6" />
-                          {:else}
-                            <EyeIcon class="w-6 h-6" />
-                          {/if}
-                        </button>
+                        {#if isAuthenticated}
+                          <button
+                            type="button"
+                            on:click={(e) => toggleEpisodeWatchedStatus(ep.id, e)}
+                            class="flex-shrink-0 p-2 rounded-lg transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 text-gray-500 active:text-gray-400 focus-visible:ring-gray-500"
+                            title={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+                            aria-label={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+                          >
+                            {#if epProgress?.isWatched}
+                              <EyeOffIcon class="w-6 h-6" />
+                            {:else}
+                              <EyeIcon class="w-6 h-6" />
+                            {/if}
+                          </button>
+                        {/if}
                       </div>
                     </li>
                   {/each}

@@ -14,12 +14,12 @@ import { syncAllSeriesEpisodes, syncPlaylistEpisodes } from './utils/youtube-syn
 // Load environment variables
 dotenv.config({ path: '.env' });
 
-const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
 	console.error('❌ Missing Supabase credentials!');
-	console.error('Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env');
+	console.error('Please set PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env');
 	process.exit(1);
 }
 

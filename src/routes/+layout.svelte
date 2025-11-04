@@ -8,6 +8,7 @@
 	import { onMount, setContext } from 'svelte';
 	import type { Action } from 'svelte/action';
 	import { page } from '$app/stores';
+	import type { ContentItem } from '$lib/tv/types';
 	import {
 		Sheet as SheetRoot,
 		SheetTrigger,

@@ -1,7 +1,5 @@
 import { writable, derived, type Readable, get } from 'svelte/store';
 import { browser } from '$app/environment';
-import { movies } from '$lib/assets/movies';
-import { series } from '$lib/assets/series';
 import type { ContentItem, Episode, SortBy } from './types';
 import { buildRankMap, filterAndSortContent, isInlinePlayable, keyFor } from './utils';
 import {
@@ -11,12 +9,38 @@ import {
   type WatchProgress
 } from '$lib/tv/watchHistory';
 
-// Base data (loaded at runtime)
+// Base data (loaded at runtime via setContent)
 const seed = new Date().toISOString().slice(0, 10);
-export const allContent: ContentItem[] = ([...(movies as any), ...(series as any)] as ContentItem[]);
-const rankMap = buildRankMap(allContent, seed);
-const contentByKey = new Map<string, ContentItem>();
-allContent.forEach((item) => contentByKey.set(keyFor(item), item));
+
+export const baseContent = writable<ContentItem[]>([]);
+
+type ContentMeta = {
+  items: ContentItem[];
+  rankMap: Map<string, number>;
+  contentByKey: Map<string, ContentItem>;
+};
+
+const contentMeta = derived(baseContent, ($items): ContentMeta => {
+  const map = new Map<string, ContentItem>();
+  for (const item of $items) {
+    map.set(keyFor(item), item);
+  }
+  return {
+    items: $items,
+    rankMap: buildRankMap($items, seed),
+    contentByKey: map
+  };
+});
+
+let currentMeta: ContentMeta = {
+  items: [],
+  rankMap: new Map(),
+  contentByKey: new Map()
+};
+
+contentMeta.subscribe((meta) => {
+  currentMeta = meta;
+});
 
 // UI state stores
 export const searchQuery = writable('');
@@ -94,7 +118,7 @@ function refreshProgressSets() {
     }
   }
 
-  for (const [baseId, item] of contentByKey.entries()) {
+  for (const [baseId, item] of currentMeta.contentByKey.entries()) {
     if (!baseId.startsWith('series:')) continue;
     const totalEpisodesRaw = Number((item as any)?.videoCount);
     const totalEpisodes = Number.isFinite(totalEpisodesRaw) && totalEpisodesRaw > 0
@@ -134,9 +158,9 @@ const debouncedSearch = debounceStore(searchQuery, 160);
 
 // Derived filtered + sorted content
 export const visibleContent = derived(
-  [debouncedSearch, showPaid, sortBy, showWatched, watchedBaseIds, inProgressBaseIds],
-  ([$search, $showPaid, $sortBy, $showWatched, $watchedBaseIds, $inProgressBaseIds]) =>
-    filterAndSortContent(allContent, rankMap, {
+  [contentMeta, debouncedSearch, showPaid, sortBy, showWatched, watchedBaseIds, inProgressBaseIds],
+  ([$meta, $search, $showPaid, $sortBy, $showWatched, $watchedBaseIds, $inProgressBaseIds]) =>
+    filterAndSortContent($meta.items, $meta.rankMap, {
       searchQuery: $search,
       showPaid: $showPaid,
       sortBy: $sortBy,
@@ -147,13 +171,15 @@ export const visibleContent = derived(
 );
 
 // All items, only sorted (no filtering). Useful to keep DOM stable by hiding non-matching items.
-export const sortedAllContent = derived([sortBy, inProgressBaseIds], ([$sortBy, $inProgressBaseIds]) =>
-  filterAndSortContent(allContent, rankMap, {
-    searchQuery: '',
-    showPaid: true,
-    sortBy: $sortBy,
-    inProgressBaseIds: $inProgressBaseIds
-  })
+export const sortedAllContent = derived(
+  [contentMeta, sortBy, inProgressBaseIds],
+  ([$meta, $sortBy, $inProgressBaseIds]) =>
+    filterAndSortContent($meta.items, $meta.rankMap, {
+      searchQuery: '',
+      showPaid: true,
+      sortBy: $sortBy,
+      inProgressBaseIds: $inProgressBaseIds
+    })
 );
 
 // Set of keys for currently visible items (for fast membership checks in UI)
@@ -240,7 +266,10 @@ export function closeDetailsPanel() { showDetailsPanel.set(false); }
 export function setSort(value: SortBy) { sortBy.set(value); }
 
 export function setContent(items: ContentItem[]) {
-  baseContent.set(items);
+  baseContent.set([...items]);
+  if (browser) {
+    refreshProgressSets();
+  }
 }
 
 

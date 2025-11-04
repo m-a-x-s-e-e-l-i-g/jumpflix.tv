@@ -33,12 +33,6 @@
   const labelClass = 'tv-search-toggle';
   const selectClass = 'tv-search-select';
   const isLoggedIn = $derived(Boolean($user));
-
-  $effect(() => {
-    if (!isLoggedIn) {
-      showWatched.set(false);
-    }
-  });
 </script>
 
 <div id="search" class="relative z-10 mx-auto mt-30 w-full max-w-5xl">

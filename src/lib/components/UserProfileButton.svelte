@@ -2,16 +2,19 @@
 	import { user, loading } from '$lib/stores/authStore';
 	import { supabase } from '$lib/supabaseClient';
 	import AuthDialog from '$lib/components/AuthDialog.svelte';
+	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
 	import { SheetTrigger } from '$lib/components/ui/sheet';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import UserCheckIcon from '@lucide/svelte/icons/user-check';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
 	import * as m from '$lib/paraglide/messages';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
 	
 	let authDialogOpen = $state(false);
+	let settingsDialogOpen = $state(false);
 	let showUserMenu = $state(false);
 	let menuRef: HTMLDivElement | undefined = $state(undefined);
 	let buttonRef: HTMLButtonElement | undefined = $state(undefined);
@@ -94,6 +97,17 @@
 				</div>
 				
 				<button
+					onclick={() => {
+						showUserMenu = false;
+						settingsDialogOpen = true;
+					}}
+					class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
+				>
+					<SettingsIcon class="size-4" />
+					<span>Settings</span>
+				</button>
+				
+				<button
 					onclick={handleSignOut}
 					class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
 				>
@@ -118,6 +132,8 @@
 		<span class="text-xs font-medium text-muted-foreground">{m.help_tip_login()}</span>
 	</div>
 {/if}
+
+<SettingsDialog bind:open={settingsDialogOpen} />
 
 <style>
 	/* Close menu when clicking outside */

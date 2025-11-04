@@ -31,6 +31,6 @@
     ].filter(Boolean).join(' ');
 </script>
 
-<button {type} {disabled} class={classes}>
+<button {type} {disabled} class={classes} {...$$restProps}>
   <slot />
 </button>

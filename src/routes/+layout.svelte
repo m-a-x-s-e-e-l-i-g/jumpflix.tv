@@ -373,7 +373,7 @@
 	<meta name="robots" content="index, follow, max-image-preview:large" />
 	<meta name="theme-color" content="#0b1220" />
 	<!-- PWA: iOS/Apple support -->
-	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 	<meta name="apple-mobile-web-app-title" content="JUMPFLIX" />
 	<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />

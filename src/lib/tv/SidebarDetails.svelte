@@ -23,10 +23,19 @@
   import type { WatchProgress } from '$lib/tv/watchHistory';
   import { onMount } from 'svelte';
   import { user as authUser } from '$lib/stores/authStore';
+  import BangerMeter from '$lib/components/BangerMeter.svelte';
+  import { getUserRating, saveRating, getMediaRatingSummary } from '$lib/ratings';
+  import AuthDialog from '$lib/components/AuthDialog.svelte';
 
   let isAuthenticated = false;
 
   $: isAuthenticated = Boolean($authUser);
+  
+  // Rating state
+  let currentUserRating: number | null = null;
+  let ratingsSummary: { averageRating: number; ratingCount: number } | null = null;
+  let showAuthDialog = false;
+
   export let selected: ContentItem | null;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
@@ -219,6 +228,42 @@
   $: if (selected) {
     showAllCreators = false;
     showAllStarring = false;
+    // Reset rating immediately when item changes, then load actual data
+    currentUserRating = null;
+    ratingsSummary = null;
+    loadRatingData();
+  }
+
+  async function loadRatingData() {
+    if (!selected || !browser) {
+      currentUserRating = null;
+      ratingsSummary = null;
+      return;
+    }
+
+    try {
+      const [userRating, summary] = await Promise.all([
+        getUserRating(selected.id),
+        getMediaRatingSummary(selected.id)
+      ]);
+      currentUserRating = userRating;
+      ratingsSummary = summary;
+    } catch (error) {
+      console.error('Error loading rating data:', error);
+    }
+  }
+
+  async function handleRatingChange(rating: number) {
+    if (!selected) return;
+    await saveRating(selected.id, rating);
+    currentUserRating = rating;
+    // Refresh summary to show updated average
+    const summary = await getMediaRatingSummary(selected.id);
+    ratingsSummary = summary;
+  }
+
+  function handleAuthRequired() {
+    showAuthDialog = true;
   }
 
   // Seasons & Episodes for series
@@ -373,6 +418,12 @@
             <span class="sr-only">View on Trakt</span>
           </a>
         {/if}
+        {#if ratingsSummary && ratingsSummary.ratingCount > 0}
+          <span class="inline-flex items-center gap-1 text-orange-400 font-semibold" title="{ratingsSummary.ratingCount} {ratingsSummary.ratingCount === 1 ? 'rating' : 'ratings'}">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            {ratingsSummary.averageRating.toFixed(1)}
+          </span>
+        {/if}
         <!-- Shareable URL: icon-only copy button -->
         <button type="button" class="inline-flex items-center justify-center w-6 h-6 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" on:click={copyLink} title="Copy link" aria-label="Copy link">
           <Link2Icon class="w-4 h-4" />
@@ -382,6 +433,19 @@
     <div>
       <br />
   <p class="text-gray-300 leading-relaxed text-sm font-sans">{selected.description}</p>
+    </div>
+
+    <!-- Banger Meter Rating Component -->
+    <div class="mt-6">
+      <BangerMeter
+        mediaId={selected.id}
+        initialRating={currentUserRating}
+        onRatingChange={handleRatingChange}
+        onAuthRequired={handleAuthRequired}
+        isWatched={watchProgress?.isWatched || false}
+        averageRating={ratingsSummary?.averageRating || 0}
+        ratingCount={ratingsSummary?.ratingCount || 0}
+      />
     </div>
 
     <!-- Watch Progress Toggle (Movies only) -->
@@ -603,6 +667,9 @@
     <p>{m.tv_selectPlaceholder()}</p>
   </div>
 {/if}
+
+<!-- Auth Dialog for non-authenticated users -->
+<AuthDialog bind:open={showAuthDialog} />
 
 <style>
   .details-backdrop-overlay {

@@ -13,8 +13,8 @@
 	
 	let authDialogOpen = $state(false);
 	let showUserMenu = $state(false);
-	let menuRef: HTMLDivElement | undefined;
-	let buttonRef: HTMLButtonElement | undefined;
+	let menuRef: HTMLDivElement | undefined = $state(undefined);
+	let buttonRef: HTMLButtonElement | undefined = $state(undefined);
 	
 	async function handleSignOut() {
 		if (!supabase) return;

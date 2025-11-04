@@ -30,6 +30,7 @@
 		type ScrollSubscriber,
 		type ScrollSubscription
 	} from '$lib/scroll-context';
+	import { initWatchHistory } from '$lib/tv/watchHistory';
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
 
@@ -320,7 +321,8 @@
 
 	onMount(() => {
 		if (typeof window === 'undefined') return;
-		const cleanupFns = [addEventListeners(), setupScrollEffects()];
+		const stopWatchHistory = initWatchHistory();
+		const cleanupFns = [addEventListeners(), setupScrollEffects(), stopWatchHistory];
 		return () => {
 			for (const cleanup of cleanupFns) {
 				cleanup?.();

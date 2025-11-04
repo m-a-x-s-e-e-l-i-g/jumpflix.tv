@@ -17,8 +17,10 @@
   import { showPlayer } from '$lib/tv/store';
   import {
     getAllWatchProgress,
-    setWatchedStatus
+    setWatchedStatus,
+    PROGRESS_CHANGE_EVENT
   } from '$lib/tv/watchHistory';
+  import { flushWatchHistoryNow } from '$lib/tv/watchHistory';
   import type { WatchProgress } from '$lib/tv/watchHistory';
   import { onMount } from 'svelte';
   export let selected: ContentItem | null;
@@ -156,6 +158,7 @@
     const newStatus = !currentProgress?.isWatched;
 
     setWatchedStatus(fullId, 'episode', newStatus);
+  void flushWatchHistoryNow();
     
     // Force refresh by reassigning the map
     refreshWatchProgressMap();
@@ -182,28 +185,21 @@
 
     const newStatus = !watchProgress?.isWatched;
     setWatchedStatus(preferredId, 'movie', newStatus);
+    void flushWatchHistoryNow();
     toast.success(newStatus ? 'Marked as watched' : 'Marked as unwatched');
   }
 
   onMount(() => {
     getWatchProgressForSelected();
     
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'jumpflix-watch-history' || e.key === null) {
-        getWatchProgressForSelected();
-      }
-    };
-    
-    const handleProgressChange = () => {
+    const handleProgressChange: EventListener = () => {
       getWatchProgressForSelected();
     };
     
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('jumpflix-progress-change', handleProgressChange);
+    window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('jumpflix-progress-change', handleProgressChange);
+      window.removeEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
     };
   });
 

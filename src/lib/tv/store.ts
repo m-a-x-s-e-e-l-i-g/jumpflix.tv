@@ -4,12 +4,19 @@ import { movies } from '$lib/assets/movies';
 import { series } from '$lib/assets/series';
 import type { ContentItem, Episode, SortBy } from './types';
 import { buildRankMap, filterAndSortContent, isInlinePlayable, keyFor } from './utils';
-import { getAllWatchProgress, type WatchProgress } from '$lib/tv/watchHistory';
+import {
+  getAllWatchProgress,
+  getSeriesProgressSummary,
+  PROGRESS_CHANGE_EVENT,
+  type WatchProgress
+} from '$lib/tv/watchHistory';
 
 // Base data (static for now)
 const seed = new Date().toISOString().slice(0, 10);
 export const allContent: ContentItem[] = ([...(movies as any), ...(series as any)] as ContentItem[]);
 const rankMap = buildRankMap(allContent, seed);
+const contentByKey = new Map<string, ContentItem>();
+allContent.forEach((item) => contentByKey.set(keyFor(item), item));
 
 // UI state stores
 export const searchQuery = writable('');
@@ -49,6 +56,7 @@ function baseIdFromMediaId(mediaId: string): string {
 
 function shouldCountAsWatched(progress: WatchProgress): boolean {
   if (!progress.isWatched) return false;
+  if (progress.mediaId.includes(':ep:')) return false;
   if (progress.type === 'episode') return false;
   return true;
 }
@@ -86,20 +94,33 @@ function refreshProgressSets() {
     }
   }
 
+  for (const [baseId, item] of contentByKey.entries()) {
+    if (!baseId.startsWith('series:')) continue;
+    const totalEpisodesRaw = Number((item as any)?.videoCount);
+    const totalEpisodes = Number.isFinite(totalEpisodesRaw) && totalEpisodesRaw > 0
+      ? Math.floor(totalEpisodesRaw)
+      : null;
+    const summary = getSeriesProgressSummary(baseId, { totalEpisodes });
+    if (!summary) {
+      continue;
+    }
+    if (summary.isWatched) {
+      watched.add(baseId);
+      inProgress.delete(baseId);
+    } else if (summary.percent > 0) {
+      inProgress.add(baseId);
+      watched.delete(baseId);
+    }
+  }
+
   watchedBaseIds.set(watched);
   inProgressBaseIds.set(inProgress);
 }
 
 if (browser) {
   refreshProgressSets();
-  const handleStorage = (event: StorageEvent) => {
-    if (event.key === null || event.key === 'jumpflix-watch-history') {
-      refreshProgressSets();
-    }
-  };
-  const handleProgressChange = () => refreshProgressSets();
-  window.addEventListener('storage', handleStorage);
-  window.addEventListener('jumpflix-progress-change', handleProgressChange);
+  const handleProgressChange: EventListener = () => refreshProgressSets();
+  window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
 }
 
 // Debounced search to avoid filtering on every keystroke

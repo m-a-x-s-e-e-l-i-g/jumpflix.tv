@@ -14,7 +14,7 @@
 	import XIcon from 'lucide-svelte/icons/x';
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
 	import CastIcon from 'lucide-svelte/icons/cast';
-	import { updateWatchProgress, getResumePosition } from '$lib/tv/watchHistory';
+	import { updateWatchProgress, getResumePosition, flushWatchHistoryNow } from '$lib/tv/watchHistory';
 
 	export let src: string | null = null;
 	export let title: string | null = null;
@@ -107,6 +107,7 @@
 		cleanupMobileQuery = null;
 		mobileQuery = null;
 		cancelSpeedRamp();
+		void flushWatchHistoryNow();
 	});
 
 	/**
@@ -177,14 +178,15 @@
 		return String(keySeed);
 	}
 
-	function getMediaType(): 'movie' | 'series' {
+	function getMediaType(): 'movie' | 'series' | 'episode' {
 		if (!keySeed) return 'movie';
 		// Convert to string and determine type based on keySeed prefix or src structure
 		const seedStr = String(keySeed);
+		if (seedStr.includes(':ep:')) return 'episode';
 		if (seedStr.startsWith('series:')) return 'series';
 		if (seedStr.startsWith('movie:')) return 'movie';
 		// Fallback: check if src contains common series patterns
-		if (src && (src.includes('/series/') || src.includes('/episode/'))) return 'series';
+		if (src && (src.includes('/series/') || src.includes('/episode/'))) return 'episode';
 		return 'movie';
 	}
 

@@ -6,7 +6,12 @@
   import { posterBlurhash } from '$lib/assets/blurhash';
   import { dev } from '$app/environment';
   import { loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
-  import { getWatchProgress, getLatestWatchProgressByBaseId, getAllWatchProgress } from '$lib/tv/watchHistory';
+  import {
+    getWatchProgress,
+    getLatestWatchProgressByBaseId,
+    getSeriesProgressSummary,
+    PROGRESS_CHANGE_EVENT
+  } from '$lib/tv/watchHistory';
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
 
@@ -39,54 +44,23 @@
       return;
     }
 
-    // For series, check if ALL episodes are watched
+    // For series, aggregate progress across episodes using total episode metadata when available
     if (item.type === 'series') {
       const series = item as any;
-      const allProgressArray = getAllWatchProgress();
-      
-      // Collect all episode progress for this series
-      const episodeProgressMap = new Map<string, { percent: number; isWatched: boolean }>();
-      
-      for (const progress of allProgressArray) {
-        if (progress.mediaId.startsWith(`${baseId}:ep:`)) {
-          episodeProgressMap.set(progress.mediaId, {
-            percent: progress.percent,
-            isWatched: progress.isWatched
-          });
-        }
-      }
-      
-      const episodeCount = episodeProgressMap.size;
-      
-      // If no episodes have been tracked yet, show no progress
-      if (episodeCount === 0) {
+      const hintedTotalValue = Number(series?.videoCount);
+      const hintedTotal = Number.isFinite(hintedTotalValue) && hintedTotalValue > 0
+        ? Math.floor(hintedTotalValue)
+        : null;
+      const summary = getSeriesProgressSummary(baseId, { totalEpisodes: hintedTotal });
+
+      if (!summary || (!summary.isWatched && summary.percent <= 0)) {
         watchProgress = null;
         return;
       }
-      
-      // Count watched episodes and calculate average progress
-      let watchedEpisodes = 0;
-      let totalProgress = 0;
-      
-      for (const ep of episodeProgressMap.values()) {
-        if (ep.isWatched) {
-          watchedEpisodes++;
-        }
-        totalProgress += ep.percent;
-      }
-      
-      // Calculate average progress across tracked episodes
-      const avgPercent = totalProgress / episodeCount;
-      
-      // For series, we consider it "watched" only if ALL tracked episodes are marked as watched
-      // Note: Since we don't have metadata about total episode count from the database,
-      // we can only work with episodes that have been started/tracked.
-      // A series is fully watched when all episodes that have progress are marked watched.
-      const allWatched = watchedEpisodes === episodeCount;
-      
+
       watchProgress = {
-        percent: avgPercent,
-        isWatched: allWatched
+        percent: summary.percent,
+        isWatched: summary.isWatched
       };
       return;
     }
@@ -119,24 +93,15 @@
   onMount(() => {
     updateWatchProgress();
     
-    // Update when localStorage changes (from other tabs)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'jumpflix-watch-history' || e.key === null) {
-        updateWatchProgress();
-      }
-    };
-    
     // Update when progress changes in the same tab
-    const handleProgressChange = () => {
+    const handleProgressChange: EventListener = () => {
       updateWatchProgress();
     };
     
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('jumpflix-progress-change', handleProgressChange);
+    window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('jumpflix-progress-change', handleProgressChange);
+      window.removeEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
     };
   });
 

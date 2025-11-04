@@ -1,17 +1,52 @@
 import { writable, derived, type Readable, get } from 'svelte/store';
+import { browser } from '$app/environment';
 import type { ContentItem, Episode, SortBy } from './types';
 import { buildRankMap, filterAndSortContent, isInlinePlayable, keyFor } from './utils';
+import {
+  getAllWatchProgress,
+  getSeriesProgressSummary,
+  PROGRESS_CHANGE_EVENT,
+  type WatchProgress
+} from '$lib/tv/watchHistory';
 
-// Base data (loaded at runtime)
+// Base data (loaded at runtime via setContent)
 const seed = new Date().toISOString().slice(0, 10);
-const baseContent = writable<ContentItem[]>([]);
-const rankMapStore = derived(baseContent, ($content) => buildRankMap($content, seed));
-export const allContent = derived(baseContent, ($content) => $content);
+
+export const baseContent = writable<ContentItem[]>([]);
+
+type ContentMeta = {
+  items: ContentItem[];
+  rankMap: Map<string, number>;
+  contentByKey: Map<string, ContentItem>;
+};
+
+const contentMeta = derived(baseContent, ($items): ContentMeta => {
+  const map = new Map<string, ContentItem>();
+  for (const item of $items) {
+    map.set(keyFor(item), item);
+  }
+  return {
+    items: $items,
+    rankMap: buildRankMap($items, seed),
+    contentByKey: map
+  };
+});
+
+let currentMeta: ContentMeta = {
+  items: [],
+  rankMap: new Map(),
+  contentByKey: new Map()
+};
+
+contentMeta.subscribe((meta) => {
+  currentMeta = meta;
+});
 
 // UI state stores
 export const searchQuery = writable('');
 export const showPaid = writable(true);
 export const sortBy = writable<SortBy>('default');
+export const showWatched = writable(true);
 export const selectedContent = writable<ContentItem | null>(null);
 export const showPlayer = writable(false);
 export const showDetailsPanel = writable(false);
@@ -31,6 +66,87 @@ export function markThumbnailLoaded(src?: string) {
   });
 }
 
+const watchedBaseIds = writable<Set<string>>(new Set());
+const inProgressBaseIds = writable<Set<string>>(new Set());
+
+function baseIdFromMediaId(mediaId: string): string {
+  if (!mediaId) return mediaId;
+  const first = mediaId.indexOf(':');
+  if (first === -1) return mediaId;
+  const second = mediaId.indexOf(':', first + 1);
+  if (second === -1) return mediaId;
+  return mediaId.slice(0, second);
+}
+
+function shouldCountAsWatched(progress: WatchProgress): boolean {
+  if (!progress.isWatched) return false;
+  if (progress.mediaId.includes(':ep:')) return false;
+  if (progress.type === 'episode') return false;
+  return true;
+}
+
+function refreshProgressSets() {
+  if (!browser) return;
+  const entries = getAllWatchProgress();
+  const watched = new Set<string>();
+  const progressSummary = new Map<string, { tracked: number; watchedCount: number; hasPartial: boolean }>();
+
+  for (const entry of entries) {
+    const baseId = baseIdFromMediaId(entry.mediaId);
+    if (!baseId) continue;
+
+    if (shouldCountAsWatched(entry)) {
+      watched.add(baseId);
+    }
+
+    const summary = progressSummary.get(baseId) ?? { tracked: 0, watchedCount: 0, hasPartial: false };
+    summary.tracked += 1;
+    if (entry.isWatched) summary.watchedCount += 1;
+    if (entry.percent > 0 && !entry.isWatched) summary.hasPartial = true;
+    progressSummary.set(baseId, summary);
+  }
+
+  const inProgress = new Set<string>();
+  for (const [baseId, summary] of progressSummary.entries()) {
+    if (watched.has(baseId)) continue;
+    if (summary.hasPartial) {
+      inProgress.add(baseId);
+      continue;
+    }
+    if (summary.watchedCount > 0 && summary.watchedCount < summary.tracked) {
+      inProgress.add(baseId);
+    }
+  }
+
+  for (const [baseId, item] of currentMeta.contentByKey.entries()) {
+    if (!baseId.startsWith('series:')) continue;
+    const totalEpisodesRaw = Number((item as any)?.videoCount);
+    const totalEpisodes = Number.isFinite(totalEpisodesRaw) && totalEpisodesRaw > 0
+      ? Math.floor(totalEpisodesRaw)
+      : null;
+    const summary = getSeriesProgressSummary(baseId, { totalEpisodes });
+    if (!summary) {
+      continue;
+    }
+    if (summary.isWatched) {
+      watched.add(baseId);
+      inProgress.delete(baseId);
+    } else if (summary.percent > 0) {
+      inProgress.add(baseId);
+      watched.delete(baseId);
+    }
+  }
+
+  watchedBaseIds.set(watched);
+  inProgressBaseIds.set(inProgress);
+}
+
+if (browser) {
+  refreshProgressSets();
+  const handleProgressChange: EventListener = () => refreshProgressSets();
+  window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
+}
+
 // Debounced search to avoid filtering on every keystroke
 function debounceStore<T>(src: Readable<T>, delay = 150): Readable<T> {
   return derived(src, ($v, set) => {
@@ -42,22 +158,28 @@ const debouncedSearch = debounceStore(searchQuery, 160);
 
 // Derived filtered + sorted content
 export const visibleContent = derived(
-  [baseContent, rankMapStore, debouncedSearch, showPaid, sortBy],
-  ([$content, $rankMap, $search, $showPaid, $sortBy]) =>
-    filterAndSortContent($content, $rankMap, {
+  [contentMeta, debouncedSearch, showPaid, sortBy, showWatched, watchedBaseIds, inProgressBaseIds],
+  ([$meta, $search, $showPaid, $sortBy, $showWatched, $watchedBaseIds, $inProgressBaseIds]) =>
+    filterAndSortContent($meta.items, $meta.rankMap, {
       searchQuery: $search,
       showPaid: $showPaid,
-      sortBy: $sortBy
+      sortBy: $sortBy,
+      showWatched: $showWatched,
+      watchedBaseIds: $watchedBaseIds,
+      inProgressBaseIds: $inProgressBaseIds
     })
 );
 
 // All items, only sorted (no filtering). Useful to keep DOM stable by hiding non-matching items.
-export const sortedAllContent = derived([baseContent, rankMapStore, sortBy], ([$content, $rankMap, $sortBy]) =>
-  filterAndSortContent($content, $rankMap, {
-    searchQuery: '',
-    showPaid: true,
-    sortBy: $sortBy
-  })
+export const sortedAllContent = derived(
+  [contentMeta, sortBy, inProgressBaseIds],
+  ([$meta, $sortBy, $inProgressBaseIds]) =>
+    filterAndSortContent($meta.items, $meta.rankMap, {
+      searchQuery: '',
+      showPaid: true,
+      sortBy: $sortBy,
+      inProgressBaseIds: $inProgressBaseIds
+    })
 );
 
 // Set of keys for currently visible items (for fast membership checks in UI)
@@ -144,7 +266,10 @@ export function closeDetailsPanel() { showDetailsPanel.set(false); }
 export function setSort(value: SortBy) { sortBy.set(value); }
 
 export function setContent(items: ContentItem[]) {
-  baseContent.set(items);
+  baseContent.set([...items]);
+  if (browser) {
+    refreshProgressSets();
+  }
 }
 
 

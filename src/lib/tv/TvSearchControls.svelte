@@ -4,10 +4,16 @@
   import * as m from '$lib/paraglide/messages';
   import { sortLabels } from '$lib/tv/utils';
   import type { SortBy } from '$lib/tv/types';
+  import { user } from '$lib/stores/authStore';
 
-  export let searchQuery: Writable<string>;
-  export let showPaid: Writable<boolean>;
-  export let sortBy: Writable<SortBy>;
+  interface Props {
+    searchQuery: Writable<string>;
+    showPaid: Writable<boolean>;
+    showWatched: Writable<boolean>;
+    sortBy: Writable<SortBy>;
+  }
+
+  let { searchQuery, showPaid, showWatched, sortBy }: Props = $props();
 
   function clearSearch() {
     searchQuery.set('');
@@ -26,12 +32,16 @@
   const containerClass = 'tv-search-surface';
   const labelClass = 'tv-search-toggle';
   const selectClass = 'tv-search-select';
+  const isLoggedIn = $derived(Boolean($user));
 </script>
 
 <div id="search" class="relative z-10 mx-auto mt-30 w-full max-w-5xl">
   <div class={containerClass}>
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
-      <form class="relative flex-1 min-w-[260px] group" on:submit|preventDefault>
+      <form
+        class="relative flex-1 min-w-[260px] group"
+        onsubmit={(event) => event.preventDefault()}
+      >
         <span class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#f87171] transition-colors z-10">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
@@ -41,7 +51,7 @@
           <button
             type="button"
             class="absolute inset-y-0 right-3 flex items-center rounded-md p-1 text-gray-400 transition-colors hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e50914] focus:ring-offset-2 focus:ring-offset-slate-950/70 z-10"
-            on:click={clearSearch}
+            onclick={clearSearch}
             aria-label="Clear search"
           >
             <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
@@ -51,7 +61,7 @@
         {/if}
         <input
           value={$searchQuery}
-          on:input={handleInput}
+          oninput={handleInput}
           type="text"
           autocomplete="off"
           spellcheck="false"
@@ -71,12 +81,23 @@
             ariaLabel={m.tv_showPaid()}
             on:change={(event) => showPaid.set(event.detail)}
           />
-  </label>
+        </label>
+
+        {#if isLoggedIn}
+          <label class={labelClass}>
+            <span>{m.tv_showWatched()}</span>
+            <Switch
+              checked={$showWatched}
+              ariaLabel={m.tv_showWatched()}
+              on:change={(event) => showWatched.set(event.detail)}
+            />
+          </label>
+        {/if}
 
         <div class="relative min-w-[170px]">
           <select
             value={$sortBy}
-            on:change={handleSortChange}
+            onchange={handleSortChange}
             class={selectClass}
           >
             {#each Object.entries(sortLabels) as [value, label]}

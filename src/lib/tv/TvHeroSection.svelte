@@ -7,7 +7,7 @@
   export let logoTilt = 0;
 </script>
 
-<div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-8 text-center">
+<div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-8 text-center mt-12">
   <div class="hero-logo-stack">
     <a href="/" aria-label="Go to homepage" data-sveltekit-reload class="hero-logo-link">
       <Image

@@ -8,6 +8,7 @@
 	import { onMount, setContext } from 'svelte';
 	import type { Action } from 'svelte/action';
 	import { page } from '$app/stores';
+	import type { ContentItem } from '$lib/tv/types';
 	import {
 		Sheet as SheetRoot,
 		SheetTrigger,
@@ -24,12 +25,14 @@
 	import TvPage from '$lib/tv/TvPage.svelte';
 	import { showDetailsPanel } from '$lib/tv/store';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
+	import UserProfileButton from '$lib/components/UserProfileButton.svelte';
+	import HelpTipsButton from '$lib/components/HelpTipsButton.svelte';
 	import {
 		SCROLL_CONTEXT_KEY,
 		type ScrollSubscriber,
 		type ScrollSubscription
 	} from '$lib/scroll-context';
-	import type { ContentItem } from '$lib/tv/types';
+	import { initWatchHistory } from '$lib/tv/watchHistory';
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
 
@@ -326,7 +329,8 @@
 
 	onMount(() => {
 		if (typeof window === 'undefined') return;
-		const cleanupFns = [addEventListeners(), setupScrollEffects()];
+		const stopWatchHistory = initWatchHistory();
+		const cleanupFns = [addEventListeners(), setupScrollEffects(), stopWatchHistory];
 		return () => {
 			for (const cleanup of cleanupFns) {
 				cleanup?.();
@@ -376,7 +380,7 @@
 	<meta name="robots" content="index, follow, max-image-preview:large" />
 	<meta name="theme-color" content="#0b1220" />
 	<!-- PWA: iOS/Apple support -->
-	<meta name="mobile-web-app-capable" content="yes" />
+	<meta name="mobile-web-app-capable" content="yes">
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 	<meta name="apple-mobile-web-app-title" content="JUMPFLIX" />
 	<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -421,7 +425,7 @@
 	<!-- Top-left settings cog that opens a left-side sheet -->
 	<SheetRoot bind:open={sheetOpen}>
 		<div
-			class="absolute top-4 left-4 z-[var(--z-index-settings)]"
+			class="absolute top-4 left-4 z-[var(--z-index-settings)] flex gap-2"
 			class:hidden={$showDetailsPanel && isMobile}
 		>
 			<SheetTrigger 
@@ -431,6 +435,10 @@
 				<CogIcon class="size-5" />
 				<span class="sr-only">{m.settings_open()}</span>
 			</SheetTrigger>
+
+			<HelpTipsButton />
+			
+			<UserProfileButton />
 		</div>
 
 		<SheetContent side="left" class="flex h-full flex-col p-0">

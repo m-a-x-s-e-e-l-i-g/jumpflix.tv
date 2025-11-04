@@ -14,6 +14,7 @@
 	import XIcon from 'lucide-svelte/icons/x';
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
 	import CastIcon from 'lucide-svelte/icons/cast';
+	import { updateWatchProgress, getResumePosition, flushWatchHistoryNow } from '$lib/tv/watchHistory';
 
 	export let src: string | null = null;
 	export let title: string | null = null;
@@ -46,6 +47,7 @@
 
 	let cleanupGestures: (() => void) | null = null;
 	let cleanupAutoHide: (() => void) | null = null;
+	let cleanupProgressTracking: (() => void) | null = null;
 	let controlsEl: HTMLElement | null = null;
 	let hideControlsTimer: ReturnType<typeof setTimeout> | null = null;
 	let controlsVisible = true;
@@ -65,6 +67,11 @@
 	let isLongPressSlowMotionActive = false;
 	let speedRampAnimationId: number | null = null;
 
+	// Watch progress tracking
+	let lastProgressUpdate = 0;
+	let hasResumed = false;
+	const PROGRESS_UPDATE_INTERVAL = 5000; // Update every 5 seconds
+
 	$: if (browser && playerEl) {
 		cleanupGestures?.();
 		cleanupGestures = setupGestureHandlers(playerEl);
@@ -81,15 +88,26 @@
 		cleanupAutoHide = null;
 	}
 
+	$: if (browser && playerEl) {
+		cleanupProgressTracking?.();
+		cleanupProgressTracking = setupProgressTracking(playerEl);
+	} else if (!browser || !playerEl) {
+		cleanupProgressTracking?.();
+		cleanupProgressTracking = null;
+	}
+
 	onDestroy(() => {
 		cleanupGestures?.();
 		cleanupGestures = null;
 		cleanupAutoHide?.();
 		cleanupAutoHide = null;
+		cleanupProgressTracking?.();
+		cleanupProgressTracking = null;
 		cleanupMobileQuery?.();
 		cleanupMobileQuery = null;
 		mobileQuery = null;
 		cancelSpeedRamp();
+		void flushWatchHistoryNow();
 	});
 
 	/**
@@ -151,6 +169,115 @@
 		};
 
 		speedRampAnimationId = requestAnimationFrame(animate);
+	}
+
+	// Watch progress tracking helpers
+	function getMediaId(): string | null {
+		if (!keySeed) return null;
+		// Use the full keySeed as the mediaId (format: "movie:id:yt:videoId" or "series:id:ep:episodeId")
+		return String(keySeed);
+	}
+
+	function getMediaType(): 'movie' | 'series' | 'episode' {
+		if (!keySeed) return 'movie';
+		// Convert to string and determine type based on keySeed prefix or src structure
+		const seedStr = String(keySeed);
+		if (seedStr.includes(':ep:')) return 'episode';
+		if (seedStr.startsWith('series:')) return 'series';
+		if (seedStr.startsWith('movie:')) return 'movie';
+		// Fallback: check if src contains common series patterns
+		if (src && (src.includes('/series/') || src.includes('/episode/'))) return 'episode';
+		return 'movie';
+	}
+
+	function trackProgress(player: MediaPlayerElement) {
+		if (!browser) return;
+		const mediaId = getMediaId();
+		if (!mediaId) return;
+
+		const currentTime = player.currentTime || 0;
+		const duration = player.duration || 0;
+
+		if (duration <= 0) return;
+
+		// Update progress
+		updateWatchProgress(
+			mediaId,
+			getMediaType(),
+			currentTime,
+			duration
+		);
+
+		lastProgressUpdate = Date.now();
+	}
+
+	function setupProgressTracking(player: MediaPlayerElement) {
+		if (!browser) return () => {};
+		const mediaId = getMediaId();
+		if (!mediaId) return () => {};
+
+		// Handle timeupdate for periodic progress tracking
+		const handleTimeUpdate = () => {
+			const now = Date.now();
+			if (now - lastProgressUpdate >= PROGRESS_UPDATE_INTERVAL) {
+				trackProgress(player);
+			}
+		};
+
+		// Handle pause to save progress
+		const handleProgressPause = () => {
+			trackProgress(player);
+		};
+
+		// Handle ended to mark as watched
+		const handleProgressEnded = () => {
+			trackProgress(player);
+		};
+
+		// Handle duration change (when metadata loads)
+		const handleDurationChange = () => {
+			if (!hasResumed && player.duration > 0) {
+				const resumePos = getResumePosition(mediaId, player.duration);
+				if (resumePos !== null) {
+					player.currentTime = resumePos;
+				}
+				hasResumed = true;
+			}
+		};
+
+		// Handle can-play event for resume
+		const handleCanPlay = () => {
+			if (!hasResumed && player.duration > 0) {
+				const resumePos = getResumePosition(mediaId, player.duration);
+				if (resumePos !== null) {
+					player.currentTime = resumePos;
+				}
+				hasResumed = true;
+			}
+		};
+
+		player.addEventListener('time-update', handleTimeUpdate);
+		player.addEventListener('pause', handleProgressPause);
+		player.addEventListener('ended', handleProgressEnded);
+		player.addEventListener('duration-change', handleDurationChange);
+		player.addEventListener('can-play', handleCanPlay);
+
+		// Try to resume immediately if duration is already available
+		if (player.duration > 0 && !hasResumed) {
+			const resumePos = getResumePosition(mediaId, player.duration);
+			if (resumePos !== null) {
+				player.currentTime = resumePos;
+			}
+			hasResumed = true;
+		}
+
+		return () => {
+			player.removeEventListener('time-update', handleTimeUpdate);
+			player.removeEventListener('pause', handleProgressPause);
+			player.removeEventListener('ended', handleProgressEnded);
+			player.removeEventListener('duration-change', handleDurationChange);
+			player.removeEventListener('can-play', handleCanPlay);
+		};
 	}
 
 	function setupGestureHandlers(player: MediaPlayerElement) {
@@ -1016,6 +1143,11 @@
 	$: resolvedPoster = poster ?? undefined;
 	$: playerTitle = title ?? undefined;
 	$: shouldRender = mounted && browser && !!resolvedSrc;
+
+	// Reset resume state when content changes
+	$: if (keySeed) {
+		hasResumed = false;
+	}
 
 </script>
 

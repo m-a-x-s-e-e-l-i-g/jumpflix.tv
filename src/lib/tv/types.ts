@@ -62,10 +62,14 @@ export interface TvState {
   searchQuery: string;
   showPaid: boolean; // show paid content
   sortBy: SortBy;
+  showWatched?: boolean;
+  watchedBaseIds?: Set<string>;
+  inProgressBaseIds?: Set<string>;
 }
 
 export const DEFAULT_TV_STATE: TvState = {
   searchQuery: '',
   showPaid: true,
-  sortBy: 'default'
+  sortBy: 'default',
+  showWatched: true
 };

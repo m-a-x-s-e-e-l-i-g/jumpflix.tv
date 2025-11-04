@@ -18,6 +18,7 @@
 	"tv_playlistBadge": "Playlist",
 	"tv_noResults": "No results. Try adjusting filters.",
 	"tv_showPaid": "Paid",
+	"tv_showWatched": "watched",
 	"tv_close": "Close",
 	"tv_noPlayer": "No player available"
 	,"tv_sort_random": "Sort: Random"
@@ -70,4 +71,12 @@
 	,"submit_film_error_network": "Network error. Please try again."
 	,"submit_film_close": "Close dialog"
 	,"submit_film_success": "Thanks for the submission!"
+	,"tv_markWatched": "Mark as watched"
+	,"tv_markUnwatched": "Mark as unwatched"
+	,"help_buttonLabel": "Show quick tips"
+	,"help_dialogLabel": "JUMPFLIX quick tips"
+	,"help_title": "Quick tips"
+	,"help_close": "Close tips"
+	,"help_tip_slowMotion": "Hold spacebar or longpress in the player for slow motion."
+	,"help_tip_login": "Sign in to track progress"
 }

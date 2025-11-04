@@ -92,8 +92,8 @@ npm install
 
 ```bash
 # Supabase (required for content)
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-anon-key
+PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Telegram (optional - for film submissions)
@@ -140,8 +140,8 @@ The app requires Supabase for content management. Here's how to set it up:
 1. **Create a Supabase project** at [supabase.com](https://supabase.com)
 2. **Apply the schema**: Run the SQL in `supabase/migrations/202510310001_initial_schema.sql` in your Supabase SQL editor
 3. **Get your credentials** from Project Settings → API:
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
+   - `PUBLIC_SUPABASE_URL`
+   - `PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
 4. **Add to `.env`** (see above)
 5. **Seed the database** (optional):
@@ -176,8 +176,8 @@ See `scripts/README.md` for detailed CLI documentation.
 Create a `.env` (or populate your deployment provider) with:
 
 ```bash
-SUPABASE_URL="https://YOUR-PROJECT.supabase.co"
-SUPABASE_ANON_KEY="public-anon-key"
+PUBLIC_SUPABASE_URL="https://YOUR-PROJECT.supabase.co"
+PUBLIC_SUPABASE_ANON_KEY="public-anon-key"
 SUPABASE_SERVICE_ROLE_KEY="service-role-key" # server-only
 ```
 

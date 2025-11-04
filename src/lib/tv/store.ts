@@ -11,7 +11,7 @@ import {
   type WatchProgress
 } from '$lib/tv/watchHistory';
 
-// Base data (static for now)
+// Base data (loaded at runtime)
 const seed = new Date().toISOString().slice(0, 10);
 export const allContent: ContentItem[] = ([...(movies as any), ...(series as any)] as ContentItem[]);
 const rankMap = buildRankMap(allContent, seed);
@@ -188,7 +188,7 @@ visibleContent.subscribe((list) => {
 export function selectContent(item: ContentItem) {
   selectedContent.set(item);
   // IMPORTANT: Use the current visibleContent ordering (which can be filtered & sorted)
-  // rather than the original allContent ordering. Using allContent caused keyboard
+  // rather than the full catalog ordering. Using the full list caused keyboard
   // navigation to "jump" after clicking a card because selectedIndex did not match
   // the position within the displayed grid.
   let currentList: ContentItem[] = [];
@@ -238,5 +238,9 @@ export function closeDetailsPanel() { showDetailsPanel.set(false); }
 
 // Helper to update sort
 export function setSort(value: SortBy) { sortBy.set(value); }
+
+export function setContent(items: ContentItem[]) {
+  baseContent.set(items);
+}
 
 

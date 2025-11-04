@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/public';
-import { movieSlugMap, seriesSlugMap, getItemBySlug } from '$lib/tv/slug';
+import { fetchAllContent } from '$lib/server/content-service';
+import type { ContentItem } from '$lib/tv/types';
 
 export const prerender = true;
 
@@ -19,26 +20,21 @@ function xmlEscape(input: string): string {
 
 export const GET = async () => {
   // Base routes
-  const paths: string[] = ['/'];
+  const entries: Array<{ path: string; item: ContentItem | null }> = [{ path: '/', item: null }];
 
-  // Dynamic content routes (movies and series)
-  const moviePaths = Array.from(movieSlugMap.keys())
-    .sort()
-    .map((slug) => `/movie/${slug}`);
+  const content = await fetchAllContent();
+  for (const item of content) {
+    if (!item?.slug) continue;
+    const path = item.type === 'movie' ? `/movie/${item.slug}` : `/series/${item.slug}`;
+    entries.push({ path, item });
+  }
 
-  const seriesPaths = Array.from(seriesSlugMap.keys())
-    .sort()
-    .map((slug) => `/series/${slug}`);
-
-  const all = [...paths, ...moviePaths, ...seriesPaths];
+  const deduped = Array.from(new Map(entries.map((entry) => [entry.path, entry])).values());
 
   const now = new Date().toISOString();
-  const urls = all
-    .map((path) => {
-  const isMovie = path.startsWith('/movie/');
-  const isSeries = path.startsWith('/series/');
-  const slug = isMovie || isSeries ? path.split('/').pop() || '' : '';
-  const item = slug ? getItemBySlug(isMovie ? 'movie' : 'series', slug) : null;
+  const urls = deduped
+    .sort((a, b) => a.path.localeCompare(b.path))
+    .map(({ path, item }) => {
       let lastmod = now;
       if (item && item.type === 'movie' && 'year' in item && item.year) {
         lastmod = `${item.year}-01-01`;

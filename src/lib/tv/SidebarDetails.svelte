@@ -11,7 +11,6 @@
   import EyeOffIcon from '@lucide/svelte/icons/eye-off';
   import * as m from '$lib/paraglide/messages';  
   import { blurhashToCssGradientString } from '@unpic/placeholder';
-  import { posterBlurhash } from '$lib/assets/blurhash';
   import { fade } from 'svelte/transition';
   import { decode } from 'html-entities';
   import { showPlayer } from '$lib/tv/store';
@@ -292,7 +291,7 @@
   }
 
   // BlurHash placeholder background for selected thumbnail
-  $: blurhash = selected?.blurhash || (selected?.thumbnail ? posterBlurhash[selected.thumbnail] : undefined);
+  $: blurhash = selected?.blurhash;
   $: background = blurhash ? blurhashToCssGradientString(blurhash) : undefined;
 
   async function copyLink() {

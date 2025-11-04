@@ -27,7 +27,8 @@
     closeDetailsPanel,
     selectedEpisode,
     openEpisode,
-    selectEpisode
+    selectEpisode,
+    setContent
   } from '$lib/tv/store';
   import type { ContentItem } from '$lib/tv/types';
   import { browser } from '$app/environment';
@@ -36,9 +37,16 @@
   import { clampIndex, computeColumns, ensureVisibleSelection, isTypingTarget } from '$lib/tv/helpers/grid';
   import { SCROLL_CONTEXT_KEY, type ScrollSubscription } from '$lib/scroll-context';
 
-	export let initialItem: ContentItem | null = null;
-	export let initialEpisodeNumber: number | null = null;
-	export let initialSeasonNumber: number | null = null;
+  export let content: ContentItem[] = [];
+  export let initialItem: ContentItem | null = null;
+  export let initialEpisodeNumber: number | null = null;
+  export let initialSeasonNumber: number | null = null;
+
+  $: {
+    const pageContent = ($page?.data as any)?.content;
+    const items = Array.isArray(pageContent) && pageContent.length ? pageContent : content;
+    setContent(items ?? []);
+  }
 
   let isMobile = false;
   let gridEl: HTMLElement | null = null;
@@ -49,26 +57,7 @@
   let columns = 1;
   let restoreMobileOverlay = false;
   const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
-  let shouldScrollToResults = false;
-  let scrollQueued = false;
   let catalogMinHeight = 0;
-
-  async function scrollToSearchResults() {
-    if (!browser) return;
-    await tick();
-    const target = document.getElementById('search') ?? document.getElementById('catalog');
-    if (!target) return;
-    target.scrollIntoView({ block: 'start' });
-  }
-
-  function requestScrollToResults() {
-    if (!browser || scrollQueued) return;
-    scrollQueued = true;
-    queueMicrotask(async () => {
-      scrollQueued = false;
-      await scrollToSearchResults();
-    });
-  }
 
   if (browser) {
     const initialPage = get(page);
@@ -76,10 +65,6 @@
       const initialQuery = initialPage.url.searchParams.get('q') ?? '';
       if (initialQuery !== get(searchQuery)) {
         searchQuery.set(initialQuery);
-      }
-      if (initialQuery) {
-        shouldScrollToResults = true;
-        requestScrollToResults();
       }
     }
   }
@@ -238,18 +223,30 @@
 
   onMount(() => {
     currentPath = `${get(page).url.pathname}${get(page).url.search}`;
+    
+    // Lock scroll position when content filters change to prevent jumpy behavior
+    let lastScrollY = 0;
+    let lockScroll = false;
+    const unsubVisible = visibleContent.subscribe(() => {
+      if (!browser) return;
+      // Save current scroll position before content changes
+      lastScrollY = window.scrollY;
+      lockScroll = true;
+      // Restore scroll position after DOM updates
+      requestAnimationFrame(() => {
+        if (lockScroll) {
+          window.scrollTo(0, lastScrollY);
+          lockScroll = false;
+        }
+      });
+    });
+    
     const unsubPage = page.subscribe((p) => {
       currentPath = `${p.url.pathname}${p.url.search}`;
       if (p.url.pathname === '/') {
         const nextQuery = p.url.searchParams.get('q') ?? '';
         if (nextQuery !== get(searchQuery)) {
           searchQuery.set(nextQuery);
-          if (nextQuery) {
-            requestScrollToResults();
-          }
-        }
-        if (!nextQuery) {
-          shouldScrollToResults = false;
         }
       }
     });
@@ -263,7 +260,7 @@
 
     const updateCatalogMinHeight = () => {
       if (!browser) return;
-      const searchEl = document.getElementById('search');
+      const searchEl = document.getElementById('tv-search-controls');
       const searchHeight = searchEl?.getBoundingClientRect().height ?? 0;
       const viewportHeight = window.innerHeight;
       catalogMinHeight = Math.max(0, viewportHeight - searchHeight);
@@ -296,7 +293,7 @@
     columns = computeColumns(gridEl);
     updateCatalogMinHeight();
 
-    const searchEl = document.getElementById('search');
+    const searchEl = document.getElementById('tv-search-controls');
     const searchHeightObserver = (typeof ResizeObserver !== 'undefined')
       ? new ResizeObserver(() => updateCatalogMinHeight())
       : null;
@@ -349,10 +346,6 @@
             window.removeEventListener('scroll', fallbackScroll);
           };
         })();
-    if (shouldScrollToResults) {
-      requestScrollToResults();
-      shouldScrollToResults = false;
-    }
     return () => {
       document.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('resize', resizeHandler);
@@ -360,6 +353,7 @@
       cleanupScroll?.();
       if (rafId !== null) cancelAnimationFrame(rafId);
       unsubPage();
+      unsubVisible();
     };
   });
 

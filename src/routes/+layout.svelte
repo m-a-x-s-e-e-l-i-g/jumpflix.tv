@@ -38,7 +38,12 @@
 	// data from +layout.ts
 	let { children, data } = $props<{
 		children: any;
-		data: { item: any; initialEpisodeNumber: number | null; initialSeasonNumber: number | null };
+		data: {
+			content?: ContentItem[];
+			item: ContentItem | null;
+			initialEpisodeNumber: number | null;
+			initialSeasonNumber: number | null;
+		};
 	}>();
 
 	let isMobile = $state(false);
@@ -58,6 +63,7 @@
 			scrollSubscribers.delete(subscriber);
 		};
 	};
+
 
 	setContext(SCROLL_CONTEXT_KEY, subscribeToScroll);
 
@@ -421,13 +427,12 @@
 			class="absolute top-4 left-4 z-[var(--z-index-settings)] flex gap-2"
 			class:hidden={$showDetailsPanel && isMobile}
 		>
-			<SheetTrigger aria-label={m.settings_open()}>
-				<button
-					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-				>
-					<CogIcon class="size-5" />
-					<span class="sr-only">{m.settings_open()}</span>
-				</button>
+			<SheetTrigger 
+				aria-label={m.settings_open()}
+				class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+			>
+				<CogIcon class="size-5" />
+				<span class="sr-only">{m.settings_open()}</span>
 			</SheetTrigger>
 
 			<HelpTipsButton />
@@ -522,6 +527,7 @@
 			{@render children?.()}
 		{:else}
 			<TvPage
+				content={data?.content ?? []}
 				initialItem={data?.item ?? null}
 				initialEpisodeNumber={data?.initialEpisodeNumber ?? null}
 				initialSeasonNumber={data?.initialSeasonNumber ?? null}

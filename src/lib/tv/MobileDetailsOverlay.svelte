@@ -13,7 +13,6 @@
   import { Image } from '@unpic/svelte';
   import { dev } from '$app/environment';
   import { blurhashToCssGradientString } from '@unpic/placeholder';
-  import { posterBlurhash } from '$lib/assets/blurhash';
   import { decode } from 'html-entities';
   import {
     getAllWatchProgress,
@@ -293,7 +292,7 @@
   }
 
   // BlurHash placeholder background for selected thumbnail
-  $: blurhash = selected?.blurhash || (selected?.thumbnail ? posterBlurhash[selected.thumbnail] : undefined);
+  $: blurhash = selected?.blurhash;
   $: background = blurhash ? blurhashToCssGradientString(blurhash) : undefined;
 
   async function copyLink() {

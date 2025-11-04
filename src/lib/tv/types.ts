@@ -1,6 +1,7 @@
 // Central content type definitions for the TV page
 export interface BaseContent {
   id: number | string;
+  slug: string;
   title: string;
   description?: string;
   thumbnail?: string;
@@ -45,7 +46,7 @@ export interface Episode {
 
 export interface Season {
   seasonNumber: number; // 1-based index
-  playlistId: string; // YouTube playlist backing this season
+  playlistId?: string; // Optional YouTube playlist backing this season
   episodes?: Episode[]; // optional cache
 }
 

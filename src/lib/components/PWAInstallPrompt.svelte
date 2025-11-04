@@ -3,8 +3,7 @@
   import { onMount } from 'svelte';
 
   /** How long (ms) to suppress the dialog after the user dismisses it */
-  const SUPPRESS_MS = 1; // 2 weeks
-//   const SUPPRESS_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks
+  const SUPPRESS_MS = 10 * 7 * 24 * 60 * 60 * 1000; // 10 weeks
   const STORAGE_KEY = 'pwa-install-dismissed-at';
   let el: HTMLElement | null = null;
   // Allow parent to capture reference

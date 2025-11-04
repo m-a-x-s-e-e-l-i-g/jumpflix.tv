@@ -23,10 +23,18 @@
   import type { WatchProgress } from '$lib/tv/watchHistory';
   import { onMount } from 'svelte';
   import { user as authUser } from '$lib/stores/authStore';
+  import BangerMeter from '$lib/components/Bangerometer.svelte';
+  import { getUserRating, saveRating, getMediaRatingSummary } from '$lib/ratings';
+  import AuthDialog from '$lib/components/AuthDialog.svelte';
 
   let isAuthenticated = false;
 
   $: isAuthenticated = Boolean($authUser);
+
+  // Rating state
+  let currentUserRating: number | null = null;
+  let ratingsSummary: { averageRating: number; ratingCount: number } | null = null;
+  let showAuthDialog = false;
 
   export let show = false;
   export let isMobile = false;
@@ -215,6 +223,42 @@
 
   $: if (browser && selected) {
     getWatchProgressForSelected();
+    // Reset rating immediately when item changes, then load actual data
+    currentUserRating = null;
+    ratingsSummary = null;
+    loadRatingData();
+  }
+
+  async function loadRatingData() {
+    if (!selected || !browser) {
+      currentUserRating = null;
+      ratingsSummary = null;
+      return;
+    }
+
+    try {
+      const [userRating, summary] = await Promise.all([
+        getUserRating(selected.id),
+        getMediaRatingSummary(selected.id)
+      ]);
+      currentUserRating = userRating;
+      ratingsSummary = summary;
+    } catch (error) {
+      console.error('Error loading rating data:', error);
+    }
+  }
+
+  async function handleRatingChange(rating: number) {
+    if (!selected) return;
+    await saveRating(selected.id, rating);
+    currentUserRating = rating;
+    // Refresh summary to show updated average
+    const summary = await getMediaRatingSummary(selected.id);
+    ratingsSummary = summary;
+  }
+
+  function handleAuthRequired() {
+    showAuthDialog = true;
   }
 
   $: if (browser && selectedEpisode) {
@@ -384,6 +428,19 @@
           <p class="text-gray-200 text-sm leading-relaxed">{selected.description}</p>
         </div>
 
+        <!-- Bangerometer Rating Component -->
+        <div>
+          <BangerMeter
+            mediaId={selected.id}
+            initialRating={currentUserRating}
+            onRatingChange={handleRatingChange}
+            onAuthRequired={handleAuthRequired}
+            isWatched={watchProgress?.isWatched || false}
+            averageRating={ratingsSummary?.averageRating || 0}
+            ratingCount={ratingsSummary?.ratingCount || 0}
+          />
+        </div>
+
         <!-- Watch Progress Toggle (Movies only) -->
         {#if isAuthenticated && selected.type === 'movie'}
           <div>
@@ -541,6 +598,9 @@
     </div>
   </div>
 {/if}
+
+<!-- Auth Dialog for non-authenticated users -->
+<AuthDialog bind:open={showAuthDialog} />
 
 <style>
   .mobile-overlay-surface {

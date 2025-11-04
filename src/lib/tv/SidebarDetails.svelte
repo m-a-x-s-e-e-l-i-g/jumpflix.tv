@@ -23,10 +23,19 @@
   import type { WatchProgress } from '$lib/tv/watchHistory';
   import { onMount } from 'svelte';
   import { user as authUser } from '$lib/stores/authStore';
+  import BangerMeter from '$lib/components/Bangerometer.svelte';
+  import { getUserRating, saveRating, getMediaRatingSummary } from '$lib/ratings';
+  import AuthDialog from '$lib/components/AuthDialog.svelte';
 
   let isAuthenticated = false;
 
   $: isAuthenticated = Boolean($authUser);
+  
+  // Rating state
+  let currentUserRating: number | null = null;
+  let ratingsSummary: { averageRating: number; ratingCount: number } | null = null;
+  let showAuthDialog = false;
+
   export let selected: ContentItem | null;
   export let openContent: (c: ContentItem) => void;
   export let openExternal: (c: ContentItem) => void;
@@ -219,6 +228,42 @@
   $: if (selected) {
     showAllCreators = false;
     showAllStarring = false;
+    // Reset rating immediately when item changes, then load actual data
+    currentUserRating = null;
+    ratingsSummary = null;
+    loadRatingData();
+  }
+
+  async function loadRatingData() {
+    if (!selected || !browser) {
+      currentUserRating = null;
+      ratingsSummary = null;
+      return;
+    }
+
+    try {
+      const [userRating, summary] = await Promise.all([
+        getUserRating(selected.id),
+        getMediaRatingSummary(selected.id)
+      ]);
+      currentUserRating = userRating;
+      ratingsSummary = summary;
+    } catch (error) {
+      console.error('Error loading rating data:', error);
+    }
+  }
+
+  async function handleRatingChange(rating: number) {
+    if (!selected) return;
+    await saveRating(selected.id, rating);
+    currentUserRating = rating;
+    // Refresh summary to show updated average
+    const summary = await getMediaRatingSummary(selected.id);
+    ratingsSummary = summary;
+  }
+
+  function handleAuthRequired() {
+    showAuthDialog = true;
   }
 
   // Seasons & Episodes for series
@@ -382,6 +427,19 @@
     <div>
       <br />
   <p class="text-gray-300 leading-relaxed text-sm font-sans">{selected.description}</p>
+    </div>
+
+    <!-- Bangerometer Rating Component -->
+    <div class="mt-6">
+      <BangerMeter
+        mediaId={selected.id}
+        initialRating={currentUserRating}
+        onRatingChange={handleRatingChange}
+        onAuthRequired={handleAuthRequired}
+        isWatched={watchProgress?.isWatched || false}
+        averageRating={ratingsSummary?.averageRating || 0}
+        ratingCount={ratingsSummary?.ratingCount || 0}
+      />
     </div>
 
     <!-- Watch Progress Toggle (Movies only) -->
@@ -603,6 +661,9 @@
     <p>{m.tv_selectPlaceholder()}</p>
   </div>
 {/if}
+
+<!-- Auth Dialog for non-authenticated users -->
+<AuthDialog bind:open={showAuthDialog} />
 
 <style>
   .details-backdrop-overlay {

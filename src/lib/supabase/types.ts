@@ -182,8 +182,56 @@ export interface Database {
 					}
 				];
 			};
+			ratings: {
+				Row: {
+					id: number;
+					user_id: string;
+					media_id: number;
+					rating: number;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: number;
+					user_id: string;
+					media_id: number;
+					rating: number;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: number;
+					user_id?: string;
+					media_id?: number;
+					rating?: number;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'ratings_user_id_fkey';
+						columns: ['user_id'];
+						referencedRelation: 'users';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'ratings_media_id_fkey';
+						columns: ['media_id'];
+						referencedRelation: 'media_items';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 		};
-		Views: {};
+		Views: {
+			media_ratings_summary: {
+				Row: {
+					media_id: number;
+					rating_count: number;
+					average_rating: number;
+				};
+			};
+		};
 		Functions: {};
 		Enums: {};
 	};

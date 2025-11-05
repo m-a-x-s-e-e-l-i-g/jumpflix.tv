@@ -384,7 +384,7 @@
 
 {#if isMobile && show && selected}
   <div class={overlayClass} transition:fade>
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex-1 overflow-y-auto overflow-x-hidden">
       <div class={headerClass}>
   <button on:click={handleBack} class="flex items-center gap-2 text-sm font-medium text-white px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>

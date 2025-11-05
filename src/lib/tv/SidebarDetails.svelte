@@ -402,7 +402,7 @@
     {/if}
   <div class={backdropOverlayClass}></div>
   </div>
-  <div class="space-y-4 relative z-10 flex-1">
+  <div class="space-y-4 relative z-10 flex-1 overflow-y-auto">
     <div>
   <h2 class="text-3xl font-serif font-light text-gray-100 tracking-wide mb-4">{selected.title}</h2>
     <div class="flex items-center gap-4 text-sm text-gray-400 mb-4">

@@ -8,8 +8,14 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../src/lib/supabase/types';
 import * as prompts from '@inquirer/prompts';
 import * as dotenv from 'dotenv';
-import { generateBlurhashFromUrl } from './utils/blurhash-generator.js';
+import { generateBlurhashFromUrl, generateBlurhashFromFile } from './utils/blurhash-generator.js';
 import { syncAllSeriesEpisodes, syncPlaylistEpisodes } from './utils/youtube-sync.js';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const projectRoot = join(__dirname, '..');
 
 // Load environment variables
 dotenv.config({ path: '.env' });
@@ -46,6 +52,24 @@ function parseArrayInput(input: string): string[] {
 		.split(',')
 		.map((s) => s.trim())
 		.filter((s) => s.length > 0);
+}
+
+/**
+ * Generate blurhash from a thumbnail path or URL
+ * Automatically detects if the input is a URL or local file path
+ */
+async function generateBlurhash(thumbnail: string): Promise<string> {
+	// Check if it's a URL
+	if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
+		return await generateBlurhashFromUrl(thumbnail);
+	}
+	
+	// It's a local path - convert to absolute path if needed
+	const imagePath = thumbnail.startsWith('/') 
+		? join(projectRoot, 'static', thumbnail)
+		: join(projectRoot, thumbnail);
+	
+	return await generateBlurhashFromFile(imagePath);
 }
 
 // Main menu
@@ -105,12 +129,6 @@ async function addMovie() {
 		validate: (input) => input.trim().length > 0 || 'Title is required'
 	});
 
-	const slug =
-		(await prompts.input({
-			message: 'Slug (leave empty to auto-generate):',
-			default: slugify(title)
-		})) || slugify(title);
-
 	const description = await prompts.input({
 		message: 'Description:'
 	});
@@ -118,6 +136,13 @@ async function addMovie() {
 	const year = await prompts.input({
 		message: 'Year:'
 	});
+
+	const defaultSlug = year ? `${slugify(title)}-${year}` : slugify(title);
+	const slug =
+		(await prompts.input({
+			message: 'Slug (leave empty to auto-generate):',
+			default: defaultSlug
+		})) || defaultSlug;
 
 	const duration = await prompts.input({
 		message: 'Duration (e.g., "2h 15m" or "135min"):'
@@ -138,15 +163,15 @@ async function addMovie() {
 	// Auto-generate blurhash if thumbnail is provided
 	let blurhash: string | null = null;
 	if (thumbnail) {
-		const generateBlurhash = await prompts.confirm({
+		const shouldGenerateBlurhash = await prompts.confirm({
 			message: 'Generate blurhash from thumbnail?',
 			default: true
 		});
 
-		if (generateBlurhash) {
+		if (shouldGenerateBlurhash) {
 			try {
 				console.log('🎨 Generating blurhash...');
-				blurhash = await generateBlurhashFromUrl(thumbnail);
+				blurhash = await generateBlurhash(thumbnail);
 				console.log('✓ Blurhash generated');
 			} catch (error) {
 				console.warn('⚠ Failed to generate blurhash:', error instanceof Error ? error.message : String(error));
@@ -207,6 +232,13 @@ async function addMovie() {
 
 	if (error) {
 		console.error('❌ Error adding movie:', error.message);
+		if (error.message.includes('duplicate key') || error.message.includes('media_items_pkey')) {
+			console.error('\n💡 Database sequence issue detected!');
+			console.error('   The ID sequence is out of sync with your data.');
+			console.error('   Run this SQL command in Supabase to fix it:\n');
+			console.error('   SELECT setval(\'media_items_id_seq\', (SELECT MAX(id) FROM media_items) + 1);');
+			console.error('\n   This will set the sequence to continue after the highest existing ID.');
+		}
 	} else {
 		console.log('✅ Movie added successfully!');
 		console.log(`   ID: ${data.id}`);
@@ -225,12 +257,6 @@ async function addSeries() {
 		validate: (input) => input.trim().length > 0 || 'Title is required'
 	});
 
-	const slug =
-		(await prompts.input({
-			message: 'Slug (leave empty to auto-generate):',
-			default: slugify(title)
-		})) || slugify(title);
-
 	const description = await prompts.input({
 		message: 'Description:'
 	});
@@ -239,6 +265,13 @@ async function addSeries() {
 		message: 'Year:'
 	});
 
+	const defaultSlug = year ? `${slugify(title)}-${year}` : slugify(title);
+	const slug =
+		(await prompts.input({
+			message: 'Slug (leave empty to auto-generate):',
+			default: defaultSlug
+		})) || defaultSlug;
+
 	const thumbnail = await prompts.input({
 		message: 'Thumbnail URL:'
 	});
@@ -246,15 +279,15 @@ async function addSeries() {
 	// Auto-generate blurhash if thumbnail is provided
 	let blurhash: string | null = null;
 	if (thumbnail) {
-		const generateBlurhash = await prompts.confirm({
+		const shouldGenerateBlurhash = await prompts.confirm({
 			message: 'Generate blurhash from thumbnail?',
 			default: true
 		});
 
-		if (generateBlurhash) {
+		if (shouldGenerateBlurhash) {
 			try {
 				console.log('🎨 Generating blurhash...');
-				blurhash = await generateBlurhashFromUrl(thumbnail);
+				blurhash = await generateBlurhash(thumbnail);
 				console.log('✓ Blurhash generated');
 			} catch (error) {
 				console.warn('⚠ Failed to generate blurhash:', error instanceof Error ? error.message : String(error));
@@ -317,6 +350,13 @@ async function addSeries() {
 
 	if (seriesError) {
 		console.error('❌ Error adding series:', seriesError.message);
+		if (seriesError.message.includes('duplicate key') || seriesError.message.includes('media_items_pkey')) {
+			console.error('\n💡 Database sequence issue detected!');
+			console.error('   The ID sequence is out of sync with your data.');
+			console.error('   Run this SQL command in Supabase to fix it:\n');
+			console.error('   SELECT setval(\'media_items_id_seq\', (SELECT MAX(id) FROM media_items) + 1);');
+			console.error('\n   This will set the sequence to continue after the highest existing ID.');
+		}
 		return;
 	}
 

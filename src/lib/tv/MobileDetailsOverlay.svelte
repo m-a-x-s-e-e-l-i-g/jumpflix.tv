@@ -223,16 +223,18 @@
 
   $: if (browser && selected) {
     getWatchProgressForSelected();
-    // Reset rating immediately when item changes, then load actual data
+    // Reset user rating immediately when item changes, then load actual data
     currentUserRating = null;
-    ratingsSummary = null;
+    // Use the rating data already available on the content item to prevent flashing
+    ratingsSummary = selected.averageRating !== undefined && selected.ratingCount !== undefined
+      ? { averageRating: selected.averageRating, ratingCount: selected.ratingCount }
+      : null;
     loadRatingData();
   }
 
   async function loadRatingData() {
     if (!selected || !browser) {
       currentUserRating = null;
-      ratingsSummary = null;
       return;
     }
 
@@ -242,6 +244,7 @@
         getMediaRatingSummary(selected.id)
       ]);
       currentUserRating = userRating;
+      // Update with fresh data from the server
       ratingsSummary = summary;
     } catch (error) {
       console.error('Error loading rating data:', error);

@@ -479,9 +479,14 @@
     {/if}
 
     {#if selected.type === 'movie'}
-      <div class="space-y-2 text-sm">
+      <div class="space-y-4 text-sm">
         {#if selected.paid}
-          <div class="flex justify-between"><span class="text-gray-400">Provider:</span><span class="text-white">{selected.provider || 'External'}</span></div>
+          <div class="space-y-1">
+            <span class="text-gray-400 block">Provider:</span>
+            <div class="flex flex-wrap gap-1">
+              <span class="px-2 py-0.5 rounded-full bg-gray-700 text-white text-xs font-medium">{selected.provider || 'External'}</span>
+            </div>
+          </div>
         {/if}
         {#if (selected as any).creators?.length}
           <div class="space-y-1">
@@ -517,7 +522,7 @@
         {/if}
       </div>
     {:else}
-      <div class="space-y-2 text-sm">
+      <div class="space-y-4 text-sm">
         {#if (selected as any).creators?.length}
           <div class="space-y-1">
             <span class="text-gray-400 block">Creators:</span>

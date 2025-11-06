@@ -479,9 +479,9 @@
 
         {#if selected.type === 'movie'}
           <div>
-            <ul class="text-xs text-gray-300 space-y-1" style="padding-left:0;">
+            <ul class="text-xs text-gray-300 space-y-3" style="padding-left:0;">
               {#if selected.paid}
-                <li class="flex justify-between"><span class="text-gray-400">Provider</span><span>{selected.provider || 'External'}</span></li>
+                <li class="flex flex-col gap-1"><span class="text-gray-400">Provider</span><span>{selected.provider || 'External'}</span></li>
               {/if}
               {#if (selected as any).creators?.length}
                 <li class="flex flex-col gap-1"><span class="text-gray-400">Creators</span><span>{(selected as any).creators.join(', ')}</span></li>
@@ -493,7 +493,7 @@
           </div>
         {:else}
           <div>
-            <ul class="text-xs text-gray-300 space-y-1" style="padding-left:0;">
+            <ul class="text-xs text-gray-300 space-y-3" style="padding-left:0;">
               {#if (selected as any).creators?.length}
                 <li class="flex flex-col"><span class="text-gray-400">Creators</span><span>{(selected as any).creators.join(', ')}</span></li>
               {/if}

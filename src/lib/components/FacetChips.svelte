@@ -229,32 +229,6 @@
       color: 'rgba(236, 72, 153, 0.15)' // pink
     },
     
-    // Length (auto)
-    short: { 
-      label: 'Short', 
-      description: 'Under 7 minutes',
-      emoji: '⏱️',
-      color: 'rgba(148, 163, 184, 0.15)' // slate
-    },
-    medium: { 
-      label: 'Medium', 
-      description: '7-30 minutes',
-      emoji: '⏰',
-      color: 'rgba(148, 163, 184, 0.15)' // slate
-    },
-    feature: { 
-      label: 'Feature', 
-      description: '30-70 minutes',
-      emoji: '🕐',
-      color: 'rgba(148, 163, 184, 0.15)' // slate
-    },
-    'long-feature': { 
-      label: 'Long Feature', 
-      description: 'Over 70 minutes',
-      emoji: '🕑',
-      color: 'rgba(148, 163, 184, 0.15)' // slate
-    },
-    
     // Era (auto)
     '2000s': { 
       label: '2000s', 
@@ -447,12 +421,6 @@
   .emoji {
     font-size: 0.875rem;
     line-height: 1;
-  }
-  
-  .separator {
-    color: rgba(255, 255, 255, 0.4);
-    font-weight: 300;
-    user-select: none;
   }
   
   .tooltip-text {

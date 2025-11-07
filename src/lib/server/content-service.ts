@@ -37,7 +37,6 @@ function mapFacets(row: MediaItemRow): Facets | undefined {
 	}
 
 	// Calculate automatic facets
-	const length = calculateLengthFacet(row.duration);
 	const era = calculateEraFacet(row.year);
 
 	return removeUndefined({
@@ -47,37 +46,8 @@ function mapFacets(row: MediaItemRow): Facets | undefined {
 		environment: row.facet_environment ?? undefined,
 		filmStyle: row.facet_film_style ?? undefined,
 		theme: row.facet_theme ?? undefined,
-		length: length ?? undefined,
 		era: era ?? undefined
 	});
-}
-
-// Calculate length facet from duration string
-function calculateLengthFacet(duration: string | null): 'short' | 'medium' | 'feature' | 'long-feature' | null {
-	if (!duration) return null;
-	
-	// Parse duration strings like "72min", "1h 30m", "2h"
-	const minutesMatch = duration.match(/(\d+)min/);
-	const hoursMatch = duration.match(/(\d+)h/);
-	const minMatch = duration.match(/(\d+)m(?!in)/);
-	
-	let totalMinutes = 0;
-	if (hoursMatch) {
-		totalMinutes += parseInt(hoursMatch[1]) * 60;
-	}
-	if (minMatch) {
-		totalMinutes += parseInt(minMatch[1]);
-	}
-	if (minutesMatch && !hoursMatch) {
-		totalMinutes = parseInt(minutesMatch[1]);
-	}
-	
-	if (totalMinutes === 0) return null;
-	
-	if (totalMinutes < 7) return 'short';
-	if (totalMinutes < 30) return 'medium';
-	if (totalMinutes < 70) return 'feature';
-	return 'long-feature';
 }
 
 // Calculate era facet from year string

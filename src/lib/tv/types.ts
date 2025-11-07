@@ -7,7 +7,6 @@ export type FacetMovement = 'flow' | 'big-sends' | 'tricking' | 'technical' | 's
 export type FacetEnvironment = 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym';
 export type FacetFilmStyle = 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes';
 export type FacetTheme = 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment';
-export type FacetLength = 'short' | 'medium' | 'feature' | 'long-feature';
 export type FacetEra = '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000';
 
 export interface Facets {
@@ -17,7 +16,6 @@ export interface Facets {
   environment?: FacetEnvironment;
   filmStyle?: FacetFilmStyle;
   theme?: FacetTheme;
-  length?: FacetLength; // Auto-calculated from duration
   era?: FacetEra; // Auto-calculated from year
 }
 

@@ -1,6 +1,6 @@
 import { createSupabaseClient } from '$lib/server/supabaseClient';
 import type { Database } from '$lib/supabase/types';
-import type { ContentItem, Episode, Movie, Season, Series } from '$lib/tv/types';
+import type { ContentItem, Episode, Movie, Season, Series, Facets } from '$lib/tv/types';
 
 type MediaItemRow = Database['public']['Tables']['media_items']['Row'];
 type SeriesSeasonRow = Database['public']['Tables']['series_seasons']['Row'];
@@ -21,6 +21,45 @@ function removeUndefined<T extends Record<string, any>>(obj: T): T {
 		}
 	}
 	return result as T;
+}
+
+// Helper to map facets from database row
+function mapFacets(row: MediaItemRow): Facets | undefined {
+	const hasFacets = row.facet_type || 
+		(row.facet_mood && row.facet_mood.length > 0) || 
+		(row.facet_movement && row.facet_movement.length > 0) || 
+		row.facet_environment || 
+		row.facet_film_style || 
+		row.facet_theme;
+	
+	if (!hasFacets) {
+		return undefined;
+	}
+
+	// Calculate automatic facets
+	const era = calculateEraFacet(row.year);
+
+	return removeUndefined({
+		type: row.facet_type ?? undefined,
+		mood: row.facet_mood && row.facet_mood.length > 0 ? row.facet_mood as any : undefined,
+		movement: row.facet_movement && row.facet_movement.length > 0 ? row.facet_movement as any : undefined,
+		environment: row.facet_environment ?? undefined,
+		filmStyle: row.facet_film_style ?? undefined,
+		theme: row.facet_theme ?? undefined,
+		era: era ?? undefined
+	});
+}
+
+// Calculate era facet from year string
+function calculateEraFacet(year: string | null): '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000' | null {
+	if (!year || !/^\d{4}$/.test(year)) return null;
+	
+	const yearNum = parseInt(year);
+	if (yearNum >= 2030) return '2030s';
+	if (yearNum >= 2020) return '2020s';
+	if (yearNum >= 2010) return '2010s';
+	if (yearNum >= 2000) return '2000s';
+	return 'pre-2000';
 }
 
 function mapMovie(row: MediaItemWithSeasons): Movie {
@@ -47,7 +86,8 @@ function mapMovie(row: MediaItemWithSeasons): Movie {
 		creators: row.creators && row.creators.length ? row.creators : undefined,
 		starring: row.starring && row.starring.length ? row.starring : undefined,
 		averageRating: ratingSummary?.average_rating ?? undefined,
-		ratingCount: ratingSummary?.rating_count ?? undefined
+		ratingCount: ratingSummary?.rating_count ?? undefined,
+		facets: mapFacets(row)
 	});
 }
 
@@ -84,7 +124,8 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 		videoCount: row.video_count ?? undefined,
 		seasons,
 		averageRating: ratingSummary?.average_rating ?? undefined,
-		ratingCount: ratingSummary?.rating_count ?? undefined
+		ratingCount: ratingSummary?.rating_count ?? undefined,
+		facets: mapFacets(row)
 	});
 }
 

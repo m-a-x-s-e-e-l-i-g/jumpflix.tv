@@ -26,6 +26,7 @@
   import BangerMeter from '$lib/components/Bangerometer.svelte';
   import { getUserRating, saveRating, getMediaRatingSummary } from '$lib/ratings';
   import AuthDialog from '$lib/components/AuthDialog.svelte';
+  import FacetChips from '$lib/components/FacetChips.svelte';
 
   let isAuthenticated = false;
 
@@ -431,6 +432,13 @@
       <br />
   <p class="text-gray-300 leading-relaxed text-sm font-sans">{selected.description}</p>
     </div>
+
+    <!-- Facet Tags -->
+    {#if selected.facets}
+      <div class="mt-4">
+        <FacetChips facets={selected.facets} />
+      </div>
+    {/if}
 
     <!-- Bangerometer Rating Component -->
     <div class="mt-6">

@@ -1,4 +1,24 @@
 // Central content type definitions for the TV page
+
+// Facet type definitions
+export type FacetType = 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial';
+export type FacetMood = 'energetic' | 'chill' | 'gritty' | 'wholesome' | 'intense' | 'artistic';
+export type FacetMovement = 'flow' | 'big-sends' | 'tricking' | 'technical' | 'speed' | 'oldskool' | 'dance';
+export type FacetEnvironment = 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym';
+export type FacetFilmStyle = 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes';
+export type FacetTheme = 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment';
+export type FacetEra = '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000';
+
+export interface Facets {
+  type?: FacetType;
+  mood?: FacetMood[];
+  movement?: FacetMovement[];
+  environment?: FacetEnvironment;
+  filmStyle?: FacetFilmStyle;
+  theme?: FacetTheme;
+  era?: FacetEra; // Auto-calculated from year
+}
+
 export interface BaseContent {
   id: number | string;
   slug: string;
@@ -12,6 +32,7 @@ export interface BaseContent {
   externalUrl?: string;
   averageRating?: number;
   ratingCount?: number;
+  facets?: Facets;
 }
 
 export interface Movie extends BaseContent {

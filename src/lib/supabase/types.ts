@@ -50,6 +50,12 @@ export interface Database {
 					creators: string[] | null;
 					starring: string[] | null;
 					video_count: number | null;
+					facet_type: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
+					facet_mood: string[] | null;
+					facet_movement: string[] | null;
+					facet_environment: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
+					facet_film_style: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
+					facet_theme: 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment' | null;
 					created_at: string;
 					updated_at: string;
 				};
@@ -72,6 +78,12 @@ export interface Database {
 					creators?: string[] | null;
 					starring?: string[] | null;
 					video_count?: number | null;
+					facet_type?: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
+					facet_mood?: string[] | null;
+					facet_movement?: string[] | null;
+					facet_environment?: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
+					facet_film_style?: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
+					facet_theme?: 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment' | null;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -94,6 +106,12 @@ export interface Database {
 					creators?: string[] | null;
 					starring?: string[] | null;
 					video_count?: number | null;
+					facet_type?: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
+					facet_mood?: string[] | null;
+					facet_movement?: string[] | null;
+					facet_environment?: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
+					facet_film_style?: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
+					facet_theme?: 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment' | null;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -229,6 +247,22 @@ export interface Database {
 					media_id: number;
 					rating_count: number;
 					average_rating: number;
+				};
+			};
+			media_facets_view: {
+				Row: {
+					id: number;
+					slug: string;
+					title: string;
+					type: 'movie' | 'series';
+					facet_type: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
+					facet_mood: string[] | null;
+					facet_movement: string[] | null;
+					facet_environment: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
+					facet_film_style: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
+					facet_theme: 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment' | null;
+					facet_length: 'short' | 'medium' | 'feature' | 'long-feature' | null;
+					facet_era: '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000' | null;
 				};
 			};
 		};

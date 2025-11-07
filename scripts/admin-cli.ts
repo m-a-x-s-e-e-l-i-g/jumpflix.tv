@@ -82,9 +82,10 @@ async function mainMenu() {
 		choices: [
 			{ name: '🎥 Add Movie', value: 'add-movie' },
 			{ name: '📺 Add Series', value: 'add-series' },
-			{ name: '� Refresh Episodes', value: 'refresh-episodes' },
+			{ name: '🔄 Refresh Episodes', value: 'refresh-episodes' },
 			{ name: '📋 List All Content', value: 'list-content' },
 			{ name: '✏️  Edit Content', value: 'edit-content' },
+			{ name: '🏷️  Edit Facets', value: 'edit-facets' },
 			{ name: '🗑️  Delete Content', value: 'delete-content' },
 			{ name: '❌ Exit', value: 'exit' }
 		]
@@ -105,6 +106,9 @@ async function mainMenu() {
 			break;
 		case 'edit-content':
 			await editContent();
+			break;
+		case 'edit-facets':
+			await editFacets();
 			break;
 		case 'delete-content':
 			await deleteContent();
@@ -685,6 +689,184 @@ async function editContent() {
 		console.error('❌ Error updating:', updateError.message);
 	} else {
 		console.log('✅ Updated successfully!');
+	}
+}
+
+// Edit Facets
+async function editFacets() {
+	console.clear();
+	console.log('🏷️  Edit Facets\n');
+
+	const { data: items, error } = await supabase
+		.from('media_items')
+		.select('id, title, slug, type, facet_type, facet_mood, facet_movement, facet_environment, facet_film_style, facet_theme')
+		.order('title');
+
+	if (error || !items || items.length === 0) {
+		console.log('❌ No content found');
+		return;
+	}
+
+	const itemId = await prompts.select({
+		message: 'Select content to edit facets:',
+		choices: [
+			{ name: '<- Back to main menu', value: null },
+			{ name: '---', value: 'separator', disabled: true },
+			...items.map((item) => {
+				// Check if any facets are set
+				const hasFacets = item.facet_type || 
+					(item.facet_mood && item.facet_mood.length > 0) || 
+					(item.facet_movement && item.facet_movement.length > 0) || 
+					item.facet_environment || 
+					item.facet_film_style || 
+					item.facet_theme;
+				
+				const facetIndicator = hasFacets ? '[x]' : '[ ]';
+				const typeIcon = item.type === 'movie' ? 'MOV' : 'SER';
+				
+				return {
+					name: `${facetIndicator} ${typeIcon} ${item.title} (${item.slug})`,
+					value: item.id
+				};
+			})
+		]
+	});
+	
+	if (!itemId) {
+		return; // User selected back
+	}
+
+	const item = items.find((i) => i.id === itemId);
+
+	if (!item) {
+		console.log('❌ Item not found');
+		return;
+	}
+
+	console.log(`\n📝 Editing facets for: ${item.title}\n`);
+
+	// Type (single-select)
+	const facetType = await prompts.select({
+		message: 'Type (what the video is):',
+		choices: [
+			{ name: 'None', value: null },
+			{ name: 'Fiction / Parkour Film', value: 'fiction' },
+			{ name: 'Documentary', value: 'documentary' },
+			{ name: 'Session / Edit / Team Film', value: 'session' },
+			{ name: 'Event / Jam / Competition', value: 'event' },
+			{ name: 'Tutorial / Educational', value: 'tutorial' }
+		],
+		default: item.facet_type || null
+	});
+
+	// Mood (multi-select)
+	const facetMood = await prompts.checkbox({
+		message: 'Mood / Vibe (select all that apply):',
+		choices: [
+			{ name: 'Energetic', value: 'energetic', checked: item.facet_mood?.includes('energetic') },
+			{ name: 'Chill', value: 'chill', checked: item.facet_mood?.includes('chill') },
+			{ name: 'Gritty', value: 'gritty', checked: item.facet_mood?.includes('gritty') },
+			{ name: 'Wholesome', value: 'wholesome', checked: item.facet_mood?.includes('wholesome') },
+			{ name: 'Intense', value: 'intense', checked: item.facet_mood?.includes('intense') },
+			{ name: 'Artistic', value: 'artistic', checked: item.facet_mood?.includes('artistic') }
+		]
+	});
+
+	// Movement Style (multi-select)
+	const facetMovement = await prompts.checkbox({
+		message: 'Movement Style (select all that apply):',
+		choices: [
+			{ name: 'Flow (continuous lines)', value: 'flow', checked: item.facet_movement?.includes('flow') },
+			{ name: 'Big Sends (roofs, fear jumps)', value: 'big-sends', checked: item.facet_movement?.includes('big-sends') },
+			{ name: 'Tricking (flips)', value: 'tricking', checked: item.facet_movement?.includes('tricking') },
+			{ name: 'Technical (precise, quirky)', value: 'technical', checked: item.facet_movement?.includes('technical') },
+			{ name: 'Speed / Chase', value: 'speed', checked: item.facet_movement?.includes('speed') },
+			{ name: 'Oldskool (parkour basics)', value: 'oldskool', checked: item.facet_movement?.includes('oldskool') },
+			{ name: 'Dance (noodle movement)', value: 'dance', checked: item.facet_movement?.includes('dance') }
+		]
+	});
+
+	// Environment (single-select)
+	const facetEnvironment = await prompts.select({
+		message: 'Environment (primary setting):',
+		choices: [
+			{ name: 'None', value: null },
+			{ name: 'Street / Urban', value: 'street' },
+			{ name: 'Rooftops', value: 'rooftops' },
+			{ name: 'Nature', value: 'nature' },
+			{ name: 'Urbex (abandoned)', value: 'urbex' },
+			{ name: 'Gym (indoor)', value: 'gym' }
+		],
+		default: item.facet_environment || null
+	});
+
+	// Film Style (single-select)
+	const facetFilmStyle = await prompts.select({
+		message: 'Film Style / Editing:',
+		choices: [
+			{ name: 'None', value: null },
+			{ name: 'Cinematic (color, composition)', value: 'cinematic' },
+			{ name: 'Skate-ish (fisheye, rough, VX)', value: 'skateish' },
+			{ name: 'Raw Session (minimal music)', value: 'raw' },
+			{ name: 'POV / Chasecam', value: 'pov' },
+			{ name: 'Long Takes', value: 'longtakes' }
+		],
+		default: item.facet_film_style || null
+	});
+
+	// Theme (single-select)
+	const facetTheme = await prompts.select({
+		message: 'Theme / Purpose:',
+		choices: [
+			{ name: 'None', value: null },
+			{ name: 'Journey (personal growth)', value: 'journey' },
+			{ name: 'Team Film (group identity)', value: 'team' },
+			{ name: 'Event Highlight', value: 'event' },
+			{ name: 'Competition', value: 'competition' },
+			{ name: 'Educational', value: 'educational' },
+			{ name: 'Travel (exploring spots)', value: 'travel' },
+			{ name: 'Creative / Expression', value: 'creative' },
+			{ name: 'Showcase / Entertainment', value: 'entertainment' }
+		],
+		default: item.facet_theme || null
+	});
+
+	// Preview
+	console.log('\n📋 Facet Summary:');
+	console.log(`   Type: ${facetType || '(none)'}`);
+	console.log(`   Mood: ${facetMood.length > 0 ? facetMood.join(', ') : '(none)'}`);
+	console.log(`   Movement: ${facetMovement.length > 0 ? facetMovement.join(', ') : '(none)'}`);
+	console.log(`   Environment: ${facetEnvironment || '(none)'}`);
+	console.log(`   Film Style: ${facetFilmStyle || '(none)'}`);
+	console.log(`   Theme: ${facetTheme || '(none)'}`);
+
+	const confirm = await prompts.confirm({
+		message: '\nSave facets?',
+		default: true
+	});
+
+	if (!confirm) {
+		console.log('❌ Cancelled');
+		return;
+	}
+
+	const { error: updateError } = await supabase
+		.from('media_items')
+		.update({
+			facet_type: facetType,
+			facet_mood: facetMood.length > 0 ? facetMood : [],
+			facet_movement: facetMovement.length > 0 ? facetMovement : [],
+			facet_environment: facetEnvironment,
+			facet_film_style: facetFilmStyle,
+			facet_theme: facetTheme,
+			updated_at: new Date().toISOString()
+		})
+		.eq('id', itemId);
+
+	if (updateError) {
+		console.error('❌ Error updating facets:', updateError.message);
+	} else {
+		console.log('✅ Facets updated successfully!');
 	}
 }
 

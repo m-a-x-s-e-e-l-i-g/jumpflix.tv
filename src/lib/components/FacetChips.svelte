@@ -4,12 +4,11 @@
   
   export let facets: Facets | undefined;
   
-  // Comprehensive facet metadata with descriptions, colors, and emojis
+  // Comprehensive facet metadata with descriptions and emojis
   interface FacetMetadata {
     label: string;
     description: string;
     emoji: string;
-    color: string;
   }
   
   const facetMetadata: Record<string, FacetMetadata> = {
@@ -17,343 +16,245 @@
     fiction: { 
       label: 'Fiction', 
       description: 'Narrative-driven parkour film with storyline',
-      emoji: '🎬',
-      color: 'rgba(139, 92, 246, 0.15)' // purple
+      emoji: '🎬'
     },
     documentary: { 
       label: 'Documentary', 
       description: 'Real stories and insights into parkour culture',
-      emoji: '📹',
-      color: 'rgba(59, 130, 246, 0.15)' // blue
+      emoji: '📹'
     },
     session: { 
       label: 'Session', 
       description: 'Team edit or session footage from training',
-      emoji: '🎥',
-      color: 'rgba(34, 197, 94, 0.15)' // green
+      emoji: '🎥'
     },
     event: { 
       label: 'Event', 
       description: 'Jam, competition, or organized gathering',
-      emoji: '🏆',
-      color: 'rgba(249, 115, 22, 0.15)' // orange
+      emoji: '🏆'
     },
     tutorial: { 
       label: 'Tutorial', 
       description: 'Educational content teaching parkour techniques',
-      emoji: '📚',
-      color: 'rgba(14, 165, 233, 0.15)' // sky
+      emoji: '📚'
     },
     
     // Mood
     energetic: { 
       label: 'Energetic', 
       description: 'High-energy vibe with intense action',
-      emoji: '⚡',
-      color: 'rgba(234, 179, 8, 0.15)' // yellow
+      emoji: '⚡'
     },
     chill: { 
       label: 'Chill', 
       description: 'Relaxed and laid-back atmosphere',
-      emoji: '😌',
-      color: 'rgba(96, 165, 250, 0.15)' // light blue
+      emoji: '😌'
     },
     gritty: { 
       label: 'Gritty', 
       description: 'Raw, rough, and unpolished street vibe',
-      emoji: '🔥',
-      color: 'rgba(239, 68, 68, 0.15)' // red
+      emoji: '🔥'
     },
     wholesome: { 
       label: 'Wholesome', 
       description: 'Positive, uplifting, and feel-good content',
-      emoji: '💚',
-      color: 'rgba(34, 197, 94, 0.15)' // green
+      emoji: '💚'
     },
     artistic: { 
       label: 'Artistic', 
       description: 'Creative expression and aesthetic focus',
-      emoji: '🎨',
-      color: 'rgba(168, 85, 247, 0.15)' // purple
+      emoji: '🎨'
     },
     
     // Movement
     flow: { 
       label: 'Flow', 
       description: 'Continuous, fluid movement lines',
-      emoji: '🌊',
-      color: 'rgba(59, 130, 246, 0.15)' // blue
+      emoji: '🌊'
     },
     'big-sends': { 
       label: 'Big Sends', 
       description: 'Scary jumps, rooftops, and fear challenges',
-      emoji: '🚀',
-      color: 'rgba(239, 68, 68, 0.15)' // red
+      emoji: '🚀'
     },
     tricking: { 
       label: 'Tricking', 
       description: 'Flips, twists, and acrobatic movements',
-      emoji: '🤸',
-      color: 'rgba(236, 72, 153, 0.15)' // pink
+      emoji: '🤸'
     },
     technical: { 
       label: 'Technical', 
       description: 'Precise, quirky, and technical movements',
-      emoji: '⚙️',
-      color: 'rgba(148, 163, 184, 0.15)' // slate
+      emoji: '⚙️'
     },
     speed: { 
       label: 'Speed/Chase', 
       description: 'Fast-paced running and chase sequences',
-      emoji: '🏎️',
-      color: 'rgba(234, 179, 8, 0.15)' // yellow
+      emoji: '🏎️'
     },
     oldskool: { 
       label: 'Oldskool', 
       description: 'Classic parkour fundamentals and basics',
-      emoji: '📼',
-      color: 'rgba(120, 113, 108, 0.15)' // stone
+      emoji: '📼'
     },
     dance: { 
       label: 'Dance', 
       description: 'Noodle movement and dance-like flow',
-      emoji: '💃',
-      color: 'rgba(236, 72, 153, 0.15)' // pink
+      emoji: '💃'
     },
     
     // Environment
     street: { 
       label: 'Street', 
       description: 'Urban street spots and city locations',
-      emoji: '🏙️',
-      color: 'rgba(100, 116, 139, 0.15)' // slate
+      emoji: '🏙️'
     },
     rooftops: { 
       label: 'Rooftops', 
       description: 'High-altitude rooftop training and jumps',
-      emoji: '🏢',
-      color: 'rgba(239, 68, 68, 0.15)' // red
+      emoji: '🏢'
     },
     nature: { 
       label: 'Nature', 
       description: 'Outdoor natural environments and landscapes',
-      emoji: '🌲',
-      color: 'rgba(34, 197, 94, 0.15)' // green
+      emoji: '🌲'
     },
     urbex: { 
       label: 'Urbex', 
       description: 'Abandoned buildings and urban exploration',
-      emoji: '🏚️',
-      color: 'rgba(120, 113, 108, 0.15)' // stone
+      emoji: '🏚️'
     },
     gym: { 
       label: 'Gym', 
       description: 'Indoor training facilities and parkour gyms',
-      emoji: '🏋️',
-      color: 'rgba(59, 130, 246, 0.15)' // blue
+      emoji: '🏋️'
     },
     
     // Film Style
     cinematic: { 
       label: 'Cinematic', 
       description: 'Professional cinematography with music and effects',
-      emoji: '🎞️',
-      color: 'rgba(139, 92, 246, 0.15)' // purple
+      emoji: '🎞️'
     },
     skateish: { 
       label: 'Skate-ish', 
       description: 'Skate video aesthetic with fisheye and VX',
-      emoji: '🛹',
-      color: 'rgba(249, 115, 22, 0.15)' // orange
+      emoji: '🛹'
     },
     raw: { 
       label: 'Raw Session', 
       description: 'Minimal editing with raw footage and simple music',
-      emoji: '📱',
-      color: 'rgba(148, 163, 184, 0.15)' // slate
+      emoji: '📱'
     },
     pov: { 
       label: 'POV', 
       description: 'First-person perspective and chase cam footage',
-      emoji: '👁️',
-      color: 'rgba(14, 165, 233, 0.15)' // sky
+      emoji: '👁️'
     },
     longtakes: { 
       label: 'Long Takes', 
       description: 'Extended single-shot sequences',
-      emoji: '🎥',
-      color: 'rgba(168, 85, 247, 0.15)' // purple
+      emoji: '🎥'
     },
     
     // Theme
     journey: { 
       label: 'Journey', 
       description: 'Personal growth and transformation story',
-      emoji: '🗺️',
-      color: 'rgba(59, 130, 246, 0.15)' // blue
+      emoji: '🗺️'
     },
     team: { 
       label: 'Team Film', 
       description: 'Showcasing team identity and crew dynamics',
-      emoji: '👥',
-      color: 'rgba(34, 197, 94, 0.15)' // green
+      emoji: '👥'
     },
     competition: { 
       label: 'Competition', 
       description: 'Contest or competitive event coverage',
-      emoji: '🥇',
-      color: 'rgba(234, 179, 8, 0.15)' // yellow
+      emoji: '🥇'
     },
     educational: { 
       label: 'Educational', 
       description: 'Teaching techniques and parkour knowledge',
-      emoji: '🎓',
-      color: 'rgba(14, 165, 233, 0.15)' // sky
+      emoji: '🎓'
     },
     travel: { 
       label: 'Travel', 
       description: 'Exploring new locations and spots around the world',
-      emoji: '✈️',
-      color: 'rgba(59, 130, 246, 0.15)' // blue
+      emoji: '✈️'
     },
     creative: { 
       label: 'Creative', 
       description: 'Artistic expression and experimental filmmaking',
-      emoji: '✨',
-      color: 'rgba(168, 85, 247, 0.15)' // purple
+      emoji: '✨'
     },
     entertainment: { 
       label: 'Entertainment', 
       description: 'Showcase and entertainment-focused content',
-      emoji: '🎪',
-      color: 'rgba(236, 72, 153, 0.15)' // pink
+      emoji: '🎪'
     },
     
     // Era (auto)
     '2000s': { 
       label: '2000s', 
       description: 'Released in the 2000s',
-      emoji: '📀',
-      color: 'rgba(120, 113, 108, 0.15)' // stone
+      emoji: '📀'
     },
     '2010s': { 
       label: '2010s', 
       description: 'Released in the 2010s',
-      emoji: '📱',
-      color: 'rgba(120, 113, 108, 0.15)' // stone
+      emoji: '📱'
     },
     '2020s': { 
       label: '2020s', 
       description: 'Released in the 2020s',
-      emoji: '🎬',
-      color: 'rgba(120, 113, 108, 0.15)' // stone
+      emoji: '🎬'
     },
     '2030s': { 
       label: '2030s', 
       description: 'Released in the 2030s',
-      emoji: '🚀',
-      color: 'rgba(120, 113, 108, 0.15)' // stone
+      emoji: '🚀'
     },
     'pre-2000': { 
       label: 'Pre-2000', 
       description: 'Released before 2000',
-      emoji: '📹',
-      color: 'rgba(120, 113, 108, 0.15)' // stone
+      emoji: '📹'
+    }
+  };
+  
+  // Helper to get metadata with fallback
+  const getMetadata = (key: string): FacetMetadata => {
+    return facetMetadata[key] || { 
+      label: key, 
+      description: '', 
+      emoji: ''
+    };
+  };
+  
+  // Helper to add facets to result array
+  const addFacet = (result: Array<{ key: string; metadata: FacetMetadata }>, key: string | string[]) => {
+    if (Array.isArray(key)) {
+      key.forEach(k => result.push({ key: k, metadata: getMetadata(k) }));
+    } else {
+      result.push({ key, metadata: getMetadata(key) });
     }
   };
   
   // Build ordered list of chips to display
-  // Order: Type · Mood · Movement · Environment · Film Style · Theme
+  // Order: Type · Mood · Movement · Environment · Film Style · Theme · Era
   $: chips = (() => {
     if (!facets) return [];
     
     const result: Array<{ key: string; metadata: FacetMetadata }> = [];
     
-    // Type (single-select)
-    if (facets.type) {
-      const key = facets.type;
-      result.push({ 
-        key, 
-        metadata: facetMetadata[key] || { 
-          label: key, 
-          description: '', 
-          emoji: '',
-          color: 'rgba(255, 255, 255, 0.1)' 
-        }
-      });
-    }
-    
-    // Mood (multi-select)
-    if (facets.mood && facets.mood.length > 0) {
-      facets.mood.forEach(key => {
-        result.push({ 
-          key, 
-          metadata: facetMetadata[key] || { 
-            label: key, 
-            description: '', 
-            emoji: '',
-            color: 'rgba(255, 255, 255, 0.1)' 
-          }
-        });
-      });
-    }
-    
-    // Movement (multi-select)
-    if (facets.movement && facets.movement.length > 0) {
-      facets.movement.forEach(key => {
-        result.push({ 
-          key, 
-          metadata: facetMetadata[key] || { 
-            label: key, 
-            description: '', 
-            emoji: '',
-            color: 'rgba(255, 255, 255, 0.1)' 
-          }
-        });
-      });
-    }
-    
-    // Environment (single-select)
-    if (facets.environment) {
-      const key = facets.environment;
-      result.push({ 
-        key, 
-        metadata: facetMetadata[key] || { 
-          label: key, 
-          description: '', 
-          emoji: '',
-          color: 'rgba(255, 255, 255, 0.1)' 
-        }
-      });
-    }
-    
-    // Film Style (single-select)
-    if (facets.filmStyle) {
-      const key = facets.filmStyle;
-      result.push({ 
-        key, 
-        metadata: facetMetadata[key] || { 
-          label: key, 
-          description: '', 
-          emoji: '',
-          color: 'rgba(255, 255, 255, 0.1)' 
-        }
-      });
-    }
-    
-    // Theme (single-select)
-    if (facets.theme) {
-      const key = facets.theme;
-      result.push({ 
-        key, 
-        metadata: facetMetadata[key] || { 
-          label: key, 
-          description: '', 
-          emoji: '',
-          color: 'rgba(255, 255, 255, 0.1)' 
-        }
-      });
-    }
+    // Add facets in order, skipping any that are undefined or empty
+    if (facets.type) addFacet(result, facets.type);
+    if (facets.mood?.length) addFacet(result, facets.mood);
+    if (facets.movement?.length) addFacet(result, facets.movement);
+    if (facets.environment) addFacet(result, facets.environment);
+    if (facets.filmStyle) addFacet(result, facets.filmStyle);
+    if (facets.theme) addFacet(result, facets.theme);
+    if (facets.era) addFacet(result, facets.era);
     
     return result;
   })();

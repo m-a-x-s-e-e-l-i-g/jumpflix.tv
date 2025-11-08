@@ -9,7 +9,6 @@
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
-	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import * as m from '$lib/paraglide/messages';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
@@ -19,40 +18,31 @@
 	let showUserMenu = $state(false);
 	let menuRef: HTMLDivElement | undefined = $state(undefined);
 	let buttonRef: HTMLButtonElement | undefined = $state(undefined);
-	let isRefreshing = $state(false);
-	
-	async function handleRefreshSession() {
-		if (!supabase) return;
-		isRefreshing = true;
-		
-		try {
-			const { data: { session }, error } = await supabase.auth.refreshSession();
-			if (error) {
-				console.error('Session refresh error:', error);
-				toast.error('Failed to refresh session. Please try signing out and back in.');
-			} else if (session) {
-				toast.success('Session refreshed successfully');
-			} else {
-				toast.error('No active session found');
-			}
-		} catch (err) {
-			console.error('Unexpected refresh error:', err);
-			toast.error('Failed to refresh session');
-		} finally {
-			isRefreshing = false;
-			showUserMenu = false;
-		}
-	}
 	
 	async function handleSignOut() {
 		if (!supabase) return;
 		
-		const { error } = await supabase.auth.signOut();
-		if (error) {
-			toast.error('Failed to sign out');
-		} else {
-			toast.success('Signed out successfully');
-			showUserMenu = false;
+		try {
+			// Clear all auth state before signing out
+			const { error } = await supabase.auth.signOut({ scope: 'local' });
+			if (error) {
+				console.error('Sign out error:', error);
+				toast.error('Failed to sign out');
+			} else {
+				// Clear any cached data
+				if ('caches' in window) {
+					caches.keys().then(names => {
+						names.forEach(name => caches.delete(name));
+					});
+				}
+				toast.success('Signed out successfully');
+				showUserMenu = false;
+				// Force reload to clear any stale state
+				setTimeout(() => window.location.reload(), 300);
+			}
+		} catch (err) {
+			console.error('Unexpected sign out error:', err);
+			toast.error('An error occurred during sign out');
 		}
 	}
 	
@@ -130,15 +120,6 @@
 				>
 					<SettingsIcon class="size-4" />
 					<span>Settings</span>
-				</button>
-				
-				<button
-					onclick={handleRefreshSession}
-					disabled={isRefreshing}
-					class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground disabled:opacity-50"
-				>
-					<RefreshCwIcon class={isRefreshing ? "size-4 animate-spin" : "size-4"} />
-					<span>Refresh Session</span>
 				</button>
 				
 				<button

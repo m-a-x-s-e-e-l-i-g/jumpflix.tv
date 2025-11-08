@@ -6,6 +6,7 @@
 	import 'vidstack/player/layouts/default';
 	import 'vidstack/icons';
 	import { onMount, setContext } from 'svelte';
+	import { get } from 'svelte/store';
 	import type { Action } from 'svelte/action';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
@@ -351,12 +352,37 @@
 		});
 		
 		// Force session refresh to ensure we have the latest auth state
-		// This helps recover from stale cached states
+		// This helps recover from stale cached states and account switching issues
+		const refreshTimeout = setTimeout(() => {
+			console.warn('[Auth Debug] Session refresh timed out');
+		}, 5000);
+		
 		supabase.auth.getSession().then(({ data: freshSession, error }) => {
+			clearTimeout(refreshTimeout);
+			
 			if (error) {
 				console.error('[Auth Debug] Error refreshing session:', error);
 				return;
 			}
+			
+			const serverUserId = data.session?.user?.id;
+			const clientUserId = freshSession.session?.user?.id;
+			
+			// Detect account mismatch - this is the critical issue!
+			if (serverUserId && clientUserId && serverUserId !== clientUserId) {
+				console.error('[Auth Debug] ACCOUNT MISMATCH DETECTED!', {
+					serverUserId,
+					clientUserId,
+					serverEmail: data.user?.email,
+					clientEmail: freshSession.session?.user?.email
+				});
+				
+				// Force a full page reload to clear the stale state
+				toast.error('Session mismatch detected. Reloading...');
+				setTimeout(() => window.location.reload(), 1000);
+				return;
+			}
+			
 			if (freshSession.session && !data.session) {
 				// We have a valid session that wasn't passed from server
 				// This can happen with service worker caching issues
@@ -365,8 +391,54 @@
 				user.set(freshSession.session.user);
 			} else if (!freshSession.session && data.session) {
 				// Server said we're logged in but client doesn't have session
-				console.warn('[Auth Debug] Server session exists but client session missing');
+				// This is the "broken session" state - client cookies are invalid
+				console.error('[Auth Debug] BROKEN SESSION: Server session exists but client session missing - forcing sign out');
+				toast.error('Your session is invalid. Please sign in again.');
+				
+				// Force sign out to clear the broken state
+				supabase.auth.signOut({ scope: 'local' }).then(() => {
+					session.set(null);
+					user.set(null);
+					// Clear caches
+					if ('caches' in window) {
+						caches.keys().then(names => {
+							names.forEach(name => caches.delete(name));
+						});
+					}
+					setTimeout(() => window.location.reload(), 500);
+				});
+				return;
+			} else if (freshSession.session && clientUserId === serverUserId) {
+				// Sessions match - but let's validate the token is actually working
+				// by making a quick authenticated request
+				supabase.auth.getUser().then(({ data: userData, error: userError }) => {
+					if (userError || !userData.user) {
+						// Token is invalid even though session exists
+						console.error('[Auth Debug] BROKEN TOKEN: Session exists but token validation failed', userError);
+						toast.error('Your session has expired. Please sign in again.');
+						
+						// Force sign out
+						supabase.auth.signOut({ scope: 'local' }).then(() => {
+							session.set(null);
+							user.set(null);
+							if ('caches' in window) {
+								caches.keys().then(names => {
+									names.forEach(name => caches.delete(name));
+								});
+							}
+							setTimeout(() => window.location.reload(), 500);
+						});
+					} else {
+						// Everything is valid, update to ensure we have the latest session data
+						session.set(freshSession.session);
+						user.set(freshSession.session.user);
+						console.log('[Auth Debug] Session validated successfully');
+					}
+				});
 			}
+		}).catch((err) => {
+			clearTimeout(refreshTimeout);
+			console.error('[Auth Debug] Failed to get session:', err);
 		});
 		
 		// Handle Supabase auth callback from email confirmation
@@ -421,9 +493,38 @@
 		handleAuthCallback();
 		
 		// Listen for auth state changes and update stores
-		const { data: authListener } = supabase.auth.onAuthStateChange((_event, newSession) => {
-			session.set(newSession);
-			user.set(newSession?.user ?? null);
+		const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
+			console.log('[Auth Debug] Auth state changed:', event, {
+				hasSession: !!newSession,
+				userId: newSession?.user?.id
+			});
+			
+			// Detect account switches
+			const currentUserId = get(user)?.id;
+			const newUserId = newSession?.user?.id;
+			
+			if (event === 'SIGNED_OUT') {
+				// Clear all auth state
+				session.set(null);
+				user.set(null);
+				console.log('[Auth Debug] User signed out, clearing state');
+			} else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+				// Check if this is an account switch
+				if (currentUserId && newUserId && currentUserId !== newUserId) {
+					console.warn('[Auth Debug] Account switch detected, forcing reload');
+					toast.message('Switching accounts...');
+					// Force page reload to clear all cached state
+					setTimeout(() => window.location.reload(), 500);
+					return;
+				}
+				
+				session.set(newSession);
+				user.set(newSession?.user ?? null);
+			} else {
+				// For other events, just update the session
+				session.set(newSession);
+				user.set(newSession?.user ?? null);
+			}
 		});
 		
 		const stopWatchHistory = initWatchHistory();

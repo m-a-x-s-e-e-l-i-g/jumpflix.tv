@@ -22,6 +22,10 @@
 	let saving = $state(false);
 	let showDeleteConfirm = $state(false);
 	let deleteLoading = $state(false);
+	let currentPassword = $state('');
+	let newPassword = $state('');
+	let confirmNewPassword = $state('');
+	let changingPassword = $state(false);
 
 	const copy = {
 		en: {
@@ -31,6 +35,20 @@
 			usernamePlaceholder: 'Your display name',
 			email: 'Email',
 			emailNote: 'Email cannot be changed',
+			security: 'Security',
+			changePassword: 'Change Password',
+			currentPassword: 'Current Password',
+			currentPasswordPlaceholder: 'Enter current password',
+			newPassword: 'New Password',
+			newPasswordPlaceholder: 'Enter new password (min 6 characters)',
+			confirmPassword: 'Confirm New Password',
+			confirmPasswordPlaceholder: 'Re-enter new password',
+			changePasswordButton: 'Update Password',
+			changingPasswordButton: 'Updating...',
+			passwordMismatch: 'Passwords do not match',
+			passwordTooShort: 'Password must be at least 6 characters',
+			passwordChangedSuccess: 'Password changed successfully',
+			passwordChangeError: 'Failed to change password',
 			preferences: 'Communication Preferences',
 			marketingOptIn: 'Send me news and updates about JumpFlix, new content additions, and parkour-related updates',
 			saveButton: 'Save Changes',
@@ -57,6 +75,20 @@
 			usernamePlaceholder: 'Je weergavenaam',
 			email: 'E-mail',
 			emailNote: 'E-mailadres kan niet worden gewijzigd',
+			security: 'Beveiliging',
+			changePassword: 'Wachtwoord wijzigen',
+			currentPassword: 'Huidig wachtwoord',
+			currentPasswordPlaceholder: 'Voer huidig wachtwoord in',
+			newPassword: 'Nieuw wachtwoord',
+			newPasswordPlaceholder: 'Voer nieuw wachtwoord in (min 6 tekens)',
+			confirmPassword: 'Bevestig nieuw wachtwoord',
+			confirmPasswordPlaceholder: 'Voer nieuw wachtwoord opnieuw in',
+			changePasswordButton: 'Wachtwoord bijwerken',
+			changingPasswordButton: 'Bijwerken...',
+			passwordMismatch: 'Wachtwoorden komen niet overeen',
+			passwordTooShort: 'Wachtwoord moet minimaal 6 tekens lang zijn',
+			passwordChangedSuccess: 'Wachtwoord succesvol gewijzigd',
+			passwordChangeError: 'Kan wachtwoord niet wijzigen',
 			preferences: 'Communicatievoorkeuren',
 			marketingOptIn: 'Stuur mij nieuws en updates over JumpFlix, nieuwe content en parkour-gerelateerde updates',
 			saveButton: 'Wijzigingen opslaan',
@@ -164,6 +196,55 @@
 		}
 	}
 
+	async function changePassword() {
+		if (!supabase || !$user) return;
+		
+		// Validate passwords
+		if (newPassword !== confirmNewPassword) {
+			toast.error(text.passwordMismatch);
+			return;
+		}
+
+		if (newPassword.length < 6) {
+			toast.error(text.passwordTooShort);
+			return;
+		}
+
+		changingPassword = true;
+		try {
+			// Supabase requires re-authentication for password changes
+			// First, verify current password by attempting to sign in
+			const { error: signInError } = await supabase.auth.signInWithPassword({
+				email: $user.email!,
+				password: currentPassword
+			});
+
+			if (signInError) {
+				toast.error('Current password is incorrect');
+				return;
+			}
+
+			// Now update the password
+			const { error } = await supabase.auth.updateUser({
+				password: newPassword
+			});
+
+			if (error) throw error;
+
+			toast.success(text.passwordChangedSuccess);
+			
+			// Clear password fields
+			currentPassword = '';
+			newPassword = '';
+			confirmNewPassword = '';
+		} catch (error: any) {
+			console.error('Error changing password:', error);
+			toast.error(text.passwordChangeError);
+		} finally {
+			changingPassword = false;
+		}
+	}
+
 	// Load preferences when dialog opens
 	$effect(() => {
 		if (open && $user) {
@@ -216,6 +297,70 @@
 								class="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground cursor-not-allowed"
 							/>
 							<p class="text-xs text-muted-foreground">{text.emailNote}</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Security Section -->
+				<section class="space-y-3">
+					<h3 class="text-sm font-semibold">{text.security}</h3>
+					
+					<div class="space-y-3 rounded-lg border border-border bg-card p-3">
+						<h4 class="text-xs font-medium">{text.changePassword}</h4>
+						
+						<div class="space-y-1.5">
+							<label for="currentPassword" class="text-xs font-medium">
+								{text.currentPassword}
+							</label>
+							<input
+								id="currentPassword"
+								type="password"
+								bind:value={currentPassword}
+								placeholder={text.currentPasswordPlaceholder}
+								disabled={changingPassword}
+								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+							/>
+						</div>
+
+						<div class="space-y-1.5">
+							<label for="newPassword" class="text-xs font-medium">
+								{text.newPassword}
+							</label>
+							<input
+								id="newPassword"
+								type="password"
+								bind:value={newPassword}
+								placeholder={text.newPasswordPlaceholder}
+								disabled={changingPassword}
+								minlength="6"
+								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+							/>
+						</div>
+
+						<div class="space-y-1.5">
+							<label for="confirmNewPassword" class="text-xs font-medium">
+								{text.confirmPassword}
+							</label>
+							<input
+								id="confirmNewPassword"
+								type="password"
+								bind:value={confirmNewPassword}
+								placeholder={text.confirmPasswordPlaceholder}
+								disabled={changingPassword}
+								minlength="6"
+								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+							/>
+						</div>
+
+						<div class="flex justify-end">
+							<Button 
+								onclick={changePassword}
+								disabled={changingPassword || !currentPassword || !newPassword || !confirmNewPassword}
+								variant="outline"
+								size="xs"
+							>
+								{changingPassword ? text.changingPasswordButton : text.changePasswordButton}
+							</Button>
 						</div>
 					</div>
 				</section>

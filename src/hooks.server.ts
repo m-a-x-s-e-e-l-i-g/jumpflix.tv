@@ -1,6 +1,8 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { paraglideMiddleware } from '$lib/paraglide/server';
 import { dev } from '$app/environment';
+import { handleSupabase } from '$lib/server/supabase';
+import { sequence } from '@sveltejs/kit/hooks';
 
 const handleParaglide: Handle = ({ event, resolve }) =>
 	paraglideMiddleware(event.request, ({ request, locale }) => {
@@ -11,7 +13,8 @@ const handleParaglide: Handle = ({ event, resolve }) =>
 		});
 	});
 
-export const handle: Handle = handleParaglide;
+// Combine Supabase auth handling with Paraglide middleware
+export const handle: Handle = sequence(handleSupabase, handleParaglide);
 
 export const handleError: HandleServerError = async ({ error, event, status, message }) => {
 	const errorId = crypto.randomUUID();

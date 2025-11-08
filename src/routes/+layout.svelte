@@ -11,6 +11,7 @@
 	import { goto } from '$app/navigation';
 	import type { ContentItem } from '$lib/tv/types';
 	import { supabase } from '$lib/supabaseClient';
+	import { session, user, loading } from '$lib/stores/authStore';
 	import {
 		Sheet as SheetRoot,
 		SheetTrigger,
@@ -46,6 +47,8 @@
 			item: ContentItem | null;
 			initialEpisodeNumber: number | null;
 			initialSeasonNumber: number | null;
+			session: any;
+			user: any;
 		};
 	}>();
 
@@ -332,6 +335,13 @@
 	onMount(() => {
 		if (typeof window === 'undefined') return;
 		
+		// Initialize auth stores with data from server
+		if (data.session) {
+			session.set(data.session);
+			user.set(data.user);
+		}
+		loading.set(false);
+		
 		// Handle Supabase auth callback from email confirmation
 		const handleAuthCallback = async () => {
 			const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -375,8 +385,14 @@
 		
 		handleAuthCallback();
 		
+		// Listen for auth state changes and update stores
+		const { data: authListener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+			session.set(newSession);
+			user.set(newSession?.user ?? null);
+		});
+		
 		const stopWatchHistory = initWatchHistory();
-		const cleanupFns = [addEventListeners(), setupScrollEffects(), stopWatchHistory];
+		const cleanupFns = [addEventListeners(), setupScrollEffects(), stopWatchHistory, () => authListener.subscription.unsubscribe()];
 		return () => {
 			for (const cleanup of cleanupFns) {
 				cleanup?.();

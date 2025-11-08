@@ -1,7 +1,10 @@
 import { fetchAllContent } from '$lib/server/content-service';
 import type { ContentItem, Series } from '$lib/tv/types';
 
-export const load = async ({ url }: { url: URL }) => {
+export const load = async ({ url, locals }) => {
+	// Get the authenticated session using safe method that validates JWT
+	const { session, user } = await locals.safeGetSession();
+	
 	try {
 		const content = await fetchAllContent();
 		
@@ -42,7 +45,10 @@ export const load = async ({ url }: { url: URL }) => {
 			content: serializedContent, 
 			item, 
 			initialEpisodeNumber, 
-			initialSeasonNumber 
+			initialSeasonNumber,
+			// Pass session and user to all pages for auth state
+			session,
+			user
 		};
 	} catch (error) {
 		console.error('[+layout.server] Error in load function:', error);
@@ -50,7 +56,9 @@ export const load = async ({ url }: { url: URL }) => {
 			content: [], 
 			item: null, 
 			initialEpisodeNumber: null, 
-			initialSeasonNumber: null 
+			initialSeasonNumber: null,
+			session,
+			user
 		};
 	}
 };

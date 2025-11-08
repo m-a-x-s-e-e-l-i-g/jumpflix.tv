@@ -168,7 +168,7 @@
 		loading = true;
 		try {
 			const { error } = await supabase.auth.resetPasswordForEmail(email, {
-				redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : ''
+				redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : ''
 			});
 			if (error) throw error;
 			toast.success(copy.forgotPassword.confirmation);

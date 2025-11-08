@@ -9,6 +9,7 @@
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
+	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import * as m from '$lib/paraglide/messages';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
@@ -18,6 +19,30 @@
 	let showUserMenu = $state(false);
 	let menuRef: HTMLDivElement | undefined = $state(undefined);
 	let buttonRef: HTMLButtonElement | undefined = $state(undefined);
+	let isRefreshing = $state(false);
+	
+	async function handleRefreshSession() {
+		if (!supabase) return;
+		isRefreshing = true;
+		
+		try {
+			const { data: { session }, error } = await supabase.auth.refreshSession();
+			if (error) {
+				console.error('Session refresh error:', error);
+				toast.error('Failed to refresh session. Please try signing out and back in.');
+			} else if (session) {
+				toast.success('Session refreshed successfully');
+			} else {
+				toast.error('No active session found');
+			}
+		} catch (err) {
+			console.error('Unexpected refresh error:', err);
+			toast.error('Failed to refresh session');
+		} finally {
+			isRefreshing = false;
+			showUserMenu = false;
+		}
+	}
 	
 	async function handleSignOut() {
 		if (!supabase) return;
@@ -105,6 +130,15 @@
 				>
 					<SettingsIcon class="size-4" />
 					<span>Settings</span>
+				</button>
+				
+				<button
+					onclick={handleRefreshSession}
+					disabled={isRefreshing}
+					class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground disabled:opacity-50"
+				>
+					<RefreshCwIcon class={isRefreshing ? "size-4 animate-spin" : "size-4"} />
+					<span>Refresh Session</span>
 				</button>
 				
 				<button

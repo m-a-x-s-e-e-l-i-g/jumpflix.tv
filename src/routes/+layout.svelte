@@ -342,6 +342,33 @@
 		}
 		loading.set(false);
 		
+		// Debug logging for troubleshooting session issues
+		console.log('[Auth Debug] Session initialized:', {
+			hasSession: !!data.session,
+			hasUser: !!data.user,
+			userId: data.user?.id,
+			userEmail: data.user?.email
+		});
+		
+		// Force session refresh to ensure we have the latest auth state
+		// This helps recover from stale cached states
+		supabase.auth.getSession().then(({ data: freshSession, error }) => {
+			if (error) {
+				console.error('[Auth Debug] Error refreshing session:', error);
+				return;
+			}
+			if (freshSession.session && !data.session) {
+				// We have a valid session that wasn't passed from server
+				// This can happen with service worker caching issues
+				console.warn('[Auth Debug] Found valid session not passed from server, updating...');
+				session.set(freshSession.session);
+				user.set(freshSession.session.user);
+			} else if (!freshSession.session && data.session) {
+				// Server said we're logged in but client doesn't have session
+				console.warn('[Auth Debug] Server session exists but client session missing');
+			}
+		});
+		
 		// Handle Supabase auth callback from email confirmation
 		const handleAuthCallback = async () => {
 			const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -436,9 +463,17 @@
 				.then((reg) => {
 					if (!reg) {
 						navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+					} else {
+						// Check for updates on page load
+						reg.update().catch(() => {});
 					}
 				})
 				.catch(() => {});
+		});
+		
+		// Listen for service worker updates and prompt user to reload
+		navigator.serviceWorker?.addEventListener('controllerchange', () => {
+			console.log('[SW] New service worker activated, may need reload for full update');
 		});
 	}
 </script>

@@ -18,7 +18,16 @@
 			gtag('config', 'G-SJ77H41T0Q');
 		</script>
 		<meta name="theme-color" content="#0b1220">
+		
+		<!-- iOS PWA Meta Tags -->
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+		<meta name="apple-mobile-web-app-title" content="JUMPFLIX">
 		<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" sizes="180x180">
+		
+		<!-- iOS Universal Links (requires apple-app-site-association file) -->
+		<meta name="apple-itunes-app" content="app-clip-bundle-id=tv.jumpflix.clip, app-clip-display=card">
+		
 		<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials">
 		%sveltekit.head%
 	</head>

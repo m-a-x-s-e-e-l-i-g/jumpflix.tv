@@ -21,5 +21,18 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+jumpflix",
+      "url": "/?url=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "url": "url"
+    }
+  }
 }

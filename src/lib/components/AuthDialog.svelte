@@ -143,7 +143,7 @@
 				email,
 				password,
 				options: {
-					emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : '',
+					emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '',
 					data: {
 						marketing_opt_in: marketingOptIn
 					}
@@ -168,7 +168,7 @@
 		loading = true;
 		try {
 			const { error } = await supabase.auth.resetPasswordForEmail(email, {
-				redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : ''
+				redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : ''
 			});
 			if (error) throw error;
 			toast.success(copy.forgotPassword.confirmation);

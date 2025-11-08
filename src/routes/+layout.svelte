@@ -8,7 +8,9 @@
 	import { onMount, setContext } from 'svelte';
 	import type { Action } from 'svelte/action';
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
 	import type { ContentItem } from '$lib/tv/types';
+	import { supabase } from '$lib/supabaseClient';
 	import {
 		Sheet as SheetRoot,
 		SheetTrigger,
@@ -329,6 +331,50 @@
 
 	onMount(() => {
 		if (typeof window === 'undefined') return;
+		
+		// Handle Supabase auth callback from email confirmation
+		const handleAuthCallback = async () => {
+			const hashParams = new URLSearchParams(window.location.hash.substring(1));
+			const accessToken = hashParams.get('access_token');
+			const refreshToken = hashParams.get('refresh_token');
+			const type = hashParams.get('type');
+			
+			if (accessToken && type) {
+				try {
+					// Set the session from the URL tokens
+					const { data, error } = await supabase.auth.setSession({
+						access_token: accessToken,
+						refresh_token: refreshToken || ''
+					});
+					
+					if (error) {
+						console.error('Error setting session:', error);
+						toast.error('Failed to confirm email. Please try again.');
+					} else if (type === 'signup') {
+						toast.success('Email confirmed! Welcome to JumpFlix!');
+						// Clean up the URL by removing hash
+						window.history.replaceState({}, document.title, window.location.pathname);
+					} else if (type === 'recovery') {
+						// Redirect to password reset page if not already there
+						if (!window.location.pathname.includes('/reset-password')) {
+							goto('/reset-password');
+							return;
+						}
+					}
+					
+					// Clean up the URL by removing hash (if not redirecting)
+					if (type !== 'recovery' || window.location.pathname.includes('/reset-password')) {
+						window.history.replaceState({}, document.title, window.location.pathname);
+					}
+				} catch (err) {
+					console.error('Auth callback error:', err);
+					toast.error('An error occurred during email confirmation.');
+				}
+			}
+		};
+		
+		handleAuthCallback();
+		
 		const stopWatchHistory = initWatchHistory();
 		const cleanupFns = [addEventListeners(), setupScrollEffects(), stopWatchHistory];
 		return () => {

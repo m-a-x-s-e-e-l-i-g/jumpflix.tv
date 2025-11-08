@@ -360,15 +360,23 @@
 					if (error) {
 						console.error('Error setting session:', error);
 						toast.error('Failed to confirm email. Please try again.');
-					} else if (type === 'signup') {
-						toast.success('Email confirmed! Welcome to JumpFlix!');
-						// Clean up the URL by removing hash
-						window.history.replaceState({}, document.title, window.location.pathname);
-					} else if (type === 'recovery') {
-						// Redirect to password reset page if not already there
-						if (!window.location.pathname.includes('/reset-password')) {
-							goto('/reset-password');
-							return;
+					} else {
+						// Explicitly update the auth stores with the new session
+						if (data.session) {
+							session.set(data.session);
+							user.set(data.user);
+						}
+						
+						if (type === 'signup') {
+							toast.success('Email confirmed! Welcome to JumpFlix!');
+							// Clean up the URL by removing hash
+							window.history.replaceState({}, document.title, window.location.pathname);
+						} else if (type === 'recovery') {
+							// Redirect to password reset page if not already there
+							if (!window.location.pathname.includes('/reset-password')) {
+								goto('/reset-password');
+								return;
+							}
 						}
 					}
 					

@@ -30,7 +30,7 @@
 		}
 
 		if (password.length < 6) {
-			toast.error('Password must be at least 6 characters');
+			toast.error('Password must be at least 10 characters');
 			return;
 		}
 
@@ -107,7 +107,7 @@
 			</form>
 
 			<p class="mt-4 text-center text-xs text-muted-foreground">
-				Password must be at least 6 characters long
+				Password must be at least 10 characters long
 			</p>
 		</div>
 	</div>

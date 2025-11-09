@@ -869,12 +869,12 @@ async function editFacets() {
 	const facetMood = await prompts.checkbox({
 		message: 'Mood / Vibe (select all that apply):',
 		choices: [
-			{ name: 'Energetic', value: 'energetic', checked: item.facet_mood?.includes('energetic') },
-			{ name: 'Chill', value: 'chill', checked: item.facet_mood?.includes('chill') },
-			{ name: 'Gritty', value: 'gritty', checked: item.facet_mood?.includes('gritty') },
-			{ name: 'Wholesome', value: 'wholesome', checked: item.facet_mood?.includes('wholesome') },
-			{ name: 'Intense', value: 'intense', checked: item.facet_mood?.includes('intense') },
-			{ name: 'Artistic', value: 'artistic', checked: item.facet_mood?.includes('artistic') }
+			{ name: 'Energetic ⚡ - High-energy vibe with intense action', value: 'energetic', checked: item.facet_mood?.includes('energetic') },
+			{ name: 'Chill 😌 - Relaxed and laid-back atmosphere', value: 'chill', checked: item.facet_mood?.includes('chill') },
+			{ name: 'Gritty 🔥 - Raw, rough, and unpolished street vibe', value: 'gritty', checked: item.facet_mood?.includes('gritty') },
+			{ name: 'Wholesome 💚 - Positive, uplifting, and feel-good content', value: 'wholesome', checked: item.facet_mood?.includes('wholesome') },
+			{ name: 'Intense 💥 - Extreme focus, high stakes, adrenaline', value: 'intense', checked: item.facet_mood?.includes('intense') },
+			{ name: 'Artistic 🎨 - Creative expression and aesthetic focus', value: 'artistic', checked: item.facet_mood?.includes('artistic') }
 		]
 	});
 

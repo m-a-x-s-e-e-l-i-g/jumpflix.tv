@@ -97,9 +97,9 @@
       description: 'Classic parkour fundamentals and basics',
       emoji: '📼'
     },
-    dance: { 
-      label: 'Dance', 
-      description: 'Noodle movement and dance-like flow',
+    contemporary: { 
+      label: 'Contemporary', 
+      description: 'Dance-like movements and fluid transitions',
       emoji: '💃'
     },
     

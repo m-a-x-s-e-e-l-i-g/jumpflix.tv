@@ -948,7 +948,7 @@ async function editFacets() {
 			{ name: 'Technical (precise, quirky)', value: 'technical', checked: item.facet_movement?.includes('technical') },
 			{ name: 'Speed / Chase', value: 'speed', checked: item.facet_movement?.includes('speed') },
 			{ name: 'Oldskool (parkour basics)', value: 'oldskool', checked: item.facet_movement?.includes('oldskool') },
-			{ name: 'Dance (noodle movement)', value: 'dance', checked: item.facet_movement?.includes('dance') }
+			{ name: 'Contemporary (dance)', value: 'contemporary', checked: item.facet_movement?.includes('contemporary') }
 		]
 	});
 

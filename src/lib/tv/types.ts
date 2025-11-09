@@ -3,7 +3,7 @@
 // Facet type definitions
 export type FacetType = 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial';
 export type FacetMood = 'energetic' | 'chill' | 'gritty' | 'wholesome' | 'intense' | 'artistic';
-export type FacetMovement = 'flow' | 'big-sends' | 'tricking' | 'technical' | 'speed' | 'oldskool' | 'dance';
+export type FacetMovement = 'flow' | 'big-sends' | 'tricking' | 'technical' | 'speed' | 'oldskool' | 'contemporary';
 export type FacetEnvironment = 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym';
 export type FacetFilmStyle = 'cinematic' | 'street-cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | 'music-driven' | 'montage' | 'slowmo' | 'gonzo' | 'vintage' | 'minimalist' | 'experimental';
 export type FacetTheme = 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment';

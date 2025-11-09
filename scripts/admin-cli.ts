@@ -112,6 +112,7 @@ async function mainMenu() {
 			{ name: '📋 List All Content', value: 'list-content' },
 			{ name: '✏️  Edit Content', value: 'edit-content' },
 			{ name: '🏷️  Edit Facets', value: 'edit-facets' },
+			{ name: '🎨 Retry Blurhash Generation', value: 'retry-blurhash' },
 			{ name: '🗑️  Delete Content', value: 'delete-content' },
 			{ name: '❌ Exit', value: 'exit' }
 		]
@@ -135,6 +136,9 @@ async function mainMenu() {
 			break;
 		case 'edit-facets':
 			await editFacets();
+			break;
+		case 'retry-blurhash':
+			await retryBlurhashGeneration();
 			break;
 		case 'delete-content':
 			await deleteContent();
@@ -1042,6 +1046,127 @@ async function editFacets() {
 	} else {
 		console.log('✅ Facets updated successfully!');
 	}
+}
+
+// Retry Blurhash Generation
+async function retryBlurhashGeneration() {
+	console.clear();
+	console.log('🎨 Retry Blurhash Generation\n');
+
+	// Fetch all items with thumbnails but no blurhash
+	const { data: items, error } = await supabase
+		.from('media_items')
+		.select('id, title, slug, type, thumbnail, blurhash')
+		.not('thumbnail', 'is', null)
+		.is('blurhash', null)
+		.order('title');
+
+	if (error) {
+		console.error('❌ Error fetching items:', error.message);
+		return;
+	}
+
+	if (!items || items.length === 0) {
+		console.log('✅ All items with thumbnails already have blurhash!');
+		return;
+	}
+
+	console.log(`Found ${items.length} item(s) without blurhash:\n`);
+
+	for (const item of items) {
+		const icon = item.type === 'movie' ? '🎥' : '📺';
+		console.log(`${icon} ${item.title} (${item.slug})`);
+	}
+
+	console.log('');
+
+	const action = await prompts.select({
+		message: 'What would you like to do?',
+		choices: [
+			{ name: '🔄 Generate for all items', value: 'all' },
+			{ name: '🎯 Select specific items', value: 'select' },
+			{ name: '← Back to main menu', value: 'back' }
+		]
+	});
+
+	if (action === 'back') {
+		return;
+	}
+
+	let itemsToProcess: typeof items = [];
+
+	if (action === 'all') {
+		const confirm = await prompts.confirm({
+			message: `Generate blurhash for all ${items.length} items?`,
+			default: true
+		});
+
+		if (!confirm) {
+			console.log('❌ Cancelled');
+			return;
+		}
+
+		itemsToProcess = items;
+	} else if (action === 'select') {
+		const selectedIds = await prompts.checkbox({
+			message: 'Select items to generate blurhash for:',
+			choices: items.map((item) => ({
+				name: `${item.type === 'movie' ? '🎥' : '📺'} ${item.title} (${item.slug})`,
+				value: item.id,
+				checked: false
+			}))
+		});
+
+		if (selectedIds.length === 0) {
+			console.log('❌ No items selected');
+			return;
+		}
+
+		itemsToProcess = items.filter((item) => selectedIds.includes(item.id));
+	}
+
+	console.log(`\n🎨 Generating blurhash for ${itemsToProcess.length} item(s)...\n`);
+
+	let successCount = 0;
+	let failCount = 0;
+
+	for (const item of itemsToProcess) {
+		try {
+			console.log(`Processing: ${item.title}`);
+			
+			if (!item.thumbnail) {
+				console.log('  ⚠️  Skipped (no thumbnail URL)');
+				failCount++;
+				continue;
+			}
+
+			const blurhash = await generateBlurhash(item.thumbnail);
+			
+			const { error: updateError } = await supabase
+				.from('media_items')
+				.update({ 
+					blurhash,
+					updated_at: new Date().toISOString() 
+				})
+				.eq('id', item.id);
+
+			if (updateError) {
+				console.log(`  ❌ Failed to update: ${updateError.message}`);
+				failCount++;
+			} else {
+				console.log(`  ✅ Success`);
+				successCount++;
+			}
+		} catch (error) {
+			console.log(`  ❌ Error: ${error instanceof Error ? error.message : String(error)}`);
+			failCount++;
+		}
+	}
+
+	console.log(`\n📊 Summary:`);
+	console.log(`   ✅ Success: ${successCount}`);
+	console.log(`   ❌ Failed: ${failCount}`);
+	console.log(`   📝 Total: ${itemsToProcess.length}`);
 }
 
 // Delete Content

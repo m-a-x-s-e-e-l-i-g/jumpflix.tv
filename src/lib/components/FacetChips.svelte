@@ -139,7 +139,7 @@
     'street-cinematic': { 
       label: 'Street-Cinematic', 
       description: 'DSLR stability + fisheye inserts, clean yet gritty',
-      emoji: '�'
+      emoji: '🛣️'
     },
     skateish: { 
       label: 'Skate-ish', 

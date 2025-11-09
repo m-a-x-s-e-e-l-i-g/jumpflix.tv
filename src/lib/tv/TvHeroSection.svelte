@@ -5,6 +5,14 @@
   import * as m from '$lib/paraglide/messages';
 
   export let logoTilt = 0;
+
+  function handleStartWatching(event: MouseEvent) {
+    event.preventDefault();
+    const searchSection = document.getElementById('search');
+    if (searchSection) {
+      searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
 </script>
 
 <div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center gap-8 text-center mt-12">
@@ -39,6 +47,7 @@
   <div class="mt-4 flex flex-col items-center gap-4 sm:flex-row">
     <a
       href="/#search"
+      on:click={handleStartWatching}
       class="group inline-flex items-center gap-3 rounded-full bg-[#e50914] px-6 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white shadow-[0_22px_40px_-15px_rgba(229,9,20,0.8)] transition hover:bg-[#f6121d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
     >
       {m.tv_heroCtaWatch()}

@@ -301,7 +301,7 @@
 </script>
 
 {#if chips.length > 0}
-  <Tooltip.Provider>
+  <Tooltip.Provider disableCloseOnTriggerClick={true}>
     <div class="facet-chips" role="list" aria-label="Content facets">
       {#each chips as chip}
         <Tooltip.Root>

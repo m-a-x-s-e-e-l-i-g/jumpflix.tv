@@ -944,7 +944,7 @@ async function editFacets() {
 		choices: [
 			{ name: 'Flow (continuous lines)', value: 'flow', checked: item.facet_movement?.includes('flow') },
 			{ name: 'Big Sends (roofs, fear jumps)', value: 'big-sends', checked: item.facet_movement?.includes('big-sends') },
-			{ name: 'Tricking (flips)', value: 'tricking', checked: item.facet_movement?.includes('tricking') },
+			{ name: 'Style (heavy acrobatic lines)', value: 'style', checked: item.facet_movement?.includes('style') },
 			{ name: 'Technical (precise, quirky)', value: 'technical', checked: item.facet_movement?.includes('technical') },
 			{ name: 'Speed / Chase', value: 'speed', checked: item.facet_movement?.includes('speed') },
 			{ name: 'Oldskool (parkour basics)', value: 'oldskool', checked: item.facet_movement?.includes('oldskool') },

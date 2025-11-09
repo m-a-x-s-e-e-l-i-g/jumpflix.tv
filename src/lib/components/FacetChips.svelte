@@ -77,14 +77,14 @@
       description: 'Scary jumps, rooftops, and fear challenges',
       emoji: '🚀'
     },
-    tricking: { 
-      label: 'Tricking', 
-      description: 'Flips, twists, and acrobatic movements',
+    style: { 
+      label: 'Style', 
+      description: 'Heavy acrobatic lines and combos',
       emoji: '🤸'
     },
     technical: { 
       label: 'Technical', 
-      description: 'Precise, quirky, and technical movements',
+      description: 'Precise, German, quirky, and technical movements',
       emoji: '⚙️'
     },
     speed: { 

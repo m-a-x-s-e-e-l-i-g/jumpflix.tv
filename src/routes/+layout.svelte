@@ -343,14 +343,6 @@
 		}
 		loading.set(false);
 		
-		// Debug logging for troubleshooting session issues
-		console.log('[Auth Debug] Session initialized:', {
-			hasSession: !!data.session,
-			hasUser: !!data.user,
-			userId: data.user?.id,
-			userEmail: data.user?.email
-		});
-		
 		// Force session refresh to ensure we have the latest auth state
 		// This helps recover from stale cached states and account switching issues
 		const refreshTimeout = setTimeout(() => {
@@ -392,7 +384,6 @@
 			} else if (!freshSession.session && data.session) {
 				// Server said we're logged in but client doesn't have session
 				// This is the "broken session" state - client cookies are invalid
-				console.error('[Auth Debug] BROKEN SESSION: Server session exists but client session missing - forcing sign out');
 				toast.error('Your session is invalid. Please sign in again.');
 				
 				// Force sign out to clear the broken state
@@ -414,7 +405,6 @@
 				supabase.auth.getUser().then(({ data: userData, error: userError }) => {
 					if (userError || !userData.user) {
 						// Token is invalid even though session exists
-						console.error('[Auth Debug] BROKEN TOKEN: Session exists but token validation failed', userError);
 						toast.error('Your session has expired. Please sign in again.');
 						
 						// Force sign out
@@ -432,7 +422,6 @@
 						// Everything is valid, update to ensure we have the latest session data
 						session.set(freshSession.session);
 						user.set(freshSession.session.user);
-						console.log('[Auth Debug] Session validated successfully');
 					}
 				});
 			}
@@ -494,11 +483,6 @@
 		
 		// Listen for auth state changes and update stores
 		const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
-			console.log('[Auth Debug] Auth state changed:', event, {
-				hasSession: !!newSession,
-				userId: newSession?.user?.id
-			});
-			
 			// Detect account switches
 			const currentUserId = get(user)?.id;
 			const newUserId = newSession?.user?.id;
@@ -507,11 +491,9 @@
 				// Clear all auth state
 				session.set(null);
 				user.set(null);
-				console.log('[Auth Debug] User signed out, clearing state');
 			} else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
 				// Check if this is an account switch
 				if (currentUserId && newUserId && currentUserId !== newUserId) {
-					console.warn('[Auth Debug] Account switch detected, forcing reload');
 					toast.message('Switching accounts...');
 					// Force page reload to clear all cached state
 					setTimeout(() => window.location.reload(), 500);

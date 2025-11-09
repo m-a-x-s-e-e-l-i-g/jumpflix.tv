@@ -13,6 +13,7 @@ import { generateBlurhashFromUrl, generateBlurhashFromFile } from './utils/blurh
 import { syncAllSeriesEpisodes, syncPlaylistEpisodes } from './utils/youtube-sync.js';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
+import * as readline from 'readline';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -36,6 +37,29 @@ type MediaItem = Database['public']['Tables']['media_items']['Row'];
 type MediaInsert = Database['public']['Tables']['media_items']['Insert'];
 type Season = Database['public']['Tables']['series_seasons']['Row'];
 type Episode = Database['public']['Tables']['series_episodes']['Insert'];
+
+// Navigation control
+class NavigationError extends Error {
+	constructor(public type: 'back' | 'exit') {
+		super(type);
+		this.name = 'NavigationError';
+	}
+}
+
+// Setup keyboard listener for ESC key
+function setupGlobalKeyListener() {
+	if (process.stdin.isTTY) {
+		readline.emitKeypressEvents(process.stdin);
+		process.stdin.setRawMode(true);
+		
+		process.stdin.on('keypress', (str, key) => {
+			if (key && key.name === 'escape') {
+				console.log('\n\n👋 Goodbye!\n');
+				process.exit(0);
+			}
+		});
+	}
+}
 
 // Utility functions
 function slugify(text: string): string {
@@ -76,7 +100,8 @@ async function generateBlurhash(thumbnail: string): Promise<string> {
 // Main menu
 async function mainMenu() {
 	console.clear();
-	console.log('🎬 JumpFlix Admin CLI\n');
+	console.log('🎬 JumpFlix Admin CLI');
+	console.log('💡 Press ESC anytime to exit\n');
 
 	const action = await prompts.select({
 		message: 'What would you like to do?',
@@ -422,11 +447,14 @@ async function refreshEpisodes() {
 		choices: [
 			{ name: '📺 Refresh all episodes for a specific series', value: 'series' },
 			{ name: '📋 Refresh specific season', value: 'season' },
-			{ name: '🔄 Refresh ALL series episodes', value: 'all' }
+			{ name: '🔄 Refresh ALL series episodes', value: 'all' },
+			{ name: '← Back to main menu', value: 'back' }
 		]
 	});
 
-	if (action === 'series') {
+	if (action === 'back') {
+		return;
+	} else if (action === 'series') {
 		await refreshSeriesEpisodes();
 	} else if (action === 'season') {
 		await refreshSeasonEpisodes();
@@ -450,11 +478,19 @@ async function refreshSeriesEpisodes() {
 
 	const seriesId = await prompts.select({
 		message: 'Select a series:',
-		choices: seriesList.map((s) => ({
-			name: `${s.title} (${s.slug})`,
-			value: s.id
-		}))
+		choices: [
+			{ name: '← Back', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...seriesList.map((s) => ({
+				name: `${s.title} (${s.slug})`,
+				value: s.id
+			}))
+		]
 	});
+
+	if (seriesId === 'back') {
+		return;
+	}
 
 	console.log('\n🔄 Syncing episodes...\n');
 	const result = await syncAllSeriesEpisodes(supabase, seriesId);
@@ -483,11 +519,19 @@ async function refreshSeasonEpisodes() {
 
 	const seriesId = await prompts.select({
 		message: 'Select a series:',
-		choices: seriesList.map((s) => ({
-			name: `${s.title} (${s.slug})`,
-			value: s.id
-		}))
+		choices: [
+			{ name: '← Back', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...seriesList.map((s) => ({
+				name: `${s.title} (${s.slug})`,
+				value: s.id
+			}))
+		]
 	});
+
+	if (seriesId === 'back') {
+		return;
+	}
 
 	// Fetch seasons for this series
 	const { data: seasons, error: seasonsError } = await supabase
@@ -503,12 +547,20 @@ async function refreshSeasonEpisodes() {
 
 	const seasonId = await prompts.select({
 		message: 'Select a season:',
-		choices: seasons.map((s) => ({
-			name: `Season ${s.season_number}${s.playlist_id ? ` (Playlist: ${s.playlist_id})` : ' (No playlist)'}`,
-			value: s.id,
-			disabled: !s.playlist_id
-		}))
+		choices: [
+			{ name: '← Back', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...seasons.map((s) => ({
+				name: `Season ${s.season_number}${s.playlist_id ? ` (Playlist: ${s.playlist_id})` : ' (No playlist)'}`,
+				value: s.id,
+				disabled: !s.playlist_id
+			}))
+		]
 	});
+
+	if (seasonId === 'back') {
+		return;
+	}
 
 	const season = seasons.find((s) => s.id === seasonId);
 	if (!season || !season.playlist_id) {
@@ -627,11 +679,19 @@ async function editContent() {
 
 	const itemId = await prompts.select({
 		message: 'Select content to edit:',
-		choices: items.map((item) => ({
-			name: `${item.type === 'movie' ? '🎥' : '📺'} ${item.title} (${item.slug})`,
-			value: item.id
-		}))
+		choices: [
+			{ name: '← Back to main menu', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...items.map((item) => ({
+				name: `${item.type === 'movie' ? '🎥' : '📺'} ${item.title} (${item.slug})`,
+				value: item.id
+			}))
+		]
 	});
+
+	if (itemId === 'back') {
+		return;
+	}
 
 	const { data: itemData, error: fetchError } = await supabase
 		.from('media_items')
@@ -1007,11 +1067,19 @@ async function deleteContent() {
 
 	const itemId = await prompts.select({
 		message: 'Select content to delete:',
-		choices: items.map((item) => ({
-			name: `${item.type === 'movie' ? '🎥' : '📺'} ${item.title} (${item.slug})`,
-			value: item.id
-		}))
+		choices: [
+			{ name: '← Back to main menu', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...items.map((item) => ({
+				name: `${item.type === 'movie' ? '🎥' : '📺'} ${item.title} (${item.slug})`,
+				value: item.id
+			}))
+		]
 	});
+
+	if (itemId === 'back') {
+		return;
+	}
 
 	const item = items.find((i) => i.id === itemId);
 
@@ -1035,6 +1103,7 @@ async function deleteContent() {
 }
 
 // Start the CLI
+setupGlobalKeyListener();
 mainMenu().catch((error) => {
 	console.error('❌ Unexpected error:', error);
 	process.exit(1);

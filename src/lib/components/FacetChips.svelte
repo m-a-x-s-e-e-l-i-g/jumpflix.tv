@@ -133,28 +133,68 @@
     // Film Style
     cinematic: { 
       label: 'Cinematic', 
-      description: 'Professional cinematography with music and effects',
+      description: 'Smooth camera work, controlled shots, strong color grade',
       emoji: '🎞️'
+    },
+    'street-cinematic': { 
+      label: 'Street-Cinematic', 
+      description: 'DSLR stability + fisheye inserts, clean yet gritty',
+      emoji: '�'
     },
     skateish: { 
       label: 'Skate-ish', 
-      description: 'Skate video aesthetic with fisheye and VX',
+      description: 'VX/handcam energy, fisheye close-ups, rough and fast',
       emoji: '🛹'
     },
     raw: { 
       label: 'Raw Session', 
-      description: 'Minimal editing with raw footage and simple music',
+      description: 'No polish. Real sound, breathing, slips, banter',
       emoji: '📱'
     },
     pov: { 
       label: 'POV', 
-      description: 'First-person perspective and chase cam footage',
+      description: 'First-person or tight follow angle, immersive',
       emoji: '👁️'
     },
     longtakes: { 
       label: 'Long Takes', 
-      description: 'Extended single-shot sequences',
+      description: 'Minimal cuts, continuous routes, flow and timing',
       emoji: '🎥'
+    },
+    'music-driven': { 
+      label: 'Music-Driven', 
+      description: 'Editing rhythms follow the soundtrack, beat-matched',
+      emoji: '🎵'
+    },
+    montage: { 
+      label: 'Montage', 
+      description: 'Quick cuts, hype, best moments stacked',
+      emoji: '⚡'
+    },
+    slowmo: { 
+      label: 'Slowmo', 
+      description: 'Slow motion used to show form, weight shift, control',
+      emoji: '🐌'
+    },
+    gonzo: { 
+      label: 'Gonzo', 
+      description: 'Handheld chaos, shaky, crowd energy, in the middle of it',
+      emoji: '🌀'
+    },
+    vintage: { 
+      label: 'Vintage', 
+      description: 'MiniDV, Hi8, 4:3, film grain, nostalgic skate-era vibes',
+      emoji: '📼'
+    },
+    minimalist: { 
+      label: 'Minimalist', 
+      description: 'Calm framing, few edits, open space, quiet mood',
+      emoji: '⬜'
+    },
+    experimental: { 
+      label: 'Experimental', 
+      description: 'Non-linear, surreal cuts, visual abstraction',
+      emoji: '🔮'
     },
     
     // Theme

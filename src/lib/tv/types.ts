@@ -5,7 +5,7 @@ export type FacetType = 'fiction' | 'documentary' | 'session' | 'event' | 'tutor
 export type FacetMood = 'energetic' | 'chill' | 'gritty' | 'wholesome' | 'intense' | 'artistic';
 export type FacetMovement = 'flow' | 'big-sends' | 'tricking' | 'technical' | 'speed' | 'oldskool' | 'dance';
 export type FacetEnvironment = 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym';
-export type FacetFilmStyle = 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes';
+export type FacetFilmStyle = 'cinematic' | 'street-cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | 'music-driven' | 'montage' | 'slowmo' | 'gonzo' | 'vintage' | 'minimalist' | 'experimental';
 export type FacetTheme = 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment';
 export type FacetEra = '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000';
 

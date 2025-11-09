@@ -911,11 +911,19 @@ async function editFacets() {
 		message: 'Film Style / Editing:',
 		choices: [
 			{ name: 'None', value: null },
-			{ name: 'Cinematic (color, composition)', value: 'cinematic' },
-			{ name: 'Skate-ish (fisheye, rough, VX)', value: 'skateish' },
-			{ name: 'Raw Session (minimal music)', value: 'raw' },
-			{ name: 'POV / Chasecam', value: 'pov' },
-			{ name: 'Long Takes', value: 'longtakes' }
+			{ name: 'Cinematic (smooth camera, color grade)', value: 'cinematic' },
+			{ name: 'Street-Cinematic (DSLR + fisheye inserts)', value: 'street-cinematic' },
+			{ name: 'Skate-ish (VX/handcam, fisheye, rough)', value: 'skateish' },
+			{ name: 'Raw Session (no polish, real sound)', value: 'raw' },
+			{ name: 'POV / Chasecam (first-person)', value: 'pov' },
+			{ name: 'Long Takes (minimal cuts, flow)', value: 'longtakes' },
+			{ name: 'Music-Driven (beat-matched editing)', value: 'music-driven' },
+			{ name: 'Montage (quick cuts, highlights)', value: 'montage' },
+			{ name: 'Slowmo (slow motion heavy)', value: 'slowmo' },
+			{ name: 'Gonzo (handheld chaos, crowd energy)', value: 'gonzo' },
+			{ name: 'Vintage (MiniDV, Hi8, nostalgic)', value: 'vintage' },
+			{ name: 'Minimalist (calm framing, quiet)', value: 'minimalist' },
+			{ name: 'Experimental (non-linear, surreal)', value: 'experimental' }
 		],
 		default: item.facet_film_style || null
 	});

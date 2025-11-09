@@ -732,6 +732,10 @@
 
 		const handleEnded = () => {
 			applyPausedState(true);
+			// Close player on mobile when video ends
+			if (isMobileViewport && typeof onClose === 'function') {
+				onClose();
+			}
 		};
 
 		const playerWithSubscribe = player as PlayerWithSubscribe;

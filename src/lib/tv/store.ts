@@ -258,7 +258,18 @@ export function selectEpisode(ep: Episode) {
   selectedEpisode.set(ep);
 }
 
-export function closePlayer() { showPlayer.set(false); selectedEpisode.set(null); }
+export function closePlayer() { 
+  showPlayer.set(false); 
+  selectedEpisode.set(null); 
+  
+  // On mobile, show the details panel when closing the player if there's selected content
+  if (browser && typeof window !== 'undefined' && window.innerWidth < 768) {
+    const current = get(selectedContent);
+    if (current) {
+      showDetailsPanel.set(true);
+    }
+  }
+}
 export function openDetailsPanel() { showDetailsPanel.set(true); }
 export function closeDetailsPanel() { showDetailsPanel.set(false); }
 

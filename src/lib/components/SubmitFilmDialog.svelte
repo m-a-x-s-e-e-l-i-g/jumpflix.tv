@@ -90,7 +90,7 @@
 
         <form
           method="POST"
-          action="?/submitFilm"
+          action="/?/submitFilm"
           bind:this={formEl}
           class="space-y-4"
           onsubmit={handleSubmit}

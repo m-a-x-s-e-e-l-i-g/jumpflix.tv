@@ -937,7 +937,6 @@ async function editFacets() {
 			{ name: 'Chill 😌 - Relaxed and laid-back atmosphere', value: 'chill', checked: item.facet_mood?.includes('chill') },
 			{ name: 'Gritty 🔥 - Raw, rough, and unpolished street vibe', value: 'gritty', checked: item.facet_mood?.includes('gritty') },
 			{ name: 'Wholesome 💚 - Positive, uplifting, and feel-good content', value: 'wholesome', checked: item.facet_mood?.includes('wholesome') },
-			{ name: 'Intense 💥 - Extreme focus, high stakes, adrenaline', value: 'intense', checked: item.facet_mood?.includes('intense') },
 			{ name: 'Artistic 🎨 - Creative expression and aesthetic focus', value: 'artistic', checked: item.facet_mood?.includes('artistic') }
 		]
 	});
@@ -984,7 +983,7 @@ async function editFacets() {
 			{ name: 'Music-Driven (beat-matched editing)', value: 'music-driven' },
 			{ name: 'Montage (quick cuts, highlights)', value: 'montage' },
 			{ name: 'Slowmo (slow motion heavy)', value: 'slowmo' },
-			{ name: 'Gonzo (handheld chaos, crowd energy)', value: 'gonzo' },
+			{ name: 'Gonzo (handheld chaos, "in the middle of it")', value: 'gonzo' },
 			{ name: 'Vintage (MiniDV, Hi8, nostalgic)', value: 'vintage' },
 			{ name: 'Minimalist (calm framing, quiet)', value: 'minimalist' },
 			{ name: 'Experimental (non-linear, surreal)', value: 'experimental' }

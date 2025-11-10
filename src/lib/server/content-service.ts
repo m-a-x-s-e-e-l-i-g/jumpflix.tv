@@ -87,7 +87,8 @@ function mapMovie(row: MediaItemWithSeasons): Movie {
 		starring: row.starring && row.starring.length ? row.starring : undefined,
 		averageRating: ratingSummary?.average_rating ?? undefined,
 		ratingCount: ratingSummary?.rating_count ?? undefined,
-		facets: mapFacets(row)
+		facets: mapFacets(row),
+		updatedAt: row.updated_at ?? undefined
 	});
 }
 
@@ -125,7 +126,8 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 		seasons,
 		averageRating: ratingSummary?.average_rating ?? undefined,
 		ratingCount: ratingSummary?.rating_count ?? undefined,
-		facets: mapFacets(row)
+		facets: mapFacets(row),
+		updatedAt: row.updated_at ?? undefined
 	});
 }
 

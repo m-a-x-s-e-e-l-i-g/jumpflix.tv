@@ -36,8 +36,8 @@ export const GET = async () => {
     .sort((a, b) => a.path.localeCompare(b.path))
     .map(({ path, item }) => {
       let lastmod = now;
-      if (item && item.type === 'movie' && 'year' in item && item.year) {
-        lastmod = `${item.year}-01-01`;
+      if (item && item.updatedAt) {
+        lastmod = new Date(item.updatedAt).toISOString();
       }
       const loc = `${SITE}${path}`;
       return `  <url>\n    <loc>${xmlEscape(loc)}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`;

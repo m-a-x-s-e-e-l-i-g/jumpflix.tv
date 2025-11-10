@@ -33,6 +33,7 @@ export interface BaseContent {
   averageRating?: number;
   ratingCount?: number;
   facets?: Facets;
+  updatedAt?: string;
 }
 
 export interface Movie extends BaseContent {

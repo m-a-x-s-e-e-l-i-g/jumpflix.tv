@@ -46,7 +46,7 @@
     // For series, aggregate progress across episodes using total episode metadata when available
     if (item.type === 'series') {
       const series = item as any;
-      const hintedTotalValue = Number(series?.videoCount);
+      const hintedTotalValue = Number(series?.episodeCount);
       const hintedTotal = Number.isFinite(hintedTotalValue) && hintedTotalValue > 0
         ? Math.floor(hintedTotalValue)
         : null;
@@ -204,7 +204,7 @@
       {#if item.type === 'movie'}
         {item.duration}
       {:else}
-        {(item as any).videoCount || '?'} eps
+        {(item as any).episodeCount || '?'} eps
       {/if}
     </div>
 

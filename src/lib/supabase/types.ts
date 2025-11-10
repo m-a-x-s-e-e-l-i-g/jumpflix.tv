@@ -49,7 +49,6 @@ export interface Database {
 					trakt: string | null;
 					creators: string[] | null;
 					starring: string[] | null;
-					video_count: number | null;
 					facet_type: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
 					facet_mood: string[] | null;
 					facet_movement: string[] | null;
@@ -77,7 +76,6 @@ export interface Database {
 					trakt?: string | null;
 					creators?: string[] | null;
 					starring?: string[] | null;
-					video_count?: number | null;
 					facet_type?: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
 					facet_mood?: string[] | null;
 					facet_movement?: string[] | null;
@@ -105,7 +103,6 @@ export interface Database {
 					trakt?: string | null;
 					creators?: string[] | null;
 					starring?: string[] | null;
-					video_count?: number | null;
 					facet_type?: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
 					facet_mood?: string[] | null;
 					facet_movement?: string[] | null;

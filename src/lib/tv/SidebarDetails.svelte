@@ -414,7 +414,7 @@
           <span>{(selected as any).duration}</span>
         {:else}
           <span class="bg-red-600 px-2 py-1 rounded text-white text-xs">SERIES</span>
-          <span>{(selected as any).videoCount || '?'} episodes</span>
+          <span>{(selected as any).episodeCount || '?'} episodes</span>
         {/if}
         {#if (selected as any).trakt}
           <a href={(selected as any).trakt} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-5 h-5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ED1C24] focus:ring-offset-black rounded transition hover:scale-105" aria-label="View on Trakt" title="View on Trakt">

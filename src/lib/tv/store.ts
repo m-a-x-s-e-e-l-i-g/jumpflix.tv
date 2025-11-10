@@ -120,7 +120,7 @@ function refreshProgressSets() {
 
   for (const [baseId, item] of currentMeta.contentByKey.entries()) {
     if (!baseId.startsWith('series:')) continue;
-    const totalEpisodesRaw = Number((item as any)?.videoCount);
+    const totalEpisodesRaw = Number((item as any)?.episodeCount);
     const totalEpisodes = Number.isFinite(totalEpisodesRaw) && totalEpisodesRaw > 0
       ? Math.floor(totalEpisodesRaw)
       : null;

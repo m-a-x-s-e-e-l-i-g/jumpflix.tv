@@ -215,7 +215,6 @@ interface MediaItem {
 	trakt?: string;
 	creators?: string[];
 	starring?: string[];
-	video_count?: number; // For series
 }
 ```
 

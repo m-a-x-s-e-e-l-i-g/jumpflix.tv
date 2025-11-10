@@ -6,11 +6,14 @@ type MediaItemRow = Database['public']['Tables']['media_items']['Row'];
 type SeriesSeasonRow = Database['public']['Tables']['series_seasons']['Row'];
 type SeriesEpisodeRow = Database['public']['Tables']['series_episodes']['Row'];
 type MediaRatingSummaryRow = Database['public']['Views']['media_ratings_summary']['Row'];
+type SeriesSeasonWithEpisodes = SeriesSeasonRow & { 
+	series_episodes?: SeriesEpisodeRow[] | null;
+};
 type MediaItemWithSeasons = MediaItemRow & { 
-	series_seasons?: SeriesSeasonRow[] | null;
+	series_seasons?: SeriesSeasonWithEpisodes[] | null;
 	media_ratings_summary?: MediaRatingSummaryRow[] | null;
 };
-type SeriesSeasonWithEpisodes = SeriesSeasonRow & { episodes?: SeriesEpisodeRow[] | null };
+type SeriesSeasonWithEpisodesForPlaylist = SeriesSeasonRow & { episodes?: SeriesEpisodeRow[] | null };
 
 // Helper to remove undefined values for SvelteKit serialization
 function removeUndefined<T extends Record<string, any>>(obj: T): T {
@@ -105,6 +108,15 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 		.map((season) => mapSeason(season))
 		.sort((a, b) => a.seasonNumber - b.seasonNumber);
 
+	// Calculate total episode count across all seasons
+	const episodeCount = seasonsSource.reduce((total, season) => {
+		const episodes = season.series_episodes;
+		if (Array.isArray(episodes)) {
+			return total + episodes.length;
+		}
+		return total;
+	}, 0);
+
 	const ratingSummary = Array.isArray(row.media_ratings_summary) && row.media_ratings_summary.length > 0
 		? row.media_ratings_summary[0]
 		: null;
@@ -122,8 +134,8 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 		externalUrl: row.external_url ?? undefined,
 		creators: row.creators && row.creators.length ? row.creators : undefined,
 		starring: row.starring && row.starring.length ? row.starring : undefined,
-		videoCount: row.video_count ?? undefined,
 		seasons,
+		episodeCount: episodeCount > 0 ? episodeCount : undefined,
 		averageRating: ratingSummary?.average_rating ?? undefined,
 		ratingCount: ratingSummary?.rating_count ?? undefined,
 		facets: mapFacets(row),
@@ -143,7 +155,10 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 						id,
 						series_id,
 						season_number,
-						playlist_id
+						playlist_id,
+						series_episodes (
+							id
+						)
 					),
 					media_ratings_summary (
 						average_rating,
@@ -194,13 +209,13 @@ export async function fetchEpisodesByPlaylist(playlistId: string): Promise<Episo
 			`
 			)
 		.eq('playlist_id', playlistId)
-		.maybeSingle<SeriesSeasonWithEpisodes>();
+		.maybeSingle<SeriesSeasonWithEpisodesForPlaylist>();
 
 	if (error) {
 		throw new Error(`Failed to load episodes for playlist ${playlistId}: ${error.message}`);
 	}
 
-	const season = data as SeriesSeasonWithEpisodes | null;
+	const season = data as SeriesSeasonWithEpisodesForPlaylist | null;
 	if (!season || !Array.isArray(season.episodes) || season.episodes.length === 0) {
 		return [];
 	}

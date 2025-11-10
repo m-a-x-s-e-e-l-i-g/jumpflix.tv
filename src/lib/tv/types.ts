@@ -52,7 +52,7 @@ export interface Series extends BaseContent {
   creators?: string[];
   starring?: string[];
   seasons: Season[]; // Each season must have a playlistId
-  videoCount?: number; // optional static fallback count across seasons
+  episodeCount?: number; // Total episode count across all seasons (dynamically queried)
 }
 
 export type ContentItem = Movie | Series;

@@ -4,7 +4,7 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "any",
+  "orientation": "natural",
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
   "description": "Watch parkour & freerunning movies and series.",

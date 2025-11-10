@@ -340,8 +340,21 @@
   }
 
   // BlurHash placeholder background for selected thumbnail
-  $: blurhash = selected?.blurhash;
-  $: background = blurhash ? blurhashToCssGradientString(blurhash) : undefined;
+  let currentBlurhash = '';
+  let previousBlurhash = '';
+  let showPrevious = false;
+  
+  $: if (selected?.blurhash && selected.blurhash !== currentBlurhash) {
+    previousBlurhash = currentBlurhash;
+    currentBlurhash = selected.blurhash;
+    showPrevious = true;
+    setTimeout(() => { showPrevious = false; }, 500);
+  } else if (selected && !selected.blurhash && currentBlurhash !== '') {
+    previousBlurhash = currentBlurhash;
+    currentBlurhash = '';
+    showPrevious = true;
+    setTimeout(() => { showPrevious = false; }, 500);
+  }
 
   async function copyLink() {
     if (!selected) return;
@@ -386,23 +399,28 @@
 </script>
 
 {#if selected}
-  <div class="absolute inset-0 z-0">
-    <!-- BlurHash placeholder layer -->
-    {#if background}
-      {#key background}
-        <div
-          class="absolute inset-0"
-          style:background-image={background}
-          style:background-size="cover"
-          style:background-position="center"
-          transition:fade={{ duration: 250 }}
-        ></div>
-      {/key}
-    {:else}
-      <div class="w-full h-full bg-gradient-to-br from-blue-600 to-purple-700 scale-110" transition:fade={{ duration: 250 }}></div>
+  <!-- Background layers for crossfade -->
+  <div class="sidebar-background-container">
+    {#if previousBlurhash}
+      <div 
+        class="sidebar-background" 
+        class:fade-out={!showPrevious}
+        style:background-image={blurhashToCssGradientString(previousBlurhash)}
+      ></div>
     {/if}
-  <div class={backdropOverlayClass}></div>
+    {#if currentBlurhash}
+      <div 
+        class="sidebar-background" 
+        style:background-image={blurhashToCssGradientString(currentBlurhash)}
+      ></div>
+    {:else}
+      <div 
+        class="sidebar-background sidebar-background-fallback"
+      ></div>
+    {/if}
   </div>
+  <div class={backdropOverlayClass}></div>
+  
   <div class="space-y-4 relative z-10 flex-1">
     <div>
   <h2 class="text-3xl font-serif font-light text-gray-100 tracking-wide mb-4">{selected.title}</h2>
@@ -682,12 +700,69 @@
 <AuthDialog bind:open={showAuthDialog} />
 
 <style>
-  .details-backdrop-overlay {
+  .sidebar-background-container {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 460px;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  @media (max-width: 1280px) {
+    .sidebar-background-container {
+      width: 420px;
+    }
+  }
+
+  .sidebar-background {
     position: absolute;
     inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+  }
+
+  .sidebar-background.fade-out {
+    opacity: 0;
+  }
+
+  .sidebar-background-fallback {
+    background: linear-gradient(135deg, rgb(37, 99, 235), rgb(147, 51, 234));
+  }
+
+  .details-backdrop-overlay {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 460px;
+    z-index: 1;
     border-left: 1px solid rgba(71, 85, 105, 0.38);
     background: linear-gradient(185deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.68) 58%, rgba(15, 23, 42, 0.48) 100%);
     pointer-events: none;
+  }
+
+  @media (max-width: 1280px) {
+    .details-backdrop-overlay {
+      width: 420px;
+    }
+  }
+
+  .sticky-play-button {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(to top, 
+      rgba(15, 23, 42, 1) 0%, 
+      rgba(15, 23, 42, 1) 50%, 
+      rgba(15, 23, 42, 0.95) 75%, 
+      rgba(15, 23, 42, 0) 100%
+    );
+    padding-top: 2rem;
+    margin-top: -1.5rem;
   }
 
   .details-primary-button {

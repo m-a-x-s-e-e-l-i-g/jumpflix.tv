@@ -21,7 +21,7 @@
   export let initialSeasonNumber: number | null = null;
   export let isMobile = false;
 
-  const panelClass = 'hidden md:flex w-[460px] px-6 pt-14 pb-6 fixed right-0 top-0 bottom-0 overflow-hidden flex-col tv-details-panel';
+  const panelClass = 'hidden md:flex w-[460px] px-6 pt-14 pb-6 fixed right-0 top-0 bottom-0 overflow-y-auto flex-col tv-details-panel';
 </script>
 
 <div class={panelClass}>

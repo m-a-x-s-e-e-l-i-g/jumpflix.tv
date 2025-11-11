@@ -104,21 +104,19 @@ async function mainMenu() {
 	console.log('💡 Press ESC anytime to exit\n');
 
 	const action = await prompts.select({
-		message: 'What would you like to do?',
-		choices: [
-			{ name: '🎥 Add Movie', value: 'add-movie' },
-			{ name: '📺 Add Series', value: 'add-series' },
-			{ name: '🔄 Refresh Episodes', value: 'refresh-episodes' },
-			{ name: '📋 List All Content', value: 'list-content' },
-			{ name: '✏️  Edit Content', value: 'edit-content' },
-			{ name: '🏷️  Edit Facets', value: 'edit-facets' },
-			{ name: '🎨 Retry Blurhash Generation', value: 'retry-blurhash' },
-			{ name: '🗑️  Delete Content', value: 'delete-content' },
-			{ name: '❌ Exit', value: 'exit' }
-		]
-	});
-
-	switch (action) {
+	message: 'What would you like to do?',
+	choices: [
+		{ name: '🎥 Add Movie', value: 'add-movie' },
+		{ name: '📺 Add Series', value: 'add-series' },
+		{ name: '🔄 Refresh Episodes', value: 'refresh-episodes' },
+		{ name: '📋 List All Content', value: 'list-content' },
+		{ name: '✏️  Edit Content', value: 'edit-content' },
+		{ name: '🏷️  Edit Facets', value: 'edit-facets' },
+		{ name: ' Retry Blurhash Generation', value: 'retry-blurhash' },
+		{ name: '🗑️  Delete Content', value: 'delete-content' },
+		{ name: '❌ Exit', value: 'exit' }
+	]
+});	switch (action) {
 		case 'add-movie':
 			await addMovie();
 			break;
@@ -402,14 +400,21 @@ async function addSeries() {
 	if (numSeasons && numSeasons > 0) {
 		const seasons = [];
 		for (let i = 1; i <= numSeasons; i++) {
+			console.log(`\n📋 Season ${i}:`);
+			
 			const playlistId = await prompts.input({
-				message: `YouTube Playlist ID for Season ${i}:`
+				message: `YouTube Playlist ID:`
+			});
+
+			const customName = await prompts.input({
+				message: `Custom season name (optional, e.g., "Competition Year 2023", "Extras"):`
 			});
 
 			seasons.push({
 				series_id: series.id,
 				season_number: i,
-				playlist_id: playlistId || null
+				playlist_id: playlistId || null,
+				custom_name: customName.trim() || null
 			});
 		}
 

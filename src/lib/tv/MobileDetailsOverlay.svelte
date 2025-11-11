@@ -521,7 +521,9 @@
                     on:change={(e) => { const next = Number((e.currentTarget as HTMLSelectElement).value); selectedSeason = next; /* triggers reactive fetch */ onSelectEpisode('pos:1', 'Episode 1', 1, Number.isFinite(next) ? Math.max(1, next) : 1); Promise.resolve().then(() => { try { episodesListEl?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }); }}
                   >
                     {#each (selected as any).seasons as s}
-                      <option value={s.seasonNumber}>Season {s.seasonNumber}</option>
+                      <option value={s.seasonNumber}>
+                        {s.customName || `Season ${s.seasonNumber}`}
+                      </option>
                     {/each}
                   </select>
                 </div>

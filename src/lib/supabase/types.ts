@@ -120,6 +120,7 @@ export interface Database {
 					series_id: number;
 					season_number: number;
 					playlist_id: string | null;
+					custom_name: string | null;
 					created_at: string;
 					updated_at: string;
 				};
@@ -128,6 +129,7 @@ export interface Database {
 					series_id: number;
 					season_number: number;
 					playlist_id?: string | null;
+					custom_name?: string | null;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -136,6 +138,7 @@ export interface Database {
 					series_id?: number;
 					season_number?: number;
 					playlist_id?: string | null;
+					custom_name?: string | null;
 					created_at?: string;
 					updated_at?: string;
 				};

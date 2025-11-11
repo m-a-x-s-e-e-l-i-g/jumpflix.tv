@@ -98,7 +98,8 @@ function mapMovie(row: MediaItemWithSeasons): Movie {
 function mapSeason(row: SeriesSeasonRow): Season {
 	return removeUndefined({
 		seasonNumber: row.season_number,
-		playlistId: row.playlist_id ?? undefined
+		playlistId: row.playlist_id ?? undefined,
+		customName: row.custom_name ?? undefined
 	});
 }
 
@@ -145,29 +146,28 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 
 export async function fetchAllContent(): Promise<ContentItem[]> {
 	try {
-		const supabase = createSupabaseClient();
-		const { data, error } = await supabase
-			.from('media_items')
-			.select(
-				`
-					*,
-					series_seasons (
-						id,
-						series_id,
-						season_number,
-						playlist_id,
-						series_episodes (
-							id
-						)
-					),
-					media_ratings_summary (
-						average_rating,
-						rating_count
+	const supabase = createSupabaseClient();
+	const { data, error } = await supabase
+		.from('media_items')
+		.select(
+			`
+				*,
+				series_seasons (
+					id,
+					series_id,
+					season_number,
+					playlist_id,
+					custom_name,
+					series_episodes (
+						id
 					)
-				`
-				);
-
-		if (error) {
+				),
+				media_ratings_summary (
+					average_rating,
+					rating_count
+				)
+			`
+			);		if (error) {
 			console.error('[content-service] Failed to load media items:', error);
 			return [];
 		}

@@ -601,7 +601,9 @@
             }}
           >
             {#each (selected as any).seasons as s}
-              <option value={s.seasonNumber} class="bg-black text-gray-100">Season {s.seasonNumber}</option>
+              <option value={s.seasonNumber} class="bg-black text-gray-100">
+                {s.customName || `Season ${s.seasonNumber}`}
+              </option>
             {/each}
           </select>
         </div>

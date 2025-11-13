@@ -13,7 +13,7 @@
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { fade } from 'svelte/transition';
   import { decode } from 'html-entities';
-  import { showPlayer } from '$lib/tv/store';
+  import { showPlayer, selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
   import {
     getAllWatchProgress,
     setWatchedStatus,
@@ -283,20 +283,35 @@
   // Abort/race handling for fetches when switching series quickly
   let _episodesController: AbortController | null = null;
   let _episodesFetchVersion = 0;
-  $: playlistId = selected?.type === 'series'
-    ? (selected as any).seasons?.find((s: any) => s.seasonNumber === selectedSeasonNum)?.playlistId as string | undefined
-    : undefined;
-  // Fetch only when playlistId changes
+
+  
+  // Derive the fetch ID from selected series and season number
+  let currentFetchId: string | undefined = undefined;
+  $: {
+    if (selected?.type === 'series') {
+      const season = (selected as any).seasons?.find((s: any) => s.seasonNumber === selectedSeasonNum);
+      if (season) {
+        currentFetchId = season.playlistId || (season.id ? String(season.id) : undefined);
+      } else {
+        currentFetchId = undefined;
+      }
+    } else {
+      currentFetchId = undefined;
+    }
+  }
+  
+  // Fetch only when currentFetchId changes
   // Avoid duplicate fetches on mobile; MobileDetailsOverlay handles fetching when open
-  $: if (browser && playlistId && !isMobile) {
+  $: if (browser && currentFetchId && !isMobile) {
     loadingEpisodes = true;
     episodes = [];
     _episodesController?.abort();
     _episodesController = new AbortController();
     const version = ++_episodesFetchVersion;
+    const fetchId = currentFetchId; // Capture in closure to avoid race conditions
     // Add a client-side timeout so we don't get stuck if the upstream hangs
     const timeoutId = setTimeout(() => { try { _episodesController?.abort(); } catch {} }, 10000);
-    fetch(`/api/series/${encodeURIComponent(playlistId)}/episodes`, { signal: _episodesController.signal })
+    fetch(`/api/series/${encodeURIComponent(fetchId)}/episodes`, { signal: _episodesController.signal })
       .then((r) => r.json())
       .then((data) => {
         if (version === _episodesFetchVersion) {
@@ -326,16 +341,31 @@
   // If we synchronously call `onSelectEpisode`, the upstream store changes in the same
   // reactive turn and can re-trigger this effect repeatedly. Deferring breaks the cycle.
   $: if (browser && episodes && episodes.length > 0) {
-    const cur = selectedEpisode?.id;
-    const exists = cur && episodes.some(e => e.id === cur);
-    if (!cur) {
-      Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title, episodes[0].position || 1, selectedSeasonNum));
-    } else if (cur?.startsWith?.('pos:')) {
-      const pos = Number(cur.split(':')[1] || '1');
-      const found = episodes.find(e => (e.position || 0) === pos) || episodes[0];
+    const curId = selectedEpisode?.id ?? null;
+    const exists = curId ? episodes.some((ep) => ep.id === curId) : false;
+
+    if (!curId) {
+      const first = episodes[0];
+      Promise.resolve().then(() => onSelectEpisode(first.id, first.title, first.position || 1, selectedSeasonNum));
+    } else if (curId.startsWith?.('pos:')) {
+      const pos = Number(curId.split(':')[1] || '1');
+      const found = episodes.find((ep) => (ep.position || 0) === pos) || episodes[0];
       Promise.resolve().then(() => onSelectEpisode(found.id, found.title, found.position || 1, selectedSeasonNum));
     } else if (!exists) {
-      Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title, episodes[0].position || 1, selectedSeasonNum));
+      const first = episodes[0];
+      Promise.resolve().then(() => onSelectEpisode(first.id, first.title, first.position || 1, selectedSeasonNum));
+    }
+
+    if (curId) {
+      const match = episodes.find((ep) => ep.id === curId);
+      if (match) {
+        const hydratedTitle = match.title ? decode(match.title) : `Episode ${match.position ?? ''}`.trim();
+        const hydrated: Episode = {
+          ...match,
+          title: hydratedTitle
+        };
+        updateSelectedEpisode(hydrated);
+      }
     }
   }
 
@@ -595,7 +625,8 @@
               const next = Number((e.currentTarget as HTMLSelectElement).value);
               selectedSeason = next; // triggers reactive fetch
               // Immediately select Episode 1 of this season and navigate to pretty URL
-              onSelectEpisode(`pos:1`, 'Episode 1', 1, Number.isFinite(next) ? Math.max(1, next) : 1);
+              const seasonForUrl = Number.isFinite(next) ? Math.max(1, next) : 1;
+              Promise.resolve().then(() => onSelectEpisode('pos:1', 'Episode 1', 1, seasonForUrl));
               // Scroll the list to the top for a clean start
               Promise.resolve().then(() => { try { episodesListEl?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} });
             }}
@@ -620,7 +651,7 @@
               <li class="overflow-hidden">
                 <div class="flex items-center gap-2 overflow-hidden">
                   <button type="button" class="flex-1 flex items-center gap-3 p-1.5 rounded hover:bg-white/10 transition text-left border-2 border-transparent outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 overflow-hidden min-w-0 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-900/30 border-2 border-red-500/60' : ''}"
-                    on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeason)}>
+                    on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeasonNum)}>
                     <div class="relative w-20 h-12 flex-shrink-0 overflow-hidden rounded">
                       {#if ep.thumbnail}
                         <img src={ep.thumbnail} alt={decode(ep.title)} class="w-full h-full object-cover {epProgress?.isWatched ? 'opacity-30' : ''}" loading="lazy" decoding="async" />
@@ -669,13 +700,13 @@
   <div class="relative z-10 pt-4">
     {#if !$showPlayer}
       <button on:click={() => {
-      if (selected?.type === 'series' && selectedEpisode) { 
+        if (selected?.type === 'series' && selectedEpisode) { 
         // Check if episode has external URL (for paid content not on YouTube)
         if (selectedEpisode.externalUrl) {
           if (browser) window.open(selectedEpisode.externalUrl, '_blank');
           return;
         }
-        onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); 
+  onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeasonNum);
         return; 
       }
       if (isInlinePlayable(selected)) openContent(selected);

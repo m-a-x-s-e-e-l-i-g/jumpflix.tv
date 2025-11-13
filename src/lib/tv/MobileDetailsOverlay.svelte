@@ -14,6 +14,7 @@
   import { dev } from '$app/environment';
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { decode } from 'html-entities';
+  import { selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
   import {
     getAllWatchProgress,
     setWatchedStatus,
@@ -282,19 +283,33 @@
   // Abort/race handling for fetches when switching series quickly
   let _episodesController: AbortController | null = null;
   let _episodesFetchVersion = 0;
-  $: playlistId = selected?.type === 'series'
-    ? (selected as any).seasons?.find((s: any) => s.seasonNumber === selectedSeasonNum)?.playlistId as string | undefined
-    : undefined;
-  // Fetch when playlistId changes
-  $: if (browser && playlistId && show) {
+
+  // Derive the fetch ID from selected series and season number
+  let currentFetchId: string | undefined = undefined;
+  $: {
+    if (selected?.type === 'series') {
+      const season = (selected as any).seasons?.find((s: any) => s.seasonNumber === selectedSeasonNum);
+      if (season) {
+        currentFetchId = season.playlistId || (season.id ? String(season.id) : undefined);
+      } else {
+        currentFetchId = undefined;
+      }
+    } else {
+      currentFetchId = undefined;
+    }
+  }
+  
+  // Fetch when currentFetchId changes
+  $: if (browser && currentFetchId && show) {
     // start fresh load and cancel any in-flight request
     loadingEpisodes = true;
     episodes = [];
     _episodesController?.abort();
     _episodesController = new AbortController();
     const version = ++_episodesFetchVersion;
+    const fetchId = currentFetchId; // Capture in closure to avoid race conditions
     const timeoutId = setTimeout(() => { try { _episodesController?.abort(); } catch {} }, 10000);
-    fetch(`/api/series/${encodeURIComponent(playlistId)}/episodes`, { signal: _episodesController.signal })
+    fetch(`/api/series/${encodeURIComponent(fetchId)}/episodes`, { signal: _episodesController.signal })
       .then((r) => r.json())
       .then((data) => {
         if (version === _episodesFetchVersion) {
@@ -326,16 +341,31 @@
   // If we synchronously call `onSelectEpisode`, the upstream store changes in the same
   // reactive turn and can re-trigger this effect repeatedly. Deferring breaks the cycle.
   $: if (browser && episodes && episodes.length > 0) {
-    const cur = selectedEpisode?.id;
-    const exists = cur && episodes.some(e => e.id === cur);
-    if (!cur) {
-      Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title, episodes[0].position || 1, selectedSeasonNum));
-    } else if (cur?.startsWith?.('pos:')) {
-      const pos = Number(cur.split(':')[1] || '1');
-      const found = episodes.find(e => (e.position || 0) === pos) || episodes[0];
+    const curId = selectedEpisode?.id ?? null;
+    const exists = curId ? episodes.some((ep) => ep.id === curId) : false;
+
+    if (!curId) {
+      const first = episodes[0];
+      Promise.resolve().then(() => onSelectEpisode(first.id, first.title, first.position || 1, selectedSeasonNum));
+    } else if (curId.startsWith?.('pos:')) {
+      const pos = Number(curId.split(':')[1] || '1');
+      const found = episodes.find((ep) => (ep.position || 0) === pos) || episodes[0];
       Promise.resolve().then(() => onSelectEpisode(found.id, found.title, found.position || 1, selectedSeasonNum));
     } else if (!exists) {
-      Promise.resolve().then(() => onSelectEpisode(episodes[0].id, episodes[0].title, episodes[0].position || 1, selectedSeasonNum));
+      const first = episodes[0];
+      Promise.resolve().then(() => onSelectEpisode(first.id, first.title, first.position || 1, selectedSeasonNum));
+    }
+
+    if (curId) {
+      const match = episodes.find((ep) => ep.id === curId);
+      if (match) {
+        const hydratedTitle = match.title ? decode(match.title) : `Episode ${match.position ?? ''}`.trim();
+        const hydrated: Episode = {
+          ...match,
+          title: hydratedTitle
+        };
+        updateSelectedEpisode(hydrated);
+      }
     }
   }
 
@@ -518,7 +548,13 @@
                     class="w-full bg-transparent border rounded px-3 py-2 text-sm"
                     bind:value={selectedSeason}
                     disabled={(selected as any).seasons?.length <= 1}
-                    on:change={(e) => { const next = Number((e.currentTarget as HTMLSelectElement).value); selectedSeason = next; /* triggers reactive fetch */ onSelectEpisode('pos:1', 'Episode 1', 1, Number.isFinite(next) ? Math.max(1, next) : 1); Promise.resolve().then(() => { try { episodesListEl?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} }); }}
+                    on:change={(e) => {
+                      const next = Number((e.currentTarget as HTMLSelectElement).value);
+                      selectedSeason = next; /* triggers reactive fetch */
+                      const seasonForUrl = Number.isFinite(next) ? Math.max(1, next) : 1;
+                      Promise.resolve().then(() => onSelectEpisode('pos:1', 'Episode 1', 1, seasonForUrl));
+                      Promise.resolve().then(() => { try { episodesListEl?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} });
+                    }}
                   >
                     {#each (selected as any).seasons as s}
                       <option value={s.seasonNumber}>
@@ -595,7 +631,7 @@
             if (browser) window.open(selectedEpisode.externalUrl, '_blank');
             return;
           }
-          onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); 
+  onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeasonNum); 
           return; 
         }
         if (isInlinePlayable(selected)) openContent(selected);

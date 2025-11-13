@@ -97,6 +97,7 @@ function mapMovie(row: MediaItemWithSeasons): Movie {
 
 function mapSeason(row: SeriesSeasonRow): Season {
 	return removeUndefined({
+		id: row.id,
 		seasonNumber: row.season_number,
 		playlistId: row.playlist_id ?? undefined,
 		customName: row.custom_name ?? undefined
@@ -229,17 +230,78 @@ export async function fetchEpisodesByPlaylist(playlistId: string): Promise<Episo
 
 	return season.episodes
 		.sort((a, b) => (a.episode_number ?? 0) - (b.episode_number ?? 0))
-		.map((episode) => removeUndefined({
-			id: episode.video_id ?? String(episode.id),
-			title: episode.title ?? `Episode ${episode.episode_number ?? ''}`,
-			description: episode.description ?? undefined,
-			publishedAt: episode.published_at ?? undefined,
-			thumbnail: episode.thumbnail ?? undefined,
-			position: episode.episode_number ?? undefined,
-			duration: episode.duration ?? undefined,
-			// Only add externalUrl if episode has no video_id (for paid external content)
-			externalUrl: episode.video_id ? undefined : seriesExternalUrl
-		}));
+		.map((episode) => {
+			return removeUndefined({
+				id: episode.video_id ?? String(episode.id),
+				title: episode.title ?? `Episode ${episode.episode_number ?? ''}`,
+				description: episode.description ?? undefined,
+				publishedAt: episode.published_at ?? undefined,
+				thumbnail: episode.thumbnail ?? undefined,
+				position: episode.episode_number ?? undefined,
+				duration: episode.duration ?? undefined,
+				// Only add externalUrl if episode has no video_id (for paid external content)
+				externalUrl: seriesExternalUrl
+			});
+		});
+}
+
+export async function fetchEpisodesBySeasonId(seasonId: number): Promise<Episode[]> {
+	const supabase = createSupabaseClient();
+	const { data, error } = await supabase
+		.from('series_seasons')
+		.select(
+			`
+				id,
+				season_number,
+				series_id,
+				episodes:series_episodes (
+					id,
+					episode_number,
+					video_id,
+					title,
+					description,
+					published_at,
+					thumbnail,
+					duration
+				),
+				series:media_items!series_seasons_series_id_fkey (
+					external_url
+				)
+			`
+			)
+		.eq('id', seasonId)
+		.maybeSingle<SeriesSeasonWithEpisodesForPlaylist>();
+
+	if (error) {
+		throw new Error(`Failed to load episodes for season ${seasonId}: ${error.message}`);
+	}
+
+	const season = data as SeriesSeasonWithEpisodesForPlaylist | null;
+	if (!season || !Array.isArray(season.episodes) || season.episodes.length === 0) {
+		return [];
+	}
+
+	// Get series external_url to use for episodes without video_id
+	const seriesExternalUrl = (season as any).series?.external_url ?? undefined;
+
+	return season.episodes
+		.sort((a, b) => (a.episode_number ?? 0) - (b.episode_number ?? 0))
+		.map((episode) => {
+			// Check if episode has a valid video_id (not null, undefined, or empty string)
+			const hasValidVideoId = episode.video_id && typeof episode.video_id === 'string' && episode.video_id.trim() !== '';
+			
+			return removeUndefined({
+				id: episode.video_id ?? String(episode.id),
+				title: episode.title ?? `Episode ${episode.episode_number ?? ''}`,
+				description: episode.description ?? undefined,
+				publishedAt: episode.published_at ?? undefined,
+				thumbnail: episode.thumbnail ?? undefined,
+				position: episode.episode_number ?? undefined,
+				duration: episode.duration ?? undefined,
+				// Only add externalUrl if episode has no video_id (for paid external content)
+				externalUrl: hasValidVideoId ? undefined : seriesExternalUrl
+			});
+		});
 }
 
 function isSeriesRow(row: MediaItemWithSeasons | null | undefined): row is MediaItemWithSeasons {

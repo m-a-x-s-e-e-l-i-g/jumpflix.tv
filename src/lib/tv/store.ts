@@ -252,9 +252,13 @@ export function openEpisode(ep: Episode) {
 
 // Select an episode (do not open the player). Useful for preparing the Play button.
 export function selectEpisode(ep: Episode) {
-  // Avoid redundant updates that can retrigger reactive effects unnecessarily
+  // Avoid redundant updates but allow refreshed metadata (e.g., external URLs)
   const cur = get(selectedEpisode);
-  if (cur?.id === ep.id) return;
+  if (cur && cur.id === ep.id) {
+    const keys: (keyof Episode)[] = ['title', 'thumbnail', 'externalUrl', 'position', 'duration'];
+    const unchanged = keys.every((key) => cur[key] === ep[key]);
+    if (unchanged) return;
+  }
   selectedEpisode.set(ep);
 }
 

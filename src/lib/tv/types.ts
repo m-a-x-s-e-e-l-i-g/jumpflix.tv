@@ -70,6 +70,7 @@ export interface Episode {
 }
 
 export interface Season {
+  id?: number; // Database ID for the season
   seasonNumber: number; // 1-based index
   playlistId?: string; // Optional YouTube playlist backing this season
   customName?: string; // Optional custom display name (e.g., "Competition Year 2023", "Extras")

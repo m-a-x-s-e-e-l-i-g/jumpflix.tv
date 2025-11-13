@@ -108,8 +108,8 @@ async function mainMenu() {
 	choices: [
 		{ name: '🎥 Add Movie', value: 'add-movie' },
 		{ name: '📺 Add Series', value: 'add-series' },
-		{ name: '� Manage Episodes', value: 'manage-episodes' },
-		{ name: '�🔄 Refresh Episodes', value: 'refresh-episodes' },
+		{ name: '� Manually Manage Episodes', value: 'manage-episodes' },
+		{ name: '�🔄 Auto Refresh Episodes', value: 'refresh-episodes' },
 		{ name: '📋 List All Content', value: 'list-content' },
 		{ name: '✏️  Edit Content', value: 'edit-content' },
 		{ name: '🏷️  Edit Facets', value: 'edit-facets' },
@@ -743,78 +743,157 @@ async function manageEpisodes() {
 	if (action === 'back') {
 		return;
 	} else if (action === 'add') {
-		await addEpisodeManually(seasonId);
+		const selectedSeason = seasons.find((s) => s.id === seasonId);
+		await addEpisodeManually(seriesId, seasonId, selectedSeason?.season_number || 1);
 	} else if (action === 'edit') {
-		await editEpisode(seasonId);
+		const selectedSeason = seasons.find((s) => s.id === seasonId);
+		await editEpisode(seriesId, seasonId, selectedSeason?.season_number || 1);
 	} else if (action === 'delete') {
 		await deleteEpisode(seasonId);
 	}
 }
 
-async function addEpisodeManually(seasonId: number) {
-	console.log('\n➕ Add Episode Manually\n');
-	console.log('Note: Episodes without a YouTube Video ID will use the series external URL\n');
-
-	const episodeNumber = await prompts.number({
-		message: 'Episode number:',
-		min: 1,
-		required: true
-	});
-
-	const title = await prompts.input({
-		message: 'Episode title:',
-		required: true
-	});
-
-	const description = await prompts.input({
-		message: 'Description:'
-	});
-
-	const videoId = await prompts.input({
-		message: 'YouTube Video ID (leave empty for external content):'
-	});
-
-	const thumbnail = await prompts.input({
-		message: 'Thumbnail URL:'
-	});
-
-	const duration = await prompts.input({
-		message: 'Duration (e.g., "42m" or "1h 15m"):'
-	});
-
-	const episodeData: Episode = {
-		season_id: seasonId,
-		episode_number: episodeNumber,
-		video_id: videoId || null,
-		title: title || null,
-		description: description || null,
-		thumbnail: thumbnail || null,
-		duration: duration || null
-	};
-
-	const confirm = await prompts.confirm({
-		message: 'Add this episode?',
-		default: true
-	});
-
-	if (!confirm) {
-		console.log('❌ Cancelled');
-		return;
-	}
-
-	const { error } = await supabase.from('series_episodes').insert(episodeData);
-
-	if (error) {
-		console.error('❌ Error adding episode:', error.message);
-	} else {
-		console.log('✅ Episode added successfully!');
-		if (!videoId) {
-			console.log('💡 This episode will use the series external URL since no video ID was provided');
+async function addEpisodeManually(seriesId: number, seasonId: number, seasonNumber: number) {
+	let addAnother = true;
+	
+	while (addAnother) {
+		console.log('\n➕ Add Episode Manually\n');
+		
+		// Get the series slug for auto-generating thumbnail
+		const { data: series } = await supabase
+			.from('media_items')
+			.select('slug')
+			.eq('id', seriesId)
+			.single();
+		
+		if (!series) {
+			console.log('❌ Series not found');
+			return;
 		}
+
+		// Get existing episodes to determine next episode number and previous duration
+		const { data: existingEpisodes } = await supabase
+			.from('series_episodes')
+			.select('episode_number, duration')
+			.eq('season_id', seasonId)
+			.order('episode_number', { ascending: false })
+			.limit(1);
+		
+		const nextEpisodeNumber = existingEpisodes && existingEpisodes.length > 0 
+			? (existingEpisodes[0].episode_number || 0) + 1 
+			: 1;
+		
+		const previousDuration = existingEpisodes && existingEpisodes.length > 0
+			? existingEpisodes[0].duration
+			: null;
+
+		console.log(`Series: ${series.slug}`);
+		console.log(`Season: ${seasonNumber}`);
+		console.log(`Next episode number: ${nextEpisodeNumber}\n`);
+
+		const useAutoEpisodeNumber = await prompts.confirm({
+			message: `Use episode number ${nextEpisodeNumber}?`,
+			default: true
+		});
+
+		const episodeNumber = useAutoEpisodeNumber 
+			? nextEpisodeNumber 
+			: await prompts.number({
+				message: 'Episode number:',
+				min: 1,
+				default: nextEpisodeNumber,
+				required: true
+			});
+
+		const title = await prompts.input({
+			message: 'Episode title:',
+			required: true
+		});
+
+		const description = await prompts.input({
+			message: 'Description:'
+		});
+
+		// Auto-generate thumbnail path
+		const autoThumbnail = `/images/thumbnails/${series.slug}/s${String(seasonNumber).padStart(2, '0')}e${String(episodeNumber).padStart(2, '0')}.webp`;
+		
+		const useAutoThumbnail = await prompts.confirm({
+			message: `Use auto-generated thumbnail path?\n  ${autoThumbnail}`,
+			default: true
+		});
+
+		const thumbnail = useAutoThumbnail 
+			? autoThumbnail 
+			: await prompts.input({
+				message: 'Thumbnail URL:',
+				default: autoThumbnail
+			});
+
+		// Use previous episode's duration as default
+		const duration = await prompts.input({
+			message: `Duration (e.g., "42m" or "1h 15m")${previousDuration ? ` [previous: ${previousDuration}]` : ''}:`,
+			default: previousDuration || undefined
+		});
+
+		const episodeData: Episode = {
+			season_id: seasonId,
+			episode_number: episodeNumber,
+			video_id: null,
+			title: title || null,
+			description: description || null,
+			thumbnail: thumbnail || null,
+			duration: duration || null
+		};
+
+		console.log('\n📝 Episode summary:');
+		console.log(`   Episode ${episodeNumber}: ${title}`);
+		console.log(`   Thumbnail: ${thumbnail}`);
+		console.log(`   Duration: ${duration || '(not set)'}`);
+
+		const confirm = await prompts.confirm({
+			message: '\nAdd this episode?',
+			default: true
+		});
+
+		if (!confirm) {
+			console.log('❌ Cancelled');
+			addAnother = await prompts.confirm({
+				message: 'Add another episode?',
+				default: false
+			});
+			continue;
+		}
+
+		const { error } = await supabase.from('series_episodes').insert(episodeData);
+
+		if (error) {
+			console.error('❌ Error adding episode:', error.message);
+		} else {
+			console.log('✅ Episode added successfully!');
+			console.log('💡 This episode will use the series external URL when played');
+		}
+
+		// Ask if they want to add another episode
+		addAnother = await prompts.confirm({
+			message: '\nAdd another episode?',
+			default: true
+		});
 	}
 }
 
-async function editEpisode(seasonId: number) {
+async function editEpisode(seriesId: number, seasonId: number, seasonNumber: number) {
+	// Get the series slug for auto-generating thumbnail
+	const { data: series } = await supabase
+		.from('media_items')
+		.select('slug')
+		.eq('id', seriesId)
+		.single();
+	
+	if (!series) {
+		console.log('❌ Series not found');
+		return;
+	}
+
 	// Fetch episodes for this season
 	const { data: episodes, error } = await supabase
 		.from('series_episodes')
@@ -865,17 +944,28 @@ async function editEpisode(seasonId: number) {
 	});
 	if (description !== (episode.description || '')) updates.description = description || null;
 
-	const videoId = await prompts.input({
-		message: 'YouTube Video ID:',
-		default: episode.video_id || ''
-	});
-	if (videoId !== (episode.video_id || '')) updates.video_id = videoId || null;
+	// Auto-generate thumbnail path suggestion
+	const autoThumbnail = `/images/thumbnails/${series.slug}/s${String(seasonNumber).padStart(2, '0')}e${String(episode.episode_number).padStart(2, '0')}.webp`;
+	const currentThumbnail = episode.thumbnail || '';
 
-	const thumbnail = await prompts.input({
-		message: 'Thumbnail URL:',
-		default: episode.thumbnail || ''
+	const thumbnailOptions = await prompts.select({
+		message: 'Thumbnail:',
+		choices: [
+			{ name: `Keep current: ${currentThumbnail || '(none)'}`, value: 'keep' },
+			{ name: `Use auto-generated: ${autoThumbnail}`, value: 'auto' },
+			{ name: 'Enter custom URL', value: 'custom' }
+		]
 	});
-	if (thumbnail !== (episode.thumbnail || '')) updates.thumbnail = thumbnail || null;
+
+	if (thumbnailOptions === 'auto') {
+		updates.thumbnail = autoThumbnail;
+	} else if (thumbnailOptions === 'custom') {
+		const thumbnail = await prompts.input({
+			message: 'Thumbnail URL:',
+			default: currentThumbnail
+		});
+		if (thumbnail !== currentThumbnail) updates.thumbnail = thumbnail || null;
+	}
 
 	const duration = await prompts.input({
 		message: 'Duration:',

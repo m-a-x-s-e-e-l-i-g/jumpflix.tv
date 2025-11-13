@@ -59,13 +59,14 @@ export type ContentItem = Movie | Series;
 
 // Episode/Season model (minimal for now)
 export interface Episode {
-  id: string; // YouTube video id
+  id: string; // YouTube video id (or other identifier for external content)
   title: string;
   description?: string;
   publishedAt?: string; // ISO date
   thumbnail?: string; // best-effort thumbnail URL
   position?: number; // episode number within season (1-based)
   duration?: string; // optional, may be unknown without extra API
+  externalUrl?: string; // External URL for episodes not on YouTube (paid content)
 }
 
 export interface Season {

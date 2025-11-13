@@ -589,14 +589,26 @@
     </div>
   <div class={actionsClass}>
       <button on:click={() => {
-        if (selected?.type === 'series' && selectedEpisode) { onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); return; }
+        if (selected?.type === 'series' && selectedEpisode) { 
+          // Check if episode has external URL (for paid content not on YouTube)
+          if (selectedEpisode.externalUrl) {
+            if (browser) window.open(selectedEpisode.externalUrl, '_blank');
+            return;
+          }
+          onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeason); 
+          return; 
+        }
         if (isInlinePlayable(selected)) openContent(selected);
         else if (selected?.externalUrl) openExternal(selected);
   }} class="w-full bg-blue-600/90 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
         {#if selected?.type === 'series'}
           {#if selectedEpisode}
-            {m.tv_playSelectedEpisode()}
+            {#if selectedEpisode.externalUrl}
+              { m.tv_watchOn() } {selected?.provider || 'External'}
+            {:else}
+              {m.tv_playSelectedEpisode()}
+            {/if}
           {:else}
             Play series
           {/if}

@@ -90,7 +90,15 @@
       if (episodeId.startsWith?.('pos:')) {
         return { kind: 'message', text: 'Fetching episode details…' } satisfies PlayerView;
       }
-      return deriveVideoView(`youtube/${episodeId}`, selectedEpisode.title ?? selected.title, `ep:${episodeId}`);
+      // Check if episode has an external URL (for paid content on external providers)
+      if (selectedEpisode.externalUrl) {
+        return { kind: 'message', text: `This episode is only available on its external provider.` } satisfies PlayerView;
+      }
+      // Only try to play if there's a video ID (not just a database ID)
+      if (!episodeId.match(/^\d+$/)) {
+        return deriveVideoView(`youtube/${episodeId}`, selectedEpisode.title ?? selected.title, `ep:${episodeId}`);
+      }
+      return { kind: 'message', text: 'This episode is not available for inline playback.' } satisfies PlayerView;
     }
 
     if (selected.type === 'movie') {

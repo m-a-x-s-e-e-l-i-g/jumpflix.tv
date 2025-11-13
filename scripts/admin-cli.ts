@@ -108,7 +108,8 @@ async function mainMenu() {
 	choices: [
 		{ name: '🎥 Add Movie', value: 'add-movie' },
 		{ name: '📺 Add Series', value: 'add-series' },
-		{ name: '🔄 Refresh Episodes', value: 'refresh-episodes' },
+		{ name: '� Manage Episodes', value: 'manage-episodes' },
+		{ name: '�🔄 Refresh Episodes', value: 'refresh-episodes' },
 		{ name: '📋 List All Content', value: 'list-content' },
 		{ name: '✏️  Edit Content', value: 'edit-content' },
 		{ name: '🏷️  Edit Facets', value: 'edit-facets' },
@@ -122,6 +123,9 @@ async function mainMenu() {
 			break;
 		case 'add-series':
 			await addSeries();
+			break;
+		case 'manage-episodes':
+			await manageEpisodes();
 			break;
 		case 'refresh-episodes':
 			await refreshEpisodes();
@@ -473,10 +477,17 @@ async function refreshEpisodes() {
 }
 
 async function refreshSeriesEpisodes() {
-	// Fetch all series
+	// Fetch all series with their seasons
 	const { data: seriesList, error: fetchError } = await supabase
 		.from('media_items')
-		.select('id, title, slug')
+		.select(`
+			id,
+			title,
+			slug,
+			series_seasons (
+				playlist_id
+			)
+		`)
 		.eq('type', 'series')
 		.order('title');
 
@@ -485,15 +496,22 @@ async function refreshSeriesEpisodes() {
 		return;
 	}
 
+	// Filter and mark series with YouTube playlists
+	const seriesChoices = seriesList.map((s: any) => {
+		const hasPlaylists = s.series_seasons?.some((season: any) => season.playlist_id);
+		return {
+			name: `${s.title} (${s.slug})${!hasPlaylists ? ' [No YouTube playlists]' : ''}`,
+			value: s.id,
+			disabled: !hasPlaylists
+		};
+	});
+
 	const seriesId = await prompts.select({
 		message: 'Select a series:',
 		choices: [
 			{ name: '← Back', value: 'back' },
 			{ name: '---', value: 'separator', disabled: true },
-			...seriesList.map((s) => ({
-				name: `${s.title} (${s.slug})`,
-				value: s.id
-			}))
+			...seriesChoices
 		]
 	});
 
@@ -591,7 +609,7 @@ async function refreshSeasonEpisodes() {
 
 async function refreshAllEpisodes() {
 	const confirm = await prompts.confirm({
-		message: '⚠️  This will refresh episodes for ALL series. Continue?',
+		message: '⚠️  This will refresh episodes for ALL series with YouTube playlists. Continue?',
 		default: false
 	});
 
@@ -600,10 +618,16 @@ async function refreshAllEpisodes() {
 		return;
 	}
 
-	// Fetch all series
+	// Fetch all series with their seasons
 	const { data: seriesList, error: fetchError } = await supabase
 		.from('media_items')
-		.select('id, title')
+		.select(`
+			id,
+			title,
+			series_seasons (
+				playlist_id
+			)
+		`)
 		.eq('type', 'series')
 		.order('title');
 
@@ -612,13 +636,24 @@ async function refreshAllEpisodes() {
 		return;
 	}
 
-	console.log(`\n🔄 Refreshing ${seriesList.length} series...\n`);
+	// Filter to only series that have at least one season with a playlist_id
+	const seriesWithPlaylists = seriesList.filter((series: any) => 
+		series.series_seasons?.some((season: any) => season.playlist_id)
+	);
+
+	if (seriesWithPlaylists.length === 0) {
+		console.log('❌ No series with YouTube playlists found');
+		return;
+	}
+
+	console.log(`\n🔄 Refreshing ${seriesWithPlaylists.length} series with YouTube playlists...\n`);
+	console.log(`   (Skipping ${seriesList.length - seriesWithPlaylists.length} series without playlists)\n`);
 
 	let totalAdded = 0;
 	let totalUpdated = 0;
 	const allErrors: string[] = [];
 
-	for (const series of seriesList) {
+	for (const series of seriesWithPlaylists) {
 		console.log(`\n📺 ${series.title}`);
 		const result = await syncAllSeriesEpisodes(supabase, series.id);
 		totalAdded += result.totalAdded;
@@ -631,6 +666,297 @@ async function refreshAllEpisodes() {
 	console.log(`   Total updated: ${totalUpdated} episodes`);
 	if (allErrors.length > 0) {
 		console.log(`   ⚠ Total errors: ${allErrors.length}`);
+	}
+}
+
+// Manage Episodes (for non-YouTube series)
+async function manageEpisodes() {
+	console.clear();
+	console.log('📝 Manage Episodes\n');
+
+	// Fetch all series
+	const { data: seriesList, error: fetchError } = await supabase
+		.from('media_items')
+		.select('id, title, slug')
+		.eq('type', 'series')
+		.order('title');
+
+	if (fetchError || !seriesList || seriesList.length === 0) {
+		console.log('❌ No series found');
+		return;
+	}
+
+	const seriesId = await prompts.select({
+		message: 'Select a series:',
+		choices: [
+			{ name: '← Back', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...seriesList.map((s) => ({
+				name: `${s.title} (${s.slug})`,
+				value: s.id
+			}))
+		]
+	});
+
+	if (seriesId === 'back') {
+		return;
+	}
+
+	// Fetch seasons for this series
+	const { data: seasons, error: seasonsError } = await supabase
+		.from('series_seasons')
+		.select('*')
+		.eq('series_id', seriesId)
+		.order('season_number');
+
+	if (seasonsError || !seasons || seasons.length === 0) {
+		console.log('❌ No seasons found for this series');
+		return;
+	}
+
+	const seasonId = await prompts.select({
+		message: 'Select a season:',
+		choices: [
+			{ name: '← Back', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...seasons.map((s) => ({
+				name: `Season ${s.season_number}${s.custom_name ? ` (${s.custom_name})` : ''}`,
+				value: s.id
+			}))
+		]
+	});
+
+	if (seasonId === 'back') {
+		return;
+	}
+
+	const action = await prompts.select({
+		message: 'What would you like to do?',
+		choices: [
+			{ name: '➕ Add Episode', value: 'add' },
+			{ name: '✏️  Edit Episode', value: 'edit' },
+			{ name: '🗑️  Delete Episode', value: 'delete' },
+			{ name: '← Back', value: 'back' }
+		]
+	});
+
+	if (action === 'back') {
+		return;
+	} else if (action === 'add') {
+		await addEpisodeManually(seasonId);
+	} else if (action === 'edit') {
+		await editEpisode(seasonId);
+	} else if (action === 'delete') {
+		await deleteEpisode(seasonId);
+	}
+}
+
+async function addEpisodeManually(seasonId: number) {
+	console.log('\n➕ Add Episode Manually\n');
+	console.log('Note: Episodes without a YouTube Video ID will use the series external URL\n');
+
+	const episodeNumber = await prompts.number({
+		message: 'Episode number:',
+		min: 1,
+		required: true
+	});
+
+	const title = await prompts.input({
+		message: 'Episode title:',
+		required: true
+	});
+
+	const description = await prompts.input({
+		message: 'Description:'
+	});
+
+	const videoId = await prompts.input({
+		message: 'YouTube Video ID (leave empty for external content):'
+	});
+
+	const thumbnail = await prompts.input({
+		message: 'Thumbnail URL:'
+	});
+
+	const duration = await prompts.input({
+		message: 'Duration (e.g., "42m" or "1h 15m"):'
+	});
+
+	const episodeData: Episode = {
+		season_id: seasonId,
+		episode_number: episodeNumber,
+		video_id: videoId || null,
+		title: title || null,
+		description: description || null,
+		thumbnail: thumbnail || null,
+		duration: duration || null
+	};
+
+	const confirm = await prompts.confirm({
+		message: 'Add this episode?',
+		default: true
+	});
+
+	if (!confirm) {
+		console.log('❌ Cancelled');
+		return;
+	}
+
+	const { error } = await supabase.from('series_episodes').insert(episodeData);
+
+	if (error) {
+		console.error('❌ Error adding episode:', error.message);
+	} else {
+		console.log('✅ Episode added successfully!');
+		if (!videoId) {
+			console.log('💡 This episode will use the series external URL since no video ID was provided');
+		}
+	}
+}
+
+async function editEpisode(seasonId: number) {
+	// Fetch episodes for this season
+	const { data: episodes, error } = await supabase
+		.from('series_episodes')
+		.select('*')
+		.eq('season_id', seasonId)
+		.order('episode_number');
+
+	if (error || !episodes || episodes.length === 0) {
+		console.log('❌ No episodes found for this season');
+		return;
+	}
+
+	const episodeId = await prompts.select({
+		message: 'Select episode to edit:',
+		choices: [
+			{ name: '← Back', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...episodes.map((ep) => ({
+				name: `Episode ${ep.episode_number}: ${ep.title || 'Untitled'}`,
+				value: ep.id
+			}))
+		]
+	});
+
+	if (episodeId === 'back') {
+		return;
+	}
+
+	const episode = episodes.find((ep) => ep.id === episodeId);
+	if (!episode) {
+		console.log('❌ Episode not found');
+		return;
+	}
+
+	console.log('\nLeave fields empty to keep current value\n');
+
+	const updates: Partial<Episode> = {};
+
+	const title = await prompts.input({
+		message: 'Title:',
+		default: episode.title || ''
+	});
+	if (title !== (episode.title || '')) updates.title = title || null;
+
+	const description = await prompts.input({
+		message: 'Description:',
+		default: episode.description || ''
+	});
+	if (description !== (episode.description || '')) updates.description = description || null;
+
+	const videoId = await prompts.input({
+		message: 'YouTube Video ID:',
+		default: episode.video_id || ''
+	});
+	if (videoId !== (episode.video_id || '')) updates.video_id = videoId || null;
+
+	const thumbnail = await prompts.input({
+		message: 'Thumbnail URL:',
+		default: episode.thumbnail || ''
+	});
+	if (thumbnail !== (episode.thumbnail || '')) updates.thumbnail = thumbnail || null;
+
+	const duration = await prompts.input({
+		message: 'Duration:',
+		default: episode.duration || ''
+	});
+	if (duration !== (episode.duration || '')) updates.duration = duration || null;
+
+	if (Object.keys(updates).length === 0) {
+		console.log('No changes made');
+		return;
+	}
+
+	const confirm = await prompts.confirm({
+		message: 'Save changes?',
+		default: true
+	});
+
+	if (!confirm) {
+		console.log('❌ Cancelled');
+		return;
+	}
+
+	const { error: updateError } = await supabase
+		.from('series_episodes')
+		.update({ ...updates, updated_at: new Date().toISOString() })
+		.eq('id', episodeId);
+
+	if (updateError) {
+		console.error('❌ Error updating:', updateError.message);
+	} else {
+		console.log('✅ Updated successfully!');
+	}
+}
+
+async function deleteEpisode(seasonId: number) {
+	// Fetch episodes for this season
+	const { data: episodes, error } = await supabase
+		.from('series_episodes')
+		.select('*')
+		.eq('season_id', seasonId)
+		.order('episode_number');
+
+	if (error || !episodes || episodes.length === 0) {
+		console.log('❌ No episodes found for this season');
+		return;
+	}
+
+	const episodeId = await prompts.select({
+		message: 'Select episode to delete:',
+		choices: [
+			{ name: '← Back', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...episodes.map((ep) => ({
+				name: `Episode ${ep.episode_number}: ${ep.title || 'Untitled'}`,
+				value: ep.id
+			}))
+		]
+	});
+
+	if (episodeId === 'back') {
+		return;
+	}
+
+	const episode = episodes.find((ep) => ep.id === episodeId);
+
+	const confirm = await prompts.confirm({
+		message: `⚠️  Delete "${episode?.title}"? This cannot be undone!`,
+		default: false
+	});
+
+	if (!confirm) {
+		console.log('❌ Cancelled');
+		return;
+	}
+
+	const { error: deleteError } = await supabase.from('series_episodes').delete().eq('id', episodeId);
+
+	if (deleteError) {
+		console.error('❌ Error deleting:', deleteError.message);
+	} else {
+		console.log('✅ Deleted successfully!');
 	}
 }
 

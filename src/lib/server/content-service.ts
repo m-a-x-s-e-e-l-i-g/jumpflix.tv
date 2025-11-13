@@ -196,6 +196,7 @@ export async function fetchEpisodesByPlaylist(playlistId: string): Promise<Episo
 			`
 				id,
 				season_number,
+				series_id,
 				episodes:series_episodes (
 					id,
 					episode_number,
@@ -205,6 +206,9 @@ export async function fetchEpisodesByPlaylist(playlistId: string): Promise<Episo
 					published_at,
 					thumbnail,
 					duration
+				),
+				series:media_items!series_seasons_series_id_fkey (
+					external_url
 				)
 			`
 			)
@@ -220,6 +224,9 @@ export async function fetchEpisodesByPlaylist(playlistId: string): Promise<Episo
 		return [];
 	}
 
+	// Get series external_url to use for episodes without video_id
+	const seriesExternalUrl = (season as any).series?.external_url ?? undefined;
+
 	return season.episodes
 		.sort((a, b) => (a.episode_number ?? 0) - (b.episode_number ?? 0))
 		.map((episode) => removeUndefined({
@@ -229,7 +236,9 @@ export async function fetchEpisodesByPlaylist(playlistId: string): Promise<Episo
 			publishedAt: episode.published_at ?? undefined,
 			thumbnail: episode.thumbnail ?? undefined,
 			position: episode.episode_number ?? undefined,
-			duration: episode.duration ?? undefined
+			duration: episode.duration ?? undefined,
+			// Only add externalUrl if episode has no video_id (for paid external content)
+			externalUrl: episode.video_id ? undefined : seriesExternalUrl
 		}));
 }
 

@@ -49,6 +49,7 @@ export interface Movie extends BaseContent {
 
 export interface Series extends BaseContent {
   type: 'series';
+  trakt?: string; // external metadata link
   creators?: string[];
   starring?: string[];
   seasons: Season[]; // Each season must have a playlistId

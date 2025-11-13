@@ -444,7 +444,7 @@
               <span class="bg-red-600 px-2 py-1 rounded">SERIES</span>
               <span>{(selected as any).episodeCount || '?'} episodes</span>
             {/if}
-            {#if selected.type === 'movie' && (selected as any).trakt}
+            {#if (selected as any).trakt}
               <a href={(selected as any).trakt} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-6 h-6 mx-1 focus:outline-none focus:ring-2 focus:ring-[#ED1C24] focus:ring-offset-2 focus:ring-offset-black rounded transition active:scale-95 hover:scale-105" aria-label="View on Trakt" title="Trakt">
                 <img src="https://trakt.tv/assets/logos/logomark.square.gradient-b644b16c38ff775861b4b1f58c1230f6a097a2466ab33ae00445a505c33fcb91.svg" alt="" class="w-full h-full select-none" loading="lazy" decoding="async" />
                 <span class="sr-only">Trakt</span>

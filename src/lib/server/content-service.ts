@@ -134,6 +134,7 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 		paid: row.paid ?? undefined,
 		provider: row.provider ?? undefined,
 		externalUrl: row.external_url ?? undefined,
+		trakt: row.trakt ?? undefined,
 		creators: row.creators && row.creators.length ? row.creators : undefined,
 		starring: row.starring && row.starring.length ? row.starring : undefined,
 		seasons,

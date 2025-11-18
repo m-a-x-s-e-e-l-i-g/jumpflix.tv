@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { fade, scale } from 'svelte/transition';
   import { browser } from '$app/environment';
   import type { ContentItem, Episode } from './types';
@@ -13,6 +13,17 @@
   let layoutVersion = 0;
   let overlayStyle = '';
   let isFullscreen = false;
+  let currentPlaybackKey: string | null = null;
+  let playingContent: ContentItem | null = null;
+  let playingEpisode: Episode | null = null;
+  const dispatch = createEventDispatcher<{
+    playbackCompleted: {
+      mediaId: string | null;
+      mediaType: 'movie' | 'series' | 'episode';
+      content: ContentItem | null;
+      episode: Episode | null;
+    };
+  }>();
   type PlayerView =
     | { kind: 'video'; src: string; title: string; poster?: string | null; autoPlay: boolean; key: string }
     | { kind: 'message'; text: string };
@@ -39,6 +50,18 @@
     overlayStyle = Object.entries(styleVars)
       .map(([key, value]) => `${key}: ${value}`)
       .join('; ');
+  }
+
+  function handlePlaybackCompleted(
+    event: CustomEvent<{ mediaId: string | null; mediaType: 'movie' | 'series' | 'episode' }>
+  ) {
+    dispatch('playbackCompleted', {
+      mediaId: event.detail?.mediaId ?? null,
+      mediaType: event.detail?.mediaType ?? 'movie',
+      content: playingContent ?? selected ?? null,
+      episode: playingEpisode ?? selectedEpisode ?? null
+    });
+    close?.();
   }
 
   onMount(() => {
@@ -118,6 +141,22 @@
 
     return { kind: 'message', text: 'This content is not available for inline playback yet.' } satisfies PlayerView;
   })();
+
+  // Track which piece of content actually started playback so completion events
+  // can reference the correct movie even if sidebar selection changes mid-stream.
+  $: {
+    if (!show) {
+      currentPlaybackKey = null;
+      playingContent = null;
+      playingEpisode = null;
+    } else if (playerView?.kind === 'video') {
+      if (playerView.key !== currentPlaybackKey) {
+        currentPlaybackKey = playerView.key;
+        playingContent = selected ?? null;
+        playingEpisode = selectedEpisode ?? null;
+      }
+    }
+  }
 </script>
 
 {#if show && selected}
@@ -152,6 +191,7 @@
           keySeed={playerView.key}
           autoPlay={playerView.autoPlay}
           onClose={close}
+          on:playbackCompleted={handlePlaybackCompleted}
         />
       {:else if playerView?.kind === 'message'}
         <div class="player-fallback"><p>{playerView.text}</p></div>

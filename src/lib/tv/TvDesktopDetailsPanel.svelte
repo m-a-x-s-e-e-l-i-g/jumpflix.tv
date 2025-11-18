@@ -20,6 +20,7 @@
   export let selectedEpisode: Episode | null = null;
   export let initialSeasonNumber: number | null = null;
   export let isMobile = false;
+  export let ratingRefreshToken = 0;
 
   const panelClass = 'hidden md:flex w-[460px] px-6 pt-14 pb-6 fixed right-0 top-0 bottom-0 overflow-y-auto flex-col tv-details-panel';
 </script>
@@ -33,6 +34,7 @@
     {onSelectEpisode}
     {selectedEpisode}
     {isMobile}
+    {ratingRefreshToken}
     initialSeason={initialSeasonNumber ?? undefined}
   />
 </div>

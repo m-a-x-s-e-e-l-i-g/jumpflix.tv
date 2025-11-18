@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy, onMount } from 'svelte';
+	import { createEventDispatcher, onDestroy, onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import type { MediaPlayerElement } from 'vidstack/elements';
 	import PlayIcon from 'lucide-svelte/icons/play';
@@ -15,6 +15,10 @@
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
 	import CastIcon from 'lucide-svelte/icons/cast';
 	import { updateWatchProgress, getResumePosition, flushWatchHistoryNow } from '$lib/tv/watchHistory';
+
+	const dispatch = createEventDispatcher<{
+		playbackCompleted: { mediaId: string | null; mediaType: 'movie' | 'series' | 'episode' };
+	}>();
 
 	export let src: string | null = null;
 	export let title: string | null = null;
@@ -48,6 +52,7 @@
 	let cleanupGestures: (() => void) | null = null;
 	let cleanupAutoHide: (() => void) | null = null;
 	let cleanupProgressTracking: (() => void) | null = null;
+	let cleanupPlaybackComplete: (() => void) | null = null;
 	let controlsEl: HTMLElement | null = null;
 	let hideControlsTimer: ReturnType<typeof setTimeout> | null = null;
 	let controlsVisible = true;
@@ -107,6 +112,14 @@
 		cleanupProgressTracking = null;
 	}
 
+	$: if (browser && playerEl) {
+		cleanupPlaybackComplete?.();
+		cleanupPlaybackComplete = setupPlaybackCompletion(playerEl);
+	} else if (!browser || !playerEl) {
+		cleanupPlaybackComplete?.();
+		cleanupPlaybackComplete = null;
+	}
+
 	onDestroy(() => {
 		cleanupGestures?.();
 		cleanupGestures = null;
@@ -114,6 +127,8 @@
 		cleanupAutoHide = null;
 		cleanupProgressTracking?.();
 		cleanupProgressTracking = null;
+		cleanupPlaybackComplete?.();
+		cleanupPlaybackComplete = null;
 		cleanupMobileQuery?.();
 		cleanupMobileQuery = null;
 		mobileQuery = null;
@@ -380,6 +395,24 @@
 			win?.removeEventListener('pagehide', handlePageHide);
 			isSeeking = false;
 			flushPendingProgressSnapshot();
+		};
+	}
+
+	function setupPlaybackCompletion(player: MediaPlayerElement) {
+		if (!browser) return () => {};
+		let lastEmit = 0;
+		const handleEnded = () => {
+			const now = Date.now();
+			if (now - lastEmit < 200) return;
+			lastEmit = now;
+			dispatch('playbackCompleted', {
+				mediaId: getMediaId(),
+				mediaType: getMediaType()
+			});
+		};
+		player.addEventListener('ended', handleEnded);
+		return () => {
+			player.removeEventListener('ended', handleEnded);
 		};
 	}
 

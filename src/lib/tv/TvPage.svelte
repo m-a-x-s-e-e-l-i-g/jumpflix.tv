@@ -9,28 +9,31 @@
   import TvCatalogGrid from '$lib/tv/TvCatalogGrid.svelte';
   import TvPageBackdrop from '$lib/tv/TvPageBackdrop.svelte';
   import TvDesktopDetailsPanel from '$lib/tv/TvDesktopDetailsPanel.svelte';
+  import RatingPromptDialog from '$lib/components/RatingPromptDialog.svelte';
+  import { getUserRating } from '$lib/ratings';
   import {
-    visibleContent,
-    visibleKeys,
-    sortedAllContent,
-    searchQuery,
-    showPaid,
-    showWatched,
-    sortBy,
-    selectedContent,
-    showPlayer,
-    showDetailsPanel,
-    selectedIndex,
-    selectContent,
-    openContent,
-    closePlayer,
-    closeDetailsPanel,
-    selectedEpisode,
-    openEpisode,
-    selectEpisode,
-    setContent
-  } from '$lib/tv/store';
-  import type { ContentItem } from '$lib/tv/types';
+      visibleContent,
+      visibleKeys,
+      sortedAllContent,
+      searchQuery,
+      showPaid,
+      showWatched,
+      sortBy,
+      selectedContent,
+      showPlayer,
+      showDetailsPanel,
+      selectedIndex,
+      selectContent,
+      openContent,
+      closePlayer,
+      closeDetailsPanel,
+      selectedEpisode,
+      openEpisode,
+      selectEpisode,
+      setContent
+    } from '$lib/tv/store';
+  import { getLatestWatchProgressByBaseId } from '$lib/tv/watchHistory';
+  import type { ContentItem, Movie } from '$lib/tv/types';
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { buildItemUrl, buildPageTitle, extractSeasonEpisodeFromPath, openExternalContent } from '$lib/tv/helpers/navigation';
@@ -58,6 +61,10 @@
   let restoreMobileOverlay = false;
   const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
   let catalogMinHeight = 0;
+  let ratingDialogOpen = false;
+  let ratingDialogMovie: Movie | null = null;
+  let ratingRefreshToken = 0;
+  let ratingDialogCheckToken = 0;
 
   if (browser) {
     const initialPage = get(page);
@@ -129,6 +136,106 @@
     }
   }
 
+  function buildBaseId(item: ContentItem | null): string | null {
+    if (!item) return null;
+    if (item.type === 'movie' || item.type === 'series') {
+      return `${item.type}:${item.id}`;
+    }
+    return null;
+  }
+
+  function findContentByMediaKey(mediaKey: string | null): ContentItem | null {
+    if (!mediaKey) return null;
+    const segments = mediaKey.split(':');
+    if (segments.length < 2) return null;
+    const [rawType, rawId] = segments;
+    if (rawType !== 'movie' && rawType !== 'series') return null;
+    const numericId = Number(rawId);
+    if (!Number.isFinite(numericId)) return null;
+    const targetId = String(numericId);
+    const catalog = get(sortedAllContent);
+    if (!Array.isArray(catalog) || !catalog.length) return null;
+    return (
+      catalog.find((item) => item.type === rawType && String(item.id) === targetId) ?? null
+    );
+  }
+
+  async function openRatingDialogIfNeeded(movie: Movie) {
+    if (!browser || ratingDialogOpen) return;
+    const currentCheck = ++ratingDialogCheckToken;
+    try {
+      const existingRating = await getUserRating(movie.id);
+      if (currentCheck !== ratingDialogCheckToken) return;
+      if (existingRating !== null) {
+        return;
+      }
+      ratingDialogMovie = movie;
+      ratingDialogOpen = true;
+    } catch (error) {
+      if (currentCheck === ratingDialogCheckToken) {
+        console.error('Failed to verify rating status', error);
+        ratingDialogMovie = movie;
+        ratingDialogOpen = true;
+      }
+    }
+  }
+
+  async function maybePromptForMovieRating(item: ContentItem | null) {
+    if (!browser || !item || item.type !== 'movie') return;
+    if (ratingDialogOpen) return;
+    const baseId = buildBaseId(item);
+    if (!baseId) return;
+    const latest = getLatestWatchProgressByBaseId(baseId);
+    if (latest?.isWatched) {
+      await openRatingDialogIfNeeded(item as Movie);
+    }
+  }
+
+  function handlePlayerClose() {
+    const current = get(selectedContent);
+    if (!ratingDialogOpen) {
+      void maybePromptForMovieRating(current);
+    }
+    closePlayer();
+  }
+
+  function handlePlaybackCompleted(
+    event: CustomEvent<{
+      mediaId: string | null;
+      mediaType: 'movie' | 'series' | 'episode';
+      content: ContentItem | null;
+    }>
+  ) {
+    const detail = event.detail;
+    let finished = detail?.content ?? null;
+
+    if ((!finished || finished.type !== 'movie') && detail?.mediaId) {
+      const fallback = findContentByMediaKey(detail.mediaId);
+      if (fallback && fallback.type === 'movie') {
+        finished = fallback;
+      }
+    }
+
+    if (finished && finished.type === 'movie') {
+      void openRatingDialogIfNeeded(finished as Movie);
+    }
+  }
+
+  function handleRatingSaved(
+    event: CustomEvent<{
+      movieId: string | number;
+      rating: number | null;
+      summary: { averageRating: number; ratingCount: number };
+    }>
+  ) {
+    const detail = event.detail;
+    if (!detail) return;
+    const current = get(selectedContent);
+    if (current && String(current.id) === String(detail.movieId)) {
+      ratingRefreshToken += 1;
+    }
+  }
+
   $: if (browser) {
     if (isMobile && $showDetailsPanel) {
       document.documentElement.classList.add('overflow-hidden');
@@ -157,12 +264,16 @@
 
   function handleKeydown(event: KeyboardEvent) {
     if ($showPlayer && event.key === 'Escape') {
-      closePlayer();
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      handlePlayerClose();
       return;
     }
     if (event.key === 'Escape' && document.fullscreenElement) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
       document.exitFullscreen();
-      closePlayer();
+      handlePlayerClose();
       return;
     }
     if (isTypingTarget(event.target) || $showPlayer) {
@@ -307,7 +418,7 @@
       updateCatalogMinHeight();
     };
     window.addEventListener('resize', resizeHandler);
-    document.addEventListener('keydown', handleKeydown);
+    document.addEventListener('keydown', handleKeydown, true);
     // Removed fullscreenchange listener that was closing player on fullscreen exit
 
   const maxTilt = 6.5;
@@ -347,7 +458,7 @@
           };
         })();
     return () => {
-      document.removeEventListener('keydown', handleKeydown);
+      document.removeEventListener('keydown', handleKeydown, true);
       window.removeEventListener('resize', resizeHandler);
       searchHeightObserver?.disconnect();
       cleanupScroll?.();
@@ -423,6 +534,7 @@
       selectedEpisode={$selectedEpisode}
       initialSeasonNumber={initialSeasonNumber}
       {isMobile}
+      ratingRefreshToken={ratingRefreshToken}
     />
     <MobileDetailsOverlay
       show={$showDetailsPanel}
@@ -436,6 +548,7 @@
       {closeDetailsPanel}
       initialSeason={initialSeasonNumber ?? undefined}
       onBack={handleMobileBack}
+      ratingRefreshToken={ratingRefreshToken}
     />
   </div>
 </div>
@@ -443,7 +556,14 @@
 	show={$showPlayer}
 	selected={$selectedContent}
 	selectedEpisode={$selectedEpisode}
-	close={closePlayer}
+  close={handlePlayerClose}
+  on:playbackCompleted={handlePlaybackCompleted}
+/>
+
+<RatingPromptDialog
+  bind:open={ratingDialogOpen}
+  movie={ratingDialogMovie}
+  on:ratingSaved={handleRatingSaved}
 />
 
 <style>

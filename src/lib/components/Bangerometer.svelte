@@ -5,22 +5,24 @@
   import { scale, fade } from 'svelte/transition';
   import FlameIcon from '@lucide/svelte/icons/flame';
   import SparklesIcon from '@lucide/svelte/icons/sparkles';
+  import Trash2Icon from '@lucide/svelte/icons/trash-2';
   import ZapIcon from '@lucide/svelte/icons/zap';
 
   export let mediaId: number | string;
   export let initialRating: number | null = null;
   export let onRatingChange: ((rating: number) => Promise<void>) | null = null;
+  export let onRatingDelete: (() => Promise<void>) | null = null;
   export let onAuthRequired: (() => void) | null = null;
   export let isWatched: boolean = false;
   export let averageRating: number = 0;
   export let ratingCount: number = 0;
+  export let startExpanded: boolean = false;
 
   let rating = initialRating || 0;
+  let savedRating: number | null = initialRating ?? null;
+  let lastInitialRating = initialRating;
   let isDragging = false;
-  let isExpanded = false;
-  
-  // Reset rating when mediaId or initialRating changes
-  $: rating = initialRating || 0;
+  let isExpanded = startExpanded;
   
   // Track previous mediaId to detect changes
   let previousMediaId = mediaId;
@@ -35,10 +37,25 @@
   // Reset visual state when switching between different media items
   $: if (mediaId !== previousMediaId) {
     previousMediaId = mediaId;
-    rating = initialRating || 0;
+    lastInitialRating = initialRating;
+    savedRating = initialRating ?? null;
+    rating = initialRating ?? 0;
     explosionParticles = [];
     shake = false;
-    isExpanded = false;
+    isExpanded = startExpanded;
+  }
+
+  $: if (startExpanded && !isExpanded) {
+    isExpanded = true;
+  }
+
+  $: if (initialRating !== lastInitialRating) {
+    lastInitialRating = initialRating;
+    const normalizedInitial = initialRating ?? null;
+    savedRating = normalizedInitial;
+    if (!isDragging) {
+      rating = normalizedInitial ?? 0;
+    }
   }
 
   function toggleExpanded() {
@@ -56,7 +73,8 @@
   $: isAuthenticated = Boolean($authUser);
   $: intensity = rating / 10; // 0 to 1
   $: bangerLevel = getBangerLevel(rating);
-  $: hasUserRating = initialRating !== null && initialRating > 0;
+  $: hasUserRating = savedRating !== null && savedRating > 0;
+  let isRemovingRating = false;
 
   function getBangerLevel(r: number): string {
     if (r === 0) return 'Not rated';
@@ -153,10 +171,31 @@
     
     try {
       await onRatingChange(rating);
+      savedRating = rating;
       toast.success(`Rated ${rating}/10 - ${bangerLevel}`);
     } catch (error) {
       console.error('Failed to save rating:', error);
       toast.error('Failed to save rating. Please try again.');
+    }
+  }
+
+  async function handleRemoveRating() {
+    if (!isAuthenticated) {
+      onAuthRequired?.();
+      return;
+    }
+    if (!onRatingDelete || isRemovingRating) return;
+    isRemovingRating = true;
+    try {
+      await onRatingDelete();
+      savedRating = null;
+      rating = 0;
+      toast.success('Rating removed');
+    } catch (error) {
+      console.error('Failed to remove rating:', error);
+      toast.error('Failed to remove rating. Please try again.');
+    } finally {
+      isRemovingRating = false;
     }
   }
 
@@ -272,6 +311,18 @@
         <span class="text-2xl font-bold text-white">{rating}</span>
         <span class="text-sm text-gray-400">/10</span>
       </div>
+    {/if}
+    {#if hasUserRating && onRatingDelete}
+      <button
+        type="button"
+        class="clear-rating-btn"
+        on:click|stopPropagation={handleRemoveRating}
+        title="Remove rating"
+        aria-label="Remove rating"
+        disabled={isRemovingRating}
+      >
+        <Trash2Icon class="w-4 h-4" />
+      </button>
     {/if}
     <button
       type="button"
@@ -486,6 +537,30 @@
 
   .collapse-btn:active {
     transform: scale(0.95);
+  }
+
+  .clear-rating-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(248, 113, 113, 0.18);
+    color: rgba(248, 113, 113, 1);
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    transition: all 0.2s ease;
+  }
+
+  .clear-rating-btn:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.28);
+    color: rgba(254, 226, 226, 1);
+    border-color: rgba(248, 113, 113, 0.6);
+  }
+
+  .clear-rating-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .banger-meter-container.shake {

@@ -24,9 +24,14 @@
   import { onMount } from 'svelte';
   import { user as authUser } from '$lib/stores/authStore';
   import BangerMeter from '$lib/components/Bangerometer.svelte';
-  import { getUserRating, saveRating, getMediaRatingSummary } from '$lib/ratings';
+  import { getUserRating, saveRating, getMediaRatingSummary, deleteRating } from '$lib/ratings';
   import AuthDialog from '$lib/components/AuthDialog.svelte';
   import FacetChips from '$lib/components/FacetChips.svelte';
+  import {
+    dispatchRatingUpdated,
+    RATING_UPDATED_EVENT,
+    type RatingUpdatedDetail
+  } from '$lib/rating-events';
 
   let isAuthenticated = false;
 
@@ -48,6 +53,7 @@
   // Currently selected episode (for highlighting)
   export let selectedEpisode: Episode | null = null;
   export let isMobile: boolean = false;
+  export let ratingRefreshToken = 0;
 
   // UI state for expanding long name lists
   let showAllCreators = false;
@@ -205,15 +211,22 @@
 
   onMount(() => {
     getWatchProgressForSelected();
-    
+
     const handleProgressChange: EventListener = () => {
       getWatchProgressForSelected();
     };
-    
+
+    const handleRatingUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<RatingUpdatedDetail>).detail;
+      syncRatingFromEvent(detail);
+    };
+
     window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
-    
+    window.addEventListener(RATING_UPDATED_EVENT, handleRatingUpdated as EventListener);
+
     return () => {
       window.removeEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
+      window.removeEventListener(RATING_UPDATED_EVENT, handleRatingUpdated as EventListener);
     };
   });
 
@@ -235,7 +248,10 @@
     ratingsSummary = selected.averageRating !== undefined && selected.ratingCount !== undefined
       ? { averageRating: selected.averageRating, ratingCount: selected.ratingCount }
       : null;
-    loadRatingData();
+  }
+
+  $: if (browser && selected && ratingRefreshToken >= 0) {
+    void loadRatingData();
   }
 
   async function loadRatingData() {
@@ -264,10 +280,51 @@
     // Refresh summary to show updated average
     const summary = await getMediaRatingSummary(selected.id);
     ratingsSummary = summary;
+    const numericId = Number(selected.id);
+    if (Number.isFinite(numericId)) {
+      dispatchRatingUpdated({
+        mediaId: numericId,
+        rating,
+        averageRating: summary?.averageRating,
+        ratingCount: summary?.ratingCount
+      });
+    }
+  }
+
+  async function handleRatingDelete() {
+    if (!selected) return;
+    await deleteRating(selected.id);
+    currentUserRating = null;
+    const summary = await getMediaRatingSummary(selected.id);
+    ratingsSummary = summary;
+    const numericId = Number(selected.id);
+    if (Number.isFinite(numericId)) {
+      dispatchRatingUpdated({
+        mediaId: numericId,
+        rating: null,
+        averageRating: summary?.averageRating,
+        ratingCount: summary?.ratingCount
+      });
+    }
   }
 
   function handleAuthRequired() {
     showAuthDialog = true;
+  }
+
+  function syncRatingFromEvent(detail?: RatingUpdatedDetail) {
+    if (!detail || !selected) return;
+    const numericId = Number(selected.id);
+    if (!Number.isFinite(numericId) || detail.mediaId !== numericId) return;
+    currentUserRating = detail.rating ?? null;
+    if (detail.averageRating !== undefined && detail.ratingCount !== undefined) {
+      ratingsSummary = {
+        averageRating: detail.averageRating,
+        ratingCount: detail.ratingCount
+      };
+    } else {
+      void loadRatingData();
+    }
   }
 
   // Seasons & Episodes for series
@@ -494,6 +551,7 @@
         mediaId={selected.id}
         initialRating={currentUserRating}
         onRatingChange={handleRatingChange}
+        onRatingDelete={handleRatingDelete}
         onAuthRequired={handleAuthRequired}
         isWatched={watchProgress?.isWatched || false}
         averageRating={ratingsSummary?.averageRating || 0}

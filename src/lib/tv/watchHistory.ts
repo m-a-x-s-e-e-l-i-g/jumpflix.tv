@@ -18,6 +18,7 @@ const WATCHED_THRESHOLD = 85;
 const RESUME_OFFSET = 1;
 const END_CLAMP_OFFSET = 15;
 const FLUSH_DEBOUNCE_MS = 2500;
+const BACKGROUND_FLUSH_INTERVAL_MS = 15000;
 
 export const PROGRESS_CHANGE_EVENT = 'jumpflix-progress-change';
 
@@ -46,6 +47,49 @@ let flushPromise: Promise<void> | null = null;
 let initialized = false;
 let currentUserId: string | null = null;
 let unsubscribeUser: (() => void) | null = null;
+let backgroundFlushTimer: ReturnType<typeof setInterval> | null = null;
+let cleanupVisibilityHandlers: (() => void) | null = null;
+
+function ensureVisibilityHandlers() {
+	if (!browser || cleanupVisibilityHandlers) return;
+	const doc = document;
+	const handleVisibilityChange = () => {
+		if (doc.visibilityState === 'hidden') {
+			void flushWatchHistoryNow();
+		}
+	};
+	const handlePageHide = () => {
+		void flushWatchHistoryNow(true);
+	};
+	doc.addEventListener('visibilitychange', handleVisibilityChange);
+	window.addEventListener('pagehide', handlePageHide);
+	cleanupVisibilityHandlers = () => {
+		doc.removeEventListener('visibilitychange', handleVisibilityChange);
+		window.removeEventListener('pagehide', handlePageHide);
+	};
+}
+
+function clearVisibilityHandlers() {
+	cleanupVisibilityHandlers?.();
+	cleanupVisibilityHandlers = null;
+}
+
+function startBackgroundFlushLoop() {
+	if (!browser || backgroundFlushTimer) return;
+	backgroundFlushTimer = setInterval(() => {
+		if (pending.size === 0 && !pendingClearAll) {
+			stopBackgroundFlushLoop();
+			return;
+		}
+		void flushPending();
+	}, BACKGROUND_FLUSH_INTERVAL_MS);
+}
+
+function stopBackgroundFlushLoop() {
+	if (!backgroundFlushTimer) return;
+	clearInterval(backgroundFlushTimer);
+	backgroundFlushTimer = null;
+}
 
 function dispatchWatchProgressEvent(detail: WatchProgressEventDetail) {
 	if (!browser) return;
@@ -60,6 +104,7 @@ export function initWatchHistory(): () => void {
 	if (!browser) return () => {};
 	if (initialized) return () => {};
 	initialized = true;
+	ensureVisibilityHandlers();
 
 	unsubscribeUser = userStore.subscribe((value) => {
 		void handleUserChange(value);
@@ -76,6 +121,8 @@ export function initWatchHistory(): () => void {
 		pending.clear();
 		pendingClearAll = false;
 		clearFlushTimer();
+		stopBackgroundFlushLoop();
+		clearVisibilityHandlers();
 	};
 }
 
@@ -90,6 +137,7 @@ async function handleUserChange(userValue: User | null) {
 	pending.clear();
 	pendingClearAll = false;
 	clearFlushTimer();
+	stopBackgroundFlushLoop();
 	dispatchWatchProgressEvent({ kind: 'clear-all', origin: 'remote' });
 
 	if (!currentUserId) return;
@@ -282,6 +330,7 @@ export function clearWatchProgress(
 	if (!currentUserId) return;
 
 	pending.set(mediaId, { kind: 'delete', mediaId });
+	startBackgroundFlushLoop();
 	void flushWatchHistoryNow();
 }
 
@@ -295,6 +344,7 @@ export function clearAllWatchProgress(origin: WatchProgressEventOrigin = 'local'
 
 	pending.clear();
 	pendingClearAll = true;
+	startBackgroundFlushLoop();
 	void flushWatchHistoryNow(true);
 }
 
@@ -400,6 +450,7 @@ export function getLatestWatchProgressByBaseId(baseId: string): WatchProgress | 
 function queueUpsert(progress: WatchProgress, immediate = false) {
 	if (!currentUserId) return;
 	pending.set(progress.mediaId, { kind: 'upsert', progress });
+	startBackgroundFlushLoop();
 	if (immediate) {
 		void flushWatchHistoryNow();
 	} else {
@@ -482,6 +533,9 @@ async function flushPending(force = false) {
 			console.error('Failed to persist watch history:', err);
 		} finally {
 			flushPromise = null;
+			if (pending.size === 0 && !pendingClearAll) {
+				stopBackgroundFlushLoop();
+			}
 		}
 	})();
 

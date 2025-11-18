@@ -70,7 +70,18 @@
 	// Watch progress tracking
 	let lastProgressUpdate = 0;
 	let hasResumed = false;
+	let isSeeking = false;
+	type PendingProgressSnapshot = {
+		mediaId: string;
+		type: 'movie' | 'series' | 'episode';
+		position: number;
+		duration: number;
+	};
+	let pendingProgress: PendingProgressSnapshot | null = null;
+	let progressCommitTimer: ReturnType<typeof setTimeout> | null = null;
+	let progressCommitDeadline = 0;
 	const PROGRESS_UPDATE_INTERVAL = 5000; // Update every 5 seconds
+	const PROGRESS_COMMIT_DELAY_MS = 250;
 
 	$: if (browser && playerEl) {
 		cleanupGestures?.();
@@ -107,6 +118,7 @@
 		cleanupMobileQuery = null;
 		mobileQuery = null;
 		cancelSpeedRamp();
+		flushPendingProgressSnapshot();
 		void flushWatchHistoryNow();
 	});
 
@@ -190,48 +202,109 @@
 		return 'movie';
 	}
 
-	function trackProgress(player: MediaPlayerElement) {
+	function cancelProgressCommitTimer() {
+		if (!progressCommitTimer) return;
+		clearTimeout(progressCommitTimer);
+		progressCommitTimer = null;
+		progressCommitDeadline = 0;
+	}
+
+	function commitPendingProgressSnapshot() {
+		if (!pendingProgress) return;
+		const snapshot = pendingProgress;
+		pendingProgress = null;
+		updateWatchProgress(snapshot.mediaId, snapshot.type, snapshot.position, snapshot.duration);
+		lastProgressUpdate = Date.now();
+	}
+
+	function flushPendingProgressSnapshot() {
+		cancelProgressCommitTimer();
+		commitPendingProgressSnapshot();
+	}
+
+	function scheduleProgressCommit(delayMs = PROGRESS_COMMIT_DELAY_MS) {
+		if (!pendingProgress) return;
+		if (!browser) {
+			flushPendingProgressSnapshot();
+			return;
+		}
+		const targetDelay = Math.max(PROGRESS_COMMIT_DELAY_MS, delayMs);
+		const targetTimestamp = Date.now() + targetDelay;
+		if (progressCommitTimer) {
+			if (progressCommitDeadline <= targetTimestamp) {
+				return;
+			}
+			clearTimeout(progressCommitTimer);
+		}
+		progressCommitDeadline = targetTimestamp;
+		progressCommitTimer = setTimeout(() => {
+			progressCommitTimer = null;
+			progressCommitDeadline = 0;
+			commitPendingProgressSnapshot();
+		}, targetDelay);
+	}
+
+	function clampTime(value: number, duration: number) {
+		if (!Number.isFinite(value)) return 0;
+		return Math.max(0, Math.min(value, duration));
+	}
+
+	function trackProgress(player: MediaPlayerElement, options?: { force?: boolean }) {
 		if (!browser) return;
 		const mediaId = getMediaId();
 		if (!mediaId) return;
 
-		const currentTime = player.currentTime || 0;
-		const duration = player.duration || 0;
+		const safeDuration = Number.isFinite(player.duration) ? Number(player.duration) : 0;
+		if (safeDuration <= 0) return;
 
-		if (duration <= 0) return;
-
-		// Update progress
-		updateWatchProgress(
+		const position = clampTime(Number(player.currentTime ?? 0), safeDuration);
+		const snapshot: PendingProgressSnapshot = {
 			mediaId,
-			getMediaType(),
-			currentTime,
-			duration
-		);
+			type: getMediaType(),
+			position,
+			duration: safeDuration
+		};
 
-		lastProgressUpdate = Date.now();
+		if (isSeeking && !options?.force) {
+			pendingProgress = snapshot;
+			return;
+		}
+
+		const now = Date.now();
+		const elapsedSincePersist = now - lastProgressUpdate;
+		if (!options?.force && elapsedSincePersist < PROGRESS_UPDATE_INTERVAL) {
+			pendingProgress = snapshot;
+			const remaining = PROGRESS_UPDATE_INTERVAL - elapsedSincePersist;
+			scheduleProgressCommit(remaining);
+			return;
+		}
+
+		pendingProgress = snapshot;
+		if (options?.force) {
+			flushPendingProgressSnapshot();
+		} else {
+			scheduleProgressCommit();
+		}
 	}
 
 	function setupProgressTracking(player: MediaPlayerElement) {
 		if (!browser) return () => {};
 		const mediaId = getMediaId();
 		if (!mediaId) return () => {};
+		isSeeking = false;
+		const doc = player.ownerDocument ?? document;
+		const win = doc.defaultView ?? window;
 
-		// Handle timeupdate for periodic progress tracking
 		const handleTimeUpdate = () => {
-			const now = Date.now();
-			if (now - lastProgressUpdate >= PROGRESS_UPDATE_INTERVAL) {
-				trackProgress(player);
-			}
+			trackProgress(player);
 		};
 
-		// Handle pause to save progress
 		const handleProgressPause = () => {
-			trackProgress(player);
+			trackProgress(player, { force: true });
 		};
 
-		// Handle ended to mark as watched
 		const handleProgressEnded = () => {
-			trackProgress(player);
+			trackProgress(player, { force: true });
 		};
 
 		// Handle duration change (when metadata loads)
@@ -256,11 +329,35 @@
 			}
 		};
 
+		const handleSeeking = () => {
+			isSeeking = true;
+			cancelProgressCommitTimer();
+		};
+
+		const handleSeeked = () => {
+			isSeeking = false;
+			trackProgress(player);
+		};
+
+		const handleVisibilityChange = () => {
+			if (doc.visibilityState === 'hidden') {
+				flushPendingProgressSnapshot();
+			}
+		};
+
+		const handlePageHide = () => {
+			flushPendingProgressSnapshot();
+		};
+
 		player.addEventListener('time-update', handleTimeUpdate);
 		player.addEventListener('pause', handleProgressPause);
 		player.addEventListener('ended', handleProgressEnded);
 		player.addEventListener('duration-change', handleDurationChange);
 		player.addEventListener('can-play', handleCanPlay);
+		player.addEventListener('seeking', handleSeeking);
+		player.addEventListener('seeked', handleSeeked);
+		doc.addEventListener('visibilitychange', handleVisibilityChange);
+		win?.addEventListener('pagehide', handlePageHide);
 
 		// Try to resume immediately if duration is already available
 		if (player.duration > 0 && !hasResumed) {
@@ -277,6 +374,12 @@
 			player.removeEventListener('ended', handleProgressEnded);
 			player.removeEventListener('duration-change', handleDurationChange);
 			player.removeEventListener('can-play', handleCanPlay);
+			player.removeEventListener('seeking', handleSeeking);
+			player.removeEventListener('seeked', handleSeeked);
+			doc.removeEventListener('visibilitychange', handleVisibilityChange);
+			win?.removeEventListener('pagehide', handlePageHide);
+			isSeeking = false;
+			flushPendingProgressSnapshot();
 		};
 	}
 
@@ -1150,7 +1253,10 @@
 
 	// Reset resume state when content changes
 	$: if (keySeed) {
+		flushPendingProgressSnapshot();
+		lastProgressUpdate = 0;
 		hasResumed = false;
+		isSeeking = false;
 	}
 
 </script>

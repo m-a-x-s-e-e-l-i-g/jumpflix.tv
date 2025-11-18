@@ -87,19 +87,19 @@ export function matchesSearch(item: ContentItem, q: string): boolean {
 export function filterAndSortContent(all: ContentItem[], rankMap: Map<string, number>, state: TvState): ContentItem[] {
   const filtered = all
     .filter(item => state.showPaid ? true : !item.paid)
-    .filter(item => matchesSearch(item, state.searchQuery))
-    .filter(item => {
-      const includeWatched = state.showWatched ?? true;
-      if (includeWatched) return true;
-      const watchedSet = state.watchedBaseIds;
-      if (!watchedSet || watchedSet.size === 0) return true;
-      return !watchedSet.has(keyFor(item));
-    });
+    .filter(item => matchesSearch(item, state.searchQuery));
 
   const sorted = [...filtered];
+  const watchedSet = state.watchedBaseIds;
+  const shouldPushWatchedToEnd = state.showWatched === false;
   const inProgressSet = state.inProgressBaseIds;
+  const isWatched = (item: ContentItem) => Boolean(watchedSet && watchedSet.has(keyFor(item)));
   const isInProgress = (item: ContentItem) => Boolean(inProgressSet && inProgressSet.has(keyFor(item)));
   const compareWithPriorities = (compareFn: (a: ContentItem, b: ContentItem) => number) => (a: ContentItem, b: ContentItem) => {
+    if (shouldPushWatchedToEnd) {
+      const watchedDiff = Number(isWatched(a)) - Number(isWatched(b));
+      if (watchedDiff !== 0) return watchedDiff;
+    }
     const progressDiff = Number(isInProgress(b)) - Number(isInProgress(a));
     if (progressDiff !== 0) return progressDiff;
     const posterDiff = Number(hasPoster(b)) - Number(hasPoster(a));

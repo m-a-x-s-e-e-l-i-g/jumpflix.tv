@@ -172,12 +172,14 @@ export const visibleContent = derived(
 
 // All items, only sorted (no filtering). Useful to keep DOM stable by hiding non-matching items.
 export const sortedAllContent = derived(
-  [contentMeta, sortBy, inProgressBaseIds],
-  ([$meta, $sortBy, $inProgressBaseIds]) =>
+  [contentMeta, sortBy, showWatched, watchedBaseIds, inProgressBaseIds],
+  ([$meta, $sortBy, $showWatched, $watchedBaseIds, $inProgressBaseIds]) =>
     filterAndSortContent($meta.items, $meta.rankMap, {
       searchQuery: '',
       showPaid: true,
       sortBy: $sortBy,
+      showWatched: $showWatched,
+      watchedBaseIds: $watchedBaseIds,
       inProgressBaseIds: $inProgressBaseIds
     })
 );

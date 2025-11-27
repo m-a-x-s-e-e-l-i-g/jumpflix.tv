@@ -228,6 +228,10 @@ async function addMovie() {
 		message: 'External URL:'
 	});
 
+	const trakt = await prompts.input({
+		message: 'Trakt URL (optional):'
+	});
+
 	const creatorsInput = await prompts.input({
 		message: 'Creators (comma-separated):'
 	});
@@ -250,6 +254,7 @@ async function addMovie() {
 		paid: paid || false,
 		provider: provider || null,
 		external_url: externalUrl || null,
+		trakt: trakt || null,
 		creators: parseArrayInput(creatorsInput),
 		starring: parseArrayInput(starringInput)
 	};
@@ -1222,6 +1227,12 @@ async function editContent() {
 		default: item.external_url || ''
 	});
 	if (externalUrl !== (item.external_url || '')) updates.external_url = externalUrl || null;
+
+	const trakt = await prompts.input({
+		message: 'Trakt URL (optional):',
+		default: item.trakt || ''
+	});
+	if (trakt !== (item.trakt || '')) updates.trakt = trakt || null;
 
 	// Movie-specific fields
 	if (item.type === 'movie') {

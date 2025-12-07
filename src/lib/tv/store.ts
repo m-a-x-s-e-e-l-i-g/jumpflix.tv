@@ -11,6 +11,29 @@ import {
 
 // Base data (loaded at runtime via setContent)
 const seed = new Date().toISOString().slice(0, 10);
+const SHOW_PAID_STORAGE_KEY = 'jumpflix.tv:showPaid';
+const SHOW_WATCHED_STORAGE_KEY = 'jumpflix.tv:showWatched';
+
+// Remember toggle preferences across sessions on the same device.
+function loadBooleanPreference(key: string, defaultValue = true): boolean {
+  if (!browser) return defaultValue;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return defaultValue;
+    return raw === '1' || raw === 'true';
+  } catch {
+    return defaultValue;
+  }
+}
+
+function persistBooleanPreference(key: string, value: boolean) {
+  if (!browser) return;
+  try {
+    localStorage.setItem(key, value ? '1' : '0');
+  } catch {
+    /* noop */
+  }
+}
 
 export const baseContent = writable<ContentItem[]>([]);
 
@@ -44,9 +67,9 @@ contentMeta.subscribe((meta) => {
 
 // UI state stores
 export const searchQuery = writable('');
-export const showPaid = writable(true);
+export const showPaid = writable(loadBooleanPreference(SHOW_PAID_STORAGE_KEY));
 export const sortBy = writable<SortBy>('default');
-export const showWatched = writable(true);
+export const showWatched = writable(loadBooleanPreference(SHOW_WATCHED_STORAGE_KEY));
 export const selectedContent = writable<ContentItem | null>(null);
 export const showPlayer = writable(false);
 export const showDetailsPanel = writable(false);
@@ -145,6 +168,8 @@ if (browser) {
   refreshProgressSets();
   const handleProgressChange: EventListener = () => refreshProgressSets();
   window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
+  showPaid.subscribe((value) => persistBooleanPreference(SHOW_PAID_STORAGE_KEY, value));
+  showWatched.subscribe((value) => persistBooleanPreference(SHOW_WATCHED_STORAGE_KEY, value));
 }
 
 // Debounced search to avoid filtering on every keystroke

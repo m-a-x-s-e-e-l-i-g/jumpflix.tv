@@ -30,13 +30,13 @@
     }
   }>();
 
-  let showAuthDialog = false;
-  let loading = false;
-  let userRating: number | null = null;
-  let ratingSummary: { averageRating: number; ratingCount: number } = {
+  let showAuthDialog = $state(false);
+  let loading = $state(false);
+  let userRating = $state<number | null>(null);
+  let ratingSummary = $state<{ averageRating: number; ratingCount: number }>({
     averageRating: 0,
     ratingCount: 0
-  };
+  });
   let requestToken = 0;
   let lastLoadedId: string | number | null = null;
 

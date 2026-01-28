@@ -6,7 +6,8 @@ export type Json =
 	| { [key: string]: Json | undefined }
 	| Json[];
 
-export interface Database {
+
+export type Database = {
 	public: {
 		Tables: {
 			user_preferences: {
@@ -27,6 +28,48 @@ export interface Database {
 					marketing_opt_in?: boolean;
 					created_at?: string;
 					updated_at?: string;
+				};
+				Relationships: [];
+			};
+			watch_history: {
+				Row: {
+					user_id: string;
+					media_id: string;
+					media_type: 'movie' | 'series' | 'episode';
+					position_seconds: number;
+					duration_seconds: number;
+					percent_watched: number;
+					is_watched: boolean;
+					status: 'active' | 'cleared';
+					watched_at: string;
+					updated_at: string;
+					metadata: Json;
+				};
+				Insert: {
+					user_id: string;
+					media_id: string;
+					media_type: 'movie' | 'series' | 'episode';
+					position_seconds?: number;
+					duration_seconds?: number;
+					percent_watched?: number;
+					is_watched?: boolean;
+					status?: 'active' | 'cleared';
+					watched_at?: string;
+					updated_at?: string;
+					metadata?: Json;
+				};
+				Update: {
+					user_id?: string;
+					media_id?: string;
+					media_type?: 'movie' | 'series' | 'episode';
+					position_seconds?: number;
+					duration_seconds?: number;
+					percent_watched?: number;
+					is_watched?: boolean;
+					status?: 'active' | 'cleared';
+					watched_at?: string;
+					updated_at?: string;
+					metadata?: Json;
 				};
 				Relationships: [];
 			};
@@ -248,6 +291,9 @@ export interface Database {
 					rating_count: number;
 					average_rating: number;
 				};
+				Insert: never;
+				Update: never;
+				Relationships: [];
 			};
 			media_facets_view: {
 				Row: {
@@ -264,9 +310,39 @@ export interface Database {
 					facet_length: 'short' | 'medium' | 'feature' | 'long-feature' | null;
 					facet_era: '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000' | null;
 				};
+				Insert: never;
+				Update: never;
+				Relationships: [];
 			};
 		};
-		Functions: {};
+		Functions: {
+			admin_stats_overview: {
+				Args: Record<string, never>;
+				Returns: Json;
+			};
+			admin_watch_activity: {
+				Args: { days?: number };
+				Returns: {
+					day: string;
+					active_users: number;
+					updates: number;
+					watched_updates: number;
+				}[];
+			};
+			admin_ratings_distribution: {
+				Args: Record<string, never>;
+				Returns: { rating: number; count: number }[];
+			};
+			admin_top_watched_media: {
+				Args: { limit_n?: number };
+				Returns: { media_id: string; media_type: string; watchers: number; avg_percent: number }[];
+			};
+			delete_user_account: {
+				Args: Record<string, never>;
+				Returns: void;
+			};
+		};
 		Enums: {};
+		CompositeTypes: {};
 	};
-}
+};

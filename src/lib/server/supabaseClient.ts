@@ -15,3 +15,14 @@ export function createSupabaseClient() {
 		auth: { persistSession: false }
 	});
 }
+
+export function createSupabaseServiceClient() {
+	const serviceKey = SUPABASE_SERVICE_ROLE_KEY?.trim?.();
+	if (!supabaseUrl || !serviceKey) {
+		throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for this operation.');
+	}
+
+	return createClient<Database>(supabaseUrl, serviceKey, {
+		auth: { persistSession: false }
+	});
+}

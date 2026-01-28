@@ -6,12 +6,16 @@ type MediaItemRow = Database['public']['Tables']['media_items']['Row'];
 type SeriesSeasonRow = Database['public']['Tables']['series_seasons']['Row'];
 type SeriesEpisodeRow = Database['public']['Tables']['series_episodes']['Row'];
 type MediaRatingSummaryRow = Database['public']['Views']['media_ratings_summary']['Row'];
-type SeriesSeasonWithEpisodes = SeriesSeasonRow & { 
-	series_episodes?: SeriesEpisodeRow[] | null;
+
+type SeriesSeasonWithEpisodes = Pick<
+	SeriesSeasonRow,
+	'id' | 'series_id' | 'season_number' | 'playlist_id' | 'custom_name'
+> & {
+	series_episodes?: Array<Pick<SeriesEpisodeRow, 'id'>> | null;
 };
-type MediaItemWithSeasons = MediaItemRow & { 
+
+type MediaItemWithSeasons = MediaItemRow & {
 	series_seasons?: SeriesSeasonWithEpisodes[] | null;
-	media_ratings_summary?: MediaRatingSummaryRow[] | null;
 };
 type SeriesSeasonWithEpisodesForPlaylist = SeriesSeasonRow & { episodes?: SeriesEpisodeRow[] | null };
 
@@ -65,11 +69,7 @@ function calculateEraFacet(year: string | null): '2000s' | '2010s' | '2020s' | '
 	return 'pre-2000';
 }
 
-function mapMovie(row: MediaItemWithSeasons): Movie {
-	const ratingSummary = Array.isArray(row.media_ratings_summary) && row.media_ratings_summary.length > 0
-		? row.media_ratings_summary[0]
-		: null;
-	
+function mapMovie(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryRow | null): Movie {
 	return removeUndefined({
 		id: row.id,
 		slug: row.slug,
@@ -95,7 +95,7 @@ function mapMovie(row: MediaItemWithSeasons): Movie {
 	});
 }
 
-function mapSeason(row: SeriesSeasonRow): Season {
+function mapSeason(row: Pick<SeriesSeasonRow, 'id' | 'season_number' | 'playlist_id' | 'custom_name'>): Season {
 	return removeUndefined({
 		id: row.id,
 		seasonNumber: row.season_number,
@@ -104,7 +104,7 @@ function mapSeason(row: SeriesSeasonRow): Season {
 	});
 }
 
-function mapSeries(row: MediaItemWithSeasons): Series {
+function mapSeries(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryRow | null): Series {
 	const seasonsSource = Array.isArray(row.series_seasons) ? row.series_seasons : [];
 	const seasons = seasonsSource
 		.map((season) => mapSeason(season))
@@ -118,10 +118,6 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 		}
 		return total;
 	}, 0);
-
-	const ratingSummary = Array.isArray(row.media_ratings_summary) && row.media_ratings_summary.length > 0
-		? row.media_ratings_summary[0]
-		: null;
 
 	return removeUndefined({
 		id: row.id,
@@ -148,40 +144,56 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 
 export async function fetchAllContent(): Promise<ContentItem[]> {
 	try {
-	const supabase = createSupabaseClient();
-	const { data, error } = await supabase
-		.from('media_items')
-		.select(
-			`
-				*,
-				series_seasons (
-					id,
-					series_id,
-					season_number,
-					playlist_id,
-					custom_name,
-					series_episodes (
-						id
-					)
-				),
-				media_ratings_summary (
-					average_rating,
-					rating_count
-				)
-			`
-			);		if (error) {
+		const supabase = createSupabaseClient();
+		const [{ data, error }, { data: ratingRows, error: ratingError }] = await Promise.all([
+			supabase
+				.from('media_items')
+				.select(
+					`
+						*,
+						series_seasons (
+							id,
+							series_id,
+							season_number,
+							playlist_id,
+							custom_name,
+							series_episodes (
+								id
+							)
+						)
+					`
+					),
+			(
+				supabase
+					.from('media_ratings_summary')
+					.select('media_id, average_rating, rating_count')
+			)
+		]);
+		if (error) {
 			console.error('[content-service] Failed to load media items:', error);
 			return [];
+		}
+
+		if (ratingError) {
+			console.error('[content-service] Failed to load rating summaries:', ratingError);
 		}
 
 		if (!data) {
 			return [];
 		}
 
+		const ratingsByMediaId = new Map<number, MediaRatingSummaryRow>();
+		if (Array.isArray(ratingRows)) {
+			for (const ratingRow of ratingRows) {
+				ratingsByMediaId.set(ratingRow.media_id, ratingRow);
+			}
+		}
+
 		const rows = data as MediaItemWithSeasons[];
-		const items: ContentItem[] = rows.map((row) =>
-			isSeriesRow(row) ? mapSeries(row) : mapMovie(row)
-		);
+		const items: ContentItem[] = rows.map((row) => {
+			const ratingSummary = ratingsByMediaId.get(row.id) ?? null;
+			return isSeriesRow(row) ? mapSeries(row, ratingSummary) : mapMovie(row, ratingSummary);
+		});
 
 		return items.sort((a, b) => a.title.localeCompare(b.title));
 	} catch (err) {

@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js';
 import { get } from 'svelte/store';
 import { supabase } from '$lib/supabaseClient';
 import { user as userStore } from '$lib/stores/authStore';
+import type { Database } from '$lib/supabase/types';
 
 export interface WatchProgress {
 	mediaId: string;
@@ -190,7 +191,7 @@ function fromRow(row: {
 
 function toRow(progress: WatchProgress) {
 	if (!currentUserId) throw new Error('Cannot persist watch progress without an authenticated user');
-	return {
+	const row: Database['public']['Tables']['watch_history']['Insert'] = {
 		user_id: currentUserId,
 		media_id: progress.mediaId,
 		media_type: progress.type,
@@ -201,6 +202,7 @@ function toRow(progress: WatchProgress) {
 		status: 'active',
 		watched_at: progress.watchedAt
 	};
+	return row;
 }
 
 export function parseWatchedAt(value: string | undefined | null): number {

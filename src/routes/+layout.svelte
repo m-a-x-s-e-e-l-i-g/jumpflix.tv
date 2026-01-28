@@ -60,6 +60,8 @@
 	let reduceMotion = $state(false);
 	let systemReduceMotion = $state(false);
 
+	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
+
 	let lastScrollY = 0;
 	const scrollSubscribers = new Set<ScrollSubscriber>();
 
@@ -713,6 +715,8 @@
 	{#key currentLocale}
 		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
 		{#if $page.error}
+			{@render children?.()}
+		{:else if isAdminRoute}
 			{@render children?.()}
 		{:else}
 			<TvPage

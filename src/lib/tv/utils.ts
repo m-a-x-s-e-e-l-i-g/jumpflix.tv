@@ -74,6 +74,48 @@ export function parseDurationToMinutes(dur?: string): number {
 export function matchesSearch(item: ContentItem, q: string): boolean {
   if (!q) return true;
   const needle = q.toLowerCase();
+  const trimmed = q.trim();
+  const normalizeLoose = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const normalizeTitleExact = (value: string) => normalizeLoose(value);
+  const tokenizeArtist = (value: string) => normalizeLoose(value).split(' ').filter(Boolean);
+
+  // Music search (videos only):
+  // - exact match on song title
+  // - token match on artist words
+  if (trimmed && item.type === 'movie') {
+    const tracks = (item as any).tracks as any[] | undefined;
+    if (Array.isArray(tracks) && tracks.length) {
+      const qTitle = normalizeTitleExact(trimmed);
+      if (qTitle) {
+        const exactSongTitleMatch = tracks.some((t) => {
+          const title = t?.song?.title;
+          if (typeof title !== 'string' || !title.trim()) return false;
+          return normalizeTitleExact(title) === qTitle;
+        });
+        if (exactSongTitleMatch) return true;
+
+        const qTokens = tokenizeArtist(trimmed);
+        if (qTokens.length) {
+          const artistTokenMatch = tracks.some((t) => {
+            const artist = t?.song?.artist;
+            if (typeof artist !== 'string' || !artist.trim()) return false;
+            const artistTokens = new Set(tokenizeArtist(artist));
+            return qTokens.every((tok) => artistTokens.has(tok));
+          });
+          if (artistTokenMatch) return true;
+        }
+      }
+    }
+  }
+
   const haystacks: string[] = [];
   if (item.title) haystacks.push(item.title);
   if ((item as any).description) haystacks.push((item as any).description);

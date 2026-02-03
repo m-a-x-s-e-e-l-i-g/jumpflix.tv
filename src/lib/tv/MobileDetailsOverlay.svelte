@@ -15,6 +15,7 @@
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { decode } from 'html-entities';
   import { selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
+  import Tracklist from '$lib/tv/Tracklist.svelte';
   import {
     getAllWatchProgress,
     setWatchedStatus,
@@ -586,6 +587,8 @@
                 <li class="flex flex-col gap-1"><span class="text-gray-400">Starring</span><span>{(selected as any).starring.join(', ')}</span></li>
               {/if}
             </ul>
+
+            <Tracklist tracks={(selected as any).tracks} className="mt-4" />
           </div>
         {:else}
           <div>

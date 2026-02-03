@@ -2,6 +2,8 @@
   import { getContext, onMount, tick } from 'svelte';
   import { page } from '$app/stores';
   import { get } from 'svelte/store';
+  import { toast } from 'svelte-sonner';
+  import * as m from '$lib/paraglide/messages';
   import PlayerModal from '$lib/tv/PlayerModal.svelte';
   import MobileDetailsOverlay from '$lib/tv/MobileDetailsOverlay.svelte';
   import TvHeroSection from '$lib/tv/TvHeroSection.svelte';
@@ -65,6 +67,41 @@
   let ratingDialogMovie: Movie | null = null;
   let ratingRefreshToken = 0;
   let ratingDialogCheckToken = 0;
+
+  let allowExitBack = false;
+  let exitConfirmUntil = 0;
+  let overlayBackTrapArmed = false;
+
+  function isAndroidStandalone() {
+    if (!browser) return false;
+    const ua = navigator.userAgent?.toLowerCase?.() ?? '';
+    const isAndroid = ua.includes('android');
+    const isStandalone =
+      window.matchMedia?.('(display-mode: standalone)')?.matches ||
+      // iOS legacy; harmless on Android
+      (navigator as any).standalone === true;
+    return isAndroid && Boolean(isStandalone);
+  }
+
+  function closeMobileOverlayStateOnly() {
+    lastSelectionSource = 'programmatic';
+    setMobileDetails(false);
+    selectedContent.set(null);
+    selectedEpisode.set(null);
+    pageTitle = null;
+  }
+
+  function armOverviewExitTrap() {
+    if (!browser) return;
+    if (!isAndroidStandalone()) return;
+    if (!isMobile) return;
+    if (window.location.pathname !== '/') return;
+    if (get(showDetailsPanel) || get(showPlayer)) return;
+
+    const state: any = window.history.state;
+    if (state?.jf_exitTrap) return;
+    window.history.pushState({ ...state, jf_exitTrap: true }, '', window.location.href);
+  }
 
   if (browser) {
     const initialPage = get(page);
@@ -337,6 +374,49 @@
 
   onMount(() => {
     currentPath = `${get(page).url.pathname}${get(page).url.search}`;
+
+    // In Android standalone (installed PWA), tweak back gesture behavior:
+    // - When the mobile details overlay is open, back closes it (and returns to '/').
+    // - On the catalog overview ('/'), require double-back to exit.
+    const handlePopState = () => {
+      if (!browser) return;
+      if (!isAndroidStandalone() || !isMobile) return;
+
+      if (allowExitBack) {
+        allowExitBack = false;
+        return;
+      }
+
+      // Priority 1: close mobile overlay
+      if (get(showDetailsPanel)) {
+        if (window.location.pathname === '/') {
+          closeMobileOverlayStateOnly();
+          armOverviewExitTrap();
+          return;
+        }
+        handleMobileBack();
+        return;
+      }
+
+      // Priority 2: double-back to exit on catalog overview
+      if (window.location.pathname === '/' && !get(showPlayer)) {
+        const now = Date.now();
+        if (now > exitConfirmUntil) {
+          exitConfirmUntil = now + 2000;
+          toast.message(m.tv_exitConfirm());
+          armOverviewExitTrap();
+          return;
+        }
+        exitConfirmUntil = 0;
+        allowExitBack = true;
+        window.history.back();
+        return;
+      }
+
+      exitConfirmUntil = 0;
+    };
+
+    window.addEventListener('popstate', handlePopState);
     
     // Lock scroll position when content filters change to prevent jumpy behavior
     let lastScrollY = 0;
@@ -363,6 +443,13 @@
         if (nextQuery !== null && nextQuery !== get(searchQuery)) {
           searchQuery.set(nextQuery);
         }
+
+        // If user navigated back to '/', ensure the mobile overlay closes.
+        if (browser && isMobile && get(showDetailsPanel)) {
+          closeMobileOverlayStateOnly();
+        }
+
+        armOverviewExitTrap();
       }
     });
 
@@ -407,6 +494,8 @@
     updateIsMobile();
     columns = computeColumns(gridEl);
     updateCatalogMinHeight();
+
+    armOverviewExitTrap();
 
     const searchEl = document.getElementById('tv-search-controls');
     const searchHeightObserver = (typeof ResizeObserver !== 'undefined')
@@ -464,6 +553,7 @@
     return () => {
       document.removeEventListener('keydown', handleKeydown, true);
       window.removeEventListener('resize', resizeHandler);
+      window.removeEventListener('popstate', handlePopState);
       searchHeightObserver?.disconnect();
       cleanupScroll?.();
       if (rafId !== null) cancelAnimationFrame(rafId);
@@ -501,6 +591,21 @@
   $: priorityKeys = new Set(($visibleContent || [])
     .slice(0, Math.max(columns * 2, 8))
     .map((it) => `${it.type}:${it.id}`));
+
+  // If the PWA was opened directly on a detail URL (history length = 1), Android back would
+  // immediately close the app. Add one history entry when the mobile overlay opens so the
+  // first back gesture triggers `popstate` and can close the overlay to '/'.
+  $: if (browser && isAndroidStandalone() && isMobile && $showDetailsPanel && $selectedContent) {
+    if (!overlayBackTrapArmed && window.history.length <= 1) {
+      const state: any = window.history.state;
+      if (!state?.jf_overlayTrap) {
+        window.history.pushState({ ...state, jf_overlayTrap: true }, '', window.location.href);
+      }
+      overlayBackTrapArmed = true;
+    }
+  } else {
+    overlayBackTrapArmed = false;
+  }
 </script>
 
 <svelte:head>

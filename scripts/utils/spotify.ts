@@ -62,7 +62,12 @@ export function extractSpotifyTrackId(input: string): string | null {
   // https://open.spotify.com/track/ID?...
   try {
     const url = new URL(raw);
-    if (/spotify\.com$/i.test(url.hostname) || /open\.spotify\.com$/i.test(url.hostname)) {
+    const hostname = url.hostname.toLowerCase();
+    if (
+      hostname === 'spotify.com' ||
+      hostname === 'open.spotify.com' ||
+      hostname.endsWith('.spotify.com')
+    ) {
       const parts = url.pathname.split('/').filter(Boolean);
       if (parts[0] === 'track' && parts[1]) return parts[1];
     }

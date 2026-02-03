@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { VideoTrack } from './types';
+  import { parseTimecodeToSeconds } from '$lib/utils/timecode';
 
   export let tracks: VideoTrack[] | null | undefined = undefined;
   export let className = '';
@@ -11,25 +12,6 @@
     const sec = s % 60;
     if (h > 0) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
     return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-  }
-
-  function parseTimecodeToSeconds(value: string): number | null {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-
-    const parts = trimmed.split(':').map((p) => p.trim());
-    if (parts.length < 2 || parts.length > 3) return null;
-
-    const nums = parts.map((p) => (p === '' ? NaN : Number(p)));
-    if (nums.some((n) => !Number.isFinite(n) || n < 0)) return null;
-
-    if (nums.length === 2) {
-      const [m, s] = nums;
-      return Math.floor(m) * 60 + Math.floor(s);
-    }
-
-    const [h, m, s] = nums;
-    return Math.floor(h) * 3600 + Math.floor(m) * 60 + Math.floor(s);
   }
 
   function getTrackStartLabel(track: VideoTrack): string | null {

@@ -13,10 +13,42 @@
     return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
   }
 
-  function formatTrackStart(track: VideoTrack): string {
+  function parseTimecodeToSeconds(value: string): number | null {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const parts = trimmed.split(':').map((p) => p.trim());
+    if (parts.length < 2 || parts.length > 3) return null;
+
+    const nums = parts.map((p) => (p === '' ? NaN : Number(p)));
+    if (nums.some((n) => !Number.isFinite(n) || n < 0)) return null;
+
+    if (nums.length === 2) {
+      const [m, s] = nums;
+      return Math.floor(m) * 60 + Math.floor(s);
+    }
+
+    const [h, m, s] = nums;
+    return Math.floor(h) * 3600 + Math.floor(m) * 60 + Math.floor(s);
+  }
+
+  function getTrackStartLabel(track: VideoTrack): string | null {
     const tc = track?.startTimecode;
-    if (typeof tc === 'string' && tc.trim()) return tc.trim();
-    return formatSecondsToTimecode(Number(track?.startOffsetSeconds ?? 0));
+    if (typeof tc === 'string') {
+      const trimmed = tc.trim();
+      if (trimmed) {
+        const seconds = parseTimecodeToSeconds(trimmed);
+        if (seconds === 0) return null;
+        return trimmed;
+      }
+    }
+
+    const offsetSeconds = Number(track?.startOffsetSeconds);
+    if (Number.isFinite(offsetSeconds) && offsetSeconds > 0) {
+      return formatSecondsToTimecode(offsetSeconds);
+    }
+
+    return null;
   }
 </script>
 
@@ -39,9 +71,12 @@
     </span>
     <ul class="space-y-2">
       {#each tracks as t (t.position)}
+        {@const startLabel = getTrackStartLabel(t)}
         <li class="flex items-center justify-between gap-3 rounded-lg bg-gray-900/30 border border-gray-700/50 border-l-2 border-l-[#1DB954]/50 px-3 py-2">
           <div class="min-w-0 flex-1">
-            <div class="text-xs text-gray-400 font-mono">{formatTrackStart(t)}</div>
+            {#if startLabel}
+              <div class="text-xs text-gray-400 font-mono">{startLabel}</div>
+            {/if}
             <div class="text-sm text-gray-100 truncate">
               {t.song?.artist} — {t.song?.title}
             </div>

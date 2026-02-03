@@ -72,6 +72,8 @@
   let exitConfirmUntil = 0;
   let overlayBackTrapArmed = false;
 
+  const EXIT_CONFIRM_TIMEOUT_MS = 2000;
+
   function isAndroidStandalone() {
     if (!browser) return false;
     const ua = navigator.userAgent?.toLowerCase?.() ?? '';
@@ -402,7 +404,7 @@
       if (window.location.pathname === '/' && !get(showPlayer)) {
         const now = Date.now();
         if (now > exitConfirmUntil) {
-          exitConfirmUntil = now + 2000;
+          exitConfirmUntil = now + EXIT_CONFIRM_TIMEOUT_MS;
           toast.message(m.tv_exitConfirm());
           armOverviewExitTrap();
           return;

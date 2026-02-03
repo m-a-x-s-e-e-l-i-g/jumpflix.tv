@@ -69,8 +69,11 @@
   if (browser) {
     const initialPage = get(page);
     if (initialPage.url.pathname === '/') {
-      const initialQuery = initialPage.url.searchParams.get('q') ?? '';
-      if (initialQuery !== get(searchQuery)) {
+      const initialQuery = initialPage.url.searchParams.get('q');
+      // Only sync from URL when `q` is explicitly present.
+      // Otherwise, keep the persisted store value (e.g., localStorage) to avoid
+      // clearing the query on mobile back navigation.
+      if (initialQuery !== null && initialQuery !== get(searchQuery)) {
         searchQuery.set(initialQuery);
       }
     }
@@ -355,8 +358,9 @@
     const unsubPage = page.subscribe((p) => {
       currentPath = `${p.url.pathname}${p.url.search}`;
       if (p.url.pathname === '/') {
-        const nextQuery = p.url.searchParams.get('q') ?? '';
-        if (nextQuery !== get(searchQuery)) {
+        const nextQuery = p.url.searchParams.get('q');
+        // Only sync from URL when `q` is explicitly present.
+        if (nextQuery !== null && nextQuery !== get(searchQuery)) {
           searchQuery.set(nextQuery);
         }
       }

@@ -12,7 +12,7 @@ import * as dotenv from 'dotenv';
 import { generateBlurhashFromUrl, generateBlurhashFromFile } from './utils/blurhash-generator.js';
 import { syncAllSeriesEpisodes, syncPlaylistEpisodes } from './utils/youtube-sync.js';
 import { bestEffortSearchSpotifyTrack, extractSpotifyTrackId, fetchSpotifyTrack } from './utils/spotify.js';
-import { fetchYouTubeTrackCandidates } from './utils/youtube-tracklist.js';
+import { fetchYouTubeTrackCandidates, parseTimecodeToSeconds } from './utils/youtube-tracklist.js';
 import { clearVideoTracklist, fetchVideoTracklist, upsertSongFromSpotify, upsertVideoSong } from './utils/tracklist-db.js';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
@@ -159,23 +159,6 @@ async function mainMenu() {
 
 	await prompts.input({ message: '\nPress Enter to continue...' });
 	await mainMenu();
-}
-
-function parseTimecodeToSeconds(input: string): number | null {
-	const tc = (input || '').trim();
-	if (!tc) return null;
-	const parts = tc.split(':').map((p) => p.trim());
-	if (parts.some((p) => !/^\d+$/.test(p))) return null;
-	const nums = parts.map((p) => parseInt(p, 10));
-	if (nums.length === 2) {
-		const [m, s] = nums;
-		return m * 60 + s;
-	}
-	if (nums.length === 3) {
-		const [h, m, s] = nums;
-		return h * 3600 + m * 60 + s;
-	}
-	return null;
 }
 
 async function maybeAutoImportTracklistFromYouTube(movieId: number, ytId: string) {

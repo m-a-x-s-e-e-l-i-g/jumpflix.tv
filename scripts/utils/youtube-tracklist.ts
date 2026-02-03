@@ -7,23 +7,8 @@ export type YouTubeTrackCandidate = {
 
 export type YouTubeImportSource = 'youtube_chapters' | 'youtube_music' | 'mixed';
 
-function parseTimecodeToSeconds(timecode: string): number | null {
-  const tc = (timecode || '').trim();
-  if (!tc) return null;
-  const parts = tc.split(':').map((p) => p.trim());
-  if (parts.some((p) => !/^\d+$/.test(p))) return null;
-
-  const nums = parts.map((p) => parseInt(p, 10));
-  if (nums.length === 2) {
-    const [m, s] = nums;
-    return m * 60 + s;
-  }
-  if (nums.length === 3) {
-    const [h, m, s] = nums;
-    return h * 3600 + m * 60 + s;
-  }
-  return null;
-}
+import { parseTimecodeToSeconds } from '../../src/lib/utils/timecode.js';
+export { parseTimecodeToSeconds };
 
 function splitArtistTitle(raw: string): { artist?: string; title: string } {
   const value = (raw || '').trim();

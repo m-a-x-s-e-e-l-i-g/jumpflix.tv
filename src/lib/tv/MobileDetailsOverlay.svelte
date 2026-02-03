@@ -588,7 +588,7 @@
               {/if}
             </ul>
 
-            <Tracklist tracks={(selected as any).tracks} className="mt-4" />
+            <Tracklist tracks={selected.tracks} className="mt-4" />
           </div>
         {:else}
           <div>

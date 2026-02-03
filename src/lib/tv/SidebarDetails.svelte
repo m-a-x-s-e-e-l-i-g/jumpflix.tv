@@ -620,8 +620,8 @@
           </div>
         {/if}
 
-        {#if Array.isArray((selected as any).tracks) && (selected as any).tracks.length}
-          <Tracklist tracks={(selected as any).tracks} />
+        {#if Array.isArray(selected.tracks) && selected.tracks.length}
+          <Tracklist tracks={selected.tracks} />
         {/if}
         {#if (selected as any).starring?.length}
           <div class="space-y-1">

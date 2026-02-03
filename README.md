@@ -25,20 +25,19 @@ The goal: an elegant, fast, mobile‑friendly discovery hub honoring the culture
 
 ## 🔥 Core Highlights
 
-- Instant fuzzy-ish search & live filtering
-- Deterministic random ordering (stable shuffle per session) with multiple sort modes (title, year, duration)
-- Paid vs free toggle (surface free community films first if you want)
-- Inline modal player for YouTube / Vimeo + external provider deep‑links
-- Keyboard navigation (arrow keys + Enter)
-- Mobile details overlay & desktop live sidebar panel
-- Accessibility minded (focus handling, escape to close, reduced clutter)
-- Internationalization (English + Dutch via Paraglide i18n)
-- Type‑safe content model (`Movie`, `Series`) & utility helpers
-- Supabase backend for content management with interactive admin CLI
-- Automatic episode syncing from YouTube playlists (no API key needed)
-- BlurHash placeholders for smooth image loading
-- SEO optimized with automatic sitemap generation and search engine submission
-- PWA support with offline capabilities
+- 🔎 Search & live filtering by song, athlete, creator and title.
+- 🔀 Deterministic random ordering (stable shuffle per session) with multiple sort modes (title, year, duration)
+- 💸 Paid vs free toggle (surface free community films first if you want)
+- ▶️ Custom video player for YouTube / Vimeo with **slowmotion**!
+- ⌨️ Keyboard navigation
+- ✅ Track what you've watched & progress tracking
+- 🌍 Internationalization (English + Dutch via Paraglide i18n)
+- 🗄️ Supabase backend for content management with interactive admin CLI
+- 📺 Automatic episode syncing from YouTube playlists (no API key needed)
+- 🎵 Spotify-backed movie tracklists (manual or YouTube import)
+- 🟪 BlurHash placeholders for smooth image loading
+- 🔎 SEO optimized with automatic sitemap generation and search engine submission
+- 📦 PWA support
 
 ## 🧱 Tech Stack
 
@@ -100,6 +99,12 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHANNEL_ID=
 
+# Spotify (optional - for Spotify-backed movie tracklists)
+# Used by the admin CLI to fetch track metadata and to auto-map YouTube track candidates.
+# Not required to run the web app.
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+
 # Sitemap submission (optional)
 FORCE_SITEMAP_SUBMISSION=false
 ```
@@ -138,7 +143,7 @@ npm run preview   # locally preview built output
 The app requires Supabase for content management. Here's how to set it up:
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com)
-2. **Apply the schema**: Run the SQL in `supabase/migrations/202510310001_initial_schema.sql` in your Supabase SQL editor
+2. **Apply the schema**: Run the SQL migrations in `supabase/migrations/` in order (starting with `202510310001_initial_schema.sql`) in your Supabase SQL editor
 3. **Get your credentials** from Project Settings → API:
    - `PUBLIC_SUPABASE_URL`
    - `PUBLIC_SUPABASE_ANON_KEY`
@@ -165,6 +170,7 @@ Features:
 - 🎥 **Add Movie** - With auto-generated blurhash from thumbnails
 - 📺 **Add Series** - With automatic YouTube playlist episode syncing
 - 🔄 **Refresh Episodes** - Sync episodes from YouTube playlists (no API key needed)
+- 🎵 **Manage Tracklists** - Add Spotify-backed tracks with timestamps (manual or YouTube import)
 - 📋 **List All Content**
 - ✏️ **Edit Content**
 - 🗑️ **Delete Content**
@@ -182,6 +188,42 @@ SUPABASE_SERVICE_ROLE_KEY="service-role-key" # server-only
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` must never ship to the browser—it's reserved for privileged server-side operations.
+
+## 🎵 Music / Spotify-backed Tracklists
+
+Movies can optionally include a timestamped tracklist (songs used in the film). Track metadata is stored in Supabase and the UI renders it in the movie details panel with links to open tracks on Spotify.
+
+**How it works**
+
+- Data lives in Supabase tables `songs` and `video_songs` (added via migration `20260203000000_add_video_tracklists.sql`).
+- Tracklists are readable publicly (RLS `select` is allowed), but writing is done via the admin CLI using your service role key.
+- The admin CLI can:
+  - Add a track manually from a Spotify URL/URI + a start timecode
+  - Import a “best-effort” tracklist from YouTube using:
+    - Timestamp chapters from the video description (e.g. `12:34 Artist — Title`)
+    - YouTube’s “Music in this video” attribution (when available)
+
+**Spotify setup (optional, required for importing/adding tracks)**
+
+To fetch track metadata and to map YouTube candidates to Spotify tracks, set these env vars (for scripts/CLI only):
+
+```bash
+SPOTIFY_CLIENT_ID=...
+SPOTIFY_CLIENT_SECRET=...
+```
+
+You can create credentials via the Spotify Developer Dashboard (a basic “app” is enough; the CLI uses the Client Credentials flow).
+
+**Using it**
+
+```bash
+npm run admin
+```
+
+Then choose **Manage Tracklists**:
+
+- **Manage a single movie tracklist** → view/add/import/clear
+- **Bulk import missing tracklists** → scans all movies and imports for those with 0 tracks
 
 ## 🌐 Internationalization (Paraglide)
 

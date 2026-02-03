@@ -142,6 +142,49 @@ function collectMusicSectionRenderers(root: any): any[] {
   return sections;
 }
 
+function collectVideoAttributeViewModels(root: any): any[] {
+  const models: any[] = [];
+
+  const visit = (node: any) => {
+    if (!node || typeof node !== 'object') return;
+
+    const list = (node as any).horizontalCardListRenderer;
+    const cards = list?.cards;
+    if (Array.isArray(cards)) {
+      for (const card of cards) {
+        const model = card?.videoAttributeViewModel;
+        if (model && typeof model === 'object') {
+          models.push(model);
+        }
+      }
+    }
+
+    if (Array.isArray(node)) {
+      for (const item of node) visit(item);
+      return;
+    }
+    for (const value of Object.values(node)) {
+      visit(value);
+    }
+  };
+
+  visit(root);
+  return models;
+}
+
+function parseTrackCandidatesFromVideoAttributeViewModel(model: any): YouTubeTrackCandidate | null {
+  const title = typeof model?.title === 'string' ? model.title.trim() : '';
+  if (!title) return null;
+
+  const artist = typeof model?.subtitle === 'string' ? model.subtitle.trim() : undefined;
+
+  return {
+    startOffsetSeconds: 0,
+    title,
+    artist: artist || undefined
+  };
+}
+
 function parseTrackCandidatesFromMusicSectionRenderer(renderer: any): YouTubeTrackCandidate[] {
   const candidates: YouTubeTrackCandidate[] = [];
 
@@ -192,6 +235,14 @@ export function parseTrackCandidatesFromMusicInThisVideo(initialData: any): YouT
   const out: YouTubeTrackCandidate[] = [];
   for (const section of sections) {
     out.push(...parseTrackCandidatesFromMusicSectionRenderer(section));
+  }
+
+  // Some watch pages render music attribution as a horizontalCardListRenderer with
+  // videoAttributeViewModel cards (title = song, subtitle = artist)
+  const attributeModels = collectVideoAttributeViewModels(initialData);
+  for (const model of attributeModels) {
+    const cand = parseTrackCandidatesFromVideoAttributeViewModel(model);
+    if (cand) out.push(cand);
   }
 
   // de-dupe by normalized "artist|title"

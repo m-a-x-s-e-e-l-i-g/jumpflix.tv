@@ -45,6 +45,7 @@ export interface Movie extends BaseContent {
   trakt?: string; // external metadata link
   creators?: string[];
   starring?: string[];
+  tracks?: VideoTrack[]; // Optional Spotify-backed tracklist
 }
 
 export interface Series extends BaseContent {
@@ -57,6 +58,23 @@ export interface Series extends BaseContent {
 }
 
 export type ContentItem = Movie | Series;
+
+export interface Song {
+  spotifyTrackId: string;
+  spotifyUrl: string;
+  title: string;
+  artist: string;
+  durationMs?: number;
+}
+
+export interface VideoTrack {
+  position: number;
+  startOffsetSeconds: number;
+  startTimecode?: string;
+  source: 'automation' | 'manual';
+  importSource?: 'youtube_chapters' | 'youtube_music' | 'mixed';
+  song: Song;
+}
 
 // Episode/Season model (minimal for now)
 export interface Episode {

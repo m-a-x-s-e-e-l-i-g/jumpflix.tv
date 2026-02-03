@@ -60,6 +60,21 @@
   let showAllStarring = false;
   const MAX_NAMES = 8; // number of names to show before collapsing
 
+  function formatSecondsToTimecode(totalSeconds: number): string {
+    const s = Math.max(0, Math.floor(totalSeconds || 0));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  }
+
+  function formatTrackStart(track: any): string {
+    const tc = track?.startTimecode;
+    if (typeof tc === 'string' && tc.trim()) return tc.trim();
+    return formatSecondsToTimecode(Number(track?.startOffsetSeconds ?? 0));
+  }
+
   // Watch progress tracking
   let watchProgress: { percent: number; isWatched: boolean; position: number } | null = null;
   let watchProgressMap: Map<string, WatchProgress> = new Map();
@@ -616,6 +631,36 @@
                 </button>
               {/if}
             </div>
+          </div>
+        {/if}
+
+        {#if Array.isArray((selected as any).tracks) && (selected as any).tracks.length}
+          <div class="space-y-2">
+            <span class="text-gray-400 block">Tracklist:</span>
+            <ul class="space-y-2">
+              {#each (selected as any).tracks as t (t.position)}
+                <li class="flex items-start justify-between gap-3 rounded-lg bg-gray-900/30 border border-gray-700/50 px-3 py-2">
+                  <div class="min-w-0">
+                    <div class="text-xs text-gray-400 font-mono">{formatTrackStart(t)}</div>
+                    <div class="text-sm text-gray-100 truncate">
+                      {t.song?.artist} — {t.song?.title}
+                    </div>
+                  </div>
+                  {#if t.song?.spotifyUrl}
+                    <a
+                      href={t.song.spotifyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="flex-shrink-0 text-xs px-2 py-1 rounded bg-green-600/20 text-green-300 border border-green-600/40 hover:bg-green-600/30 transition"
+                      aria-label="Open in Spotify"
+                      title="Open in Spotify"
+                    >
+                      Open
+                    </a>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
           </div>
         {/if}
         {#if (selected as any).starring?.length}

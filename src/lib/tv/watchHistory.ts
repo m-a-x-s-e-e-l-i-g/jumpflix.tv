@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js';
 import { get } from 'svelte/store';
 import { supabase } from '$lib/supabaseClient';
 import { user as userStore } from '$lib/stores/authStore';
+import type { Database } from '$lib/supabase/types';
 
 export interface WatchProgress {
 	mediaId: string;
@@ -38,6 +39,8 @@ export type WatchProgressEventDetail =
 type PendingRecord =
 	| { kind: 'upsert'; progress: WatchProgress }
 	| { kind: 'delete'; mediaId: string };
+
+type WatchHistoryInsert = Database['public']['Tables']['watch_history']['Insert'];
 
 const progressCache = new Map<string, WatchProgress>();
 const pending = new Map<string, PendingRecord>();
@@ -188,7 +191,7 @@ function fromRow(row: {
 	};
 }
 
-function toRow(progress: WatchProgress) {
+function toRow(progress: WatchProgress): WatchHistoryInsert {
 	if (!currentUserId) throw new Error('Cannot persist watch progress without an authenticated user');
 	return {
 		user_id: currentUserId,

@@ -1,21 +1,25 @@
 import { createSupabaseClient } from '$lib/server/supabaseClient';
 import type { Database } from '$lib/supabase/types';
-import type { ContentItem, Episode, Movie, Season, Series, Facets } from '$lib/tv/types';
+import type { ContentItem, Episode, Movie, Season, Series, Facets, VideoTrack } from '$lib/tv/types';
 
 type MediaItemRow = Database['public']['Tables']['media_items']['Row'];
 type SeriesSeasonRow = Database['public']['Tables']['series_seasons']['Row'];
 type SeriesEpisodeRow = Database['public']['Tables']['series_episodes']['Row'];
 type MediaRatingSummaryRow = Database['public']['Views']['media_ratings_summary']['Row'];
-
-type SeriesSeasonWithEpisodes = Pick<
-	SeriesSeasonRow,
-	'id' | 'series_id' | 'season_number' | 'playlist_id' | 'custom_name'
-> & {
-	series_episodes?: Array<Pick<SeriesEpisodeRow, 'id'>> | null;
+type VideoSongRow = Database['public']['Tables']['video_songs']['Row'];
+type SongRow = Database['public']['Tables']['songs']['Row'];
+type SeriesSeasonWithEpisodes = SeriesSeasonRow & { 
+	series_episodes?: SeriesEpisodeRow[] | null;
 };
 
 type MediaItemWithSeasons = MediaItemRow & {
 	series_seasons?: SeriesSeasonWithEpisodes[] | null;
+};
+
+type VideoSongWithSong = VideoSongRow & { song?: SongRow | null };
+
+type MediaItemWithSeasonsAndTracks = MediaItemWithSeasons & {
+	video_songs?: VideoSongWithSong[] | null;
 };
 type SeriesSeasonWithEpisodesForPlaylist = SeriesSeasonRow & { episodes?: SeriesEpisodeRow[] | null };
 
@@ -69,7 +73,35 @@ function calculateEraFacet(year: string | null): '2000s' | '2010s' | '2020s' | '
 	return 'pre-2000';
 }
 
-function mapMovie(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryRow | null): Movie {
+function mapMovie(row: MediaItemWithSeasons): Movie {
+	const ratingSummary = Array.isArray(row.media_ratings_summary) && row.media_ratings_summary.length > 0
+		? row.media_ratings_summary[0]
+		: null;
+	
+	const tracksSource = Array.isArray((row as any).video_songs) ? ((row as any).video_songs as VideoSongWithSong[]) : [];
+	const tracks: VideoTrack[] | undefined = tracksSource.length
+		? tracksSource
+				.filter((vs) => Boolean(vs.song))
+				.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+				.map((vs) => {
+					const song = vs.song as SongRow;
+					return removeUndefined({
+						position: vs.position,
+						startOffsetSeconds: vs.start_offset_seconds,
+						startTimecode: vs.start_timecode ?? undefined,
+						source: (vs.source as 'automation' | 'manual') ?? 'manual',
+						importSource: (vs.import_source as any) ?? undefined,
+						song: removeUndefined({
+							spotifyTrackId: song.spotify_track_id,
+							spotifyUrl: song.spotify_url,
+							title: song.title,
+							artist: song.artist,
+							durationMs: song.duration_ms ?? undefined
+						})
+					});
+				})
+		: undefined;
+
 	return removeUndefined({
 		id: row.id,
 		slug: row.slug,
@@ -88,6 +120,7 @@ function mapMovie(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryRo
 		trakt: row.trakt ?? undefined,
 		creators: row.creators && row.creators.length ? row.creators : undefined,
 		starring: row.starring && row.starring.length ? row.starring : undefined,
+		tracks,
 		averageRating: ratingSummary?.average_rating ?? undefined,
 		ratingCount: ratingSummary?.rating_count ?? undefined,
 		facets: mapFacets(row),
@@ -145,30 +178,22 @@ function mapSeries(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryR
 export async function fetchAllContent(): Promise<ContentItem[]> {
 	try {
 		const supabase = createSupabaseClient();
-		const [{ data, error }, { data: ratingRows, error: ratingError }] = await Promise.all([
-			supabase
-				.from('media_items')
-				.select(
-					`
+		const { data, error } = await supabase
+			.from('media_items')
+			.select(
+				`
+					*,
+					video_songs (
 						*,
-						series_seasons (
-							id,
-							series_id,
-							season_number,
-							playlist_id,
-							custom_name,
-							series_episodes (
-								id
-							)
-						)
-					`
+						song:songs!video_songs_song_id_fkey ( * )
 					),
-			(
-				supabase
-					.from('media_ratings_summary')
-					.select('media_id, average_rating, rating_count')
-			)
-		]);
+					series_seasons (
+						*,
+						series_episodes ( * )
+					)
+				`
+			);
+
 		if (error) {
 			console.error('[content-service] Failed to load media items:', error);
 			return [];
@@ -182,18 +207,31 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 			return [];
 		}
 
-		const ratingsByMediaId = new Map<number, MediaRatingSummaryRow>();
-		if (Array.isArray(ratingRows)) {
-			for (const ratingRow of ratingRows) {
-				ratingsByMediaId.set(ratingRow.media_id, ratingRow);
+		const rows = data as unknown as MediaItemWithSeasonsAndTracks[];
+
+		const mediaIds = rows.map((row) => row.id);
+		if (mediaIds.length) {
+			const { data: ratingRows, error: ratingsError } = await supabase
+				.from('media_ratings_summary')
+				.select('*')
+				.in('media_id', mediaIds);
+
+			if (ratingsError) {
+				console.warn('[content-service] Failed to load rating summaries:', ratingsError);
+			} else if (ratingRows && ratingRows.length) {
+				const summaryByMediaId = new Map<number, MediaRatingSummaryRow>();
+				for (const summary of ratingRows) {
+					summaryByMediaId.set(summary.media_id, summary);
+				}
+				for (const row of rows) {
+					const summary = summaryByMediaId.get(row.id);
+					row.media_ratings_summary = summary ? [summary] : [];
+				}
 			}
 		}
-
-		const rows = data as MediaItemWithSeasons[];
-		const items: ContentItem[] = rows.map((row) => {
-			const ratingSummary = ratingsByMediaId.get(row.id) ?? null;
-			return isSeriesRow(row) ? mapSeries(row, ratingSummary) : mapMovie(row, ratingSummary);
-		});
+		const items: ContentItem[] = rows.map((row) =>
+			isSeriesRow(row) ? mapSeries(row) : mapMovie(row)
+		);
 
 		return items.sort((a, b) => a.title.localeCompare(b.title));
 	} catch (err) {

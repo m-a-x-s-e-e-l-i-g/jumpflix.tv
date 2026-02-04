@@ -14,6 +14,8 @@
   import { fade } from 'svelte/transition';
   import { decode } from 'html-entities';
   import { showPlayer, selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
+  import Tracklist from '$lib/tv/Tracklist.svelte';
+  import { getProviderLink, type ProviderLink } from '$lib/tv/provider-links';
   import {
     getAllWatchProgress,
     setWatchedStatus,
@@ -483,6 +485,9 @@
 
   const backdropOverlayClass = 'details-backdrop-overlay';
   const heroButtonClass = 'details-primary-button';
+
+  let providerLink: ProviderLink | null = null;
+  $: providerLink = selected ? getProviderLink(selected, selectedEpisode) : null;
 </script>
 
 {#if selected}
@@ -531,6 +536,23 @@
         <button type="button" class="inline-flex items-center justify-center w-6 h-6 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" on:click={copyLink} title="Copy link" aria-label="Copy link">
           <Link2Icon class="w-4 h-4" />
         </button>
+
+        {#if providerLink}
+          <a
+            href={providerLink.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center justify-center w-6 h-6 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            title={providerLink.title}
+            aria-label={providerLink.ariaLabel}
+          >
+            {#if providerLink.kind === 'youtube'}
+              <span class="provider-icon provider-icon-youtube w-4 h-4" aria-hidden="true"></span>
+            {:else}
+              <span class="provider-icon provider-icon-vimeo w-4 h-4" aria-hidden="true"></span>
+            {/if}
+          </a>
+        {/if}
       </div>
     </div>
     <div>
@@ -617,6 +639,10 @@
               {/if}
             </div>
           </div>
+        {/if}
+
+        {#if Array.isArray(selected.tracks) && selected.tracks.length}
+          <Tracklist tracks={selected.tracks} />
         {/if}
         {#if (selected as any).starring?.length}
           <div class="space-y-1">
@@ -889,6 +915,27 @@
   .details-primary-button:hover {
     transform: translateY(-1px);
     box-shadow: 0 26px 45px -22px rgba(37, 99, 235, 0.66);
+  }
+
+  .provider-icon {
+    display: inline-block;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+  }
+
+  .provider-icon-youtube {
+    -webkit-mask-image: url('/icons/brand-youtube.svg');
+    mask-image: url('/icons/brand-youtube.svg');
+  }
+
+  .provider-icon-vimeo {
+    -webkit-mask-image: url('/icons/brand-vimeo.svg');
+    mask-image: url('/icons/brand-vimeo.svg');
   }
 
 </style>

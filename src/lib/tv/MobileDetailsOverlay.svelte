@@ -15,6 +15,8 @@
   import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { decode } from 'html-entities';
   import { selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
+  import { getProviderLink, type ProviderLink } from '$lib/tv/provider-links';
+  import Tracklist from '$lib/tv/Tracklist.svelte';
   import {
     getAllWatchProgress,
     setWatchedStatus,
@@ -468,6 +470,9 @@
   const overlayClass = 'mobile-overlay-surface';
   const headerClass = 'mobile-overlay-header';
   const actionsClass = 'mobile-overlay-actions';
+
+  let providerLink: ProviderLink | null = null;
+  $: providerLink = selected ? getProviderLink(selected, selectedEpisode) : null;
 </script>
 
 {#if isMobile && show && selected}
@@ -511,6 +516,23 @@
             <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" on:click={copyLink} title="Copy link" aria-label="Copy link">
               <Link2Icon class="w-4 h-4" />
             </button>
+
+            {#if providerLink}
+              <a
+                href={providerLink.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center justify-center w-7 h-7 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                title={providerLink.title}
+                aria-label={providerLink.ariaLabel}
+              >
+                {#if providerLink.kind === 'youtube'}
+                  <span class="provider-icon provider-icon-youtube w-4 h-4" aria-hidden="true"></span>
+                {:else}
+                  <span class="provider-icon provider-icon-vimeo w-4 h-4" aria-hidden="true"></span>
+                {/if}
+              </a>
+            {/if}
           </div>
         </div>
       </div>
@@ -586,6 +608,8 @@
                 <li class="flex flex-col gap-1"><span class="text-gray-400">Starring</span><span>{(selected as any).starring.join(', ')}</span></li>
               {/if}
             </ul>
+
+            <Tracklist tracks={selected.tracks} className="mt-4" />
           </div>
         {:else}
           <div>
@@ -753,5 +777,26 @@
 
   .mobile-overlay-content {
     padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .provider-icon {
+    display: inline-block;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+  }
+
+  .provider-icon-youtube {
+    -webkit-mask-image: url('/icons/brand-youtube.svg');
+    mask-image: url('/icons/brand-youtube.svg');
+  }
+
+  .provider-icon-vimeo {
+    -webkit-mask-image: url('/icons/brand-vimeo.svg');
+    mask-image: url('/icons/brand-vimeo.svg');
   }
 </style>

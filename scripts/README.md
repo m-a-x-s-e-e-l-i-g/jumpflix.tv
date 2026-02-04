@@ -10,6 +10,10 @@ Interactive command-line tools for managing your JumpFlix database.
 PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Optional: Spotify (needed for tracklists)
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
 ```
 
 > **Note:** The CLI will work with the anon key, but using the service role key gives you admin privileges and bypasses RLS policies.
@@ -88,6 +92,16 @@ Update existing content metadata
 ### 🗑️ Delete Content
 
 Remove content from your database (cascades to seasons/episodes)
+
+### 🎵 Manage Tracklists (Spotify-backed)
+
+Add and maintain timestamped song tracklists for movies.
+
+- **Manual add**: paste a Spotify track URL/URI and enter a start timecode
+- **Import from YouTube (best-effort)**: uses video description timestamps and/or “Music in this video” attribution
+- **Bulk import**: imports missing tracklists for all movies with 0 tracks
+
+This feature requires `SPOTIFY_CLIENT_ID` + `SPOTIFY_CLIENT_SECRET` in `.env`.
 
 ## Database Backup Tool Features
 

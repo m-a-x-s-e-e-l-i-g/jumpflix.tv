@@ -11,6 +11,9 @@ import * as prompts from '@inquirer/prompts';
 import * as dotenv from 'dotenv';
 import { generateBlurhashFromUrl, generateBlurhashFromFile } from './utils/blurhash-generator.js';
 import { syncAllSeriesEpisodes, syncPlaylistEpisodes } from './utils/youtube-sync.js';
+import { bestEffortSearchSpotifyTrack, extractSpotifyTrackId, fetchSpotifyTrack } from './utils/spotify.js';
+import { fetchYouTubeTrackCandidates, parseTimecodeToSeconds } from './utils/youtube-tracklist.js';
+import { clearVideoTracklist, fetchVideoTracklist, upsertSongFromSpotify, upsertVideoSong } from './utils/tracklist-db.js';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import * as readline from 'readline';
@@ -112,6 +115,7 @@ async function mainMenu() {
 		{ name: '�🔄 Auto Refresh Episodes', value: 'refresh-episodes' },
 		{ name: '📋 List All Content', value: 'list-content' },
 		{ name: '✏️  Edit Content', value: 'edit-content' },
+		{ name: '🎵 Manage Tracklists', value: 'manage-tracks' },
 		{ name: '🏷️  Edit Facets', value: 'edit-facets' },
 		{ name: ' Retry Blurhash Generation', value: 'retry-blurhash' },
 		{ name: '🗑️  Delete Content', value: 'delete-content' },
@@ -136,6 +140,9 @@ async function mainMenu() {
 		case 'edit-content':
 			await editContent();
 			break;
+		case 'manage-tracks':
+			await manageTracklists();
+			break;
 		case 'edit-facets':
 			await editFacets();
 			break;
@@ -152,6 +159,344 @@ async function mainMenu() {
 
 	await prompts.input({ message: '\nPress Enter to continue...' });
 	await mainMenu();
+}
+
+async function maybeAutoImportTracklistFromYouTube(movieId: number, ytId: string) {
+	try {
+		const { count, error } = await supabase
+			.from('video_songs')
+			.select('id', { count: 'exact', head: true })
+			.eq('video_id', movieId);
+		if (error) return;
+		if ((count ?? 0) > 0) return;
+
+		const shouldImport = await prompts.confirm({
+			message: 'No tracklist found for this movie. Import from YouTube timestamps now?',
+			default: true
+		});
+		if (!shouldImport) return;
+		await importTracklistFromYouTubeDescription(movieId, ytId);
+	} catch {
+		// best-effort only
+	}
+}
+
+async function importTracklistFromYouTubeDescription(
+	movieId: number,
+	ytId: string
+): Promise<{ imported: number; skipped: number; candidates: number }> {
+	if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
+		console.log('❌ Missing Spotify credentials. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in .env');
+		console.log('   (Needed to map YouTube track candidates to Spotify tracks.)');
+		return { imported: 0, skipped: 0, candidates: 0 };
+	}
+
+	console.log('📥 Fetching YouTube track candidates (chapters + music, best-effort)...');
+	const { candidates, importSource } = await fetchYouTubeTrackCandidates(String(ytId));
+	if (!candidates.length) {
+		console.log('⚠ No track candidates found.');
+		return { imported: 0, skipped: 0, candidates: 0 };
+	}
+
+	console.log(`Found ${candidates.length} candidate(s). Mapping to Spotify (best-effort)...`);
+	let imported = 0;
+	let skipped = 0;
+	let position = 1;
+	const sampleMisses: Array<{ title: string; artist?: string }> = [];
+	let fatalError: string | null = null;
+
+	for (const cand of candidates) {
+		try {
+			const result = await bestEffortSearchSpotifyTrack({ title: cand.title, artist: cand.artist });
+			if (!result) {
+				if (sampleMisses.length < 5) sampleMisses.push({ title: cand.title, artist: cand.artist });
+				skipped++;
+				continue;
+			}
+			const { songId } = await upsertSongFromSpotify(supabase, result);
+			await upsertVideoSong(supabase, {
+				videoId: Number(movieId),
+				songId,
+				startOffsetSeconds: cand.startOffsetSeconds,
+				startTimecode: cand.startTimecode,
+				position,
+				source: 'automation',
+				importSource: importSource ?? undefined
+			});
+			imported++;
+			position++;
+		} catch (e) {
+			const msg = e instanceof Error ? e.message : String(e);
+			// If Spotify is misconfigured or unavailable, continuing will just produce 0 imports.
+			if (
+				msg.includes('Missing SPOTIFY_CLIENT_ID') ||
+				msg.includes('Missing SPOTIFY_CLIENT_SECRET') ||
+				msg.toLowerCase().includes('spotify token request failed') ||
+				msg.toLowerCase().includes('spotify search failed')
+			) {
+				fatalError = msg;
+				break;
+			}
+			skipped++;
+		}
+	}
+
+	if (fatalError) {
+		console.log(`❌ Spotify lookup failed: ${fatalError}`);
+		console.log('   Fix credentials/rate-limits and re-run import.');
+		return { imported, skipped, candidates: candidates.length };
+	}
+
+	console.log(`✅ Imported: ${imported}, Skipped: ${skipped}`);
+	if (imported === 0 && sampleMisses.length) {
+		console.log('ℹ Sample unmapped candidates:');
+		for (const miss of sampleMisses) {
+			console.log(`   - ${miss.artist ? `${miss.artist} — ` : ''}${miss.title}`);
+		}
+	}
+	return { imported, skipped, candidates: candidates.length };
+}
+
+async function manageTracklists() {
+	console.clear();
+	console.log('🎵 Manage Tracklists\n');
+
+	const topAction = await prompts.select({
+		message: 'What would you like to do?',
+		choices: [
+			{ name: '🎬 Manage a single movie tracklist', value: 'single' },
+			{ name: '📥 Bulk import missing tracklists', value: 'bulk-import' },
+			{ name: '← Back to main menu', value: 'back' }
+		]
+	});
+
+	if (topAction === 'back') return;
+	if (topAction === 'bulk-import') {
+		await bulkImportMissingTracklists();
+		return;
+	}
+
+	const { data: movies, error } = await supabase
+		.from('media_items')
+		.select('id, title, slug, video_id, type')
+		.eq('type', 'movie')
+		.order('title');
+
+	if (error || !movies || movies.length === 0) {
+		console.log('❌ No movies found');
+		return;
+	}
+
+	const movieId = await prompts.select({
+		message: 'Select a movie:',
+		choices: [
+			{ name: '← Back to main menu', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...movies.map((m) => ({ name: `🎥 ${m.title} (${m.slug})`, value: m.id }))
+		]
+	});
+
+	if (movieId === 'back') return;
+
+	const movie = movies.find((m) => m.id === movieId);
+	if (!movie) {
+		console.log('❌ Movie not found');
+		return;
+	}
+
+	let tracks: any[] = [];
+	try {
+		tracks = await fetchVideoTracklist(supabase, Number(movieId));
+	} catch (e) {
+		console.log(`⚠ Could not load tracklist (did you run migrations?): ${e instanceof Error ? e.message : String(e)}`);
+	}
+
+	console.log(`\nSelected: ${movie.title}`);
+	console.log(`YouTube video id: ${movie.video_id || '—'}`);
+	console.log(`Tracks: ${tracks.length}\n`);
+
+	const action = await prompts.select({
+		message: 'Tracklist action:',
+		choices: [
+			{ name: '📋 View current tracklist', value: 'view' },
+			{ name: '➕ Add track manually (Spotify URL/URI)', value: 'add' },
+			{ name: '🔄 Import from YouTube (chapters + music, best-effort)', value: 'import-youtube' },
+			{ name: '🧹 Clear tracklist', value: 'clear' },
+			{ name: '← Back', value: 'back' }
+		]
+	});
+
+	if (action === 'back') return;
+
+	if (action === 'view') {
+		if (!tracks.length) {
+			console.log('\n(Empty)\n');
+			return;
+		}
+		console.log('');
+		for (const t of tracks) {
+			const tc = t.start_timecode || `${t.start_offset_seconds}s`;
+			console.log(`🎵 ${String(tc).padEnd(10)} ${t.song.artist} — ${t.song.title}`);
+			console.log(`   ${t.song.spotify_url}`);
+		}
+		console.log('');
+		return;
+	}
+
+	if (action === 'clear') {
+		const confirmed = await prompts.confirm({
+			message: 'Really delete all tracks for this movie?',
+			default: false
+		});
+		if (!confirmed) return;
+		await clearVideoTracklist(supabase, Number(movieId));
+		console.log('✅ Tracklist cleared');
+		return;
+	}
+
+	if (action === 'add') {
+		const spotifyInput = await prompts.input({
+			message: 'Spotify track URL/URI (spotify:track:... or https://open.spotify.com/track/...):',
+			required: true
+		});
+		const trackId = extractSpotifyTrackId(spotifyInput);
+		if (!trackId) {
+			console.log('❌ Could not parse Spotify track id');
+			return;
+		}
+
+		console.log('🔎 Fetching Spotify metadata...');
+		const spotifyTrack = await fetchSpotifyTrack(trackId);
+		const { songId } = await upsertSongFromSpotify(supabase, spotifyTrack);
+
+		const timecode = await prompts.input({
+			message: 'Start timecode (mm:ss or hh:mm:ss):',
+			required: true
+		});
+		const seconds = parseTimecodeToSeconds(timecode);
+		if (seconds === null) {
+			console.log('❌ Invalid timecode');
+			return;
+		}
+
+		const nextPosition = (tracks?.length || 0) + 1;
+		await upsertVideoSong(supabase, {
+			videoId: Number(movieId),
+			songId,
+			startOffsetSeconds: seconds,
+			startTimecode: timecode,
+			position: nextPosition,
+			source: 'manual'
+		});
+
+		console.log(`✅ Added: ${spotifyTrack.artist} — ${spotifyTrack.title} @ ${timecode}`);
+		return;
+	}
+
+	if (action === 'import-youtube') {
+		const ytId = (movie as any).video_id;
+		if (!ytId) {
+			console.log('❌ Movie has no YouTube video_id. Set it first in Edit Content.');
+			return;
+		}
+		await importTracklistFromYouTubeDescription(Number(movieId), String(ytId));
+		return;
+	}
+}
+
+async function bulkImportMissingTracklists() {
+	console.clear();
+	console.log('📥 Bulk import missing tracklists\n');
+	console.log('This will scan all movies and import from YouTube for any movie with 0 tracks.');
+	console.log('Best-effort: unmapped tracks are skipped; failures won\'t stop the run.\n');
+
+	const confirmed = await prompts.confirm({
+		message: 'Continue?',
+		default: false
+	});
+	if (!confirmed) return;
+
+	const maxToImportRaw = await prompts.input({
+		message: 'Max movies to import this run (leave empty for no limit):',
+		default: ''
+	});
+	const maxToImport = maxToImportRaw.trim() ? Number.parseInt(maxToImportRaw.trim(), 10) : null;
+	if (maxToImportRaw.trim() && (!Number.isFinite(maxToImport) || (maxToImport as number) <= 0)) {
+		console.log('❌ Invalid max value');
+		return;
+	}
+
+	const { data: movies, error } = await supabase
+		.from('media_items')
+		.select('id, title, slug, video_id, type')
+		.eq('type', 'movie')
+		.order('title');
+
+	if (error || !movies || movies.length === 0) {
+		console.log(`❌ Failed to load movies: ${error?.message ?? 'no movies found'}`);
+		return;
+	}
+
+	let scanned = 0;
+	let attempted = 0;
+	let moviesWithAnyImportedTracks = 0;
+	let totalImportedTracks = 0;
+	let skippedHasTracks = 0;
+	let skippedNoYouTubeId = 0;
+	let failed = 0;
+
+	for (const movie of movies) {
+		scanned++;
+		const ytId = (movie as any).video_id;
+		if (!ytId) {
+			skippedNoYouTubeId++;
+			continue;
+		}
+
+		const { count, error: countError } = await supabase
+			.from('video_songs')
+			.select('id', { count: 'exact', head: true })
+			.eq('video_id', movie.id);
+		if (countError) {
+			console.log(`⚠ ${movie.title}: could not check existing tracks (${countError.message})`);
+			failed++;
+			continue;
+		}
+
+		if ((count ?? 0) > 0) {
+			skippedHasTracks++;
+			continue;
+		}
+
+		if (maxToImport !== null && attempted >= maxToImport) {
+			break;
+		}
+		attempted++;
+
+		console.log(`\n🎬 ${movie.title} (${movie.slug})`);
+		try {
+			const result = await importTracklistFromYouTubeDescription(Number(movie.id), String(ytId));
+			if (result.imported > 0) {
+				moviesWithAnyImportedTracks++;
+				totalImportedTracks += result.imported;
+			}
+		} catch (e) {
+			failed++;
+			console.log(`❌ Import failed: ${e instanceof Error ? e.message : String(e)}`);
+		}
+
+		// small delay to be nice to upstream services
+		await new Promise((r) => setTimeout(r, 250));
+	}
+
+	console.log('\n✅ Bulk import finished');
+	console.log(`Scanned: ${scanned}`);
+	console.log(`Attempted imports: ${attempted}`);
+	console.log(`Imported (tracks): ${totalImportedTracks}`);
+	console.log(`Imported (movies with ≥1 track): ${moviesWithAnyImportedTracks}`);
+	console.log(`Skipped (already has tracks): ${skippedHasTracks}`);
+	console.log(`Skipped (no YouTube id): ${skippedNoYouTubeId}`);
+	console.log(`Failed: ${failed}`);
 }
 
 // Add Movie
@@ -284,6 +629,9 @@ async function addMovie() {
 		console.log('✅ Movie added successfully!');
 		console.log(`   ID: ${data.id}`);
 		console.log(`   Slug: ${data.slug}`);
+		if (data.video_id) {
+			await maybeAutoImportTracklistFromYouTube(Number(data.id), String(data.video_id));
+		}
 	}
 }
 
@@ -1002,6 +1350,12 @@ async function editEpisode(seriesId: number, seasonId: number, seasonNumber: num
 		console.error('❌ Error updating:', updateError.message);
 	} else {
 		console.log('✅ Updated successfully!');
+		if (item.type === 'movie') {
+			const nextYt = (updates as any).video_id ?? item.video_id;
+			if (nextYt) {
+				await maybeAutoImportTracklistFromYouTube(Number(itemId), String(nextYt));
+			}
+		}
 	}
 }
 

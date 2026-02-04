@@ -6,7 +6,7 @@
 	"tv_heroDescription": "Discover indie films, tour edits, and community spotlights—updated as the global scene grows.",
 	"tv_heroCtaWatch": "Start watching",
 	"tv_heroCtaSubmit": "Submit a film",
-	"tv_searchPlaceholder": "Search by title, creator, or athlete...",
+	"tv_searchPlaceholder": "Search by title, creator, athlete, or song...",
 	"tv_back": "Back",
 	"tv_playNow": "Play now",
 	"tv_watchOn": "Watch on ",
@@ -20,6 +20,7 @@
 	"tv_showPaid": "Paid",
 	"tv_showWatched": "watched",
 	"tv_close": "Close"
+	,"tv_exitConfirm": "Press back again to exit"
 	,"tv_noPlayer": "No player available"
 	,"tv_sort_random": "Sort: Default"
 	,"tv_sort_titleAsc": "Title A–Z"

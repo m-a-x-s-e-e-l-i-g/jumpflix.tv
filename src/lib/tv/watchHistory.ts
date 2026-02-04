@@ -40,6 +40,8 @@ type PendingRecord =
 	| { kind: 'upsert'; progress: WatchProgress }
 	| { kind: 'delete'; mediaId: string };
 
+type WatchHistoryInsert = Database['public']['Tables']['watch_history']['Insert'];
+
 const progressCache = new Map<string, WatchProgress>();
 const pending = new Map<string, PendingRecord>();
 let pendingClearAll = false;
@@ -189,7 +191,7 @@ function fromRow(row: {
 	};
 }
 
-function toRow(progress: WatchProgress) {
+function toRow(progress: WatchProgress): WatchHistoryInsert {
 	if (!currentUserId) throw new Error('Cannot persist watch progress without an authenticated user');
 	const row: Database['public']['Tables']['watch_history']['Insert'] = {
 		user_id: currentUserId,

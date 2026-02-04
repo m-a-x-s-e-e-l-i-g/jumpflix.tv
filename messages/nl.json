@@ -6,7 +6,7 @@
 	"tv_heroDescription": "Ontdek indie films, tour edits en community spotlights — voortdurend aangevuld door de scene.",
 	"tv_heroCtaWatch": "Start met kijken",
 	"tv_heroCtaSubmit": "Film insturen",
-	"tv_searchPlaceholder": "Zoek op titel, maker of atleet...",
+	"tv_searchPlaceholder": "Zoek op titel, maker, atleet of nummer...",
 	"tv_back": "Terug",
 	"tv_playNow": "Nu afspelen",
 	"tv_watchOn": "Bekijk op ",
@@ -20,6 +20,7 @@
 	"tv_showPaid": "Betaald",
 	"tv_showWatched": "bekeken",
 	"tv_close": "Sluiten"
+	,"tv_exitConfirm": "Druk nogmaals op terug om af te sluiten"
 	,"tv_noPlayer": "Geen speler beschikbaar"
 	,"tv_sort_random": "Sorteren: Standaard"
 	,"tv_sort_titleAsc": "Titel A–Z"

@@ -64,7 +64,7 @@
 </svelte:head>
 
 <div class="mx-auto w-full max-w-6xl p-4 md:p-8">
-	<div class="mb-6 rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-6 md:p-8">
+	<div class="mt-[50px] mb-6 rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-6 md:p-8">
 		<a
 			href="/stats"
 			class="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"

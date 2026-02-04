@@ -31,6 +31,55 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			watch_history: {
+				Row: {
+					user_id: string;
+					media_id: string;
+					media_type: 'movie' | 'series' | 'episode';
+					position_seconds: number;
+					duration_seconds: number;
+					percent_watched: number;
+					is_watched: boolean;
+					status: 'active' | 'cleared';
+					watched_at: string;
+					updated_at: string;
+					metadata: Json;
+				};
+				Insert: {
+					user_id: string;
+					media_id: string;
+					media_type: 'movie' | 'series' | 'episode';
+					position_seconds?: number;
+					duration_seconds?: number;
+					percent_watched?: number;
+					is_watched?: boolean;
+					status?: 'active' | 'cleared';
+					watched_at?: string;
+					updated_at?: string;
+					metadata?: Json;
+				};
+				Update: {
+					user_id?: string;
+					media_id?: string;
+					media_type?: 'movie' | 'series' | 'episode';
+					position_seconds?: number;
+					duration_seconds?: number;
+					percent_watched?: number;
+					is_watched?: boolean;
+					status?: 'active' | 'cleared';
+					watched_at?: string;
+					updated_at?: string;
+					metadata?: Json;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'watch_history_user_id_fkey';
+						columns: ['user_id'];
+						referencedRelation: 'users';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			media_items: {
 				Row: {
 					id: number;
@@ -334,6 +383,7 @@ export type Database = {
 					rating_count: number;
 					average_rating: number;
 				};
+				Relationships: [];
 			};
 			media_facets_view: {
 				Row: {
@@ -350,9 +400,56 @@ export type Database = {
 					facet_length: 'short' | 'medium' | 'feature' | 'long-feature' | null;
 					facet_era: '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000' | null;
 				};
+				Relationships: [];
 			};
 		};
-		Functions: {};
+		Functions: {
+			delete_user_account: {
+				Args: Record<string, never>;
+				Returns: undefined;
+			};
+			admin_stats_overview: {
+				Args: Record<string, never>;
+				Returns: {
+					total_users: number;
+					users_signed_in_last_15m: number;
+					users_signed_in_last_24h: number;
+					ratings_count: number;
+					average_rating: number;
+					watch_history_rows: number;
+					watch_users: number;
+					watched_items: number;
+					total_position_seconds: number;
+					total_duration_seconds: number;
+					avg_percent_watched: number;
+				};
+			};
+			admin_watch_activity: {
+				Args: { days?: number };
+				Returns: {
+					day: string;
+					active_users: number;
+					updates: number;
+					watched_updates: number;
+				}[];
+			};
+			admin_ratings_distribution: {
+				Args: Record<string, never>;
+				Returns: {
+					rating: number;
+					count: number;
+				}[];
+			};
+			admin_top_watched_media: {
+				Args: { limit_n?: number };
+				Returns: {
+					media_id: string;
+					media_type: string;
+					watchers: number;
+					avg_percent: number;
+				}[];
+			};
+		};
 		Enums: {};
 		CompositeTypes: {};
 	};

@@ -21,6 +21,8 @@
 		SheetTitle
 	} from '$lib/components/ui/sheet';
 	import CogIcon from '@lucide/svelte/icons/cog';
+	import HomeIcon from '@lucide/svelte/icons/home';
+	import BarChart3Icon from '@lucide/svelte/icons/bar-chart-3';
 	import GithubIcon from '@lucide/svelte/icons/github';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import { Toaster, toast } from 'svelte-sonner';
@@ -61,6 +63,7 @@
 	let systemReduceMotion = $state(false);
 
 	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
+	const isStatsRoute = $derived($page.url.pathname === '/stats');
 
 	let lastScrollY = 0;
 	const scrollSubscribers = new Set<ScrollSubscriber>();
@@ -627,6 +630,28 @@
 			</SheetTrigger>
 
 			<HelpTipsButton />
+
+			{#if isStatsRoute}
+				<a
+					href="/"
+					aria-label="Catalog"
+					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+				>
+					<HomeIcon class="size-5" />
+					<span class="sr-only">Catalog</span>
+				</a>
+			{/if}
+
+			{#if !isStatsRoute}
+				<a
+					href="/stats"
+					aria-label="Stats"
+					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+				>
+					<BarChart3Icon class="size-5" />
+					<span class="sr-only">Stats</span>
+				</a>
+			{/if}
 			
 			<UserProfileButton />
 		</div>
@@ -716,7 +741,7 @@
 		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
 		{#if $page.error}
 			{@render children?.()}
-		{:else if isAdminRoute}
+		{:else if isAdminRoute || isStatsRoute}
 			{@render children?.()}
 		{:else}
 			<TvPage

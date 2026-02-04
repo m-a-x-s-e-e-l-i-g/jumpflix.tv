@@ -73,10 +73,8 @@ function calculateEraFacet(year: string | null): '2000s' | '2010s' | '2020s' | '
 	return 'pre-2000';
 }
 
-function mapMovie(row: MediaItemWithSeasons): Movie {
-	const ratingSummary = Array.isArray(row.media_ratings_summary) && row.media_ratings_summary.length > 0
-		? row.media_ratings_summary[0]
-		: null;
+
+function mapMovie(row: MediaItemWithSeasonsAndTracks, ratingSummary: MediaRatingSummaryRow | null): Movie {
 	
 	const tracksSource = Array.isArray((row as any).video_songs) ? ((row as any).video_songs as VideoSongWithSong[]) : [];
 	const tracks: VideoTrack[] | undefined = tracksSource.length
@@ -199,15 +197,12 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 			return [];
 		}
 
-		if (ratingError) {
-			console.error('[content-service] Failed to load rating summaries:', ratingError);
-		}
-
 		if (!data) {
 			return [];
 		}
 
 		const rows = data as unknown as MediaItemWithSeasonsAndTracks[];
+		const summaryByMediaId = new Map<number, MediaRatingSummaryRow>();
 
 		const mediaIds = rows.map((row) => row.id);
 		if (mediaIds.length) {
@@ -219,19 +214,15 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 			if (ratingsError) {
 				console.warn('[content-service] Failed to load rating summaries:', ratingsError);
 			} else if (ratingRows && ratingRows.length) {
-				const summaryByMediaId = new Map<number, MediaRatingSummaryRow>();
 				for (const summary of ratingRows) {
 					summaryByMediaId.set(summary.media_id, summary);
 				}
-				for (const row of rows) {
-					const summary = summaryByMediaId.get(row.id);
-					row.media_ratings_summary = summary ? [summary] : [];
-				}
 			}
 		}
-		const items: ContentItem[] = rows.map((row) =>
-			isSeriesRow(row) ? mapSeries(row) : mapMovie(row)
-		);
+		const items: ContentItem[] = rows.map((row) => {
+			const ratingSummary = summaryByMediaId.get(row.id) ?? null;
+			return isSeriesRow(row) ? mapSeries(row, ratingSummary) : mapMovie(row, ratingSummary);
+		});
 
 		return items.sort((a, b) => a.title.localeCompare(b.title));
 	} catch (err) {

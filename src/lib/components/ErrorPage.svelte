@@ -2,11 +2,12 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { goto } from '$app/navigation';
 
-	let { status = 500, title = '', message: _unusedMessage = '' } = $props<{ status?: number; title?: string; message?: string }>();
+	let { status = 500, title = '', message = '' } = $props<{ status?: number; title?: string; message?: string }>();
 
 	const statusLabel = $derived(getStatusLabel(status));
 	const displayTitle = $derived(title?.trim() || statusLabel);
 	const displayDescription = $derived(`Error ${status}`);
+	const detailMessage = $derived(message?.trim() || '');
 	const metaDescription = $derived(`${status} - ${statusLabel}`);
 
 	function getStatusLabel(code: number): string {
@@ -44,6 +45,9 @@
 
 		<h1 class="error-heading">{displayTitle}</h1>
 		<p class="error-description">{displayDescription}</p>
+		{#if detailMessage}
+			<p class="error-detail">{detailMessage}</p>
+		{/if}
 
 		<div class="error-actions">
 			<button type="button" class="primary-action" onclick={goHome}>
@@ -97,6 +101,15 @@
 		text-transform: uppercase;
 		letter-spacing: 0.14em;
 		color: hsl(var(--muted-foreground));
+	}
+
+	.error-detail {
+		margin-top: -0.25rem;
+		font-size: 0.95rem;
+		line-height: 1.4;
+		color: hsl(var(--foreground));
+		opacity: 0.9;
+		max-width: 42ch;
 	}
 
 	.error-actions {

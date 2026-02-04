@@ -193,7 +193,7 @@ function fromRow(row: {
 
 function toRow(progress: WatchProgress): WatchHistoryInsert {
 	if (!currentUserId) throw new Error('Cannot persist watch progress without an authenticated user');
-	return {
+	const row: Database['public']['Tables']['watch_history']['Insert'] = {
 		user_id: currentUserId,
 		media_id: progress.mediaId,
 		media_type: progress.type,
@@ -204,6 +204,7 @@ function toRow(progress: WatchProgress): WatchHistoryInsert {
 		status: 'active',
 		watched_at: progress.watchedAt
 	};
+	return row;
 }
 
 export function parseWatchedAt(value: string | undefined | null): number {

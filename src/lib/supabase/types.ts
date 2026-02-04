@@ -6,7 +6,8 @@ export type Json =
 	| { [key: string]: Json | undefined }
 	| Json[];
 
-export interface Database {
+
+export type Database = {
 	public: {
 		Tables: {
 			user_preferences: {
@@ -404,10 +405,52 @@ export interface Database {
 		};
 		Functions: {
 			delete_user_account: {
-				Args: Record<PropertyKey, never>;
+				Args: Record<string, never>;
 				Returns: undefined;
+			};
+			admin_stats_overview: {
+				Args: Record<string, never>;
+				Returns: {
+					total_users: number;
+					users_signed_in_last_15m: number;
+					users_signed_in_last_24h: number;
+					ratings_count: number;
+					average_rating: number;
+					watch_history_rows: number;
+					watch_users: number;
+					watched_items: number;
+					total_position_seconds: number;
+					total_duration_seconds: number;
+					avg_percent_watched: number;
+				};
+			};
+			admin_watch_activity: {
+				Args: { days?: number };
+				Returns: {
+					day: string;
+					active_users: number;
+					updates: number;
+					watched_updates: number;
+				}[];
+			};
+			admin_ratings_distribution: {
+				Args: Record<string, never>;
+				Returns: {
+					rating: number;
+					count: number;
+				}[];
+			};
+			admin_top_watched_media: {
+				Args: { limit_n?: number };
+				Returns: {
+					media_id: string;
+					media_type: string;
+					watchers: number;
+					avg_percent: number;
+				}[];
 			};
 		};
 		Enums: {};
+		CompositeTypes: {};
 	};
-}
+};

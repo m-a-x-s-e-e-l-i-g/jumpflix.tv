@@ -11,9 +11,9 @@ type SongRow = Database['public']['Tables']['songs']['Row'];
 type SeriesSeasonWithEpisodes = SeriesSeasonRow & { 
 	series_episodes?: SeriesEpisodeRow[] | null;
 };
-type MediaItemWithSeasons = MediaItemRow & { 
+
+type MediaItemWithSeasons = MediaItemRow & {
 	series_seasons?: SeriesSeasonWithEpisodes[] | null;
-	media_ratings_summary?: MediaRatingSummaryRow[] | null;
 };
 
 type VideoSongWithSong = VideoSongRow & { song?: SongRow | null };
@@ -73,10 +73,8 @@ function calculateEraFacet(year: string | null): '2000s' | '2010s' | '2020s' | '
 	return 'pre-2000';
 }
 
-function mapMovie(row: MediaItemWithSeasons): Movie {
-	const ratingSummary = Array.isArray(row.media_ratings_summary) && row.media_ratings_summary.length > 0
-		? row.media_ratings_summary[0]
-		: null;
+
+function mapMovie(row: MediaItemWithSeasonsAndTracks, ratingSummary: MediaRatingSummaryRow | null): Movie {
 	
 	const tracksSource = Array.isArray((row as any).video_songs) ? ((row as any).video_songs as VideoSongWithSong[]) : [];
 	const tracks: VideoTrack[] | undefined = tracksSource.length
@@ -128,7 +126,7 @@ function mapMovie(row: MediaItemWithSeasons): Movie {
 	});
 }
 
-function mapSeason(row: SeriesSeasonRow): Season {
+function mapSeason(row: Pick<SeriesSeasonRow, 'id' | 'season_number' | 'playlist_id' | 'custom_name'>): Season {
 	return removeUndefined({
 		id: row.id,
 		seasonNumber: row.season_number,
@@ -137,7 +135,7 @@ function mapSeason(row: SeriesSeasonRow): Season {
 	});
 }
 
-function mapSeries(row: MediaItemWithSeasons): Series {
+function mapSeries(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryRow | null): Series {
 	const seasonsSource = Array.isArray(row.series_seasons) ? row.series_seasons : [];
 	const seasons = seasonsSource
 		.map((season) => mapSeason(season))
@@ -151,10 +149,6 @@ function mapSeries(row: MediaItemWithSeasons): Series {
 		}
 		return total;
 	}, 0);
-
-	const ratingSummary = Array.isArray(row.media_ratings_summary) && row.media_ratings_summary.length > 0
-		? row.media_ratings_summary[0]
-		: null;
 
 	return removeUndefined({
 		id: row.id,
@@ -208,6 +202,7 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 		}
 
 		const rows = data as unknown as MediaItemWithSeasonsAndTracks[];
+		const summaryByMediaId = new Map<number, MediaRatingSummaryRow>();
 
 		const mediaIds = rows.map((row) => row.id);
 		if (mediaIds.length) {
@@ -219,19 +214,15 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 			if (ratingsError) {
 				console.warn('[content-service] Failed to load rating summaries:', ratingsError);
 			} else if (ratingRows && ratingRows.length) {
-				const summaryByMediaId = new Map<number, MediaRatingSummaryRow>();
 				for (const summary of ratingRows) {
 					summaryByMediaId.set(summary.media_id, summary);
 				}
-				for (const row of rows) {
-					const summary = summaryByMediaId.get(row.id);
-					row.media_ratings_summary = summary ? [summary] : [];
-				}
 			}
 		}
-		const items: ContentItem[] = rows.map((row) =>
-			isSeriesRow(row) ? mapSeries(row) : mapMovie(row)
-		);
+		const items: ContentItem[] = rows.map((row) => {
+			const ratingSummary = summaryByMediaId.get(row.id) ?? null;
+			return isSeriesRow(row) ? mapSeries(row, ratingSummary) : mapMovie(row, ratingSummary);
+		});
 
 		return items.sort((a, b) => a.title.localeCompare(b.title));
 	} catch (err) {

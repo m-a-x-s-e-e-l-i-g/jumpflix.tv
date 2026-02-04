@@ -1,5 +1,6 @@
 import { env } from '$env/dynamic/public';
 import { fetchAllContent } from '$lib/server/content-service';
+import { createSupabaseClient } from '$lib/server/supabaseClient';
 import type { ContentItem } from '$lib/tv/types';
 
 export const prerender = true;
@@ -19,28 +20,57 @@ function xmlEscape(input: string): string {
 }
 
 export const GET = async () => {
+  const now = new Date().toISOString();
+
   // Base routes
-  const entries: Array<{ path: string; item: ContentItem | null }> = [{ path: '/', item: null }];
+  const entries: Array<{ path: string; lastmod?: string }> = [{ path: '/', lastmod: undefined }];
+
+  // Public stats overview
+  entries.push({ path: '/stats', lastmod: undefined });
 
   const content = await fetchAllContent();
   for (const item of content) {
     if (!item?.slug) continue;
     const path = item.type === 'movie' ? `/movie/${item.slug}` : `/series/${item.slug}`;
-    entries.push({ path, item });
+    const lastmod = item.updatedAt ? new Date(item.updatedAt).toISOString() : undefined;
+    entries.push({ path, lastmod });
+  }
+
+  // Personal stats pages (UUID routes)
+  // We include users that have rated something recently to avoid generating an unbounded sitemap.
+  try {
+    const supabase = createSupabaseClient();
+    const { data: ratingRows, error: ratingsError } = await supabase
+      .from('ratings')
+      .select('user_id, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(10000);
+    if (ratingsError) throw ratingsError;
+
+    const lastmodByUser = new Map<string, string>();
+    for (const row of ratingRows ?? []) {
+      const userId = (row as any).user_id as string | undefined;
+      const updatedAt = (row as any).updated_at as string | undefined;
+      if (!userId || lastmodByUser.has(userId)) continue;
+      lastmodByUser.set(userId, updatedAt ? new Date(updatedAt).toISOString() : now);
+      if (lastmodByUser.size >= 2000) break;
+    }
+
+    for (const [userId, lastmod] of lastmodByUser.entries()) {
+      entries.push({ path: `/stats/${userId}`, lastmod });
+    }
+  } catch {
+    // Ignore: sitemap still works without Supabase during prerender
   }
 
   const deduped = Array.from(new Map(entries.map((entry) => [entry.path, entry])).values());
 
-  const now = new Date().toISOString();
   const urls = deduped
     .sort((a, b) => a.path.localeCompare(b.path))
-    .map(({ path, item }) => {
-      let lastmod = now;
-      if (item && item.updatedAt) {
-        lastmod = new Date(item.updatedAt).toISOString();
-      }
+    .map(({ path, lastmod }) => {
+      const effectiveLastmod = lastmod ?? now;
       const loc = `${SITE}${path}`;
-      return `  <url>\n    <loc>${xmlEscape(loc)}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`;
+      return `  <url>\n    <loc>${xmlEscape(loc)}</loc>\n    <lastmod>${effectiveLastmod}</lastmod>\n  </url>`;
     })
     .join('\n');
 

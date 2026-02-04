@@ -8,6 +8,7 @@
 	import UserCheckIcon from '@lucide/svelte/icons/user-check';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import BarChart3Icon from '@lucide/svelte/icons/bar-chart-3';
 	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
 	import * as m from '$lib/paraglide/messages';
 	import { toast } from 'svelte-sonner';
@@ -121,6 +122,15 @@
 					<SettingsIcon class="size-4" />
 					<span>Settings</span>
 				</button>
+
+				<a
+					href={`/stats/${$user.id}`}
+					onclick={() => (showUserMenu = false)}
+					class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
+				>
+					<BarChart3Icon class="size-4" />
+					<span>My stats</span>
+				</a>
 				
 				<button
 					onclick={handleSignOut}

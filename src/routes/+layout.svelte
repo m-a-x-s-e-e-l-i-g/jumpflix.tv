@@ -63,7 +63,9 @@
 	let systemReduceMotion = $state(false);
 
 	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
-	const isStatsRoute = $derived($page.url.pathname === '/stats');
+	const isStatsRoute = $derived(
+		$page.url.pathname === '/stats' || $page.url.pathname.startsWith('/stats/')
+	);
 
 	let lastScrollY = 0;
 	const scrollSubscribers = new Set<ScrollSubscriber>();

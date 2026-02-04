@@ -408,6 +408,52 @@ export type Database = {
 				Args: Record<string, never>;
 				Returns: undefined;
 			};
+			user_stats_overview: {
+				Args: { target_user: string };
+				Returns: {
+					found: boolean;
+					username: string | null;
+					ratings_count: number;
+					average_rating: number;
+					watched_items: number;
+					watched_movies: number;
+					watched_series: number;
+					watched_episodes: number;
+					total_position_seconds: number;
+					total_duration_seconds: number;
+					avg_percent_watched: number;
+					catalog_movies: number;
+					catalog_episodes: number;
+				};
+			};
+			user_ratings_distribution: {
+				Args: { target_user: string };
+				Returns: {
+					rating: number;
+					count: number;
+				}[];
+			};
+			user_rated_media: {
+				Args: { target_user: string };
+				Returns: {
+					media_id: number;
+					rating: number;
+					updated_at: string;
+					type: string;
+					title: string;
+					slug: string;
+				}[];
+			};
+			user_watched_not_rated: {
+				Args: { target_user: string; limit_n?: number };
+				Returns: {
+					id: number;
+					type: string;
+					title: string;
+					slug: string;
+					last_watched: string;
+				}[];
+			};
 			admin_stats_overview: {
 				Args: Record<string, never>;
 				Returns: {

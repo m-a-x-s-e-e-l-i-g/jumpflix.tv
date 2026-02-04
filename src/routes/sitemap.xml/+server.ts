@@ -36,33 +36,6 @@ export const GET = async () => {
     entries.push({ path, lastmod });
   }
 
-  // Personal stats pages (UUID routes)
-  // We include users that have rated something recently to avoid generating an unbounded sitemap.
-  try {
-    const supabase = createSupabaseClient();
-    const { data: ratingRows, error: ratingsError } = await supabase
-      .from('ratings')
-      .select('user_id, updated_at')
-      .order('updated_at', { ascending: false })
-      .limit(10000);
-    if (ratingsError) throw ratingsError;
-
-    const lastmodByUser = new Map<string, string>();
-    for (const row of ratingRows ?? []) {
-      const userId = (row as any).user_id as string | undefined;
-      const updatedAt = (row as any).updated_at as string | undefined;
-      if (!userId || lastmodByUser.has(userId)) continue;
-      lastmodByUser.set(userId, updatedAt ? new Date(updatedAt).toISOString() : now);
-      if (lastmodByUser.size >= 2000) break;
-    }
-
-    for (const [userId, lastmod] of lastmodByUser.entries()) {
-      entries.push({ path: `/stats/${userId}`, lastmod });
-    }
-  } catch {
-    // Ignore: sitemap still works without Supabase during prerender
-  }
-
   const deduped = Array.from(new Map(entries.map((entry) => [entry.path, entry])).values());
 
   const urls = deduped

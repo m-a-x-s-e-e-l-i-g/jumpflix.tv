@@ -523,7 +523,7 @@
   }
 
   const closeButtonClass =
-    'absolute right-5 top-5 inline-flex size-8 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/20';
+    'absolute right-6 top-6 inline-flex size-8 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/20';
 </script>
 
 <Dialog.Root bind:open>
@@ -533,7 +533,7 @@
   <Dialog.Portal>
     <Dialog.Overlay class="fixed inset-0 z-40 bg-black/78 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
     <Dialog.Content
-      class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-background px-6 py-7 text-foreground shadow-[0_40px_80px_-30px_rgba(0,0,0,0.75)] focus:outline-none"
+      class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-1/2 top-1/2 z-50 w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-background p-0 text-foreground shadow-[0_40px_80px_-30px_rgba(0,0,0,0.75)] focus:outline-none max-h-[calc(100dvh-2rem)] overflow-hidden"
       aria-describedby="content-suggestion-description"
     >
       <button type="button" class={closeButtonClass} onclick={() => (open = false)}>
@@ -541,7 +541,8 @@
         <span class="sr-only">Close</span>
       </button>
 
-      <div class="flex flex-col gap-6">
+      <div class="max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain px-6 py-7">
+        <div class="flex flex-col gap-6">
         <header class="space-y-2">
           <Dialog.Title class="text-xl font-semibold text-foreground">Suggest a change</Dialog.Title>
           <p id="content-suggestion-description" class="text-sm text-muted-foreground">
@@ -1064,6 +1065,7 @@
           >
             {isSubmitting ? 'Sending…' : 'Submit'}
           </button>
+        </div>
         </div>
       </div>
     </Dialog.Content>

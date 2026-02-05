@@ -6,14 +6,25 @@
 
   let selectedId: number | null = null;
 
+  $: allSuggestions = data.suggestions ?? [];
+  $: pendingSuggestions = allSuggestions.filter(
+    (s) => String(s?.status ?? '').toLowerCase() === 'pending'
+  );
+  $: approvedSuggestions = allSuggestions.filter(
+    (s) => String(s?.status ?? '').toLowerCase() === 'approved'
+  );
+  $: declinedSuggestions = allSuggestions.filter(
+    (s) => String(s?.status ?? '').toLowerCase() === 'declined'
+  );
+
   $: {
     const fromUrl = Number(($page.url.searchParams.get('id') ?? ''));
     selectedId = Number.isFinite(fromUrl) && fromUrl > 0 ? fromUrl : null;
   }
 
   $: selected = selectedId
-    ? (data.suggestions ?? []).find((s) => Number(s.id) === Number(selectedId))
-    : (data.suggestions ?? [])[0] ?? null;
+    ? allSuggestions.find((s) => Number(s.id) === Number(selectedId))
+    : pendingSuggestions[0] ?? null;
 
   function fmtDate(value?: string | null) {
     if (!value) return '';
@@ -41,6 +52,14 @@
     if (s === 'approved') return 'border-green-500/30 bg-green-500/10 text-green-100';
     return 'border-white/10 bg-white/5 text-white/70';
   }
+
+  function suggestionCardClass(s: any, isSelected: boolean) {
+    if (isSelected) return 'border-red-500/60 bg-red-500/10';
+    const status = String(s?.status ?? '').toLowerCase();
+    if (status === 'approved') return 'border-green-500/30 bg-green-500/10';
+    if (status === 'declined') return 'border-white/10 bg-white/0 opacity-70';
+    return 'border-white/10 bg-white/0';
+  }
 </script>
 
 <div class="mx-auto w-full max-w-6xl px-6 pt-20 pb-10">
@@ -55,17 +74,18 @@
     <aside class="rounded-2xl border border-white/10 bg-white/5 p-4">
       <div class="text-sm font-medium text-white/80">Queue</div>
       <div class="mt-3 space-y-2 max-h-[70vh] overflow-auto pr-1">
-        {#if !data.suggestions?.length}
+        {#if !allSuggestions.length}
           <div class="text-sm text-white/60">No suggestions yet.</div>
+        {:else if !pendingSuggestions.length}
+          <div class="text-sm text-white/60">Nothing to do</div>
         {:else}
-          {#each data.suggestions as s (s.id)}
+          {#each pendingSuggestions as s (s.id)}
             <a
               href={`/admin/suggestions?id=${s.id}`}
-              class={`block rounded-xl border px-3 py-2 transition hover:bg-white/5 ${selected && s.id === selected.id
-                ? 'border-red-500/60 bg-red-500/10'
-                : String(s.status ?? '').toLowerCase() === 'approved'
-                  ? 'border-green-500/30 bg-green-500/10'
-                  : 'border-white/10 bg-white/0'}`}
+              class={`block rounded-xl border px-3 py-2 transition hover:bg-white/5 ${suggestionCardClass(
+                s,
+                Boolean(selected && s.id === selected.id)
+              )}`}
             >
               <div class="flex items-center justify-between gap-3">
                 <div class="min-w-0">
@@ -81,11 +101,41 @@
           {/each}
         {/if}
       </div>
+
+      <div class="mt-5 text-sm font-medium text-white/80">Approved</div>
+      <div class="mt-3 space-y-2 max-h-[70vh] overflow-auto pr-1">
+        {#if approvedSuggestions.length}
+          {#each approvedSuggestions as s (s.id)}
+            <a
+              href={`/admin/suggestions?id=${s.id}`}
+              class={`block rounded-xl border px-3 py-2 transition hover:bg-white/5 ${suggestionCardClass(
+                s,
+                Boolean(selected && s.id === selected.id)
+              )}`}
+            >
+              <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="text-sm text-white truncate">{s.media?.title ?? `Media #${s.media_id}`}</div>
+                  <div class="text-xs text-white/60 truncate">
+                    <span>{s.kind} · </span>
+                    <span class="text-green-200">{s.status}</span>
+                  </div>
+                </div>
+                <div class="text-[10px] text-white/50 whitespace-nowrap">{fmtDate(s.created_at)}</div>
+              </div>
+            </a>
+          {/each}
+        {:else}
+          <div class="text-sm text-white/60">No approved suggestions.</div>
+        {/if}
+      </div>
     </aside>
 
     <section class="rounded-2xl border border-white/10 bg-white/5 p-5">
       {#if !selected}
-        <div class="text-sm text-white/60">Select a suggestion to review.</div>
+        <div class="text-sm text-white/60">
+          {pendingSuggestions.length === 0 ? 'Nothing to do' : 'Select a suggestion to review.'}
+        </div>
       {:else}
         <div class="flex items-start justify-between gap-4">
           <div>
@@ -144,19 +194,21 @@
               >
                 Save draft
               </button>
-              <button
-                type="submit"
-                formaction="?/decline"
-                class="inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-medium border border-red-500/30 bg-red-500/10 text-red-100 hover:bg-red-500/15 transition"
-              >
-                Decline
-              </button>
+              {#if String(selected.status ?? '').toLowerCase() === 'pending'}
+                <button
+                  type="submit"
+                  formaction="?/decline"
+                  class="inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-medium border border-red-500/30 bg-red-500/10 text-red-100 hover:bg-red-500/15 transition"
+                >
+                  Decline
+                </button>
+              {/if}
               <button
                 type="submit"
                 formaction="?/approve"
                 class="inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-medium bg-[#e50914] text-white hover:bg-[#ff1a27] transition"
               >
-                Approve & apply
+                {String(selected.status ?? '').toLowerCase() === 'approved' ? 'Re-apply changes' : 'Approve & apply'}
               </button>
             </div>
           </form>

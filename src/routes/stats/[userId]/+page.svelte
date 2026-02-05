@@ -8,6 +8,7 @@
 			stats: {
 				averageRating: number;
 				ratingCount: number;
+				suggestionsCount: number | null;
 				watchedCount: number;
 				watchedEpisodesCount: number;
 				watchedMoviesCount: number;
@@ -82,11 +83,22 @@
 		</div>
 	</div>
 
-	<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+	<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-5">
 		<div class="rounded-xl border p-4">
 			<div class="text-xs text-muted-foreground">Average rating</div>
 			<div class="mt-1 text-2xl font-semibold">{data.stats.averageRating.toFixed(2)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">{formatNumber(data.stats.ratingCount)} ratings</div>
+		</div>
+		<div class="rounded-xl border p-4">
+			<div class="text-xs text-muted-foreground">Suggestions submitted</div>
+			<div class="mt-1 text-2xl font-semibold">
+				{#if data.stats.suggestionsCount === null}
+					—
+				{:else}
+					{formatNumber(data.stats.suggestionsCount)}
+				{/if}
+			</div>
+			<div class="mt-1 text-xs text-muted-foreground">Content change reports</div>
 		</div>
 		<div class="rounded-xl border p-4">
 			<div class="text-xs text-muted-foreground">Watched items</div>

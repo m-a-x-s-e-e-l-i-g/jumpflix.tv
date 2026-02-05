@@ -69,7 +69,7 @@ export interface Song {
 
 export interface VideoTrack {
   position: number;
-  startOffsetSeconds: number;
+  startAtSeconds?: number;
   startTimecode?: string;
   source: 'automation' | 'manual';
   importSource?: 'youtube_chapters' | 'youtube_music' | 'mixed';

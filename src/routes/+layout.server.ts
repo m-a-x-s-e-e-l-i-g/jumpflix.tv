@@ -1,5 +1,6 @@
 import { fetchAllContent } from '$lib/server/content-service';
 import type { ContentItem, Series } from '$lib/tv/types';
+import { isAdminUser } from '$lib/server/admin';
 
 export const load = async ({ url, locals }) => {
 	// Get the authenticated session using safe method that validates JWT
@@ -48,7 +49,8 @@ export const load = async ({ url, locals }) => {
 			initialSeasonNumber,
 			// Pass session and user to all pages for auth state
 			session,
-			user
+			user,
+			isAdmin: isAdminUser(user)
 		};
 	} catch (error) {
 		console.error('[+layout.server] Error in load function:', error);
@@ -58,7 +60,8 @@ export const load = async ({ url, locals }) => {
 			initialEpisodeNumber: null, 
 			initialSeasonNumber: null,
 			session,
-			user
+			user,
+			isAdmin: isAdminUser(user)
 		};
 	}
 };

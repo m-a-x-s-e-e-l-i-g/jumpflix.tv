@@ -85,7 +85,7 @@ function mapMovie(row: MediaItemWithSeasonsAndTracks, ratingSummary: MediaRating
 					const song = vs.song as SongRow;
 					return removeUndefined({
 						position: vs.position,
-						startOffsetSeconds: vs.start_offset_seconds,
+						startAtSeconds: vs.start_offset_seconds,
 						startTimecode: vs.start_timecode ?? undefined,
 						source: (vs.source as 'automation' | 'manual') ?? 'manual',
 						importSource: (vs.import_source as any) ?? undefined,

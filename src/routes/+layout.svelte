@@ -32,6 +32,7 @@
 	import { showDetailsPanel } from '$lib/tv/store';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import UserProfileButton from '$lib/components/UserProfileButton.svelte';
+	import AdminMenuButton from '$lib/components/AdminMenuButton.svelte';
 	import HelpTipsButton from '$lib/components/HelpTipsButton.svelte';
 	import {
 		SCROLL_CONTEXT_KEY,
@@ -52,6 +53,7 @@
 			initialSeasonNumber: number | null;
 			session: any;
 			user: any;
+			isAdmin?: boolean;
 		};
 	}>();
 
@@ -633,7 +635,7 @@
 
 			<HelpTipsButton />
 
-			{#if isStatsRoute}
+			{#if isStatsRoute || isAdminRoute}
 				<a
 					href="/"
 					aria-label="Catalog"
@@ -653,6 +655,10 @@
 					<BarChart3Icon class="size-5" />
 					<span class="sr-only">Stats</span>
 				</a>
+			{/if}
+
+			{#if data?.isAdmin && $user}
+				<AdminMenuButton />
 			{/if}
 			
 			<UserProfileButton />

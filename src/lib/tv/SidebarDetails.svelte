@@ -29,6 +29,8 @@
   import { getUserRating, saveRating, getMediaRatingSummary, deleteRating } from '$lib/ratings';
   import AuthDialog from '$lib/components/AuthDialog.svelte';
   import FacetChips from '$lib/components/FacetChips.svelte';
+  import ContentSuggestionDialog from '$lib/components/ContentSuggestionDialog.svelte';
+  import PencilIcon from '@lucide/svelte/icons/pencil';
   import {
     dispatchRatingUpdated,
     RATING_UPDATED_EVENT,
@@ -514,6 +516,19 @@
   <div class={backdropOverlayClass}></div>
   
   <div class="space-y-4 relative z-10 flex-1">
+    {#if isAuthenticated}
+      <ContentSuggestionDialog
+        selected={selected}
+        selectedEpisode={selectedEpisode}
+        selectedSeasonNumber={selected?.type === 'series' ? selectedSeasonNum : null}
+        triggerAriaLabel="Suggest change / report issue"
+        triggerClass="absolute -top-3 -right-3 z-20 inline-flex items-center justify-center w-9 h-9 text-white/65 hover:text-white/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e50914]"
+      >
+        <svelte:fragment slot="trigger">
+          <PencilIcon class="w-4 h-4" />
+        </svelte:fragment>
+      </ContentSuggestionDialog>
+    {/if}
     <div>
   <h2 class="text-3xl font-serif font-light text-gray-100 tracking-wide mb-4">{selected.title}</h2>
     <div class="flex items-center gap-4 text-sm text-gray-400 mb-4">
@@ -641,9 +656,6 @@
           </div>
         {/if}
 
-        {#if Array.isArray(selected.tracks) && selected.tracks.length}
-          <Tracklist tracks={selected.tracks} />
-        {/if}
         {#if (selected as any).starring?.length}
           <div class="space-y-1">
             <span class="text-gray-400 block">Starring:</span>
@@ -659,6 +671,10 @@
               {/if}
             </div>
           </div>
+        {/if}
+
+        {#if Array.isArray(selected.tracks) && selected.tracks.length}
+          <Tracklist tracks={selected.tracks} />
         {/if}
       </div>
     {:else}

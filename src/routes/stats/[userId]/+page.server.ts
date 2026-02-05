@@ -7,6 +7,8 @@ export const load = async ({ params, locals, setHeaders }) => {
 	const userId = params.userId;
 	if (!UUID_RE.test(userId)) throw error(404, 'Not found');
 
+	const { user: viewer } = await locals.safeGetSession();
+
 	setHeaders({
 		'x-robots-tag': 'noindex, nofollow'
 	});
@@ -77,12 +79,24 @@ export const load = async ({ params, locals, setHeaders }) => {
 		href: `/${String(item.type ?? '')}/${String(item.slug ?? '')}`
 	}));
 
+	let suggestionsCount: number | null = null;
+	if (viewer?.id && viewer.id === userId) {
+		const { count, error: suggestionsError } = await (supabase as any)
+			.from('content_suggestions')
+			.select('id', { count: 'exact', head: true })
+			.eq('created_by', userId);
+		if (!suggestionsError) {
+			suggestionsCount = count ?? 0;
+		}
+	}
+
 	return {
 		username,
 		userId,
 		stats: {
 			averageRating: Number(overview.average_rating) || 0,
 			ratingCount: Number(overview.ratings_count) || 0,
+			suggestionsCount,
 			watchedCount: Number(overview.watched_items) || 0,
 			watchedEpisodesCount: Number(overview.watched_episodes) || 0,
 			watchedMoviesCount: Number(overview.watched_movies) || 0,

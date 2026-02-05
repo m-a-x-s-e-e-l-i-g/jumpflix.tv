@@ -17,6 +17,7 @@
   import { selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
   import { getProviderLink, type ProviderLink } from '$lib/tv/provider-links';
   import Tracklist from '$lib/tv/Tracklist.svelte';
+  import ContentSuggestionDialog from '$lib/components/ContentSuggestionDialog.svelte';
   import {
     getAllWatchProgress,
     setWatchedStatus,
@@ -30,6 +31,7 @@
   import { getUserRating, saveRating, getMediaRatingSummary, deleteRating } from '$lib/ratings';
   import AuthDialog from '$lib/components/AuthDialog.svelte';
   import FacetChips from '$lib/components/FacetChips.svelte';
+  import PencilIcon from '@lucide/svelte/icons/pencil';
   import {
     dispatchRatingUpdated,
     RATING_UPDATED_EVENT,
@@ -479,11 +481,24 @@
   <div class={overlayClass} transition:fade>
     <div class="flex-1 overflow-y-auto">
       <div class={headerClass}>
-  <button on:click={handleBack} class="flex items-center gap-2 text-sm font-medium text-white px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20">
+        <button on:click={handleBack} class="flex items-center gap-2 text-sm font-medium text-white px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
           { m.tv_back() }
         </button>
-  <h2 class="text-base line-clamp-2 pr-2 pl-2 text-white" style="margin:0;font-size:.9em!important;">{selected.title}</h2>
+        <h2 class="text-base line-clamp-2 pr-2 pl-2 text-white flex-1" style="margin:0;font-size:.9em!important;">{selected.title}</h2>
+        {#if isAuthenticated}
+          <ContentSuggestionDialog
+            selected={selected}
+            selectedEpisode={selectedEpisode}
+            selectedSeasonNumber={selected?.type === 'series' ? selectedSeasonNum : null}
+            triggerAriaLabel="Suggest change / report issue"
+            triggerClass="inline-flex items-center justify-center w-9 h-9 text-white/70 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e50914]"
+          >
+            <svelte:fragment slot="trigger">
+              <PencilIcon class="w-4 h-4" />
+            </svelte:fragment>
+          </ContentSuggestionDialog>
+        {/if}
       </div>
       <div class="relative">
         <!-- BlurHash placeholder layer for hero -->

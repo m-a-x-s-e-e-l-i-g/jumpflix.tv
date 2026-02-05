@@ -45,7 +45,7 @@ export type MediaPatch = {
 		title?: string;
 		artist?: string;
 		startTimecode?: string;
-		startOffsetSeconds?: number;
+		startAtSeconds?: number;
 		position?: number;
 	};
 	tracks_add?: any[];
@@ -152,13 +152,13 @@ export async function applyMediaPatch(
 				throw new Error('Track add requires title and artist (edit admin payload before approving)');
 			}
 
-			const startOffsetSecondsRaw = t?.startOffsetSeconds ?? t?.start_offset_seconds;
-			const startOffsetSeconds = Number.isFinite(Number(startOffsetSecondsRaw))
-				? Math.max(0, Math.floor(Number(startOffsetSecondsRaw)))
+			const startAtSecondsRaw = t?.startAtSeconds ?? t?.start_at_seconds ?? t?.startOffsetSeconds ?? t?.start_offset_seconds;
+			const startAtSeconds = Number.isFinite(Number(startAtSecondsRaw))
+				? Math.max(0, Math.floor(Number(startAtSecondsRaw)))
 				: null;
 			const startTimecode = String(t?.startTimecode ?? t?.start_timecode ?? '').trim() || null;
 			const parsedFromTc = startTimecode ? parseTimecodeToSeconds(startTimecode) : null;
-			const effectiveOffset = startOffsetSeconds ?? parsedFromTc;
+			const effectiveOffset = startAtSeconds ?? parsedFromTc;
 			if (effectiveOffset === null) throw new Error('Track add requires start offset seconds or a valid timecode');
 			const positionRaw = t?.position;
 			const position = Number.isFinite(Number(positionRaw)) ? Math.max(1, Math.floor(Number(positionRaw))) : 1;

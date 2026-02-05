@@ -35,6 +35,12 @@
 
   $: adminPayloadText = selected ? jsonPretty(selected.admin_payload ?? selected.payload ?? {}) : '';
   $: adminNoteText = selected?.admin_note ?? '';
+
+  function statusPillClass(status: unknown) {
+    const s = String(status ?? '').toLowerCase();
+    if (s === 'approved') return 'border-green-500/30 bg-green-500/10 text-green-100';
+    return 'border-white/10 bg-white/5 text-white/70';
+  }
 </script>
 
 <div class="mx-auto w-full max-w-6xl px-6 pt-20 pb-10">
@@ -55,12 +61,19 @@
           {#each data.suggestions as s (s.id)}
             <a
               href={`/admin/suggestions?id=${s.id}`}
-              class="block rounded-xl border px-3 py-2 transition hover:bg-white/5 ${selected && s.id === selected.id ? 'border-red-500/60 bg-red-500/10' : 'border-white/10 bg-white/0'}"
+              class={`block rounded-xl border px-3 py-2 transition hover:bg-white/5 ${selected && s.id === selected.id
+                ? 'border-red-500/60 bg-red-500/10'
+                : String(s.status ?? '').toLowerCase() === 'approved'
+                  ? 'border-green-500/30 bg-green-500/10'
+                  : 'border-white/10 bg-white/0'}`}
             >
               <div class="flex items-center justify-between gap-3">
                 <div class="min-w-0">
                   <div class="text-sm text-white truncate">{s.media?.title ?? `Media #${s.media_id}`}</div>
-                  <div class="text-xs text-white/60 truncate">{s.kind} · {s.status}</div>
+                  <div class="text-xs text-white/60 truncate">
+                    <span>{s.kind} · </span>
+                    <span class={String(s.status ?? '').toLowerCase() === 'approved' ? 'text-green-200' : 'text-white/60'}>{s.status}</span>
+                  </div>
                 </div>
                 <div class="text-[10px] text-white/50 whitespace-nowrap">{fmtDate(s.created_at)}</div>
               </div>
@@ -81,7 +94,7 @@
               <span class="inline-flex items-center gap-2">
                 <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-white/70">{selected.media_type}</span>
                 <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-white/70">{selected.kind}</span>
-                <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-white/70">{selected.status}</span>
+                <span class={`rounded-full border px-2 py-0.5 text-xs ${statusPillClass(selected.status)}`}>{selected.status}</span>
               </span>
             </div>
             {#if selected.target_scope === 'episode'}

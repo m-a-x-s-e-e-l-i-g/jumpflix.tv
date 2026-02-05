@@ -14,6 +14,7 @@
     FacetTheme,
     FacetType
   } from '$lib/tv/types';
+  import { parseTimecodeToSeconds } from '$lib/utils/timecode';
 
   let {
     selected,
@@ -86,7 +87,7 @@
   let trackTitle = $state('');
   let trackArtist = $state('');
   let trackStartTimecode = $state('');
-  let trackStartOffsetSeconds = $state<number | ''>('');
+  let trackStartAtSeconds = $state<number | ''>('');
   let trackPosition = $state<number | ''>('');
 
   const FACET_TYPE_OPTIONS: FacetType[] = ['fiction', 'documentary', 'session', 'event', 'tutorial'];
@@ -273,7 +274,7 @@
       trackTitle = '';
       trackArtist = '';
       trackStartTimecode = '';
-      trackStartOffsetSeconds = '';
+      trackStartAtSeconds = '';
       trackPosition = '';
 
       initial = {
@@ -346,14 +347,24 @@
     trackTitle = normString(selectedTrack?.song?.title);
     trackArtist = normString(selectedTrack?.song?.artist);
     trackStartTimecode = normString(selectedTrack?.startTimecode);
-    trackStartOffsetSeconds =
-      typeof selectedTrack?.startOffsetSeconds === 'number' && Number.isFinite(selectedTrack.startOffsetSeconds)
-        ? selectedTrack.startOffsetSeconds
+    trackStartAtSeconds =
+      typeof selectedTrack?.startAtSeconds === 'number' && Number.isFinite(selectedTrack.startAtSeconds)
+        ? selectedTrack.startAtSeconds
         : '';
     trackPosition =
       typeof selectedTrack?.position === 'number' && Number.isFinite(selectedTrack.position)
         ? selectedTrack.position
         : '';
+  });
+
+  $effect(() => {
+    if (!open) return;
+    if (kind !== 'tracks') return;
+
+    const parsed = parseTimecodeToSeconds(trackStartTimecode);
+    if (typeof parsed === 'number' && Number.isFinite(parsed) && parsed >= 0) {
+      trackStartAtSeconds = parsed;
+    }
   });
 
   function buildPayload(): any {
@@ -466,7 +477,7 @@
         title: title || undefined,
         artist: artist || undefined,
         startTimecode: trackStartTimecode.trim() || undefined,
-        startOffsetSeconds: typeof trackStartOffsetSeconds === 'number' ? trackStartOffsetSeconds : undefined,
+        startAtSeconds: typeof trackStartAtSeconds === 'number' ? trackStartAtSeconds : undefined,
         position: typeof trackPosition === 'number' ? trackPosition : undefined
       };
       payload.track = t;
@@ -945,7 +956,7 @@
                           <div class="min-w-0">
                             <div class="text-sm text-white truncate">{t.song.artist} — {t.song.title}</div>
                             <div class="text-xs text-white/50">
-                              {t.startTimecode ?? `${t.startOffsetSeconds}s`} • #{t.position}
+                              {t.startTimecode ?? (typeof t.startAtSeconds === 'number' ? `${t.startAtSeconds}s` : '—')} • #{t.position}
                             </div>
                           </div>
                         </label>
@@ -980,7 +991,7 @@
                           <div class="min-w-0">
                             <div class="text-sm text-white truncate">{t.song.artist} — {t.song.title}</div>
                             <div class="text-xs text-white/50">
-                              {t.startTimecode ?? `${t.startOffsetSeconds}s`} • #{t.position}
+                              {t.startTimecode ?? (typeof t.startAtSeconds === 'number' ? `${t.startAtSeconds}s` : '—')} • #{t.position}
                             </div>
                           </div>
                         </label>
@@ -993,10 +1004,6 @@
                     <label class="space-y-1">
                       <span class="text-xs text-white/70">Start timecode (mm:ss)</span>
                       <input bind:value={trackStartTimecode} class={editedInputClass(Boolean(trackStartTimecode.trim()))} />
-                    </label>
-                    <label class="space-y-1">
-                      <span class="text-xs text-white/70">Start offset seconds</span>
-                      <input type="number" min="0" bind:value={trackStartOffsetSeconds} class={editedInputClass(typeof trackStartOffsetSeconds === 'number')} />
                     </label>
                     <label class="space-y-1 sm:col-span-2">
                       <span class="text-xs text-white/70">Position</span>
@@ -1029,10 +1036,6 @@
                   <label class="space-y-1">
                     <span class="text-xs text-white/70">Start timecode (mm:ss)</span>
                     <input bind:value={trackStartTimecode} class={editedInputClass(Boolean(trackStartTimecode.trim()))} />
-                  </label>
-                  <label class="space-y-1">
-                    <span class="text-xs text-white/70">Start offset seconds</span>
-                    <input type="number" min="0" bind:value={trackStartOffsetSeconds} class={editedInputClass(typeof trackStartOffsetSeconds === 'number')} />
                   </label>
                   <label class="space-y-1 sm:col-span-2">
                     <span class="text-xs text-white/70">Position</span>

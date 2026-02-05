@@ -20,14 +20,13 @@
       const trimmed = tc.trim();
       if (trimmed) {
         const seconds = parseTimecodeToSeconds(trimmed);
-        if (seconds === 0) return null;
-        return trimmed;
+        if (seconds !== null) return trimmed;
       }
     }
 
-    const offsetSeconds = Number(track?.startOffsetSeconds);
-    if (Number.isFinite(offsetSeconds) && offsetSeconds > 0) {
-      return formatSecondsToTimecode(offsetSeconds);
+    const startAtSeconds = track?.startAtSeconds;
+    if (typeof startAtSeconds === 'number' && Number.isFinite(startAtSeconds) && startAtSeconds >= 0) {
+      return formatSecondsToTimecode(startAtSeconds);
     }
 
     return null;

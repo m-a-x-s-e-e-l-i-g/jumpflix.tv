@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { isAdminUser } from '$lib/server/admin';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { applyMediaPatch, applyNewEpisode, applyNewSeason, type MediaPatch } from '$lib/server/content-suggestions';
+import { trySendTelegramMessage } from '$lib/server/telegram';
 
 function asTrimmedString(value: unknown): string | null {
 	if (typeof value !== 'string') return null;
@@ -130,6 +131,21 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 		} catch (err: any) {
 			return json({ error: err?.message || 'Failed to apply admin suggestion' }, { status: 400 });
 		}
+	}
+
+	// Non-admin submissions: notify via Telegram when it enters the pending queue.
+	if (!isAdmin) {
+		const adminUrl = `${url.origin}/admin/suggestions?id=${suggestionId}`;
+		const scope = targetScope === 'episode' ? `episode S${seasonNumber}E${episodeNumber}` : 'media';
+		const notePreview = note ? note.slice(0, 200) : '';
+		const messageLines = [
+			`New pending content suggestion #${suggestionId}`,
+			adminUrl,
+			`${mediaType} · ${kind} · ${scope}`,
+			notePreview ? `Note: ${notePreview}${(note?.length ?? 0) > 200 ? '…' : ''}` : null
+		].filter(Boolean);
+
+		await trySendTelegramMessage(messageLines.join('\n'), { disableWebPagePreview: true });
 	}
 
 	return json({ ok: true, id: suggestionId, status: isAdmin ? 'approved' : 'pending' });

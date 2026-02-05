@@ -8,7 +8,7 @@
 	import { onMount, setContext } from 'svelte';
 	import { get } from 'svelte/store';
 	import type { Action } from 'svelte/action';
-	import { page } from '$app/stores';
+	import { navigating, page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import type { ContentItem } from '$lib/tv/types';
 	import { supabase } from '$lib/supabaseClient';
@@ -25,6 +25,7 @@
 	import BarChart3Icon from '@lucide/svelte/icons/bar-chart-3';
 	import GithubIcon from '@lucide/svelte/icons/github';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
+	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
 	import { Toaster, toast } from 'svelte-sonner';
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
@@ -68,6 +69,11 @@
 	const isStatsRoute = $derived(
 		$page.url.pathname === '/stats' || $page.url.pathname.startsWith('/stats/')
 	);
+	const isNavigatingToStats = $derived((() => {
+		const toPath = $navigating?.to?.url?.pathname;
+		if (!toPath) return false;
+		return toPath === '/stats' || toPath.startsWith('/stats/');
+	})());
 
 	let lastScrollY = 0;
 	const scrollSubscribers = new Set<ScrollSubscriber>();
@@ -761,6 +767,19 @@
 			{@render children?.()}
 		{/if}
 	{/key}
+
+	{#if isNavigatingToStats}
+		<div class="pointer-events-none fixed inset-0 z-50 flex items-start justify-center pt-28">
+			<div
+				role="status"
+				aria-live="polite"
+				class="inline-flex items-center gap-3 rounded-xl border border-border bg-background/90 px-4 py-3 text-sm text-muted-foreground shadow-sm"
+			>
+				<LoaderIcon class="size-5 animate-spin" />
+				<span>Loading stats…</span>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Global toast container -->
 	<Toaster richColors position="bottom-center" theme="dark" />

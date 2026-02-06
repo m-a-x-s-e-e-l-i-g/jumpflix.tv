@@ -71,6 +71,13 @@ export function parseDurationToMinutes(dur?: string): number {
   return minutes || Number.POSITIVE_INFINITY;
 }
 
+function parseAddedAt(item: ContentItem): number {
+  const raw = (item as any).createdAt ?? (item as any).updatedAt;
+  if (!raw || typeof raw !== 'string') return 0;
+  const ts = Date.parse(raw);
+  return Number.isFinite(ts) ? ts : 0;
+}
+
 function normalizeLoose(value: string): string {
   return value
     .toLowerCase()
@@ -156,6 +163,9 @@ export function filterAndSortContent(all: ContentItem[], rankMap: Map<string, nu
     return compareFn(a, b);
   };
   switch (state.sortBy) {
+    case 'added-desc':
+      sorted.sort(compareWithPriorities((a, b) => parseAddedAt(b) - parseAddedAt(a)));
+      break;
     case 'title-asc':
       sorted.sort(compareWithPriorities((a, b) => (a.title || '').localeCompare(b.title || '')));
       break;
@@ -203,6 +213,7 @@ export function hasPoster(item: ContentItem) {
 
 export const sortLabels: Record<SortBy, string> = {
   default: 'Sort: Default',
+  'added-desc': 'Recently added',
   'title-asc': 'Title A–Z',
   'year-desc': 'Year (newest)',
   'year-asc': 'Year (oldest)',

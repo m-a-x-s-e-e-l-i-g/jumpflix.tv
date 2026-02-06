@@ -122,6 +122,7 @@ function mapMovie(row: MediaItemWithSeasonsAndTracks, ratingSummary: MediaRating
 		averageRating: ratingSummary?.average_rating ?? undefined,
 		ratingCount: ratingSummary?.rating_count ?? undefined,
 		facets: mapFacets(row),
+		createdAt: row.created_at ?? undefined,
 		updatedAt: row.updated_at ?? undefined
 	});
 }
@@ -169,6 +170,7 @@ function mapSeries(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryR
 		averageRating: ratingSummary?.average_rating ?? undefined,
 		ratingCount: ratingSummary?.rating_count ?? undefined,
 		facets: mapFacets(row),
+		createdAt: row.created_at ?? undefined,
 		updatedAt: row.updated_at ?? undefined
 	});
 }

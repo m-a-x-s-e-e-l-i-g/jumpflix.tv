@@ -33,6 +33,7 @@ export interface BaseContent {
   averageRating?: number;
   ratingCount?: number;
   facets?: Facets;
+  createdAt?: string;
   updatedAt?: string;
 }
 
@@ -98,6 +99,7 @@ export interface Season {
 
 export type SortBy =
   | 'default'
+  | 'added-desc'
   | 'title-asc'
   | 'year-desc'
   | 'year-asc'

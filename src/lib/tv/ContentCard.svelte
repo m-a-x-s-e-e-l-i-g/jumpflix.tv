@@ -109,6 +109,16 @@
     updateWatchProgress();
   }
 
+  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  function isWithinLastWeek(value?: string): boolean {
+    if (!value || typeof value !== 'string') return false;
+    const ts = Date.parse(value);
+    if (!Number.isFinite(ts)) return false;
+    return Date.now() - ts <= ONE_WEEK_MS;
+  }
+
+  $: isRecentlyAdded = item.type === 'movie' && isWithinLastWeek((item as any).createdAt);
+
   $: isWatched = watchProgress?.isWatched || false;
   $: progressPercent = watchProgress?.percent || 0;
   $: hasProgress = !isWatched && progressPercent > 0 && progressPercent < 85;
@@ -191,6 +201,9 @@
     {/if}
 
     <div class="absolute top-2 left-2 flex gap-2 z-20">
+      {#if isRecentlyAdded}
+        <span class="bg-red-500 text-white px-2 py-1 rounded text-[10px] font-bold">NEW</span>
+      {/if}
       {#if item.paid}
         <span class="bg-yellow-500 text-black px-2 py-1 rounded text-[10px] font-bold">PAID</span>
       {/if}

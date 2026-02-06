@@ -88,7 +88,6 @@
   let trackArtist = $state('');
   let trackStartTimecode = $state('');
   let trackStartAtSeconds = $state<number | ''>('');
-  let trackPosition = $state<number | ''>('');
 
   const FACET_TYPE_OPTIONS: FacetType[] = ['fiction', 'documentary', 'session', 'event', 'tutorial'];
   const FACET_MOOD_OPTIONS: FacetMood[] = ['energetic', 'chill', 'gritty', 'wholesome', 'artistic'];
@@ -275,7 +274,6 @@
       trackArtist = '';
       trackStartTimecode = '';
       trackStartAtSeconds = '';
-      trackPosition = '';
 
       initial = {
         posterUrl: normString(selected.thumbnail),
@@ -350,10 +348,6 @@
     trackStartAtSeconds =
       typeof selectedTrack?.startAtSeconds === 'number' && Number.isFinite(selectedTrack.startAtSeconds)
         ? selectedTrack.startAtSeconds
-        : '';
-    trackPosition =
-      typeof selectedTrack?.position === 'number' && Number.isFinite(selectedTrack.position)
-        ? selectedTrack.position
         : '';
   });
 
@@ -477,8 +471,7 @@
         title: title || undefined,
         artist: artist || undefined,
         startTimecode: trackStartTimecode.trim() || undefined,
-        startAtSeconds: typeof trackStartAtSeconds === 'number' ? trackStartAtSeconds : undefined,
-        position: typeof trackPosition === 'number' ? trackPosition : undefined
+        startAtSeconds: typeof trackStartAtSeconds === 'number' ? trackStartAtSeconds : undefined
       };
       payload.track = t;
     }
@@ -957,7 +950,7 @@
                           <div class="min-w-0">
                             <div class="text-sm text-white truncate">{t.song.artist} — {t.song.title}</div>
                             <div class="text-xs text-white/50">
-                              {t.startTimecode ?? (typeof t.startAtSeconds === 'number' ? `${t.startAtSeconds}s` : '—')} • #{t.position}
+                              {t.startTimecode ?? (typeof t.startAtSeconds === 'number' ? `${t.startAtSeconds}s` : '—')}
                             </div>
                           </div>
                         </label>
@@ -992,7 +985,7 @@
                           <div class="min-w-0">
                             <div class="text-sm text-white truncate">{t.song.artist} — {t.song.title}</div>
                             <div class="text-xs text-white/50">
-                              {t.startTimecode ?? (typeof t.startAtSeconds === 'number' ? `${t.startAtSeconds}s` : '—')} • #{t.position}
+                              {t.startTimecode ?? (typeof t.startAtSeconds === 'number' ? `${t.startAtSeconds}s` : '—')}
                             </div>
                           </div>
                         </label>
@@ -1005,10 +998,6 @@
                     <label class="space-y-1">
                       <span class="text-xs text-white/70">Start timecode (mm:ss)</span>
                       <input bind:value={trackStartTimecode} class={editedInputClass(Boolean(trackStartTimecode.trim()))} />
-                    </label>
-                    <label class="space-y-1 sm:col-span-2">
-                      <span class="text-xs text-white/70">Position</span>
-                      <input type="number" min="1" bind:value={trackPosition} class={editedInputClass(typeof trackPosition === 'number')} />
                     </label>
                   </div>
                 {:else}
@@ -1037,10 +1026,6 @@
                   <label class="space-y-1">
                     <span class="text-xs text-white/70">Start timecode (mm:ss)</span>
                     <input bind:value={trackStartTimecode} class={editedInputClass(Boolean(trackStartTimecode.trim()))} />
-                  </label>
-                  <label class="space-y-1 sm:col-span-2">
-                    <span class="text-xs text-white/70">Position</span>
-                    <input type="number" min="1" bind:value={trackPosition} class={editedInputClass(typeof trackPosition === 'number')} />
                   </label>
                 </div>
               {/if}

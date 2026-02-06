@@ -160,8 +160,6 @@ export async function applyMediaPatch(
 			const parsedFromTc = startTimecode ? parseTimecodeToSeconds(startTimecode) : null;
 			const effectiveOffset = startAtSeconds ?? parsedFromTc;
 			if (effectiveOffset === null) throw new Error('Track add requires start offset seconds or a valid timecode');
-			const positionRaw = t?.position;
-			const position = Number.isFinite(Number(positionRaw)) ? Math.max(1, Math.floor(Number(positionRaw))) : 1;
 
 			const { error: upsertSongErr } = await supabase
 				.from('songs')
@@ -192,7 +190,6 @@ export async function applyMediaPatch(
 						song_id: song.id,
 						start_offset_seconds: effectiveOffset,
 						start_timecode: startTimecode,
-						position,
 						source: 'manual'
 					} as any,
 					{ onConflict: 'video_id,song_id' }

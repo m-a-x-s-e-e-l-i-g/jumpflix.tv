@@ -290,7 +290,6 @@ export type Database = {
 					song_id: number;
 					start_offset_seconds: number;
 					start_timecode: string | null;
-					position: number;
 					source: 'automation' | 'manual';
 					import_source: 'youtube_chapters' | 'youtube_music' | 'mixed' | null;
 					created_at: string;
@@ -302,7 +301,6 @@ export type Database = {
 					song_id: number;
 					start_offset_seconds: number;
 					start_timecode?: string | null;
-					position: number;
 					source?: 'automation' | 'manual';
 					import_source?: 'youtube_chapters' | 'youtube_music' | 'mixed' | null;
 					created_at?: string;
@@ -314,7 +312,6 @@ export type Database = {
 					song_id?: number;
 					start_offset_seconds?: number;
 					start_timecode?: string | null;
-					position?: number;
 					source?: 'automation' | 'manual';
 					import_source?: 'youtube_chapters' | 'youtube_music' | 'mixed' | null;
 					created_at?: string;

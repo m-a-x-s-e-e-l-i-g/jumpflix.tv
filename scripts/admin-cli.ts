@@ -201,7 +201,6 @@ async function importTracklistFromYouTubeDescription(
 	console.log(`Found ${candidates.length} candidate(s). Mapping to Spotify (best-effort)...`);
 	let imported = 0;
 	let skipped = 0;
-	let position = 1;
 	const sampleMisses: Array<{ title: string; artist?: string }> = [];
 	let fatalError: string | null = null;
 
@@ -219,12 +218,10 @@ async function importTracklistFromYouTubeDescription(
 				songId,
 				startOffsetSeconds: cand.startOffsetSeconds,
 				startTimecode: cand.startTimecode,
-				position,
 				source: 'automation',
 				importSource: importSource ?? undefined
 			});
 			imported++;
-			position++;
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : String(e);
 			// If Spotify is misconfigured or unavailable, continuing will just produce 0 imports.
@@ -378,14 +375,11 @@ async function manageTracklists() {
 			console.log('❌ Invalid timecode');
 			return;
 		}
-
-		const nextPosition = (tracks?.length || 0) + 1;
 		await upsertVideoSong(supabase, {
 			videoId: Number(movieId),
 			songId,
 			startOffsetSeconds: seconds,
 			startTimecode: timecode,
-			position: nextPosition,
 			source: 'manual'
 		});
 

@@ -80,11 +80,17 @@ function mapMovie(row: MediaItemWithSeasonsAndTracks, ratingSummary: MediaRating
 	const tracks: VideoTrack[] | undefined = tracksSource.length
 		? tracksSource
 				.filter((vs) => Boolean(vs.song))
-				.sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+				.sort((a, b) => {
+					const aStart = typeof a.start_offset_seconds === 'number' ? a.start_offset_seconds : 0;
+					const bStart = typeof b.start_offset_seconds === 'number' ? b.start_offset_seconds : 0;
+					if (aStart !== bStart) return aStart - bStart;
+					const aId = typeof a.id === 'number' ? a.id : 0;
+					const bId = typeof b.id === 'number' ? b.id : 0;
+					return aId - bId;
+				})
 				.map((vs) => {
 					const song = vs.song as SongRow;
 					return removeUndefined({
-						position: vs.position,
 						startAtSeconds: vs.start_offset_seconds,
 						startTimecode: vs.start_timecode ?? undefined,
 						source: (vs.source as 'automation' | 'manual') ?? 'manual',

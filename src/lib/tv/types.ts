@@ -69,7 +69,6 @@ export interface Song {
 }
 
 export interface VideoTrack {
-  position: number;
   startAtSeconds?: number;
   startTimecode?: string;
   source: 'automation' | 'manual';

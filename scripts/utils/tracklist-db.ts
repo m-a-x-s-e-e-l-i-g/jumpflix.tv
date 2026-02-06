@@ -35,7 +35,6 @@ export async function upsertVideoSong(
     songId: number;
     startOffsetSeconds: number;
     startTimecode?: string;
-    position: number;
     source: 'automation' | 'manual';
     importSource?: 'youtube_chapters' | 'youtube_music' | 'mixed';
   }
@@ -48,7 +47,6 @@ export async function upsertVideoSong(
         song_id: params.songId,
         start_offset_seconds: params.startOffsetSeconds,
         start_timecode: params.startTimecode ?? null,
-        position: params.position,
         source: params.source,
         import_source: params.importSource ?? null
       },
@@ -64,7 +62,6 @@ export async function fetchVideoTracklist(
 ): Promise<
   Array<{
     id: number;
-    position: number;
     start_offset_seconds: number;
     start_timecode: string | null;
     source: 'automation' | 'manual';
@@ -84,7 +81,6 @@ export async function fetchVideoTracklist(
     .select(
       `
       id,
-      position,
       start_offset_seconds,
       start_timecode,
       source,
@@ -100,7 +96,8 @@ export async function fetchVideoTracklist(
     `
     )
     .eq('video_id', videoId)
-    .order('position', { ascending: true });
+    .order('start_offset_seconds', { ascending: true })
+    .order('id', { ascending: true });
 
   if (error) throw new Error(`Failed to fetch tracklist: ${error.message}`);
   return (data as any[]) ?? [];

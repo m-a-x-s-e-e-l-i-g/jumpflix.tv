@@ -5,6 +5,19 @@
   export let tracks: VideoTrack[] | null | undefined = undefined;
   export let className = '';
 
+  let sortedTracks: VideoTrack[] = [];
+
+  $: sortedTracks = Array.isArray(tracks)
+    ? [...tracks].sort((a, b) => {
+        const aStart = typeof a?.startAtSeconds === 'number' && Number.isFinite(a.startAtSeconds) ? a.startAtSeconds : 0;
+        const bStart = typeof b?.startAtSeconds === 'number' && Number.isFinite(b.startAtSeconds) ? b.startAtSeconds : 0;
+        if (aStart !== bStart) return aStart - bStart;
+        const aKey = String(a?.song?.spotifyTrackId ?? '');
+        const bKey = String(b?.song?.spotifyTrackId ?? '');
+        return aKey.localeCompare(bKey);
+      })
+    : [];
+
   function formatSecondsToTimecode(totalSeconds: number): string {
     const s = Math.max(0, Math.floor(totalSeconds || 0));
     const h = Math.floor(s / 3600);
@@ -33,7 +46,7 @@
   }
 </script>
 
-{#if Array.isArray(tracks) && tracks.length}
+{#if Array.isArray(sortedTracks) && sortedTracks.length}
   <div class={`space-y-2 ${className}`.trim()}>
     <span class="text-gray-400 inline-flex items-center gap-1 text-sm">
       Tracklist:
@@ -51,7 +64,7 @@
       </svg>
     </span>
     <ul class="space-y-2">
-      {#each tracks as t (t.position)}
+      {#each sortedTracks as t (t.song.spotifyTrackId)}
         {@const startLabel = getTrackStartLabel(t)}
         <li class="flex items-center justify-between gap-3 rounded-lg bg-gray-900/30 border border-gray-700/50 border-l-2 border-l-[#1DB954]/50 px-3 py-2">
           <div class="min-w-0 flex-1">

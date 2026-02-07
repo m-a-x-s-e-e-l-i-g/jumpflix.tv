@@ -14,7 +14,11 @@
 	import XIcon from 'lucide-svelte/icons/x';
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
 	import CastIcon from 'lucide-svelte/icons/cast';
-	import { updateWatchProgress, getResumePosition, flushWatchHistoryNow } from '$lib/tv/watchHistory';
+	import {
+		updateWatchProgress,
+		getResumePosition,
+		flushWatchHistoryNow
+	} from '$lib/tv/watchHistory';
 
 	const dispatch = createEventDispatcher<{
 		playbackCompleted: { mediaId: string | null; mediaType: 'movie' | 'series' | 'episode' };
@@ -1291,7 +1295,6 @@
 		hasResumed = false;
 		isSeeking = false;
 	}
-
 </script>
 
 {#if shouldRender}
@@ -1306,7 +1309,7 @@
 			load="idle"
 			autoplay={autoPlay ? true : undefined}
 		>
-			<media-provider data-no-controls></media-provider>
+			<media-provider data-no-controls playsinline></media-provider>
 
 			<media-controls
 				class="player-controls"

@@ -6,11 +6,12 @@
   import SearchIcon from '@lucide/svelte/icons/search';
   import HomeIcon from '@lucide/svelte/icons/home';
   import BarChart3Icon from '@lucide/svelte/icons/bar-chart-3';
-  import * as m from '$lib/paraglide/messages';
   
-  export let isAdmin = false;
-  export let onSearchClick: () => void;
-  export let scrolled = false;
+  let { isAdmin = false, onSearchClick, scrolled = false } = $props<{
+    isAdmin: boolean;
+    onSearchClick: () => void;
+    scrolled: boolean;
+  }>();
   
   const isStatsRoute = $derived(
     $page.url.pathname === '/stats' || $page.url.pathname.startsWith('/stats/')

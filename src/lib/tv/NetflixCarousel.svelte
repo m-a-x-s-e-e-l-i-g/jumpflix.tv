@@ -4,15 +4,17 @@
   import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
   
-  export let title: string;
-  export let items: ContentItem[] = [];
-  export let selectedContent: ContentItem | null = null;
-  export let isMobile = false;
-  export let onSelect: (item: ContentItem) => void;
+  let { title, items = [], selectedContent = null, isMobile = false, onSelect } = $props<{
+    title: string;
+    items: ContentItem[];
+    selectedContent: ContentItem | null;
+    isMobile: boolean;
+    onSelect: (item: ContentItem) => void;
+  }>();
   
   let scrollContainer: HTMLElement | null = null;
-  let canScrollLeft = false;
-  let canScrollRight = true;
+  let canScrollLeft = $state(false);
+  let canScrollRight = $state(true);
   
   function updateScrollButtons() {
     if (!scrollContainer) return;

@@ -1,45 +1,46 @@
 <script lang="ts">
   import NetflixCarousel from '$lib/tv/NetflixCarousel.svelte';
   import type { ContentItem } from '$lib/tv/types';
-  import * as m from '$lib/paraglide/messages';
   
-  export let sortedAllContent: ContentItem[] = [];
-  export let visibleContent: ContentItem[] = [];
-  export let selectedContent: ContentItem | null = null;
-  export let isMobile = false;
-  export let onSelect: (item: ContentItem) => void;
+  let { sortedAllContent = [], visibleContent = [], selectedContent = null, isMobile = false, onSelect } = $props<{
+    sortedAllContent?: ContentItem[];
+    visibleContent: ContentItem[];
+    selectedContent: ContentItem | null;
+    isMobile: boolean;
+    onSelect: (item: ContentItem) => void;
+  }>();
   
   // Group content by different categories for Netflix-style rows
-  $: movies = visibleContent.filter(item => item.type === 'movie');
-  $: series = visibleContent.filter(item => item.type === 'series');
+  const movies = $derived(visibleContent.filter((item: ContentItem) => item.type === 'movie'));
+  const series = $derived(visibleContent.filter((item: ContentItem) => item.type === 'series'));
   
   // Group by different facets
-  $: documentary = visibleContent.filter(item => item.facets?.type === 'documentary');
-  $: fiction = visibleContent.filter(item => item.facets?.type === 'fiction');
-  $: energetic = visibleContent.filter(item => item.facets?.mood?.includes('energetic'));
-  $: chill = visibleContent.filter(item => item.facets?.mood?.includes('chill'));
-  $: cinematic = visibleContent.filter(item => item.facets?.filmStyle === 'cinematic');
-  $: rooftops = visibleContent.filter(item => item.facets?.environment === 'rooftops');
-  $: street = visibleContent.filter(item => item.facets?.environment === 'street');
+  const documentary = $derived(visibleContent.filter((item: ContentItem) => item.facets?.type === 'documentary'));
+  const fiction = $derived(visibleContent.filter((item: ContentItem) => item.facets?.type === 'fiction'));
+  const energetic = $derived(visibleContent.filter((item: ContentItem) => item.facets?.mood?.includes('energetic')));
+  const chill = $derived(visibleContent.filter((item: ContentItem) => item.facets?.mood?.includes('chill')));
+  const cinematic = $derived(visibleContent.filter((item: ContentItem) => item.facets?.filmStyle === 'cinematic'));
+  const rooftops = $derived(visibleContent.filter((item: ContentItem) => item.facets?.environment === 'rooftops'));
+  const street = $derived(visibleContent.filter((item: ContentItem) => item.facets?.environment === 'street'));
   
   // Recently added (last 30 days)
-  $: recentlyAdded = visibleContent.filter(item => {
+  const recentlyAdded = $derived(visibleContent.filter((item: ContentItem) => {
     if (item.type !== 'movie' || !item.createdAt) return false;
     const created = new Date(item.createdAt);
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     return created > thirtyDaysAgo;
-  }).slice(0, 20);
+  }).slice(0, 20));
   
   // Popular (by rating)
-  $: popular = [...visibleContent]
-    .filter(item => item.averageRating && item.ratingCount && item.ratingCount > 0)
+  const popular = $derived([...visibleContent]
+    .filter((item: ContentItem) => item.averageRating && item.ratingCount && item.ratingCount > 0)
     .sort((a, b) => {
       const ratingA = (a.averageRating || 0) * Math.log(1 + (a.ratingCount || 0));
       const ratingB = (b.averageRating || 0) * Math.log(1 + (b.ratingCount || 0));
       return ratingB - ratingA;
     })
-    .slice(0, 20);
+    .slice(0, 20));
 </script>
 
 <div id="catalog" class="netflix-catalog pb-20">
@@ -54,7 +55,7 @@
         loading="lazy"
         decoding="async"
       />
-      <div class="text-xl">{m.tv_noResults()}</div>
+      <div class="text-xl">No results. Try adjusting filters.</div>
     </div>
   {:else}
     <!-- Recently Added -->

@@ -4,15 +4,16 @@
   import type { ContentItem } from '$lib/tv/types';
   import PlayIcon from '@lucide/svelte/icons/play';
   import InfoIcon from '@lucide/svelte/icons/info';
-  import * as m from '$lib/paraglide/messages';
   
-  export let featuredItem: ContentItem | null = null;
-  export let onPlay: (item: ContentItem) => void;
-  export let onInfo: (item: ContentItem) => void;
+  let { featuredItem = null, onPlay, onInfo } = $props<{
+    featuredItem: ContentItem | null;
+    onPlay: (item: ContentItem) => void;
+    onInfo: (item: ContentItem) => void;
+  }>();
   
-  $: hasItem = !!featuredItem;
-  $: description = featuredItem?.description || '';
-  $: truncatedDescription = description.length > 150 ? description.substring(0, 150) + '...' : description;
+  const hasItem = $derived(!!featuredItem);
+  const description = $derived(featuredItem?.description || '');
+  const truncatedDescription = $derived(description.length > 150 ? description.substring(0, 150) + '...' : description);
 </script>
 
 <div class="netflix-hero relative w-full overflow-hidden">
@@ -99,10 +100,10 @@
     <!-- Fallback when no featured item -->
     <div class="flex flex-col items-center justify-center min-h-[70vh] text-center px-6">
       <h1 class="text-4xl md:text-6xl font-black text-white mb-4 drop-shadow-2xl">
-        {m.tv_heroHeading()}
+        Parkour cinema, curated for the culture.
       </h1>
       <p class="text-lg text-white/70 max-w-2xl">
-        {m.tv_heroTagline()}
+        Watch documentaries, movies, and raw movement stories shaped by freerunning crews worldwide.
       </p>
     </div>
   {/if}

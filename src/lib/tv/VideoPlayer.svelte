@@ -1306,10 +1306,10 @@
 			title={playerTitle}
 			poster={resolvedPoster}
 			playsinline
-			load="idle"
+			load="eager"
 			autoplay={autoPlay ? true : undefined}
 		>
-			<media-provider data-no-controls playsinline></media-provider>
+			<media-provider data-no-controls></media-provider>
 
 			<media-controls
 				class="player-controls"

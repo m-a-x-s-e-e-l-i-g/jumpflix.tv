@@ -57,7 +57,8 @@
           {#if featuredItem.type === 'movie' && featuredItem.duration}
             <span class="text-lg">{featuredItem.duration}</span>
           {:else if featuredItem.type === 'series'}
-            <span class="text-lg">{(featuredItem as any).episodeCount || '?'} Episodes</span>
+            {@const series = featuredItem}
+            <span class="text-lg">{series.episodeCount || '?'} Episodes</span>
           {/if}
           
           {#if featuredItem.averageRating}

@@ -26,10 +26,15 @@
   // Recently added (last 30 days)
   const recentlyAdded = $derived(visibleContent.filter((item: ContentItem) => {
     if (item.type !== 'movie' || !item.createdAt) return false;
-    const created = new Date(item.createdAt);
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    return created > thirtyDaysAgo;
+    try {
+      const created = new Date(item.createdAt);
+      if (isNaN(created.getTime())) return false;
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      return created > thirtyDaysAgo;
+    } catch {
+      return false;
+    }
   }).slice(0, 20));
   
   // Popular (by rating)

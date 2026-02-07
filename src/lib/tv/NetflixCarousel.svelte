@@ -12,6 +12,8 @@
     onSelect: (item: ContentItem) => void;
   }>();
   
+  const SCROLL_TOLERANCE = 10;
+  
   let scrollContainer: HTMLElement | null = null;
   let canScrollLeft = $state(false);
   let canScrollRight = $state(true);
@@ -19,7 +21,7 @@
   function updateScrollButtons() {
     if (!scrollContainer) return;
     canScrollLeft = scrollContainer.scrollLeft > 0;
-    canScrollRight = scrollContainer.scrollLeft < scrollContainer.scrollWidth - scrollContainer.clientWidth - 10;
+    canScrollRight = scrollContainer.scrollLeft < scrollContainer.scrollWidth - scrollContainer.clientWidth - SCROLL_TOLERANCE;
   }
   
   function scrollLeft() {

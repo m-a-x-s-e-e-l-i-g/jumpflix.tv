@@ -661,7 +661,7 @@
   scrolled={navScrolled}
 />
 
-<div class="relative isolate min-h-screen bg-black text-foreground tv-page overflow-x-hidden md:pr-[420px] xl:pr-[460px]">
+<div class="relative isolate min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[420px] xl:pr-[460px]">
   <!-- Netflix Hero Banner -->
   <NetflixHero
     {featuredItem}
@@ -671,7 +671,7 @@
   
   <!-- Search Controls (conditionally shown) -->
   {#if showSearchSection}
-    <section id="search" class="relative z-20 px-6 py-6 bg-black/95">
+    <section id="search" class="relative z-20 px-6 py-6 bg-background/95">
       <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} />
     </section>
   {/if}

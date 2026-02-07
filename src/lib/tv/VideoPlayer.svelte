@@ -93,6 +93,15 @@
 	const PROGRESS_UPDATE_INTERVAL = 5000; // Update every 5 seconds
 	const PROGRESS_COMMIT_DELAY_MS = 250;
 
+	// Detect iOS devices (iPhone, iPad, iPod)
+	function isIOSDevice(): boolean {
+		if (!browser) return false;
+		const ua = navigator.userAgent?.toLowerCase?.() ?? '';
+		return /iphone|ipad|ipod/.test(ua);
+	}
+
+	const isIOS = isIOSDevice();
+
 	$: if (browser && playerEl) {
 		cleanupGestures?.();
 		cleanupGestures = setupGestureHandlers(playerEl);
@@ -331,8 +340,11 @@
 				'type' in provider &&
 				provider.type === 'youtube'
 			) {
-				// Enable cookies for YouTube provider to improve iOS Safari compatibility
-				provider.cookies = true;
+				// Enable cookies for YouTube provider only on iOS to improve Safari compatibility
+				// Keep Android behavior unchanged to avoid playback issues
+				if (isIOS) {
+					provider.cookies = true;
+				}
 			}
 		};
 
@@ -1345,7 +1357,7 @@
 			title={playerTitle}
 			poster={resolvedPoster}
 			playsinline
-			load="eager"
+			load={isIOS ? 'eager' : 'idle'}
 			autoplay={autoPlay ? true : undefined}
 		>
 			<media-provider data-no-controls></media-provider>

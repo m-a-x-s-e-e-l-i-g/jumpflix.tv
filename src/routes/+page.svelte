@@ -6,9 +6,9 @@
   import type { ContentItem } from '$lib/tv/types';
 
   let {} = $props();
-  $: content = (($page?.data as any)?.content ?? []) as ContentItem[];
-  $: movies = content.filter((c) => c.type === 'movie');
-  $: series = content.filter((c) => c.type === 'series');
+  const content = $derived((($page?.data as any)?.content ?? []) as ContentItem[]);
+  const movies = $derived(content.filter((c) => c.type === 'movie'));
+  const series = $derived(content.filter((c) => c.type === 'series'));
 </script>
 
 <svelte:head>

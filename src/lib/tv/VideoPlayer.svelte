@@ -323,8 +323,14 @@
 		const handleProviderChange = (event: Event) => {
 			const customEvent = event as CustomEvent;
 			const provider = customEvent?.detail;
-			// Check if this is a YouTube provider
-			if (provider && typeof provider === 'object' && 'cookies' in provider) {
+			// Check if this is a YouTube provider by checking for YouTube-specific properties
+			if (
+				provider &&
+				typeof provider === 'object' &&
+				'cookies' in provider &&
+				'type' in provider &&
+				provider.type === 'youtube'
+			) {
 				// Enable cookies for YouTube provider to improve iOS Safari compatibility
 				provider.cookies = true;
 			}

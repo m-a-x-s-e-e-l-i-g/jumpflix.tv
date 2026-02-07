@@ -134,9 +134,13 @@
   }
 
   $: if (browser && initialItem) {
-    selectContent(initialItem);
-    if (window.innerWidth < 768) {
-      setMobileDetails(true);
+    // Don't update selected content when player is open to prevent closing
+    // on route changes (e.g., when navigating to episode URL)
+    if (!get(showPlayer)) {
+      selectContent(initialItem);
+      if (window.innerWidth < 768) {
+        setMobileDetails(true);
+      }
     }
     if ((initialItem as any).type === 'series' && typeof initialEpisodeNumber === 'number' && Number.isFinite(initialEpisodeNumber)) {
       const n = Math.max(1, Math.floor(initialEpisodeNumber));

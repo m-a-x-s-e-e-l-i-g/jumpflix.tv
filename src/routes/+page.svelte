@@ -3,12 +3,12 @@
   import { page } from '$app/stores';
   import { getUrlForItem } from '$lib/tv/slug';
   import { decode } from 'html-entities';
-  import type { ContentItem } from '$lib/tv/types';
+  import type { ContentItem, Movie, Series } from '$lib/tv/types';
 
   let {} = $props();
   const content = $derived((($page?.data as any)?.content ?? []) as ContentItem[]);
-  const movies = $derived(content.filter((c) => c.type === 'movie'));
-  const series = $derived(content.filter((c) => c.type === 'series'));
+  const movies = $derived(content.filter((c): c is Movie => c.type === 'movie'));
+  const series = $derived(content.filter((c): c is Series => c.type === 'series'));
 </script>
 
 <svelte:head>

@@ -6,10 +6,9 @@
   import * as m from '$lib/paraglide/messages';
   import PlayerModal from '$lib/tv/PlayerModal.svelte';
   import MobileDetailsOverlay from '$lib/tv/MobileDetailsOverlay.svelte';
-  import NetflixHero from '$lib/tv/NetflixHero.svelte';
-  import NetflixNav from '$lib/tv/NetflixNav.svelte';
+  import TvHeroSection from '$lib/tv/TvHeroSection.svelte';
   import TvSearchControls from '$lib/tv/TvSearchControls.svelte';
-  import NetflixCatalog from '$lib/tv/NetflixCatalog.svelte';
+  import TvCatalogGrid from '$lib/tv/TvCatalogGrid.svelte';
   import TvPageBackdrop from '$lib/tv/TvPageBackdrop.svelte';
   import TvDesktopDetailsPanel from '$lib/tv/TvDesktopDetailsPanel.svelte';
   import RatingPromptDialog from '$lib/components/RatingPromptDialog.svelte';
@@ -68,40 +67,12 @@
   let ratingDialogMovie: Movie | null = null;
   let ratingRefreshToken = 0;
   let ratingDialogCheckToken = 0;
-  let navScrolled = false;
-  let showSearchSection = false;
 
   let allowExitBack = false;
   let exitConfirmUntil = 0;
   let overlayBackTrapArmed = false;
 
   const EXIT_CONFIRM_TIMEOUT_MS = 2000;
-  
-  // Get featured item for Netflix hero
-  $: featuredItem = $visibleContent.length > 0 ? $visibleContent[0] : null;
-  
-  // Get admin status from page data
-  $: isAdmin = ($page?.data as any)?.isAdmin ?? false;
-  
-  function handleSearchClick() {
-    showSearchSection = !showSearchSection;
-    if (showSearchSection && browser) {
-      setTimeout(() => {
-        const searchSection = document.getElementById('search');
-        if (searchSection) {
-          searchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    }
-  }
-  
-  function handleHeroPlay(item: ContentItem) {
-    handleOpenContent(item);
-  }
-  
-  function handleHeroInfo(item: ContentItem) {
-    handleSelect(item);
-  }
 
   function isAndroidStandalone() {
     if (!browser) return false;
@@ -406,14 +377,6 @@
   onMount(() => {
     currentPath = `${get(page).url.pathname}${get(page).url.search}`;
 
-    // Track scroll for nav bar background
-    const handleScroll = () => {
-      if (!browser) return;
-      navScrolled = window.scrollY > 50;
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-
     // In Android standalone (installed PWA), tweak back gesture behavior:
     // - When the mobile details overlay is open, back closes it (and returns to '/').
     // - On the catalog overview ('/'), require double-back to exit.
@@ -593,7 +556,6 @@
       document.removeEventListener('keydown', handleKeydown, true);
       window.removeEventListener('resize', resizeHandler);
       window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('scroll', handleScroll);
       searchHeightObserver?.disconnect();
       cleanupScroll?.();
       if (rafId !== null) cancelAnimationFrame(rafId);
@@ -654,35 +616,24 @@
 	{/if}
 </svelte:head>
 
-<!-- Netflix-style Navigation -->
-<NetflixNav
-  {isAdmin}
-  onSearchClick={handleSearchClick}
-  scrolled={navScrolled}
-/>
+<div class="relative isolate min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[420px] xl:pr-[460px]">
+  <TvPageBackdrop />
+  <section class="relative isolate overflow-hidden px-6 pt-24 pb-16 sm:pt-32 sm:pb-20">
+    <div class="hero-overlay" aria-hidden="true"></div>
 
-<div class="relative isolate min-h-screen bg-black text-foreground tv-page overflow-x-hidden md:pr-[420px] xl:pr-[460px]">
-  <!-- Netflix Hero Banner -->
-  <NetflixHero
-    {featuredItem}
-    onPlay={handleHeroPlay}
-    onInfo={handleHeroInfo}
-  />
-  
-  <!-- Search Controls (conditionally shown) -->
-  {#if showSearchSection}
-    <section id="search" class="relative z-20 px-6 py-6 bg-black/95">
-      <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} />
-    </section>
-  {/if}
-  
-  <!-- Netflix-style Catalog with Carousels -->
-  <div class="catalog-section relative z-20 -mt-32" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
-    <NetflixCatalog
+    <TvHeroSection {logoTilt} />
+
+    <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} />
+  </section>
+  <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
+    <TvCatalogGrid
+      bind:gridElement={gridEl}
       sortedAllContent={$sortedAllContent}
       visibleContent={$visibleContent}
+      visibleKeys={$visibleKeys}
       selectedContent={$selectedContent}
       {isMobile}
+      priorityKeys={priorityKeys}
       onSelect={handleSelect}
     />
     <TvDesktopDetailsPanel

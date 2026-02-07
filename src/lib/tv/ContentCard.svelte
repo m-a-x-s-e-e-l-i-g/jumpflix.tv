@@ -144,26 +144,26 @@
 </script>
 
 <div 
-  class="group cursor-pointer"
+  class="group cursor-pointer netflix-card"
     class:transform={!isMobile}
-    class:hover:scale-105={!isMobile}
+    class:hover:scale-110={!isMobile}
     class:transition-all={!isMobile}
     class:duration-300={!isMobile}
-    class:scale-105={!isMobile && isSelected}
+    class:ease-in-out={!isMobile}
+    class:scale-110={!isMobile && isSelected}
+    class:z-10={!isMobile && isSelected}
   on:click={() => onSelect(item)}
   on:keydown={(e) => e.key === 'Enter' && onSelect(item)}
   tabindex="0"
   role="button"
 >
-  <div class="relative aspect-[2/3] bg-gray-800 border border-gray-700 rounded-xl overflow-hidden mb-3 shadow-md"
+  <div class="relative aspect-[2/3] bg-gray-900 rounded-md overflow-hidden shadow-lg"
       class:transition-all={!isMobile}
       class:duration-300={!isMobile}
-      class:group-hover:ring-4={!isMobile}
-      class:group-hover:ring-red-400={!isMobile}
-      class:ring-4={!isMobile && isSelected}
-    class:ring-red-500={!isMobile && isSelected}
-    class:group-hover:border-none={!isMobile}
-    class:border-none={!isMobile && isSelected}
+      class:group-hover:shadow-2xl={!isMobile}
+      class:group-hover:shadow-red-900/50={!isMobile}
+      class:shadow-2xl={!isMobile && isSelected}
+    class:shadow-red-900/50={!isMobile && isSelected}
     title={item.title}
   >
   <!-- Placeholder layer (always present, sits under the poster) -->
@@ -237,3 +237,13 @@
     {/if}
   </div>
 </div>
+
+<style>
+  .netflix-card {
+    position: relative;
+  }
+  
+  .netflix-card:hover {
+    z-index: 10;
+  }
+</style>

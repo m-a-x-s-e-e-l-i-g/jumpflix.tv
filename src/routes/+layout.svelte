@@ -625,11 +625,11 @@
 </div>
 
 <div class="relative z-[var(--z-index-content)]">
-	<!-- Top-left settings cog that opens a left-side sheet -->
+	<!-- Top-left settings cog that opens a left-side sheet (only show on admin/stats routes) -->
 	<SheetRoot bind:open={sheetOpen}>
 		<div
 			class="absolute top-4 left-4 z-[var(--z-index-settings)] flex gap-2"
-			class:hidden={$showDetailsPanel && isMobile}
+			class:hidden={($showDetailsPanel && isMobile) || (!isStatsRoute && !isAdminRoute)}
 		>
 			<SheetTrigger 
 				aria-label={m.settings_open()}

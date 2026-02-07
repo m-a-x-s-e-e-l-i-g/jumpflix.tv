@@ -57,6 +57,7 @@
 	let cleanupAutoHide: (() => void) | null = null;
 	let cleanupProgressTracking: (() => void) | null = null;
 	let cleanupPlaybackComplete: (() => void) | null = null;
+	let cleanupYouTubeProvider: (() => void) | null = null;
 	let controlsEl: HTMLElement | null = null;
 	let hideControlsTimer: ReturnType<typeof setTimeout> | null = null;
 	let controlsVisible = true;
@@ -124,6 +125,14 @@
 		cleanupPlaybackComplete = null;
 	}
 
+	$: if (browser && playerEl) {
+		cleanupYouTubeProvider?.();
+		cleanupYouTubeProvider = setupYouTubeProvider(playerEl);
+	} else if (!browser || !playerEl) {
+		cleanupYouTubeProvider?.();
+		cleanupYouTubeProvider = null;
+	}
+
 	onDestroy(() => {
 		cleanupGestures?.();
 		cleanupGestures = null;
@@ -133,6 +142,8 @@
 		cleanupProgressTracking = null;
 		cleanupPlaybackComplete?.();
 		cleanupPlaybackComplete = null;
+		cleanupYouTubeProvider?.();
+		cleanupYouTubeProvider = null;
 		cleanupMobileQuery?.();
 		cleanupMobileQuery = null;
 		mobileQuery = null;
@@ -304,6 +315,28 @@
 		} else {
 			scheduleProgressCommit();
 		}
+	}
+
+	function setupYouTubeProvider(player: MediaPlayerElement) {
+		if (!browser) return () => {};
+
+		const handleProviderChange = (event: Event) => {
+			const customEvent = event as CustomEvent;
+			const provider = customEvent?.detail;
+			// Check if this is a YouTube provider
+			if (provider && typeof provider === 'object' && 'cookies' in provider) {
+				// Enable cookies for YouTube provider to improve iOS Safari compatibility
+				provider.cookies = true;
+			}
+		};
+
+		player.addEventListener('provider-change', handleProviderChange);
+
+		const cleanup = () => {
+			player.removeEventListener('provider-change', handleProviderChange);
+		};
+
+		return cleanup;
 	}
 
 	function setupProgressTracking(player: MediaPlayerElement) {

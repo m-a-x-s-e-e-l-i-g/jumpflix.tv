@@ -22,9 +22,7 @@
 <nav
   class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
   class:bg-black={scrolled}
-  class:bg-gradient-to-b={!scrolled}
-  class:from-black/80={!scrolled}
-  class:to-transparent={!scrolled}
+  class:netflix-nav-gradient={!scrolled}
 >
   <div class="flex items-center justify-between px-6 py-4">
     <!-- Left side: Logo and nav links -->
@@ -114,3 +112,9 @@
     </div>
   </div>
 </nav>
+
+<style>
+  .netflix-nav-gradient {
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+  }
+</style>

@@ -157,13 +157,11 @@
   tabindex="0"
   role="button"
 >
-  <div class="relative aspect-[2/3] bg-gray-900 rounded-md overflow-hidden shadow-lg"
+  <div class="relative aspect-[2/3] bg-gray-900 rounded-md overflow-hidden netflix-card-shadow"
       class:transition-all={!isMobile}
       class:duration-300={!isMobile}
-      class:group-hover:shadow-2xl={!isMobile}
-      class:group-hover:shadow-red-900/50={!isMobile}
-      class:shadow-2xl={!isMobile && isSelected}
-    class:shadow-red-900/50={!isMobile && isSelected}
+      class:netflix-card-hover={!isMobile}
+      class:netflix-card-selected={!isMobile && isSelected}
     title={item.title}
   >
   <!-- Placeholder layer (always present, sits under the poster) -->
@@ -245,5 +243,17 @@
   
   .netflix-card:hover {
     z-index: 10;
+  }
+  
+  .netflix-card-shadow {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+  
+  .group:hover .netflix-card-hover {
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25), 0 0 30px rgba(127, 29, 29, 0.5);
+  }
+  
+  .netflix-card-selected {
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25), 0 0 30px rgba(127, 29, 29, 0.5);
   }
 </style>

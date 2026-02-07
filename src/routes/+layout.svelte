@@ -44,14 +44,11 @@
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
 
-	// data from +layout.ts
+	// data from +layout.server.ts
 	let { children, data } = $props<{
 		children: any;
 		data: {
 			content?: ContentItem[];
-			item: ContentItem | null;
-			initialEpisodeNumber: number | null;
-			initialSeasonNumber: number | null;
 			session: any;
 			user: any;
 			isAdmin?: boolean;
@@ -760,9 +757,6 @@
 		{:else}
 			<TvPage
 				content={data?.content ?? []}
-				initialItem={data?.item ?? null}
-				initialEpisodeNumber={data?.initialEpisodeNumber ?? null}
-				initialSeasonNumber={data?.initialSeasonNumber ?? null}
 			/>
 			{@render children?.()}
 		{/if}

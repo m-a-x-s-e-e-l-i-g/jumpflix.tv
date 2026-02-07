@@ -2,10 +2,9 @@
   import { getUrlForItem } from '$lib/tv/slug';
   import { env } from '$env/dynamic/public';
   import { decode } from 'html-entities';
-  // TvPage is rendered in layout; we only set head tags here
+
   export let data: { item: any };
 
-  // Derived state (reactive) so navigating between slugs updates <svelte:head>
   const origin = (env.PUBLIC_SITE_URL || 'https://www.jumpflix.tv').replace(/\/$/, '');
   let item: any;
   let title: string;
@@ -93,6 +92,9 @@
         ]
       })
     : '';
+
+  $: creators = Array.isArray(item?.creators) ? item.creators.map((n: string) => decode(n).trim()).filter(Boolean) : [];
+  $: starring = Array.isArray(item?.starring) ? item.starring.map((n: string) => decode(n).trim()).filter(Boolean) : [];
 </script>
 
 <svelte:head>
@@ -119,4 +121,57 @@
   {/if}
 </svelte:head>
 
-<!-- Content rendered in layout -->
+{#if item}
+  <article class="seo-content" aria-label={decode(item.title ?? '')}>
+    <nav aria-label="Breadcrumb" class="seo-breadcrumb">
+      <ol>
+        <li><a href="/">Home</a></li>
+        <li aria-current="page">{decode(item.title ?? '')}</li>
+      </ol>
+    </nav>
+    <div class="seo-content-inner">
+      {#if image}
+        <img
+          src={image}
+          alt="Poster for {decode(item.title ?? '')}"
+          class="seo-poster"
+          loading="lazy"
+          width="300"
+          height="450"
+        />
+      {/if}
+      <div class="seo-details">
+        <h1>{decode(item.title ?? '')}</h1>
+        <dl>
+          {#if item.year}
+            <div class="seo-meta-pair">
+              <dt>Year</dt>
+              <dd>{item.year}</dd>
+            </div>
+          {/if}
+          {#if item.duration}
+            <div class="seo-meta-pair">
+              <dt>Duration</dt>
+              <dd>{item.duration}</dd>
+            </div>
+          {/if}
+          {#if creators.length}
+            <div class="seo-meta-pair">
+              <dt>Created by</dt>
+              <dd>{creators.join(', ')}</dd>
+            </div>
+          {/if}
+          {#if starring.length}
+            <div class="seo-meta-pair">
+              <dt>Starring</dt>
+              <dd>{starring.join(', ')}</dd>
+            </div>
+          {/if}
+        </dl>
+        {#if desc}
+          <p class="seo-description">{desc}</p>
+        {/if}
+      </div>
+    </div>
+  </article>
+{/if}

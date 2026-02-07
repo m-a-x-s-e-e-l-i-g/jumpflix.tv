@@ -53,6 +53,12 @@
     setContent(items ?? []);
   }
 
+  // Resolve initial item from page-level data (set by individual +page.ts loaders)
+  // Falls back to the initialItem prop from the layout for backward compatibility
+  $: resolvedItem = (($page?.data as any)?.item as ContentItem | null) ?? initialItem;
+  $: resolvedEpisodeNumber = (($page?.data as any)?.initialEpisodeNumber as number | null) ?? initialEpisodeNumber;
+  $: resolvedSeasonNumber = (($page?.data as any)?.initialSeasonNumber as number | null) ?? initialSeasonNumber;
+
   let isMobile = false;
   let gridEl: HTMLElement | null = null;
   let lastSelectionSource: 'keyboard' | 'click' | 'programmatic' = 'programmatic';
@@ -133,13 +139,13 @@
     }
   }
 
-  $: if (browser && initialItem) {
-    selectContent(initialItem);
+  $: if (browser && resolvedItem) {
+    selectContent(resolvedItem);
     if (window.innerWidth < 768) {
       setMobileDetails(true);
     }
-    if ((initialItem as any).type === 'series' && typeof initialEpisodeNumber === 'number' && Number.isFinite(initialEpisodeNumber)) {
-      const n = Math.max(1, Math.floor(initialEpisodeNumber));
+    if ((resolvedItem as any).type === 'series' && typeof resolvedEpisodeNumber === 'number' && Number.isFinite(resolvedEpisodeNumber)) {
+      const n = Math.max(1, Math.floor(resolvedEpisodeNumber));
       selectEpisode({ id: `pos:${n}`, title: `Episode ${n}`, position: n } as any);
     }
   }
@@ -455,9 +461,9 @@
       }
     });
 
-    if (initialItem && (initialItem as any).type === 'series') {
-      if (initialEpisodeNumber && Number.isFinite(initialEpisodeNumber)) {
-        const n = Math.max(1, Math.floor(initialEpisodeNumber));
+    if (resolvedItem && (resolvedItem as any).type === 'series') {
+      if (resolvedEpisodeNumber && Number.isFinite(resolvedEpisodeNumber)) {
+        const n = Math.max(1, Math.floor(resolvedEpisodeNumber));
         selectEpisode({ id: `pos:${n}`, title: `Episode ${n}`, position: n } as any);
       }
     }
@@ -569,8 +575,8 @@
     const episodeHint = ($selectedEpisode?.position && Number.isFinite($selectedEpisode.position))
       ? Math.max(1, Math.floor($selectedEpisode.position))
       : fromPath.episode;
-    const seasonHint = fromPath.season ?? (typeof initialSeasonNumber === 'number'
-      ? Math.max(1, Math.floor(initialSeasonNumber))
+    const seasonHint = fromPath.season ?? (typeof resolvedSeasonNumber === 'number'
+      ? Math.max(1, Math.floor(resolvedSeasonNumber))
       : undefined);
     pageTitle = buildPageTitle($selectedContent, { season: seasonHint, episode: episodeHint });
 
@@ -643,7 +649,7 @@
       onOpenEpisode={handleOpenEpisode}
       onSelectEpisode={handleSelectEpisode}
       selectedEpisode={$selectedEpisode}
-      initialSeasonNumber={initialSeasonNumber}
+      initialSeasonNumber={resolvedSeasonNumber}
       {isMobile}
       ratingRefreshToken={ratingRefreshToken}
     />
@@ -657,7 +663,7 @@
       onSelectEpisode={handleSelectEpisode}
       selectedEpisode={$selectedEpisode}
       {closeDetailsPanel}
-      initialSeason={initialSeasonNumber ?? undefined}
+      initialSeason={resolvedSeasonNumber ?? undefined}
       onBack={handleMobileBack}
       ratingRefreshToken={ratingRefreshToken}
     />

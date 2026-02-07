@@ -1,15 +1,12 @@
 <script lang="ts">
-  // TvPage is rendered in layout; we only set head tags here
   import { env } from '$env/dynamic/public';
   import { getEpisodeUrl, getUrlForItem } from '$lib/tv/slug';
   import { decode } from 'html-entities';
   export let data: { item: any; initialEpisodeNumber: number };
   const item = data?.item;
   const ep = data?.initialEpisodeNumber;
-  // Back-compat route implies season 1
   const season = 1;
 
-  // Derived SEO fields
   const origin = (env.PUBLIC_SITE_URL || 'https://www.jumpflix.tv').replace(/\/$/, '');
   $: e = typeof ep === 'number' && ep >= 1 ? ep : 1;
   $: code = `s${String(season).padStart(2, '0')}e${String(e).padStart(2, '0')}`;
@@ -21,7 +18,7 @@
     ? (item.thumbnail.startsWith('http') ? item.thumbnail : `https://www.jumpflix.tv${item.thumbnail}`)
     : 'https://www.jumpflix.tv/images/jumpflix.webp';
   $: url = item ? `${origin}${getEpisodeUrl(item, { episodeNumber: e, seasonNumber: season })}` : origin;
-  // Structured data (TVEpisode) for legacy route (assumed season 1)
+  $: seriesUrl = item ? `${origin}${getUrlForItem(item)}` : origin;
   $: structuredData = {
     '@context': 'https://schema.org',
     '@type': 'TVEpisode',
@@ -33,7 +30,6 @@
     url
   };
 </script>
-<!-- Content rendered in layout -->
 
 <svelte:head>
   <title>{title}</title>
@@ -49,6 +45,45 @@
   <meta name="twitter:description" content={desc} />
   <meta name="twitter:image" content={image} />
 
-  <!-- JSON-LD for TVEpisode (use {@html} to prevent HTML escaping) -->
   <script type="application/ld+json">{@html JSON.stringify(structuredData).replace(/</g, '\\u003c')}</script>
 </svelte:head>
+
+{#if item}
+  <article class="seo-content" aria-label="{decode(item.title ?? '')} {code}">
+    <nav aria-label="Breadcrumb" class="seo-breadcrumb">
+      <ol>
+        <li><a href="/">Home</a></li>
+        <li><a href={seriesUrl}>{decode(item.title ?? '')}</a></li>
+        <li aria-current="page">Season {season}, Episode {e}</li>
+      </ol>
+    </nav>
+    <div class="seo-content-inner">
+      {#if image}
+        <img
+          src={image}
+          alt="Poster for {decode(item.title ?? '')}"
+          class="seo-poster"
+          loading="lazy"
+          width="300"
+          height="450"
+        />
+      {/if}
+      <div class="seo-details">
+        <h1>{decode(item.title ?? '')} — {code}</h1>
+        <dl>
+          <div class="seo-meta-pair">
+            <dt>Season</dt>
+            <dd>{season}</dd>
+          </div>
+          <div class="seo-meta-pair">
+            <dt>Episode</dt>
+            <dd>{e}</dd>
+          </div>
+        </dl>
+        {#if desc}
+          <p class="seo-description">{desc}</p>
+        {/if}
+      </div>
+    </div>
+  </article>
+{/if}

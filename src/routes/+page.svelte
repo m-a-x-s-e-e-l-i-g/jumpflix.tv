@@ -1,8 +1,14 @@
 <script lang="ts">
   import * as m from '$lib/paraglide/messages';
-  // TvPage is rendered persistently from +layout.svelte
-  // This page contributes only head metadata
+  import { page } from '$app/stores';
+  import { getUrlForItem } from '$lib/tv/slug';
+  import { decode } from 'html-entities';
+  import type { ContentItem } from '$lib/tv/types';
+
   let {} = $props();
+  $: content = (($page?.data as any)?.content ?? []) as ContentItem[];
+  $: movies = content.filter((c) => c.type === 'movie');
+  $: series = content.filter((c) => c.type === 'series');
 </script>
 
 <svelte:head>
@@ -34,4 +40,25 @@
   </script>
 </svelte:head>
 
-<!-- Content rendered in layout -->
+<section class="seo-content" aria-label="Browse catalog">
+  {#if movies.length}
+    <h2>Parkour Films</h2>
+    <ul class="seo-catalog-list">
+      {#each movies as movie}
+        <li>
+          <a href={getUrlForItem(movie)}>{decode(movie.title)}{movie.year ? ` (${movie.year})` : ''}</a>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+  {#if series.length}
+    <h2>Parkour Series</h2>
+    <ul class="seo-catalog-list">
+      {#each series as s}
+        <li>
+          <a href={getUrlForItem(s)}>{decode(s.title)}</a>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+</section>

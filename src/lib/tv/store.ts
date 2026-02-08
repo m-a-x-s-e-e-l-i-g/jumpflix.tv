@@ -14,6 +14,8 @@ const seed = new Date().toISOString().slice(0, 10);
 const SHOW_PAID_STORAGE_KEY = 'jumpflix.tv:showPaid';
 const SHOW_WATCHED_STORAGE_KEY = 'jumpflix.tv:showWatched';
 const SEARCH_QUERY_STORAGE_KEY = 'jumpflix.tv:searchQuery';
+const GRID_SCALE_STORAGE_KEY = 'jumpflix.tv:gridScale';
+const VIEW_MODE_STORAGE_KEY = 'jumpflix.tv:viewMode';
 
 // Remember toggle preferences across sessions on the same device.
 function loadBooleanPreference(key: string, defaultValue = true): boolean {
@@ -51,6 +53,27 @@ function persistStringPreference(key: string, value: string) {
 	if (!browser) return;
 	try {
 		localStorage.setItem(key, value);
+	} catch {
+		/* noop */
+	}
+}
+
+function loadNumberPreference(key: string, defaultValue: number): number {
+	if (!browser) return defaultValue;
+	try {
+		const raw = localStorage.getItem(key);
+		if (raw === null) return defaultValue;
+		const value = Number(raw);
+		return Number.isFinite(value) ? value : defaultValue;
+	} catch {
+		return defaultValue;
+	}
+}
+
+function persistNumberPreference(key: string, value: number) {
+	if (!browser) return;
+	try {
+		localStorage.setItem(key, String(value));
 	} catch {
 		/* noop */
 	}
@@ -95,6 +118,10 @@ export const selectedContent = writable<ContentItem | null>(null);
 export const showPlayer = writable(false);
 export const showDetailsPanel = writable(false);
 export const selectedIndex = writable(0);
+export const gridScale = writable(loadNumberPreference(GRID_SCALE_STORAGE_KEY, 1));
+export const viewMode = writable<'grid' | 'list'>(
+	(loadStringPreference(VIEW_MODE_STORAGE_KEY, 'grid') as 'grid' | 'list')
+);
 // When playing a single episode from a series, this holds the selected episode
 export const selectedEpisode = writable<Episode | null>(null);
 
@@ -200,6 +227,8 @@ if (browser) {
 	showPaid.subscribe((value) => persistBooleanPreference(SHOW_PAID_STORAGE_KEY, value));
 	showWatched.subscribe((value) => persistBooleanPreference(SHOW_WATCHED_STORAGE_KEY, value));
 	searchQuery.subscribe((value) => persistStringPreference(SEARCH_QUERY_STORAGE_KEY, value));
+	gridScale.subscribe((value) => persistNumberPreference(GRID_SCALE_STORAGE_KEY, value));
+	viewMode.subscribe((value) => persistStringPreference(VIEW_MODE_STORAGE_KEY, value));
 }
 
 // Debounced search to avoid filtering on every keystroke

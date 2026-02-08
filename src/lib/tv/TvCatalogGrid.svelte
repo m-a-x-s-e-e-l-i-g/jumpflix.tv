@@ -11,12 +11,18 @@
   export let priorityKeys: Set<string> = new Set();
   export let isMobile = false;
   export let onSelect: (item: ContentItem) => void;
+  export let gridScale = 1;
+  export let viewMode: 'grid' | 'list' = 'grid';
 
   const keyFor = (item: ContentItem) => `${item.type}:${item.id}`;
 </script>
 
-<div id="catalog" class="container mx-auto px-6 py-10 tv-main -mt-16 z-20">
-  <div bind:this={gridElement} class="grid auto-fit-grid gap-6">
+<div id="catalog" class="catalog-shell">
+  <div
+    bind:this={gridElement}
+    class={`catalog-grid ${viewMode === 'list' ? 'list-mode' : ''}`}
+    style={`--card-scale: ${gridScale}; --card-ratio: 2 / 3`}
+  >
     {#if visibleContent.length === 0}
       <div class="col-span-full flex flex-col items-center gap-6 py-10 text-center text-gray-400">
         <img
@@ -32,13 +38,17 @@
       </div>
     {:else}
       {#each sortedAllContent as item (keyFor(item))}
-        <div class:hidden={!visibleKeys.has(keyFor(item))} class="w-full">
+        <div
+          class:hidden={!visibleKeys.has(keyFor(item))}
+          class="catalog-item"
+        >
           <ContentCard
             {item}
             isSelected={!!(selectedContent && selectedContent.id === item.id && selectedContent.type === item.type)}
             onSelect={onSelect}
             {isMobile}
             priority={priorityKeys.has(keyFor(item))}
+            {viewMode}
           />
         </div>
       {/each}
@@ -47,32 +57,75 @@
 </div>
 
 <style>
-  .auto-fit-grid {
-    --card-max: 220px;
-    grid-template-columns: repeat(auto-fill, minmax(180px, var(--card-max)));
-    justify-content: center;
-    justify-items: center;
+  .catalog-shell {
+    position: relative;
+    z-index: 20;
+    margin: 0;
+    padding: 2.5rem clamp(1.5rem, 3vw, 3.75rem) 6rem;
   }
-  .auto-fit-grid > * {
+
+  .catalog-grid {
+    --card-min: calc(200px * var(--card-scale, 1));
+    --card-max: calc(320px * var(--card-scale, 1));
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+    gap: clamp(1rem, 1.8vw, 2.4rem);
+    justify-content: start;
+    justify-items: stretch;
+    align-items: start;
+    grid-auto-flow: dense;
+  }
+
+  .catalog-item {
     width: 100%;
     max-width: var(--card-max);
+    justify-self: start;
   }
+
+  .catalog-grid.list-mode {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .catalog-grid.list-mode .catalog-item {
+    max-width: 100%;
+    grid-column: span 1;
+    grid-row: span 1;
+    justify-self: stretch;
+  }
+
+  @media (max-width: 900px) {
+    .catalog-grid {
+      --card-min: calc(175px * var(--card-scale, 1));
+      --card-max: calc(260px * var(--card-scale, 1));
+    }
+
+  }
+
   @media (max-width: 767px) {
-    .auto-fit-grid {
-      --card-min: 120px;
-      --card-max: 165px;
+    .catalog-shell {
+      padding: 2rem 1.25rem 4rem;
+    }
+
+    .catalog-grid {
+      --card-min: calc(155px * var(--card-scale, 1));
+      --card-max: calc(210px * var(--card-scale, 1));
       grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
       justify-content: center;
     }
-    .auto-fit-grid > * {
-      max-width: var(--card-max);
+
+    .catalog-item {
+      grid-column: span 1;
+      grid-row: span 1;
+      max-width: 100%;
     }
   }
-  .auto-fit-grid :global([role="button"][tabindex="0"]:focus:not(:focus-visible)) {
+
+  .catalog-grid :global([role="button"][tabindex="0"]:focus:not(:focus-visible)) {
     outline: none;
     box-shadow: none;
   }
-  .auto-fit-grid :global([role="button"][tabindex="0"]:focus-visible) {
+  .catalog-grid :global([role="button"][tabindex="0"]:focus-visible) {
     outline: none;
     border: none;
   }

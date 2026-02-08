@@ -9,10 +9,6 @@
   export let selectedEpisode: Episode | null = null;
   export let close: () => void;
   let playerContainer: HTMLElement | null = null;
-  let isDesktop = false;
-  let layoutVersion = 0;
-  let overlayStyle = '';
-  let isFullscreen = false;
   let currentPlaybackKey: string | null = null;
   let playingContent: ContentItem | null = null;
   let playingEpisode: Episode | null = null;
@@ -30,28 +26,6 @@
 
   const sanitizeTitle = (value?: string | null) => (value?.trim() ? value.trim() : 'Now Playing');
 
-  // Compute CSS variables so the desktop player fills everything except the sidebar.
-  function computeDesktopStyle(version: number) {
-    version; // ensure Svelte tracks layoutVersion updates
-    if (!browser) return {} as Record<string, string>;
-    const panel = document.querySelector<HTMLElement>('.tv-details-panel');
-    const sidebarWidth = panel?.getBoundingClientRect().width ?? 460;
-    return {
-      '--player-sidebar-width': `${sidebarWidth}px`,
-    } as Record<string, string>;
-  }
-
-  function updateOverlayStyle() {
-    if (!(browser && show && isDesktop)) {
-      overlayStyle = '';
-      return;
-    }
-    const styleVars = computeDesktopStyle(layoutVersion);
-    overlayStyle = Object.entries(styleVars)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join('; ');
-  }
-
   function handlePlaybackCompleted(
     event: CustomEvent<{ mediaId: string | null; mediaType: 'movie' | 'series' | 'episode' }>
   ) {
@@ -66,30 +40,8 @@
 
   onMount(() => {
     if (!browser) return () => {};
-    const mq = window.matchMedia('(min-width: 768px)');
-    const handleMatch = () => {
-      isDesktop = mq.matches;
-      updateOverlayStyle();
-    };
-    handleMatch();
-    mq.addEventListener('change', handleMatch);
-    const handleResize = () => {
-      layoutVersion += 1;
-      updateOverlayStyle();
-    };
-    window.addEventListener('resize', handleResize);
-    const handleFullscreenChange = () => {
-      isFullscreen = !!document.fullscreenElement;
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      mq.removeEventListener('change', handleMatch);
-      window.removeEventListener('resize', handleResize);
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
+    return () => {};
   });
-
-  $: updateOverlayStyle();
 
   $: playerView = (() => {
     if (!show || !selected) return null;
@@ -163,8 +115,6 @@
   <div
     bind:this={playerContainer}
     class="player-overlay"
-    class:desktop={isDesktop}
-    style={overlayStyle || undefined}
     transition:fade={{ duration: 300 }}
     on:click={close}
     role="dialog"
@@ -178,7 +128,6 @@
   >
     <div
       class="player-shell"
-      class:desktop={isDesktop}
       transition:scale={{ duration: 300 }}
       on:click|stopPropagation
       role="presentation"
@@ -205,26 +154,14 @@
 <style>
   .player-overlay {
     position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: 0;
     z-index: 50;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.9);
+    background: linear-gradient(135deg, rgba(4, 7, 22, 0.94), rgba(7, 10, 20, 0.98));
     padding: 0;
     cursor: pointer;
-  }
-
-  .player-overlay.desktop {
-    justify-content: flex-start;
-    align-items: stretch;
-    right: var(--player-sidebar-width, 460px);
-    padding: 0;
-    background: linear-gradient(135deg, rgba(4, 7, 22, 0.95), rgba(15, 23, 42, 0.65));
-    backdrop-filter: blur(14px);
   }
 
   .player-shell {
@@ -235,16 +172,6 @@
     cursor: default;
     display: flex;
     flex-direction: column;
-  }
-
-  .player-shell.desktop {
-    flex: 1 1 auto;
-    width: calc(100vw - var(--player-sidebar-width, 460px));
-    max-width: calc(100vw - var(--player-sidebar-width, 460px));
-    height: 100vh;
-    border-radius: 0;
-    box-shadow: none;
-    overflow: hidden;
   }
 
   .player-shell :global(media-player) {

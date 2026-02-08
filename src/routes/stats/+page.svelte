@@ -148,7 +148,7 @@
 </svelte:head>
 
 <div class="mx-auto w-full max-w-6xl p-4 md:p-8">
-	<div class="mt-[50px] mb-6 rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-6 md:p-8">
+	<div class="mt-[50px] mb-6 rounded-3xl jf-surface p-6 md:p-8">
 		<a
 			href="/"
 			class="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
@@ -168,35 +168,35 @@
 	</div>
 
 	<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
-		<div class="rounded-xl border p-4">
+		<div class="rounded-2xl jf-surface-soft p-4">
 			<div class="text-xs text-muted-foreground">Movies</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.catalog.movies ?? 0)}</div>
 		</div>
-		<div class="rounded-xl border p-4">
+		<div class="rounded-2xl jf-surface-soft p-4">
 			<div class="text-xs text-muted-foreground">Series</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.catalog.series ?? 0)}</div>
 		</div>
-		<div class="rounded-xl border p-4">
+		<div class="rounded-2xl jf-surface-soft p-4">
 			<div class="text-xs text-muted-foreground">Episodes</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.catalog.episodes ?? 0)}</div>
 		</div>
-		<div class="rounded-xl border p-4">
+		<div class="rounded-2xl jf-surface-soft p-4">
 			<div class="text-xs text-muted-foreground">Tracks</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.music.tracks ?? 0)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">
 				{formatNumber(data.music.trackLinks ?? 0)} video track links
 			</div>
 		</div>
-		<div class="rounded-xl border p-4">
+		<div class="rounded-2xl jf-surface-soft p-4">
 			<div class="text-xs text-muted-foreground">Total registered users</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.overview.total_users ?? 0)}</div>
 		</div>
-		<div class="rounded-xl border p-4">
+		<div class="rounded-2xl jf-surface-soft p-4">
 			<div class="text-xs text-muted-foreground">Average rating</div>
 			<div class="mt-1 text-2xl font-semibold">{(data.overview.average_rating ?? 0).toFixed(2)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">{formatNumber(data.overview.ratings_count ?? 0)} ratings</div>
 		</div>
-		<div class="rounded-xl border p-4">
+		<div class="rounded-2xl jf-surface-soft p-4">
 			<div class="text-xs text-muted-foreground">Creators</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.peopleStats.creators ?? 0)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">Unique names in credits</div>

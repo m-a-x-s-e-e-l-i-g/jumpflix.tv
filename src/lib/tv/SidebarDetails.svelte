@@ -10,7 +10,6 @@
   import EyeIcon from '@lucide/svelte/icons/eye';
   import EyeOffIcon from '@lucide/svelte/icons/eye-off';
   import * as m from '$lib/paraglide/messages';  
-  import { blurhashToCssGradientString } from '@unpic/placeholder';
   import { fade } from 'svelte/transition';
   import { decode } from 'html-entities';
   import { showPlayer, selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
@@ -430,22 +429,6 @@
     }
   }
 
-  // BlurHash placeholder background for selected thumbnail
-  let currentBlurhash = '';
-  let previousBlurhash = '';
-  let showPrevious = false;
-  
-  $: if (selected?.blurhash && selected.blurhash !== currentBlurhash) {
-    previousBlurhash = currentBlurhash;
-    currentBlurhash = selected.blurhash;
-    showPrevious = true;
-    setTimeout(() => { showPrevious = false; }, 500);
-  } else if (selected && !selected.blurhash && currentBlurhash !== '') {
-    previousBlurhash = currentBlurhash;
-    currentBlurhash = '';
-    showPrevious = true;
-    setTimeout(() => { showPrevious = false; }, 500);
-  }
 
   async function copyLink() {
     if (!selected) return;
@@ -485,452 +468,801 @@
     }
   }
 
-  const backdropOverlayClass = 'details-backdrop-overlay';
-  const heroButtonClass = 'details-primary-button';
-
   let providerLink: ProviderLink | null = null;
   $: providerLink = selected ? getProviderLink(selected, selectedEpisode) : null;
 </script>
 
 {#if selected}
-  <!-- Background layers for crossfade -->
-  <div class="sidebar-background-container">
-    {#if previousBlurhash}
-      <div 
-        class="sidebar-background" 
-        class:fade-out={!showPrevious}
-        style:background-image={blurhashToCssGradientString(previousBlurhash)}
-      ></div>
-    {/if}
-    {#if currentBlurhash}
-      <div 
-        class="sidebar-background" 
-        style:background-image={blurhashToCssGradientString(currentBlurhash)}
-      ></div>
-    {:else}
-      <div 
-        class="sidebar-background sidebar-background-fallback"
-      ></div>
-    {/if}
-  </div>
-  <div class={backdropOverlayClass}></div>
-  
-  <div class="space-y-4 relative z-10 flex-1">
-    {#if isAuthenticated}
-      <ContentSuggestionDialog
-        selected={selected}
-        selectedEpisode={selectedEpisode}
-        selectedSeasonNumber={selected?.type === 'series' ? selectedSeasonNum : null}
-        triggerAriaLabel="Suggest change / report issue"
-        triggerClass="absolute -top-3 -right-3 z-20 inline-flex items-center justify-center w-9 h-9 text-white/65 hover:text-white/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e50914]"
-      >
-        <svelte:fragment slot="trigger">
-          <PencilIcon class="w-4 h-4" />
-        </svelte:fragment>
-      </ContentSuggestionDialog>
-    {/if}
-    <div>
-  <h2 class="text-3xl font-serif font-light text-gray-100 tracking-wide mb-4">{selected.title}</h2>
-    <div class="flex items-center gap-4 text-sm text-gray-400 mb-4">
-        {#if selected.type === 'movie'}
-          <span class="bg-blue-600 px-2 py-1 rounded text-white text-xs">MOVIE</span>
-          {#if selected.paid}<span class="bg-yellow-500 text-black px-2 py-1 rounded text-xs font-bold">PAID</span>{/if}
+  <section class="detail-wrap">
+    <header class="detail-header">
+      <div class="detail-header-top">
+        <div>
+          <a href="/" class="detail-back" aria-label="Back to catalog">Back to catalog</a>
+          <h2 class="detail-title jf-display">{selected.title}</h2>
+        </div>
+        {#if isAuthenticated}
+          <ContentSuggestionDialog
+            selected={selected}
+            selectedEpisode={selectedEpisode}
+            selectedSeasonNumber={selected?.type === 'series' ? selectedSeasonNum : null}
+            triggerAriaLabel="Suggest change / report issue"
+            triggerClass="detail-suggest"
+          >
+            <svelte:fragment slot="trigger">
+              <PencilIcon class="w-4 h-4" />
+            </svelte:fragment>
+          </ContentSuggestionDialog>
+        {/if}
+      </div>
+
+      <div class="detail-meta">
+        <span class="detail-pill">{selected.type === 'movie' ? 'Movie' : 'Series'}</span>
+        {#if selected.paid}
+          <span class="detail-pill detail-pill--paid">Paid</span>
+        {/if}
+        {#if selected.type === 'movie' && (selected as any).year}
           <span>{(selected as any).year}</span>
+        {/if}
+        {#if selected.type === 'movie' && (selected as any).duration}
           <span>{(selected as any).duration}</span>
-        {:else}
-          <span class="bg-red-600 px-2 py-1 rounded text-white text-xs">SERIES</span>
+        {/if}
+        {#if selected.type === 'series'}
           <span>{(selected as any).episodeCount || '?'} episodes</span>
         {/if}
-        {#if (selected as any).trakt}
-          <a href={(selected as any).trakt} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-5 h-5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#ED1C24] focus:ring-offset-black rounded transition hover:scale-105" aria-label="View on Trakt" title="View on Trakt">
-            <img src="https://trakt.tv/assets/logos/logomark.square.gradient-b644b16c38ff775861b4b1f58c1230f6a097a2466ab33ae00445a505c33fcb91.svg" alt="" class="w-full h-full select-none" loading="lazy" decoding="async" />
-            <span class="sr-only">View on Trakt</span>
-          </a>
-        {/if}
-        <!-- Shareable URL: icon-only copy button -->
-        <button type="button" class="inline-flex items-center justify-center w-6 h-6 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" on:click={copyLink} title="Copy link" aria-label="Copy link">
-          <Link2Icon class="w-4 h-4" />
-        </button>
-
-        {#if providerLink}
-          <a
-            href={providerLink.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center justify-center w-6 h-6 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            title={providerLink.title}
-            aria-label={providerLink.ariaLabel}
-          >
-            {#if providerLink.kind === 'youtube'}
-              <span class="provider-icon provider-icon-youtube w-4 h-4" aria-hidden="true"></span>
-            {:else}
-              <span class="provider-icon provider-icon-vimeo w-4 h-4" aria-hidden="true"></span>
-            {/if}
-          </a>
-        {/if}
-      </div>
-    </div>
-    <div>
-      <br />
-  <p class="text-gray-300 leading-relaxed text-sm font-sans">{selected.description}</p>
-    </div>
-
-    <!-- Facet Tags -->
-    {#if selected.facets}
-      <div class="mt-4">
-        <FacetChips facets={selected.facets} />
-      </div>
-    {/if}
-
-    <!-- Bangerometer Rating Component -->
-    <div class="mt-6">
-      <BangerMeter
-        mediaId={selected.id}
-        initialRating={currentUserRating}
-        onRatingChange={handleRatingChange}
-        onRatingDelete={handleRatingDelete}
-        onAuthRequired={handleAuthRequired}
-        isWatched={watchProgress?.isWatched || false}
-        averageRating={ratingsSummary?.averageRating || 0}
-        ratingCount={ratingsSummary?.ratingCount || 0}
-      />
-    </div>
-
-    <!-- Watch Progress Toggle (Movies only) -->
-    {#if isAuthenticated && selected.type === 'movie'}
-      <div class="mt-4">
-        <button
-          type="button"
-          on:click={toggleWatchedStatus}
-          class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 {watchProgress?.isWatched ? 'bg-green-600/20 text-green-400 border border-green-600/50 hover:bg-green-600/30 focus-visible:ring-green-500' : 'bg-gray-700/50 text-gray-300 border border-gray-600/50 hover:bg-gray-700 focus-visible:ring-gray-500'}"
-        >
-          {#if watchProgress?.isWatched}
-            <CheckIcon class="w-4 h-4" />
-            <span>{m.tv_markUnwatched()}</span>
-          {:else}
-            <EyeIcon class="w-4 h-4" />
-            <span>{m.tv_markWatched()}</span>
+        <div class="detail-meta-actions">
+          {#if (selected as any).trakt}
+            <a href={(selected as any).trakt} target="_blank" rel="noopener noreferrer" class="detail-icon" aria-label="View on Trakt" title="View on Trakt">
+              <img src="https://trakt.tv/assets/logos/logomark.square.gradient-b644b16c38ff775861b4b1f58c1230f6a097a2466ab33ae00445a505c33fcb91.svg" alt="" class="detail-icon-img" loading="lazy" decoding="async" />
+              <span class="sr-only">View on Trakt</span>
+            </a>
           {/if}
-        </button>
-        {#if watchProgress && watchProgress.percent > 0 && watchProgress.percent < 85}
-          <div class="mt-3 space-y-1">
-            <div class="flex justify-between text-xs text-gray-400">
-              <span>Progress</span>
-              <span>{Math.round(watchProgress.percent)}%</span>
-            </div>
-            <div class="w-full h-2 bg-gray-700/50 rounded-full overflow-hidden">
-              <div 
-                class="h-full bg-red-500 transition-all duration-300 rounded-full" 
-                style:width="{watchProgress.percent}%"
-              ></div>
-            </div>
-          </div>
-        {/if}
-      </div>
-    {/if}
-
-    {#if selected.type === 'movie'}
-      <div class="space-y-4 text-sm">
-        {#if selected.paid}
-          <div class="space-y-1">
-            <span class="text-gray-400 block">Provider:</span>
-            <div class="flex flex-wrap gap-1">
-              <span class="px-2 py-0.5 rounded-full bg-gray-700 text-white text-xs font-medium">{selected.provider || 'External'}</span>
-            </div>
-          </div>
-        {/if}
-        {#if (selected as any).creators?.length}
-          <div class="space-y-1">
-            <span class="text-gray-400 block">Creators:</span>
-            <div class="flex flex-wrap gap-1">
-              {#each (showAllCreators ? (selected as any).creators : (selected as any).creators.slice(0, MAX_NAMES)) as c}
-                <span class="px-2 py-0.5 rounded-full bg-gray-700 text-white text-xs font-medium">{c}</span>
-              {/each}
-              {#if (selected as any).creators.length > MAX_NAMES}
-                <button class="px-2 py-0.5 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition" on:click={() => showAllCreators = !showAllCreators} title={showAllCreators ? 'Show fewer' : 'Show all'}>
-                  {#if showAllCreators}−{/if}{#if !showAllCreators}+{/if}
-                  {(selected as any).creators.length - MAX_NAMES}
-                </button>
+          <button type="button" class="detail-icon" on:click={copyLink} title="Copy link" aria-label="Copy link">
+            <Link2Icon class="w-4 h-4" />
+          </button>
+          {#if providerLink}
+            <a
+              href={providerLink.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="detail-icon"
+              title={providerLink.title}
+              aria-label={providerLink.ariaLabel}
+            >
+              {#if providerLink.kind === 'youtube'}
+                <span class="provider-icon provider-icon-youtube w-4 h-4" aria-hidden="true"></span>
+              {:else}
+                <span class="provider-icon provider-icon-vimeo w-4 h-4" aria-hidden="true"></span>
               {/if}
-            </div>
-          </div>
-        {/if}
-
-        {#if (selected as any).starring?.length}
-          <div class="space-y-1">
-            <span class="text-gray-400 block">Starring:</span>
-            <div class="flex flex-wrap gap-1">
-              {#each (showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES)) as s}
-                <span class="px-2 py-0.5 rounded-full bg-gray-700 text-white text-xs font-medium">{s}</span>
-              {/each}
-              {#if (selected as any).starring.length > MAX_NAMES}
-                <button class="px-2 py-0.5 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition" on:click={() => showAllStarring = !showAllStarring} title={showAllStarring ? 'Show fewer' : 'Show all'}>
-                  {#if showAllStarring}−{/if}{#if !showAllStarring}+{/if}
-                  {(selected as any).starring.length - MAX_NAMES}
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/if}
-
-        {#if Array.isArray(selected.tracks) && selected.tracks.length}
-          <Tracklist tracks={selected.tracks} />
-        {/if}
-      </div>
-    {:else}
-      <div class="space-y-4 text-sm">
-        {#if (selected as any).creators?.length}
-          <div class="space-y-1">
-            <span class="text-gray-400 block">Creators:</span>
-            <div class="flex flex-wrap gap-1">
-              {#each (showAllCreators ? (selected as any).creators : (selected as any).creators.slice(0, MAX_NAMES)) as c}
-                <span class="px-2 py-0.5 rounded-full bg-gray-700 text-white text-xs font-medium">{c}</span>
-              {/each}
-              {#if (selected as any).creators.length > MAX_NAMES}
-                <button class="px-2 py-0.5 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition" on:click={() => showAllCreators = !showAllCreators} title={showAllCreators ? 'Show fewer' : 'Show all'}>
-                  {#if showAllCreators}−{/if}{#if !showAllCreators}+{/if}
-                  {(selected as any).creators.length - MAX_NAMES}
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/if}
-        {#if (selected as any).starring?.length}
-          <div class="space-y-1">
-            <span class="text-gray-400 block">Starring:</span>
-            <div class="flex flex-wrap gap-1">
-              {#each (showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES)) as s}
-                <span class="px-2 py-0.5 rounded-full bg-gray-700 text-white text-xs font-medium">{s}</span>
-              {/each}
-              {#if (selected as any).starring.length > MAX_NAMES}
-                <button class="px-2 py-0.5 rounded-full bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition" on:click={() => showAllStarring = !showAllStarring} title={showAllStarring ? 'Show fewer' : 'Show all'}>
-                  {#if showAllStarring}−{/if}{#if !showAllStarring}+{/if}
-                  {(selected as any).starring.length - MAX_NAMES}
-                </button>
-              {/if}
-            </div>
-          </div>
-        {/if}
-      </div>
-    <div class="mt-6">
-  <h3 class="text-base font-semibold text-gray-200 mb-3">{m.tv_episodes()}</h3>
-      {#if (selected as any).seasons?.length > 0}
-        <div class="mb-2">
-          <select
-            id="sidebar-season-select"
-            class="w-full bg-transparent border rounded px-3 py-2 text-sm"
-            bind:value={selectedSeason}
-            disabled={(selected as any).seasons?.length <= 1}
-            on:change={(e) => {
-              const next = Number((e.currentTarget as HTMLSelectElement).value);
-              selectedSeason = next; // triggers reactive fetch
-              // Immediately select Episode 1 of this season and navigate to pretty URL
-              const seasonForUrl = Number.isFinite(next) ? Math.max(1, next) : 1;
-              Promise.resolve().then(() => onSelectEpisode('pos:1', 'Episode 1', 1, seasonForUrl));
-              // Scroll the list to the top for a clean start
-              Promise.resolve().then(() => { try { episodesListEl?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} });
-            }}
-          >
-            {#each (selected as any).seasons as s}
-              <option value={s.seasonNumber} class="bg-black text-gray-100">
-                {s.customName || `Season ${s.seasonNumber}`}
-              </option>
-            {/each}
-          </select>
+            </a>
+          {/if}
         </div>
-      {/if}
-     
-        {#if loadingEpisodes}
-          <p class="text-gray-400 text-sm">Loading episodes…</p>
-        {:else if episodes.length === 0}
-          <p class="text-gray-400 text-sm">No episodes found.</p>
-        {:else}
-          <ul class="max-h-64 overflow-auto pr-2 space-y-2" bind:this={episodesListEl}>
-            {#each episodes as ep}
-              {@const epProgress = getEpisodeWatchProgress(ep.id)}
-              <li class="overflow-hidden">
-                <div class="flex items-center gap-2 overflow-hidden">
-                  <button type="button" class="flex-1 flex items-center gap-3 p-1.5 rounded hover:bg-white/10 transition text-left border-2 border-transparent outline-none focus-visible:ring-2 focus-visible:ring-red-500/70 focus-visible:ring-offset-2 overflow-hidden min-w-0 {selectedEpisode && selectedEpisode.id === ep.id ? 'bg-red-900/30 border-2 border-red-500/60' : ''}"
-                    on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeasonNum)}>
-                    <div class="relative w-20 h-12 flex-shrink-0 overflow-hidden rounded">
-                      {#if ep.thumbnail}
-                        <img src={ep.thumbnail} alt={decode(ep.title)} class="w-full h-full object-cover {epProgress?.isWatched ? 'opacity-30' : ''}" loading="lazy" decoding="async" />
-                      {:else}
-                        <div class="w-full h-full bg-gray-700"></div>
-                      {/if}
-                      {#if epProgress?.isWatched}
-                        <div class="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <CheckIcon class="w-5 h-5 text-green-400" />
-                        </div>
-                      {/if}
-                      {#if epProgress && epProgress.percent > 0}
-                        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-700/80">
-                          <div class="h-full bg-red-500 transition-all duration-300" style:width="{epProgress.percent}%"></div>
-                        </div>
-                      {/if}
-                    </div>
-                    <div class="flex-1 min-w-0 overflow-hidden">
-                      <div class="text-[13px] text-gray-400">Ep {ep.position}</div>
-                      <div class="text-base text-gray-100 truncate">{decode(ep.title)}</div>
-                    </div>
-                  </button>
-                  {#if isAuthenticated}
-                    <button
-                      type="button"
-                      on:click={(e) => toggleEpisodeWatchedStatus(ep.id, e)}
-                      class="flex-shrink-0 p-2 rounded-lg transition-all hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 text-gray-500 hover:text-gray-400 focus-visible:ring-gray-500"
-                      title={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
-                      aria-label={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
-                    >
-                      {#if epProgress?.isWatched}
-                        <EyeOffIcon class="w-5 h-5" />
-                      {:else}
-                        <EyeIcon class="w-5 h-5" />
-                      {/if}
-                    </button>
+      </div>
+
+    </header>
+
+    <div class="detail-grid">
+      <aside class="detail-aside">
+        <div class={selected.type === 'series' ? 'detail-poster detail-poster--series' : 'detail-poster'}>
+          {#if selected.thumbnail}
+            <img src={selected.thumbnail} alt={selected.title} loading="lazy" decoding="async" />
+          {:else}
+            <div class="detail-poster-fallback"></div>
+          {/if}
+        </div>
+
+        <div class="detail-actions">
+          {#if !$showPlayer}
+            <button on:click={() => {
+              if (selected?.type === 'series' && selectedEpisode) { 
+                if (selectedEpisode.externalUrl) {
+                  if (browser) window.open(selectedEpisode.externalUrl, '_blank');
+                  return;
+                }
+                onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeasonNum);
+                return; 
+              }
+              if (isInlinePlayable(selected)) openContent(selected);
+              else if (selected?.externalUrl) openExternal(selected);
+            }} class="detail-play">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
+              {#if selected?.type === 'series'}
+                {#if selectedEpisode}
+                  {#if selectedEpisode.externalUrl}
+                    { m.tv_watchOn() } {selected?.provider || 'External'}
+                  {:else}
+                    {m.tv_playSelectedEpisode()}
                   {/if}
-                </div>
-              </li>
-            {/each}
-          </ul>
+                {:else}
+                  Play series
+                {/if}
+              {:else}
+                {#if isInlinePlayable(selected)}
+                  { m.tv_playNow() }
+                {:else}
+                  { m.tv_watchOn() } {selected?.provider || 'External'}
+                {/if}
+              {/if}
+            </button>
+          {/if}
+
+          {#if isAuthenticated && selected.type === 'movie'}
+            <button
+              type="button"
+              on:click={toggleWatchedStatus}
+              class={`detail-toggle ${watchProgress?.isWatched ? 'detail-toggle--active' : ''}`}
+            >
+              {#if watchProgress?.isWatched}
+                <CheckIcon class="w-4 h-4" />
+                <span>{m.tv_markUnwatched()}</span>
+              {:else}
+                <EyeIcon class="w-4 h-4" />
+                <span>{m.tv_markWatched()}</span>
+              {/if}
+            </button>
+          {/if}
+
+          {#if watchProgress && watchProgress.percent > 0 && watchProgress.percent < 85}
+            <div class="detail-progress">
+              <div class="detail-progress-label">
+                <span>Progress</span>
+                <span>{Math.round(watchProgress.percent)}%</span>
+              </div>
+              <div class="detail-progress-track">
+                <div class="detail-progress-fill" style:width="{watchProgress.percent}%"></div>
+              </div>
+            </div>
+          {/if}
+        </div>
+
+      </aside>
+
+      <div class="detail-main">
+        <section class="detail-section detail-overview">
+          <div class="detail-overview-grid">
+            <div class="detail-overview-copy">
+              <h3>Overview</h3>
+              <p>{selected.description || 'No description available.'}</p>
+            </div>
+            <div class="detail-overview-rating">
+              <h3>Bangerometer</h3>
+              <div class="detail-rating detail-rating--hero">
+                <BangerMeter
+                  mediaId={selected.id}
+                  initialRating={currentUserRating}
+                  onRatingChange={handleRatingChange}
+                  onRatingDelete={handleRatingDelete}
+                  onAuthRequired={handleAuthRequired}
+                  isWatched={watchProgress?.isWatched || false}
+                  averageRating={ratingsSummary?.averageRating || 0}
+                  ratingCount={ratingsSummary?.ratingCount || 0}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {#if selected.facets}
+          <section class="detail-section">
+            <h3>Facets</h3>
+            <FacetChips facets={selected.facets} />
+          </section>
+        {/if}
+
+        {#if (selected as any).creators?.length}
+          <section class="detail-section">
+            <h3>Creators</h3>
+            <div class="detail-tags">
+              {#each (showAllCreators ? (selected as any).creators : (selected as any).creators.slice(0, MAX_NAMES)) as c}
+                <span>{c}</span>
+              {/each}
+              {#if (selected as any).creators.length > MAX_NAMES}
+                <button class="detail-tags-more" on:click={() => showAllCreators = !showAllCreators} title={showAllCreators ? 'Show fewer' : 'Show all'}>
+                  {#if showAllCreators}−{/if}{#if !showAllCreators}+{/if}
+                  {(selected as any).creators.length - MAX_NAMES}
+                </button>
+              {/if}
+            </div>
+          </section>
+        {/if}
+
+        {#if (selected as any).starring?.length}
+          <section class="detail-section">
+            <h3>Starring</h3>
+            <div class="detail-tags">
+              {#each (showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES)) as s}
+                <span>{s}</span>
+              {/each}
+              {#if (selected as any).starring.length > MAX_NAMES}
+                <button class="detail-tags-more" on:click={() => showAllStarring = !showAllStarring} title={showAllStarring ? 'Show fewer' : 'Show all'}>
+                  {#if showAllStarring}−{/if}{#if !showAllStarring}+{/if}
+                  {(selected as any).starring.length - MAX_NAMES}
+                </button>
+              {/if}
+            </div>
+          </section>
+        {/if}
+
+        {#if selected.type === 'movie' && Array.isArray(selected.tracks) && selected.tracks.length}
+          <section class="detail-section">
+            <h3>Tracklist</h3>
+            <Tracklist tracks={selected.tracks} />
+          </section>
+        {/if}
+
+        {#if selected.type === 'series'}
+          <section class="detail-section">
+            <div class="detail-episodes-header">
+              <h3>{m.tv_episodes()}</h3>
+              {#if (selected as any).seasons?.length > 0}
+                <select
+                  id="detail-season-select"
+                  class="detail-select"
+                  bind:value={selectedSeason}
+                  disabled={(selected as any).seasons?.length <= 1}
+                  on:change={(e) => {
+                    const next = Number((e.currentTarget as HTMLSelectElement).value);
+                    selectedSeason = next;
+                    const seasonForUrl = Number.isFinite(next) ? Math.max(1, next) : 1;
+                    Promise.resolve().then(() => onSelectEpisode('pos:1', 'Episode 1', 1, seasonForUrl));
+                    Promise.resolve().then(() => { try { episodesListEl?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} });
+                  }}
+                >
+                  {#each (selected as any).seasons as s}
+                    <option value={s.seasonNumber} class="bg-black text-gray-100">
+                      {s.customName || `Season ${s.seasonNumber}`}
+                    </option>
+                  {/each}
+                </select>
+              {/if}
+            </div>
+
+            {#if loadingEpisodes}
+              <p class="detail-muted">Loading episodes…</p>
+            {:else if episodes.length === 0}
+              <p class="detail-muted">No episodes found.</p>
+            {:else}
+              <ul class="detail-episodes" bind:this={episodesListEl}>
+                {#each episodes as ep}
+                  {@const epProgress = getEpisodeWatchProgress(ep.id)}
+                  <li>
+                    <button type="button" class={`detail-episode ${selectedEpisode && selectedEpisode.id === ep.id ? 'detail-episode--active' : ''}`}
+                      on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeasonNum)}>
+                      <div class="detail-episode-thumb">
+                        {#if ep.thumbnail}
+                          <img src={ep.thumbnail} alt={decode(ep.title)} class={epProgress?.isWatched ? 'is-watched' : ''} loading="lazy" decoding="async" />
+                        {:else}
+                          <div class="detail-episode-fallback"></div>
+                        {/if}
+                        {#if epProgress?.isWatched}
+                          <div class="detail-episode-status"><CheckIcon class="w-4 h-4" /></div>
+                        {/if}
+                        {#if epProgress && epProgress.percent > 0}
+                          <div class="detail-episode-progress">
+                            <div style:width="{epProgress.percent}%"></div>
+                          </div>
+                        {/if}
+                      </div>
+                      <div class="detail-episode-info">
+                        <span>Ep {ep.position}</span>
+                        <strong>{decode(ep.title)}</strong>
+                      </div>
+                    </button>
+                    {#if isAuthenticated}
+                      <button
+                        type="button"
+                        on:click={(e) => toggleEpisodeWatchedStatus(ep.id, e)}
+                        class="detail-episode-toggle"
+                        title={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+                        aria-label={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+                      >
+                        {#if epProgress?.isWatched}
+                          <EyeOffIcon class="w-4 h-4" />
+                        {:else}
+                          <EyeIcon class="w-4 h-4" />
+                        {/if}
+                      </button>
+                    {/if}
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </section>
         {/if}
       </div>
-    {/if}
-  </div>
-  <div class="relative z-10 pt-4">
-    {#if !$showPlayer}
-      <button on:click={() => {
-        if (selected?.type === 'series' && selectedEpisode) { 
-        // Check if episode has external URL (for paid content not on YouTube)
-        if (selectedEpisode.externalUrl) {
-          if (browser) window.open(selectedEpisode.externalUrl, '_blank');
-          return;
-        }
-  onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeasonNum);
-        return; 
-      }
-      if (isInlinePlayable(selected)) openContent(selected);
-      else if (selected?.externalUrl) openExternal(selected);
-  }} class={heroButtonClass}>
-      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
-        {#if selected?.type === 'series'}
-        {#if selectedEpisode}
-          {#if selectedEpisode.externalUrl}
-            { m.tv_watchOn() } {selected?.provider || 'External'}
-          {:else}
-            {m.tv_playSelectedEpisode()}
-          {/if}
-        {:else}
-          Play series
-        {/if}
-      {:else}
-        {#if isInlinePlayable(selected)}
-          { m.tv_playNow() }
-        {:else}
-          { m.tv_watchOn() } {selected?.provider || 'External'}
-        {/if}
-      {/if}
-    </button>
-    {/if}
-  </div>
+    </div>
+  </section>
 {:else}
-  <div class="absolute inset-0 z-0 bg-gray-800 border-l border-white/10"></div>
-  <div class="text-center text-gray-400 py-12 relative z-10">
+  <div class="detail-empty">
     <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
     <p>{m.tv_selectPlaceholder()}</p>
   </div>
 {/if}
 
-<!-- Auth Dialog for non-authenticated users -->
 <AuthDialog bind:open={showAuthDialog} />
 
 <style>
-  .sidebar-background-container {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    width: 460px;
-    z-index: 0;
+  .detail-wrap {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .detail-header {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .detail-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+  }
+
+  .detail-title {
+    font-size: clamp(2rem, 4vw, 3.6rem);
+    color: var(--jf-ink);
+    text-shadow: 0 18px 40px rgba(2, 6, 23, 0.6);
+  }
+
+  .detail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    padding: 0.35rem 0.9rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(248, 250, 252, 0.75);
+    background: rgba(8, 12, 24, 0.6);
+    margin-bottom: 0.75rem;
+  }
+
+  .detail-suggest {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    color: rgba(248, 250, 252, 0.75);
+    background: rgba(8, 12, 24, 0.6);
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  .detail-suggest:hover {
+    transform: translateY(-1px);
+    color: rgba(248, 250, 252, 0.95);
+  }
+
+  .detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1.2rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: rgba(226, 232, 240, 0.65);
+    align-items: center;
+  }
+
+  .detail-meta-actions {
+    display: inline-flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .detail-pill {
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    color: rgba(248, 250, 252, 0.85);
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+  }
+
+  .detail-pill--paid {
+    border-color: rgba(250, 204, 21, 0.6);
+    color: rgba(254, 240, 138, 0.85);
+  }
+
+  .detail-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    color: rgba(248, 250, 252, 0.75);
+    transition: transform 0.2s ease, color 0.2s ease;
+    background: rgba(8, 12, 24, 0.6);
+  }
+
+  .detail-icon:hover {
+    transform: translateY(-1px);
+    color: rgba(248, 250, 252, 0.95);
+  }
+
+  .detail-icon-img {
+    width: 18px;
+    height: 18px;
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .detail-aside {
+    display: grid;
+    gap: 0.4rem;
+    align-content: start;
+  }
+
+  .detail-poster {
+    border-radius: 24px;
     overflow: hidden;
-    pointer-events: none;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    background: rgba(8, 12, 24, 0.6);
+    box-shadow: 0 20px 45px -30px rgba(2, 6, 23, 0.8);
+    aspect-ratio: 2 / 3;
   }
 
-  @media (max-width: 1280px) {
-    .sidebar-background-container {
-      width: 420px;
-    }
+  .detail-poster img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
   }
 
-  .sidebar-background {
+  .detail-poster--series img {
+    object-fit: contain;
+  }
+
+  .detail-poster-fallback {
+    height: 100%;
+    background: linear-gradient(160deg, rgba(229, 9, 20, 0.4), rgba(37, 99, 235, 0.3));
+  }
+
+  .detail-actions {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: 0;
+  }
+
+  .detail-play {
+    width: 100%;
+    border-radius: 14px;
+    border: 1px solid rgba(229, 9, 20, 0.5);
+    background: linear-gradient(120deg, rgba(229, 9, 20, 0.95), rgba(229, 9, 20, 0.7));
+    color: #fff;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.6rem;
+    box-shadow: 0 20px 45px -30px rgba(229, 9, 20, 0.8);
+  }
+
+  .detail-toggle {
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid rgba(248, 250, 252, 0.18);
+    background: rgba(8, 12, 24, 0.65);
+    color: rgba(226, 232, 240, 0.85);
+    padding: 0.7rem 1rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .detail-toggle--active {
+    border-color: rgba(34, 197, 94, 0.5);
+    color: rgba(187, 247, 208, 0.9);
+  }
+
+  .detail-progress {
+    border-radius: 16px;
+    border: 1px solid rgba(248, 250, 252, 0.12);
+    background: rgba(7, 10, 20, 0.7);
+    padding: 0.75rem;
+  }
+
+  .detail-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .detail-progress-track {
+    margin-top: 0.5rem;
+    height: 0.25rem;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.15);
+    overflow: hidden;
+  }
+
+  .detail-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(229, 9, 20, 0.9), rgba(229, 9, 20, 0.6));
+  }
+
+  .detail-rating {
+    border-radius: 20px;
+    padding: 1rem;
+    border: 1px solid rgba(248, 250, 252, 0.15);
+    background: rgba(8, 12, 24, 0.6);
+  }
+
+  .detail-rating--hero {
+    padding: 1.35rem;
+    max-width: 520px;
+    width: 100%;
+    border-color: rgba(229, 9, 20, 0.35);
+    background:
+      linear-gradient(140deg, rgba(12, 18, 34, 0.92), rgba(8, 12, 24, 0.82)),
+      radial-gradient(circle at 18% 22%, rgba(229, 9, 20, 0.18), transparent 55%),
+      radial-gradient(circle at 85% 18%, rgba(37, 99, 235, 0.16), transparent 55%);
+    box-shadow: 0 35px 70px -45px rgba(2, 6, 23, 0.9);
+  }
+
+  .detail-overview-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .detail-overview-rating .detail-rating--hero {
+    max-width: 100%;
+  }
+
+  .detail-main {
+    display: grid;
+    gap: 1.6rem;
+  }
+
+  .detail-section h3 {
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .detail-section p {
+    margin-top: 0.75rem;
+    color: rgba(226, 232, 240, 0.78);
+    line-height: 1.7;
+  }
+
+  .detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .detail-tags span,
+  .detail-tags-more {
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.18);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.75);
+    background: rgba(8, 12, 24, 0.6);
+  }
+
+  .detail-tags-more {
+    cursor: pointer;
+  }
+
+  .detail-episodes-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .detail-select {
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    background: rgba(8, 12, 24, 0.6);
+    padding: 0.5rem 1rem;
+    color: rgba(248, 250, 252, 0.9);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .detail-episodes {
+    margin: 1rem 0 0;
+    display: grid;
+    gap: 0.75rem;
+    max-height: 420px;
+    overflow: auto;
+    padding-right: 0.5rem;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .detail-episodes li {
+    position: relative;
+  }
+
+  .detail-episode {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem;
+    padding-right: 3.25rem;
+    border-radius: 18px;
+    border: 1px solid rgba(248, 250, 252, 0.15);
+    background: rgba(8, 12, 24, 0.6);
+    color: rgba(248, 250, 252, 0.85);
+    text-align: left;
+  }
+
+  .detail-episode--active {
+    border-color: rgba(229, 9, 20, 0.5);
+  }
+
+  .detail-episode-thumb {
+    position: relative;
+    width: 120px;
+    height: 70px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(6, 10, 20, 0.8);
+  }
+
+  .detail-episode-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .detail-episode-thumb img.is-watched {
+    opacity: 0.45;
+  }
+
+  .detail-episode-fallback {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(140deg, rgba(59, 130, 246, 0.35), rgba(229, 9, 20, 0.3));
+  }
+
+  .detail-episode-status {
     position: absolute;
     inset: 0;
-    background-size: cover;
-    background-position: center;
-    opacity: 1;
-    transition: opacity 0.5s ease-in-out;
-  }
-
-  .sidebar-background.fade-out {
-    opacity: 0;
-  }
-
-  .sidebar-background-fallback {
-    background: linear-gradient(135deg, rgb(37, 99, 235), rgb(147, 51, 234));
-  }
-
-  .details-backdrop-overlay {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    width: 460px;
-    z-index: 1;
-    border-left: 1px solid rgba(71, 85, 105, 0.38);
-    background: linear-gradient(185deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.68) 58%, rgba(15, 23, 42, 0.48) 100%);
-    pointer-events: none;
-  }
-
-  @media (max-width: 1280px) {
-    .details-backdrop-overlay {
-      width: 420px;
-    }
-  }
-
-  .sticky-play-button {
-    position: sticky;
-    bottom: 0;
-    background: linear-gradient(to top, 
-      rgba(15, 23, 42, 1) 0%, 
-      rgba(15, 23, 42, 1) 50%, 
-      rgba(15, 23, 42, 0.95) 75%, 
-      rgba(15, 23, 42, 0) 100%
-    );
-    padding-top: 2rem;
-    margin-top: -1.5rem;
-  }
-
-  .details-primary-button {
-    width: 100%;
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(59, 130, 246, 0.92));
-    color: #fff;
-    padding: 0.95rem 1.5rem;
-    border-radius: 18px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.25s ease, background 0.25s ease;
-    box-shadow: 0 22px 40px -24px rgba(37, 99, 235, 0.6);
+    color: rgba(187, 247, 208, 0.9);
+    background: rgba(2, 6, 23, 0.6);
   }
 
-  .details-primary-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 26px 45px -22px rgba(37, 99, 235, 0.66);
+  .detail-episode-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: rgba(248, 250, 252, 0.2);
+  }
+
+  .detail-episode-progress div {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(229, 9, 20, 0.9), rgba(229, 9, 20, 0.6));
+  }
+
+  .detail-episode-info {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .detail-episode-info span {
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.55);
+  }
+
+  .detail-episode-info strong {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .detail-episode-toggle {
+    position: absolute;
+    right: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 0;
+    border: none;
+    background: transparent;
+    color: rgba(226, 232, 240, 0.65);
+    width: 34px;
+    height: 34px;
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+
+  .detail-episode-toggle:hover {
+    color: rgba(248, 250, 252, 0.95);
+    transform: translateY(-50%) scale(1.06);
+  }
+
+  .detail-episode-toggle:focus-visible {
+    outline: 2px solid rgba(229, 9, 20, 0.6);
+    outline-offset: 3px;
+  }
+
+  .detail-muted {
+    color: rgba(226, 232, 240, 0.6);
+    font-size: 0.9rem;
+    margin-top: 0.75rem;
+  }
+
+  .detail-empty {
+    text-align: center;
+    color: rgba(226, 232, 240, 0.6);
+    padding: 3rem 1rem;
+  }
+
+  @media (max-width: 960px) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-overview-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-aside {
+      order: 1;
+    }
+
+    .detail-main {
+      order: 2;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .detail-episode-toggle {
+      position: static;
+      transform: none;
+      margin-top: 0.5rem;
+    }
+
+    .detail-episode {
+      grid-template-columns: 1fr;
+      padding-right: 0.75rem;
+    }
+
+    .detail-episode-thumb {
+      width: 100%;
+      height: 160px;
+    }
   }
 
   .provider-icon {
@@ -953,5 +1285,4 @@
     -webkit-mask-image: url('/icons/brand-vimeo.svg');
     mask-image: url('/icons/brand-vimeo.svg');
   }
-
 </style>

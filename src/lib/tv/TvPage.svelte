@@ -76,6 +76,8 @@
     $page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
   );
 
+  const selectedForDetail = $derived($selectedContent ?? initialItem ?? null);
+
   let allowExitBack = false;
   let exitConfirmUntil = 0;
 
@@ -460,7 +462,7 @@
   <TvPageBackdrop />
   {#if isDetailRoute}
     <TvDetailPanel
-      selected={$selectedContent}
+      selected={selectedForDetail}
       openContent={handleOpenContent}
       openExternal={openExternalContent}
       onOpenEpisode={handleOpenEpisode}

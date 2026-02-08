@@ -816,6 +816,7 @@
     text-transform: uppercase;
     color: rgba(248, 250, 252, 0.75);
     background: rgba(8, 12, 24, 0.6);
+    margin-top: 3rem;
     margin-bottom: 0.75rem;
   }
 

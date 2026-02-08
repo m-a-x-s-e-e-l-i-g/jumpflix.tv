@@ -2,6 +2,8 @@
   import '@khmyznikov/pwa-install';
   import { onMount } from 'svelte';
 
+  export let autoOpen = false;
+
   /** How long (ms) to suppress the dialog after the user dismisses it */
   const SUPPRESS_MS = 10 * 7 * 24 * 60 * 60 * 1000; // 10 weeks
   const STORAGE_KEY = 'pwa-install-dismissed-at';
@@ -40,9 +42,6 @@
     // If user already installed / in standalone, do nothing
     if (isStandalone()) return;
 
-    // If within suppression window skip
-    if (shouldSuppress()) return;
-
     // Auto open once the component upgrades (custom element defined)
     let shownTracked = false;
     const trackShown = () => {
@@ -67,8 +66,11 @@
       }
     };
 
-    // In case install already available, open immediately; otherwise small timeout
-    setTimeout(tryOpen, 50);
+    const shouldAutoOpen = autoOpen && !shouldSuppress();
+    if (shouldAutoOpen) {
+      // In case install already available, open immediately; otherwise small timeout
+      setTimeout(tryOpen, 50);
+    }
 
     const onAnyClose = (e: Event) => {
       // The component doesn't emit a dedicated close event; we watch attribute/state changes

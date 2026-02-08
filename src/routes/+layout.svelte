@@ -43,6 +43,32 @@
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
 
+	function isStandaloneMode() {
+		if (typeof window === 'undefined') return false;
+		return window.matchMedia('(display-mode: standalone)').matches
+			|| (navigator as any).standalone === true;
+	}
+
+	function openPwaInstallPrompt() {
+		if (isStandaloneMode()) {
+			toast.message(m.install_installed());
+			return;
+		}
+		if (!pwaInstallRef || typeof pwaInstallRef.showDialog !== 'function') {
+			if (import.meta.env.DEV) {
+				toast.message(m.install_dev());
+			} else {
+				toast.message(m.install_not_available());
+			}
+			return;
+		}
+		try {
+			pwaInstallRef.showDialog(true);
+		} catch {
+			toast.error(m.install_error());
+		}
+	}
+
 	// data from +layout.ts
 	let { children, data } = $props<{
 		children: any;
@@ -336,6 +362,16 @@
 
 	onMount(() => {
 		if (typeof window === 'undefined') return;
+
+		const handlePwaInstallElement = (event: Event) => {
+			const detail = (event as CustomEvent).detail;
+			if (detail) {
+				pwaInstallRef = detail;
+			}
+		};
+
+		pwaInstallRef = document.querySelector('pwa-install');
+		window.addEventListener('pwa-install-element', handlePwaInstallElement as EventListener);
 		
 		// Initialize auth stores with data from server
 		if (data.session) {
@@ -511,7 +547,13 @@
 		});
 		
 		const stopWatchHistory = initWatchHistory();
-		const cleanupFns = [addEventListeners(), setupScrollEffects(), stopWatchHistory, () => authListener.subscription.unsubscribe()];
+		const cleanupFns = [
+			addEventListeners(),
+			setupScrollEffects(),
+			stopWatchHistory,
+			() => authListener.subscription.unsubscribe(),
+			() => window.removeEventListener('pwa-install-element', handlePwaInstallElement as EventListener)
+		];
 		return () => {
 			for (const cleanup of cleanupFns) {
 				cleanup?.();
@@ -680,6 +722,16 @@
 						</button>
 					{/each}
 				</div>
+				<div class="mt-6">
+					<p class="mb-2 text-sm text-muted-foreground">{m.settings_install()}</p>
+					<button
+						onclick={openPwaInstallPrompt}
+						class="group relative flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					>
+						<span class="font-medium transition-colors group-hover:text-foreground">{m.settings_install_cta()}</span>
+						<span class="text-xs text-muted-foreground">PWA</span>
+					</button>
+				</div>
 				<!-- Project Links -->
 				<div class="mt-6">
 					<p class="mb-2 text-sm text-muted-foreground">{m.settings_links()}</p>
@@ -769,8 +821,8 @@
 	<!-- Global toast container -->
 	<Toaster richColors position="bottom-center" theme="dark" />
 
-	<!-- Global PWA install prompt (auto-managed, suppressed after dismissal for 2 weeks) -->
-	<PWAInstallPrompt />
+	<!-- Global PWA install prompt (manual trigger only) -->
+	<PWAInstallPrompt autoOpen={false} />
 </div>
 
 <style>

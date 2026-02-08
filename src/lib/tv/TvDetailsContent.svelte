@@ -15,17 +15,24 @@
   import { showPlayer, selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
   import Tracklist from '$lib/tv/Tracklist.svelte';
   import { getProviderLink, type ProviderLink } from '$lib/tv/provider-links';
-  import {
-    getAllWatchProgress,
-    setWatchedStatus,
-    PROGRESS_CHANGE_EVENT
-  } from '$lib/tv/watchHistory';
+  import { setWatchedStatus, PROGRESS_CHANGE_EVENT } from '$lib/tv/watchHistory';
   import { flushWatchHistoryNow } from '$lib/tv/watchHistory';
   import type { WatchProgress } from '$lib/tv/watchHistory';
   import { onMount } from 'svelte';
   import { user as authUser } from '$lib/stores/authStore';
   import BangerMeter from '$lib/components/Bangerometer.svelte';
-  import { getUserRating, saveRating, getMediaRatingSummary, deleteRating } from '$lib/ratings';
+  import {
+    applyRatingEventUpdate,
+    buildBaseId,
+    buildWatchProgressMap,
+    fetchRatings,
+    getEpisodeWatchProgress as resolveEpisodeWatchProgress,
+    getInitialRatingsSummary,
+    getPreferredMovieProgressId,
+    getWatchProgressForSelection,
+    removeRating,
+    updateRating
+  } from '$lib/tv/details-helpers';
   import AuthDialog from '$lib/components/AuthDialog.svelte';
   import FacetChips from '$lib/components/FacetChips.svelte';
   import ContentSuggestionDialog from '$lib/components/ContentSuggestionDialog.svelte';
@@ -66,107 +73,23 @@
   let watchProgress: { percent: number; isWatched: boolean; position: number } | null = null;
   let watchProgressMap: Map<string, WatchProgress> = new Map();
 
-  function refreshWatchProgressMap() {
-    if (!browser) {
-      watchProgressMap = new Map();
-      return;
-    }
-    const entries = getAllWatchProgress();
-    const next = new Map<string, WatchProgress>();
-    for (const entry of entries) {
-      next.set(entry.mediaId, entry);
-    }
-    watchProgressMap = next;
-  }
-
-  function buildBaseId(item: ContentItem | null): string | null {
-    if (!item) return null;
-    return `${item.type}:${item.id}`;
-  }
-
-  function parseWatchedAt(value: string | undefined | null): number {
-    if (!value) return 0;
-    const timestamp = Date.parse(value);
-    return Number.isFinite(timestamp) ? timestamp : 0;
-  }
-
-  function pickLatestProgress(current: WatchProgress | null, candidate: WatchProgress): WatchProgress {
-    if (!current) return candidate;
-    const currentTime = parseWatchedAt(current.watchedAt);
-    const candidateTime = parseWatchedAt(candidate.watchedAt);
-    if (candidateTime > currentTime) return candidate;
-    if (candidateTime < currentTime) return current;
-    return candidate.percent > current.percent ? candidate : current;
-  }
-
   function getWatchProgressForSelected(): void {
     if (!browser || !selected) {
       watchProgress = null;
       watchProgressMap = new Map();
       return;
     }
-
-    refreshWatchProgressMap();
-
-    const baseId = buildBaseId(selected);
-    if (!baseId) {
-      watchProgress = null;
-      return;
-    }
-
-    const candidateIds: string[] = [];
-
-    if (selected.type === 'movie') {
-      const movie = selected as any;
-      if (movie.videoId) candidateIds.push(`${baseId}:yt:${movie.videoId}`);
-      if (movie.vimeoId) candidateIds.push(`${baseId}:vimeo:${movie.vimeoId}`);
-    }
-
-    if (selected.type === 'series' && selectedEpisode?.id) {
-      candidateIds.push(`${baseId}:ep:${selectedEpisode.id}`);
-    }
-
-    let progress: WatchProgress | null = null;
-    for (const id of candidateIds) {
-      progress = watchProgressMap.get(id) ?? null;
-      if (progress) break;
-    }
-
-    if (!progress) {
-      const basePrefix = `${baseId}:`;
-      for (const entry of watchProgressMap.values()) {
-        if (entry.mediaId === baseId || entry.mediaId.startsWith(basePrefix)) {
-          progress = pickLatestProgress(progress, entry);
-        }
-      }
-    }
-
-    if (progress) {
-      watchProgress = {
-        percent: progress.percent,
-        isWatched: progress.isWatched,
-        position: progress.position
-      };
-    } else {
-      watchProgress = null;
-    }
+    watchProgressMap = buildWatchProgressMap(browser);
+    watchProgress = getWatchProgressForSelection({ selected, selectedEpisode, watchProgressMap });
   }
 
   function getEpisodeWatchProgress(episodeId: string): { isWatched: boolean; percent: number } | null {
-    if (!browser || !selected || selected.type !== 'series') return null;
-    const baseId = buildBaseId(selected);
-    if (!baseId) return null;
-    
-    const fullId = `${baseId}:ep:${episodeId}`;
-    const progress = watchProgressMap.get(fullId);
-    
-    if (progress) {
-      return {
-        isWatched: progress.isWatched,
-        percent: progress.percent
-      };
-    }
-    return null;
+    return resolveEpisodeWatchProgress({
+      browser,
+      selected,
+      episodeId,
+      watchProgressMap
+    });
   }
 
   function toggleEpisodeWatchedStatus(episodeId: string, event: Event) {
@@ -182,10 +105,8 @@
     setWatchedStatus(fullId, 'episode', newStatus);
   void flushWatchHistoryNow();
     
-    // Force refresh by reassigning the map
-    refreshWatchProgressMap();
-    // Also update the selected progress
-    getWatchProgressForSelected();
+    watchProgressMap = buildWatchProgressMap(browser);
+    watchProgress = getWatchProgressForSelection({ selected, selectedEpisode, watchProgressMap });
     
     // Force reactivity by creating a new episodes array reference
     episodes = [...episodes];
@@ -195,15 +116,8 @@
 
   function toggleWatchedStatus() {
     if (!browser || !selected || selected.type !== 'movie' || !isAuthenticated) return;
-    const baseId = buildBaseId(selected);
-    if (!baseId) return;
-
-    const preferredId = (() => {
-      const movie = selected as any;
-      if (movie.videoId) return `${baseId}:yt:${movie.videoId}`;
-      if (movie.vimeoId) return `${baseId}:vimeo:${movie.vimeoId}`;
-      return baseId;
-    })();
+    const preferredId = getPreferredMovieProgressId(selected);
+    if (!preferredId) return;
 
     const newStatus = !watchProgress?.isWatched;
     setWatchedStatus(preferredId, 'movie', newStatus);
@@ -247,9 +161,7 @@
     // Reset user rating immediately when item changes, then load actual data
     currentUserRating = null;
     // Use the rating data already available on the content item to prevent flashing
-    ratingsSummary = selected.averageRating !== undefined && selected.ratingCount !== undefined
-      ? { averageRating: selected.averageRating, ratingCount: selected.ratingCount }
-      : null;
+    ratingsSummary = getInitialRatingsSummary(selected);
   }
 
   $: if (browser && selected && ratingRefreshToken >= 0) {
@@ -263,10 +175,7 @@
     }
 
     try {
-      const [userRating, summary] = await Promise.all([
-        getUserRating(selected.id),
-        getMediaRatingSummary(selected.id)
-      ]);
+      const { userRating, summary } = await fetchRatings(selected.id);
       currentUserRating = userRating;
       // Update with fresh data from the server
       ratingsSummary = summary;
@@ -277,10 +186,9 @@
 
   async function handleRatingChange(rating: number) {
     if (!selected) return;
-    await saveRating(selected.id, rating);
     currentUserRating = rating;
     // Refresh summary to show updated average
-    const summary = await getMediaRatingSummary(selected.id);
+    const summary = await updateRating(selected.id, rating);
     ratingsSummary = summary;
     const numericId = Number(selected.id);
     if (Number.isFinite(numericId)) {
@@ -295,9 +203,8 @@
 
   async function handleRatingDelete() {
     if (!selected) return;
-    await deleteRating(selected.id);
+    const summary = await removeRating(selected.id);
     currentUserRating = null;
-    const summary = await getMediaRatingSummary(selected.id);
     ratingsSummary = summary;
     const numericId = Number(selected.id);
     if (Number.isFinite(numericId)) {
@@ -315,16 +222,13 @@
   }
 
   function syncRatingFromEvent(detail?: RatingUpdatedDetail) {
-    if (!detail || !selected) return;
-    const numericId = Number(selected.id);
-    if (!Number.isFinite(numericId) || detail.mediaId !== numericId) return;
-    currentUserRating = detail.rating ?? null;
-    if (detail.averageRating !== undefined && detail.ratingCount !== undefined) {
-      ratingsSummary = {
-        averageRating: detail.averageRating,
-        ratingCount: detail.ratingCount
-      };
-    } else {
+    if (!selected) return;
+    const update = applyRatingEventUpdate(selected.id, detail);
+    if (!update) return;
+    currentUserRating = update.rating;
+    if (update.summary) {
+      ratingsSummary = update.summary;
+    } else if (update.shouldReload) {
       void loadRatingData();
     }
   }

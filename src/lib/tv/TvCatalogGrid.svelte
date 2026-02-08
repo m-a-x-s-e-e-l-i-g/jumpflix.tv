@@ -1,12 +1,13 @@
 <script lang="ts">
+  import { onMount, tick } from 'svelte';
+  import { browser } from '$app/environment';
   import ContentCard from '$lib/tv/ContentCard.svelte';
   import type { ContentItem } from '$lib/tv/types';
   import * as m from '$lib/paraglide/messages';
+  import { computeColumns } from '$lib/tv/helpers/grid';
 
   export let gridElement: HTMLElement | null = null;
-  export let sortedAllContent: ContentItem[] = [];
   export let visibleContent: ContentItem[] = [];
-  export let visibleKeys: Set<string> = new Set();
   export let selectedContent: ContentItem | null = null;
   export let priorityKeys: Set<string> = new Set();
   export let isMobile = false;
@@ -15,13 +16,119 @@
   export let viewMode: 'grid' | 'list' = 'grid';
 
   const keyFor = (item: ContentItem) => `${item.type}:${item.id}`;
+
+  const OVERSCAN_ROWS = 4;
+  let startIndex = 0;
+  let endIndex = 0;
+  let rowHeight = 280;
+  let rowGap = 24;
+  let columns = 1;
+  let paddingTop = 0;
+  let paddingBottom = 0;
+  let recalcQueued = false;
+  let scrollRaf: number | null = null;
+
+  const scheduleRecalc = async () => {
+    if (!browser || recalcQueued) return;
+    recalcQueued = true;
+    await tick();
+    recalcQueued = false;
+    measureGrid();
+    updateRange();
+  };
+
+  const measureGrid = () => {
+    if (!gridElement) return;
+    const styles = getComputedStyle(gridElement);
+    const gapValue = parseFloat(styles.rowGap || styles.gap || '0');
+    rowGap = Number.isFinite(gapValue) ? gapValue : 0;
+
+    const firstItem = gridElement.querySelector<HTMLElement>('.catalog-item');
+    if (firstItem) {
+      const rect = firstItem.getBoundingClientRect();
+      if (rect.height > 0) rowHeight = rect.height + rowGap;
+    }
+
+    columns = computeColumns(gridElement);
+  };
+
+  const updateRange = () => {
+    if (!browser) return;
+    const total = visibleContent.length;
+    if (!gridElement || total === 0) {
+      startIndex = 0;
+      endIndex = total;
+      paddingTop = 0;
+      paddingBottom = 0;
+      return;
+    }
+
+    const rect = gridElement.getBoundingClientRect();
+    const gridTop = rect.top + window.scrollY;
+    const viewTop = window.scrollY;
+    const viewBottom = viewTop + window.innerHeight;
+    const safeRowHeight = Math.max(1, rowHeight || 1);
+    const totalRows = Math.max(1, Math.ceil(total / Math.max(columns, 1)));
+
+    const firstRow = Math.max(0, Math.floor((viewTop - gridTop) / safeRowHeight) - OVERSCAN_ROWS);
+    const lastRow = Math.min(
+      totalRows - 1,
+      Math.ceil((viewBottom - gridTop) / safeRowHeight) + OVERSCAN_ROWS
+    );
+
+    startIndex = Math.max(0, firstRow * columns);
+    endIndex = Math.min(total, (lastRow + 1) * columns);
+
+    paddingTop = firstRow * safeRowHeight;
+    paddingBottom = Math.max(0, (totalRows - lastRow - 1) * safeRowHeight);
+  };
+
+  $: if (browser) {
+    visibleContent;
+    gridScale;
+    viewMode;
+    isMobile;
+    scheduleRecalc();
+  }
+
+  onMount(() => {
+    if (!browser) return;
+
+    const handleScroll = () => {
+      if (scrollRaf !== null) return;
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = null;
+        updateRange();
+      });
+    };
+
+    const handleResize = () => scheduleRecalc();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize);
+
+    const observer = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(() => scheduleRecalc())
+      : null;
+    if (observer && gridElement) observer.observe(gridElement);
+
+    scheduleRecalc();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+      observer?.disconnect();
+      if (scrollRaf !== null) cancelAnimationFrame(scrollRaf);
+    };
+  });
+
+  $: renderedContent = visibleContent.slice(startIndex, endIndex);
 </script>
 
 <div id="catalog" class="catalog-shell">
   <div
     bind:this={gridElement}
     class={`catalog-grid ${viewMode === 'list' ? 'list-mode' : ''}`}
-    style={`--card-scale: ${gridScale}; --card-ratio: 2 / 3`}
+    style={`--card-scale: ${gridScale}; --card-ratio: 2 / 3; padding-top: ${paddingTop}px; padding-bottom: ${paddingBottom}px;`}
   >
     {#if visibleContent.length === 0}
       <div class="col-span-full flex flex-col items-center gap-6 py-10 text-center text-gray-400">
@@ -37,11 +144,8 @@
         <div>{m.tv_noResults()}</div>
       </div>
     {:else}
-      {#each sortedAllContent as item (keyFor(item))}
-        <div
-          class:hidden={!visibleKeys.has(keyFor(item))}
-          class="catalog-item"
-        >
+      {#each renderedContent as item (keyFor(item))}
+        <div class="catalog-item">
           <ContentCard
             {item}
             isSelected={!!(selectedContent && selectedContent.id === item.id && selectedContent.type === item.type)}

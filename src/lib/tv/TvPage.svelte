@@ -14,8 +14,6 @@
   import { getUserRating } from '$lib/ratings';
   import {
       visibleContent,
-      visibleKeys,
-      sortedAllContent,
       searchQuery,
       showPaid,
       showWatched,
@@ -482,9 +480,7 @@
     <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
       <TvCatalogGrid
         bind:gridElement={gridEl}
-        sortedAllContent={$sortedAllContent}
         visibleContent={$visibleContent}
-        visibleKeys={$visibleKeys}
         selectedContent={$selectedContent}
         {isMobile}
         priorityKeys={priorityKeys}

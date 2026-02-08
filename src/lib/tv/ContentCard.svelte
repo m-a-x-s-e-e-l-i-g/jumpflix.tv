@@ -490,7 +490,6 @@
     border: 1px solid rgba(248, 250, 252, 0.12);
     background: rgba(7, 10, 20, 0.7);
     padding: 0.55rem 0.75rem;
-    backdrop-filter: blur(8px);
   }
 
   .card-progress-label {

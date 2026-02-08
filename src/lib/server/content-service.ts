@@ -36,19 +36,20 @@ function removeUndefined<T extends Record<string, any>>(obj: T): T {
 
 // Helper to map facets from database row
 function mapFacets(row: MediaItemRow): Facets | undefined {
+	// Calculate automatic facets
+	const era = calculateEraFacet(row.year);
+
 	const hasFacets = row.facet_type || 
 		(row.facet_mood && row.facet_mood.length > 0) || 
 		(row.facet_movement && row.facet_movement.length > 0) || 
 		row.facet_environment || 
 		row.facet_film_style || 
-		row.facet_theme;
+		row.facet_theme || 
+		era;
 	
 	if (!hasFacets) {
 		return undefined;
 	}
-
-	// Calculate automatic facets
-	const era = calculateEraFacet(row.year);
 
 	return removeUndefined({
 		type: row.facet_type ?? undefined,

@@ -116,7 +116,6 @@ export const sortBy = writable<SortBy>('default');
 export const showWatched = writable(loadBooleanPreference(SHOW_WATCHED_STORAGE_KEY));
 export const selectedContent = writable<ContentItem | null>(null);
 export const showPlayer = writable(false);
-export const showDetailsPanel = writable(false);
 export const selectedIndex = writable(0);
 export const gridScale = writable(loadNumberPreference(GRID_SCALE_STORAGE_KEY, 1));
 export const viewMode = writable<'grid' | 'list'>(
@@ -359,20 +358,6 @@ export function selectEpisode(ep: Episode) {
 export function closePlayer() {
 	showPlayer.set(false);
 	selectedEpisode.set(null);
-
-	// On mobile, show the details panel when closing the player if there's selected content
-	if (browser && typeof window !== 'undefined' && window.innerWidth < 768) {
-		const current = get(selectedContent);
-		if (current) {
-			showDetailsPanel.set(true);
-		}
-	}
-}
-export function openDetailsPanel() {
-	showDetailsPanel.set(true);
-}
-export function closeDetailsPanel() {
-	showDetailsPanel.set(false);
 }
 
 // Helper to update sort

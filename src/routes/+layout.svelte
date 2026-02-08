@@ -30,7 +30,6 @@
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 	import TvPage from '$lib/tv/TvPage.svelte';
-	import { showDetailsPanel } from '$lib/tv/store';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import UserProfileButton from '$lib/components/UserProfileButton.svelte';
 	import AdminMenuButton from '$lib/components/AdminMenuButton.svelte';
@@ -58,7 +57,6 @@
 		};
 	}>();
 
-	let isMobile = $state(false);
 	// current locale from Paraglide (reactive state)
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
 	let sheetOpen = $state(false);
@@ -217,8 +215,7 @@
 			rotateFactor: 0.019
 		}
 	];
-	const mobilePopcorns = popcorns.slice(0, 4);
-	const activePopcorns = $derived(isMobile ? mobilePopcorns : popcorns);
+	const activePopcorns = $derived(popcorns);
 
 	const PARALLAX_STRENGTH = 0.06;
 	const SCROLL_UPDATE_THRESHOLD = 6; // Minimum scroll delta (px) before refreshing parallax to cut down style recalculations
@@ -281,20 +278,9 @@
 		};
 	};
 
-	if (typeof window !== 'undefined') {
-		isMobile = window.innerWidth < 768;
-	}
-
 	function addEventListeners(): () => void {
 		if (typeof window === 'undefined') return () => {};
-		const updateSize = () => {
-			isMobile = window.innerWidth < 768;
-		};
-		updateSize();
-		window.addEventListener('resize', updateSize);
-		return () => {
-			window.removeEventListener('resize', updateSize);
-		};
+		return () => {};
 	}
 
 	function setupScrollEffects(): () => void {
@@ -629,7 +615,6 @@
 	<SheetRoot bind:open={sheetOpen}>
 		<div
 			class="absolute top-4 left-4 z-[var(--z-index-settings)] flex gap-2"
-			class:hidden={$showDetailsPanel && isMobile}
 		>
 			<SheetTrigger 
 				aria-label={m.settings_open()}

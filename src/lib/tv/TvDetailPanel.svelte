@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SidebarDetails from '$lib/tv/SidebarDetails.svelte';
+  import TvDetailsContent from '$lib/tv/TvDetailsContent.svelte';
   import type { ContentItem, Episode } from '$lib/tv/types';
 
   let {
@@ -10,7 +10,6 @@
     onSelectEpisode,
     selectedEpisode = null,
     initialSeasonNumber = null,
-    isMobile = false,
     ratingRefreshToken = 0
   } = $props<{
     selected: ContentItem | null;
@@ -20,7 +19,6 @@
     onSelectEpisode: (videoId: string, title: string, episodeNumber?: number, seasonNumber?: number) => void;
     selectedEpisode?: Episode | null;
     initialSeasonNumber?: number | null;
-    isMobile?: boolean;
     ratingRefreshToken?: number;
   }>();
 
@@ -28,14 +26,13 @@
 
 <section class="tv-detail-surface">
   <div class="tv-detail-shell">
-    <SidebarDetails
+    <TvDetailsContent
       {selected}
       {openContent}
       {openExternal}
       {onOpenEpisode}
       {onSelectEpisode}
       {selectedEpisode}
-      {isMobile}
       {ratingRefreshToken}
       initialSeason={initialSeasonNumber ?? undefined}
     />

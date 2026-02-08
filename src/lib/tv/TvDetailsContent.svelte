@@ -55,7 +55,6 @@
   export let onSelectEpisode: (videoId: string, title: string, episodeNumber?: number, seasonNumber?: number) => void;
   // Currently selected episode (for highlighting)
   export let selectedEpisode: Episode | null = null;
-  export let isMobile: boolean = false;
   export let ratingRefreshToken = 0;
 
   // UI state for expanding long name lists
@@ -361,8 +360,7 @@
   }
   
   // Fetch only when currentFetchId changes
-  // Avoid duplicate fetches on mobile; MobileDetailsOverlay handles fetching when open
-  $: if (browser && currentFetchId && !isMobile) {
+  $: if (browser && currentFetchId) {
     loadingEpisodes = true;
     episodes = [];
     _episodesController?.abort();
@@ -488,9 +486,9 @@
             triggerAriaLabel="Suggest change / report issue"
             triggerClass="detail-suggest"
           >
-            <svelte:fragment slot="trigger">
+            {#snippet trigger()}
               <PencilIcon class="w-4 h-4" />
-            </svelte:fragment>
+            {/snippet}
           </ContentSuggestionDialog>
         {/if}
       </div>

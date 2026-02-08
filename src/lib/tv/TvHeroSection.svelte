@@ -100,10 +100,6 @@
     user-select: none;
   }
 
-  .hero-kicker {
-    margin-top: 1.5rem;
-  }
-
   .hero-title {
     font-size: clamp(2.6rem, 5vw, 4.6rem);
     color: var(--jf-ink);

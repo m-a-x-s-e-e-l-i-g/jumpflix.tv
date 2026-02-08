@@ -469,7 +469,6 @@
       onSelectEpisode={handleSelectEpisode}
       selectedEpisode={$selectedEpisode}
       initialSeasonNumber={initialSeasonNumber}
-      {isMobile}
       ratingRefreshToken={ratingRefreshToken}
     />
   {:else}

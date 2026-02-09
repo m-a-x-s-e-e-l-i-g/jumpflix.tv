@@ -722,7 +722,7 @@
     margin-bottom: 0.75rem;
   }
 
-  .detail-suggest {
+  :global(.detail-suggest) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -735,7 +735,7 @@
     transition: transform 0.2s ease, color 0.2s ease;
   }
 
-  .detail-suggest:hover {
+  :global(.detail-suggest:hover) {
     transform: translateY(-1px);
     color: rgba(248, 250, 252, 0.95);
   }
@@ -1151,6 +1151,60 @@
   }
 
   @media (max-width: 640px) {
+    .detail-header {
+      position: relative;
+      padding-top: 2.25rem;
+    }
+
+    .detail-header-top {
+      flex-direction: column;
+      align-items: flex-start;
+      padding-right: 0;
+    }
+
+    .detail-back {
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .detail-title {
+      font-size: clamp(1.6rem, 8vw, 2.4rem);
+    }
+
+    :global(.detail-suggest) {
+      position: fixed;
+      top: 0.75rem;
+      right: 0.75rem;
+      z-index: 30;
+      margin: 0;
+      transform: none;
+    }
+
+    .detail-meta {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+    }
+
+    .detail-aside {
+      justify-items: center;
+      gap: 0.8rem;
+    }
+
+    .detail-poster {
+      width: min(72vw, 240px);
+      justify-self: center;
+    }
+
+    .detail-actions {
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    .detail-episodes {
+      max-height: 340px;
+    }
+
     .detail-episode-toggle {
       position: static;
       transform: none;

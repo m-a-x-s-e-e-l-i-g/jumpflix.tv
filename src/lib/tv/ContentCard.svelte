@@ -200,7 +200,7 @@
       {#if isRecentlyAdded}
         <span class="card-badge card-badge--hot">NEW</span>
       {/if}
-      {#if item.paid}
+      {#if item.paid && !isWatched}
         <span class="card-badge card-badge--paid">PAID</span>
       {/if}
       {#if isWatched}
@@ -208,14 +208,16 @@
       {/if}
     </div>
 
-    <!-- Bottom-right info: duration for movies, episode count for series -->
-    <div class="card-meta">
-      {#if item.type === 'movie'}
-        {item.duration}
-      {:else}
-        {(item as any).episodeCount || '?'} eps
-      {/if}
-    </div>
+    {#if !hasProgress && !isWatched}
+      <!-- Bottom-right info: duration for movies, episode count for series -->
+      <div class="card-meta">
+        {#if item.type === 'movie'}
+          {item.duration}
+        {:else}
+          {(item as any).episodeCount || '?'} eps
+        {/if}
+      </div>
+    {/if}
 
     <!-- Progress bar at bottom -->
     {#if hasProgress}

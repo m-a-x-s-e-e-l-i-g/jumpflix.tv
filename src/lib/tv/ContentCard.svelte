@@ -197,7 +197,7 @@
     {/if}
 
     <div class="card-badges">
-      {#if isRecentlyAdded}
+      {#if isRecentlyAdded && !isWatched}
         <span class="card-badge card-badge--hot">NEW</span>
       {/if}
       {#if item.paid && !isWatched}
@@ -274,22 +274,29 @@
     border-radius: 999px;
     border: 1px solid rgba(248, 250, 252, 0.2);
     background: rgba(8, 12, 24, 0.7);
-    color: rgba(248, 250, 252, 0.85);
+    color: rgba(248, 250, 252, 0.9);
+    box-shadow: 0 8px 16px -12px rgba(15, 23, 42, 0.8);
   }
 
   .card-badge--hot {
-    border-color: rgba(229, 9, 20, 0.6);
-    color: rgba(255, 230, 224, 0.9);
+    background: linear-gradient(135deg, rgba(190, 10, 24, 0.98), rgba(156, 8, 20, 0.92));
+    border-color: rgba(239, 68, 68, 0.7);
+    color: #ffffff;
+    box-shadow: 0 12px 20px -12px rgba(190, 10, 24, 0.65);
   }
 
   .card-badge--paid {
-    border-color: rgba(250, 204, 21, 0.5);
-    color: rgba(254, 240, 138, 0.9);
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.98), rgba(245, 158, 11, 0.92));
+    border-color: rgba(252, 211, 77, 0.9);
+    color: rgba(24, 24, 24, 0.95);
+    box-shadow: 0 12px 18px -12px rgba(250, 204, 21, 0.75);
   }
 
   .card-badge--watched {
-    border-color: rgba(34, 197, 94, 0.45);
-    color: rgba(187, 247, 208, 0.9);
+    background: rgba(10, 16, 28, 0.85);
+    border-color: rgba(148, 163, 184, 0.55);
+    color: rgba(226, 232, 240, 0.9);
+    box-shadow: 0 10px 18px -14px rgba(15, 23, 42, 0.7);
   }
 
   .card-meta {

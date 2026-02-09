@@ -949,7 +949,7 @@
     min-height: 0;
     grid-column: auto;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
     min-width: 320px;
   }
 

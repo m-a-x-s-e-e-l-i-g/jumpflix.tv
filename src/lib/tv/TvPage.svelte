@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, onMount } from 'svelte';
+  import { getContext, onMount, tick } from 'svelte';
   import { page } from '$app/stores';
   import { get } from 'svelte/store';
   import { toast } from 'svelte-sonner';
@@ -33,7 +33,7 @@
   import { getLatestWatchProgressByBaseId } from '$lib/tv/watchHistory';
   import type { ContentItem, Episode, Movie } from '$lib/tv/types';
   import { browser } from '$app/environment';
-  import { goto } from '$app/navigation';
+  import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
   import { buildItemUrl, buildPageTitle, extractSeasonEpisodeFromPath, openExternalContent } from '$lib/tv/helpers/navigation';
   import { computeColumns } from '$lib/tv/helpers/grid';
   import { SCROLL_CONTEXT_KEY, type ScrollSubscription } from '$lib/scroll-context';
@@ -70,10 +70,33 @@
   let ratingDialogMovie = $state<Movie | null>(null);
   let ratingRefreshToken = $state(0);
   let ratingDialogCheckToken = 0;
+  let lastCatalogScrollY = 0;
+  let restoreCatalogScroll = false;
 
   const isDetailRoute = $derived(
     $page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
   );
+
+  const isDetailPathname = (pathname: string) =>
+    pathname.startsWith('/movie/') || pathname.startsWith('/series/');
+
+  async function scrollAfterNav(target: number) {
+    if (!browser) return;
+    await tick();
+    const clamped = Math.max(0, target);
+    const applyScroll = () => window.scrollTo(0, clamped);
+    requestAnimationFrame(() => {
+      applyScroll();
+      requestAnimationFrame(() => {
+        applyScroll();
+        setTimeout(() => {
+          if (Math.abs(window.scrollY - clamped) > 2) {
+            applyScroll();
+          }
+        }, 0);
+      });
+    });
+  }
 
   const selectedForDetail = $derived($selectedContent ?? initialItem ?? null);
 
@@ -321,6 +344,30 @@
     };
 
     window.addEventListener('popstate', handlePopState);
+
+    beforeNavigate((nav) => {
+      if (!browser || !nav.from || !nav.to) return;
+      const fromPath = nav.from.url.pathname;
+      const toPath = nav.to.url.pathname;
+      if (fromPath === '/' && isDetailPathname(toPath)) {
+        lastCatalogScrollY = window.scrollY;
+        restoreCatalogScroll = true;
+      }
+    });
+
+    afterNavigate((nav) => {
+      if (!browser || !nav.from || !nav.to) return;
+      const fromPath = nav.from.url.pathname;
+      const toPath = nav.to.url.pathname;
+      if (fromPath === '/' && isDetailPathname(toPath)) {
+        void scrollAfterNav(0);
+        return;
+      }
+      if (restoreCatalogScroll && isDetailPathname(fromPath) && toPath === '/') {
+        void scrollAfterNav(lastCatalogScrollY);
+        restoreCatalogScroll = false;
+      }
+    });
     
     // Lock scroll position when content filters change to prevent jumpy behavior
     let lastScrollY = 0;

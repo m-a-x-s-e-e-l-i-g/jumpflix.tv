@@ -1241,22 +1241,6 @@
     .detail-episodes {
       max-height: 340px;
     }
-
-    .detail-episode-toggle {
-      position: static;
-      transform: none;
-      margin-top: 0.5rem;
-    }
-
-    .detail-episode {
-      grid-template-columns: 1fr;
-      padding-right: 0.75rem;
-    }
-
-    .detail-episode-thumb {
-      width: 100%;
-      height: 160px;
-    }
   }
 
   @media (min-width: 641px) {

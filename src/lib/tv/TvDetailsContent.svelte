@@ -639,22 +639,22 @@
             </section>
           {/if}
         </div>
-
-        <aside class="detail-review-sidebar">
-          <h3>Ratings &amp; Reviews</h3>
-          <BangerMeter
-            mediaId={selected.id}
-            initialRating={currentUserRating}
-            onRatingChange={handleRatingChange}
-            onRatingDelete={handleRatingDelete}
-            onAuthRequired={handleAuthRequired}
-            isWatched={watchProgress?.isWatched || false}
-            averageRating={ratingsSummary?.averageRating || 0}
-            ratingCount={ratingsSummary?.ratingCount || 0}
-          />
-          <p class="detail-review-note">Reviews coming soon.</p>
-        </aside>
       </div>
+
+      <aside class="detail-review-sidebar">
+        <h3>Ratings &amp; Reviews</h3>
+        <BangerMeter
+          mediaId={selected.id}
+          initialRating={currentUserRating}
+          onRatingChange={handleRatingChange}
+          onRatingDelete={handleRatingDelete}
+          onAuthRequired={handleAuthRequired}
+          isWatched={watchProgress?.isWatched || false}
+          averageRating={ratingsSummary?.averageRating || 0}
+          ratingCount={ratingsSummary?.ratingCount || 0}
+        />
+        <p class="detail-review-note">Reviews coming soon.</p>
+      </aside>
     </div>
   </section>
 {:else}
@@ -804,6 +804,7 @@
     display: grid;
     gap: 0.4rem;
     align-content: start;
+    min-width: 0;
   }
 
   .detail-poster {
@@ -910,14 +911,19 @@
   .detail-main {
     display: grid;
     gap: 1.6rem;
-    grid-template-columns: minmax(0, 1fr);
     align-items: start;
+    min-width: 0;
   }
 
   .detail-main-content {
     display: grid;
     gap: 1.6rem;
     grid-column: 1;
+    min-width: 0;
+  }
+
+  .detail-main-content > * {
+    min-width: 0;
   }
 
   .detail-section h3 {
@@ -925,6 +931,11 @@
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: rgba(226, 232, 240, 0.7);
+  }
+
+  .detail-section,
+  .detail-overview-copy {
+    min-width: 0;
   }
 
   .detail-section.detail-overview {
@@ -935,14 +946,10 @@
     display: grid;
     gap: 0.6rem;
     align-content: start;
-    padding: 0.9rem;
-    border-radius: 22px;
-    border: 1px solid rgba(248, 250, 252, 0.12);
-    background: linear-gradient(140deg, rgba(226, 232, 240, 0.14), rgba(148, 163, 184, 0.08));
-    backdrop-filter: blur(24px) saturate(115%);
-    box-shadow: 0 28px 60px -45px rgba(2, 6, 23, 0.85);
     min-height: 0;
-    grid-column: 1 / -1;
+    grid-column: auto;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .detail-review-note {
@@ -953,10 +960,18 @@
     color: rgba(226, 232, 240, 0.55);
   }
 
+  .detail-review-sidebar h3 {
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
   .detail-section p {
     margin-top: 0.75rem;
     color: rgba(226, 232, 240, 0.78);
     line-height: 1.7;
+    overflow-wrap: anywhere;
   }
 
   .detail-tags {
@@ -1137,17 +1152,14 @@
     padding: 3rem 1rem;
   }
 
-  @media (min-width: 1024px) {
+  @media (min-width: 1200px) {
     .detail-grid {
-      grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
-    }
-
-    .detail-main {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+      grid-template-columns: clamp(240px, 22vw, 300px) minmax(0, 1fr) clamp(240px, 22vw, 300px);
+      gap: clamp(1.25rem, 2vw, 2rem);
     }
 
     .detail-review-sidebar {
-      grid-column: 2;
+      grid-column: 3;
       min-height: 420px;
     }
   }
@@ -1167,6 +1179,10 @@
 
     .detail-main {
       order: 2;
+    }
+
+    .detail-review-sidebar {
+      order: 3;
     }
   }
 

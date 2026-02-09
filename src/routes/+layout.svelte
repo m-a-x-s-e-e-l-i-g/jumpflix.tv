@@ -83,6 +83,7 @@
 	let sheetOpen = $state(false);
 	let reduceMotion = $state(false);
 	let systemReduceMotion = $state(false);
+	let showPopcorn = $state(false);
 
 	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
 	const isStatsRoute = $derived(
@@ -358,6 +359,10 @@
 	onMount(() => {
 		if (typeof window === 'undefined') return;
 
+		requestAnimationFrame(() => {
+			showPopcorn = true;
+		});
+
 		const handlePwaInstallElement = (event: Event) => {
 			const detail = (event as CustomEvent).detail;
 			if (detail) {
@@ -616,36 +621,41 @@
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<div
-	class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden"
-	aria-hidden="true"
-	class:popcorn-hidden={reduceMotion}
->
-	{#each activePopcorns as popcorn (popcorn.id)}
-		<div
-			class="popcorn-item"
-			use:popcornParallax={popcorn}
-			style:left={`${popcorn.left}%`}
-			style:top={`${popcorn.top}vh`}
-			style:width={`${popcorn.size}px`}
-			style:height={`${popcorn.size}px`}
-		>
+{#if showPopcorn}
+	<div
+		class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden"
+		aria-hidden="true"
+		class:popcorn-hidden={reduceMotion}
+	>
+		{#each activePopcorns as popcorn (popcorn.id)}
 			<div
-				class="popcorn-bob"
-				style={`--popcorn-duration:${popcorn.floatDuration}s; --popcorn-delay:${popcorn.floatDelay}s; --popcorn-sway:${popcorn.sway}px;`}
-				style:animation-play-state={reduceMotion ? 'paused' : 'running'}
-				style:opacity={popcorn.opacity}
+				class="popcorn-item"
+				use:popcornParallax={popcorn}
+				style:left={`${popcorn.left}%`}
+				style:top={`${popcorn.top}vh`}
+				style:width={`${popcorn.size}px`}
+				style:height={`${popcorn.size}px`}
 			>
-				<img
-					src="/images/popcorn.svg"
-					alt=""
-					class="h-full w-full object-contain"
-					draggable="false"
-				/>
+				<div
+					class="popcorn-bob"
+					style={`--popcorn-duration:${popcorn.floatDuration}s; --popcorn-delay:${popcorn.floatDelay}s; --popcorn-sway:${popcorn.sway}px;`}
+					style:animation-play-state={reduceMotion ? 'paused' : 'running'}
+					style:opacity={popcorn.opacity}
+				>
+					<img
+						src="/images/popcorn.svg"
+						alt=""
+						class="h-full w-full object-contain"
+						decoding="async"
+						loading="lazy"
+						fetchpriority="low"
+						draggable="false"
+					/>
+				</div>
 			</div>
-		</div>
-	{/each}
-</div>
+		{/each}
+	</div>
+{/if}
 
 <div class="relative z-[var(--z-index-content)]">
 	<!-- Top-left settings cog that opens a left-side sheet -->

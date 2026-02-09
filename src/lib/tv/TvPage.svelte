@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getContext, onMount, tick } from 'svelte';
+  import { getContext, onMount } from 'svelte';
   import { page } from '$app/stores';
   import { get } from 'svelte/store';
   import { toast } from 'svelte-sonner';
@@ -18,7 +18,6 @@
       showWatched,
       sortBy,
       gridScale,
-      viewMode,
       selectedContent,
       showPlayer,
       selectedIndex,
@@ -282,6 +281,13 @@
     columns = computeColumns(gridEl);
   });
 
+  function handleScaleChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const next = Number(target.value);
+    if (!Number.isFinite(next)) return;
+    gridScale.set(Math.min(1.25, Math.max(0.8, next)));
+  }
+
 
   onMount(() => {
     currentPath = `${get(page).url.pathname}${get(page).url.search}`;
@@ -487,12 +493,28 @@
       ratingRefreshToken={ratingRefreshToken}
     />
   {:else}
-    <section class="relative isolate overflow-hidden pt-24 pb-16 sm:pt-32 sm:pb-20">
+    <section class="relative isolate overflow-hidden pt-24 sm:pt-32">
       <div class="hero-overlay" aria-hidden="true"></div>
 
       <TvHeroSection {logoTilt} />
 
-      <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} {gridScale} {viewMode} />
+      <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} />
+
+      {#if !isMobile}
+        <div class="catalog-toolbar" aria-label="Catalog view controls">
+          <label class="catalog-zoom">
+            <span>Zoom</span>
+            <input
+              type="range"
+              min="0.8"
+              max="1.25"
+              step="0.05"
+              value={$gridScale}
+              oninput={handleScaleChange}
+            />
+          </label>
+        </div>
+      {/if}
     </section>
     <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
       <TvCatalogGrid
@@ -501,8 +523,7 @@
         selectedContent={$selectedContent}
         {isMobile}
         priorityKeys={priorityKeys}
-        gridScale={$gridScale}
-        viewMode={$viewMode}
+        gridScale={isMobile ? 1 : $gridScale}
         onSelect={handleSelect}
       />
     </div>
@@ -596,6 +617,33 @@
     :global(.tv-page .tv-main) {
       width: 100%;
     }
+  }
+
+  .catalog-toolbar {
+    margin-top: 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 clamp(1.5rem, 3vw, 3.75rem);
+  }
+
+  .catalog-zoom {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    background: rgba(8, 12, 24, 0.65);
+    padding: 0.45rem 0.9rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.75);
+  }
+
+  .catalog-zoom input[type='range'] {
+    accent-color: rgba(229, 9, 20, 0.9);
+    height: 4px;
+    width: 140px;
   }
 
   :global(.tv-layout main) {

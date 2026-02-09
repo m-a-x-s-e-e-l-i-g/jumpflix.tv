@@ -11,11 +11,9 @@
     showPaid: Writable<boolean>;
     showWatched: Writable<boolean>;
     sortBy: Writable<SortBy>;
-    gridScale: Writable<number>;
-    viewMode: Writable<'grid' | 'list'>;
   }
 
-  let { searchQuery, showPaid, showWatched, sortBy, gridScale, viewMode }: Props = $props();
+  let { searchQuery, showPaid, showWatched, sortBy }: Props = $props();
 
   function clearSearch() {
     searchQuery.set('');
@@ -29,13 +27,6 @@
   function handleSortChange(event: Event) {
     const target = event.target as HTMLSelectElement;
     sortBy.set(target.value as SortBy);
-  }
-
-  function handleScaleChange(event: Event) {
-    const target = event.target as HTMLInputElement;
-    const next = Number(target.value);
-    if (!Number.isFinite(next)) return;
-    gridScale.set(Math.min(1.25, Math.max(0.8, next)));
   }
 
   const containerClass = 'tv-search-surface';
@@ -101,34 +92,6 @@
           <span class="search-caret" aria-hidden="true">▾</span>
         </div>
 
-        <div class="view-toggle" role="group" aria-label="View mode">
-          <button
-            type="button"
-            class:active={$viewMode === 'grid'}
-            onclick={() => viewMode.set('grid')}
-          >
-            Grid
-          </button>
-          <button
-            type="button"
-            class:active={$viewMode === 'list'}
-            onclick={() => viewMode.set('list')}
-          >
-            List
-          </button>
-        </div>
-
-        <label class="zoom-control">
-          <span>Zoom</span>
-          <input
-            type="range"
-            min="0.8"
-            max="1.25"
-            step="0.05"
-            value={$gridScale}
-            oninput={handleScaleChange}
-          />
-        </label>
       </div>
     </div>
   </div>
@@ -229,49 +192,6 @@
     align-items: center;
   }
 
-  .view-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.25rem;
-    border-radius: 999px;
-    border: 1px solid rgba(248, 250, 252, 0.2);
-    background: rgba(8, 12, 24, 0.6);
-  }
-
-  .view-toggle button {
-    border-radius: 999px;
-    padding: 0.35rem 0.85rem;
-    font-size: 0.6rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgba(226, 232, 240, 0.7);
-  }
-
-  .view-toggle button.active {
-    color: rgba(248, 250, 252, 0.95);
-    background: rgba(229, 9, 20, 0.3);
-    border: 1px solid rgba(229, 9, 20, 0.5);
-  }
-
-  .zoom-control {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6rem;
-    border-radius: 999px;
-    border: 1px solid rgba(248, 250, 252, 0.2);
-    background: rgba(8, 12, 24, 0.6);
-    padding: 0.35rem 0.75rem;
-    font-size: 0.6rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgba(226, 232, 240, 0.75);
-  }
-
-  .zoom-control input[type='range'] {
-    accent-color: rgba(229, 9, 20, 0.9);
-    height: 4px;
-  }
 
   .tv-search-toggle {
     display: inline-flex;
@@ -344,15 +264,6 @@
     .search-controls {
       flex-direction: column;
       align-items: flex-start;
-    }
-
-    .zoom-control {
-      width: 100%;
-      justify-content: space-between;
-    }
-
-    .zoom-control input[type='range'] {
-      width: 120px;
     }
 
     .tv-search-select {

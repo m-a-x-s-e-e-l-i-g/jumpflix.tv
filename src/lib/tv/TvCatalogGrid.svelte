@@ -13,7 +13,6 @@
   export let isMobile = false;
   export let onSelect: (item: ContentItem) => void;
   export let gridScale = 1;
-  export let viewMode: 'grid' | 'list' = 'grid';
 
   const keyFor = (item: ContentItem) => `${item.type}:${item.id}`;
 
@@ -86,7 +85,6 @@
   $: if (browser) {
     visibleContent;
     gridScale;
-    viewMode;
     isMobile;
     scheduleRecalc();
   }
@@ -127,7 +125,7 @@
 <div id="catalog" class="catalog-shell">
   <div
     bind:this={gridElement}
-    class={`catalog-grid ${viewMode === 'list' ? 'list-mode' : ''}`}
+    class="catalog-grid"
     style={`--card-scale: ${gridScale}; --card-ratio: 2 / 3; padding-top: ${paddingTop}px; padding-bottom: ${paddingBottom}px;`}
   >
     {#if visibleContent.length === 0}
@@ -152,7 +150,6 @@
             onSelect={onSelect}
             {isMobile}
             priority={priorityKeys.has(keyFor(item))}
-            {viewMode}
           />
         </div>
       {/each}
@@ -184,18 +181,6 @@
     width: 100%;
     max-width: var(--card-max);
     justify-self: start;
-  }
-
-  .catalog-grid.list-mode {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-    gap: 1.5rem;
-  }
-
-  .catalog-grid.list-mode .catalog-item {
-    max-width: 100%;
-    grid-column: span 1;
-    grid-row: span 1;
-    justify-self: stretch;
   }
 
   @media (max-width: 900px) {

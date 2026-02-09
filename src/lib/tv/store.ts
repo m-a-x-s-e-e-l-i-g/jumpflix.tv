@@ -15,7 +15,6 @@ const SHOW_PAID_STORAGE_KEY = 'jumpflix.tv:showPaid';
 const SHOW_WATCHED_STORAGE_KEY = 'jumpflix.tv:showWatched';
 const SEARCH_QUERY_STORAGE_KEY = 'jumpflix.tv:searchQuery';
 const GRID_SCALE_STORAGE_KEY = 'jumpflix.tv:gridScale';
-const VIEW_MODE_STORAGE_KEY = 'jumpflix.tv:viewMode';
 
 // Remember toggle preferences across sessions on the same device.
 function loadBooleanPreference(key: string, defaultValue = true): boolean {
@@ -118,9 +117,6 @@ export const selectedContent = writable<ContentItem | null>(null);
 export const showPlayer = writable(false);
 export const selectedIndex = writable(0);
 export const gridScale = writable(loadNumberPreference(GRID_SCALE_STORAGE_KEY, 1));
-export const viewMode = writable<'grid' | 'list'>(
-	(loadStringPreference(VIEW_MODE_STORAGE_KEY, 'grid') as 'grid' | 'list')
-);
 // When playing a single episode from a series, this holds the selected episode
 export const selectedEpisode = writable<Episode | null>(null);
 
@@ -227,7 +223,6 @@ if (browser) {
 	showWatched.subscribe((value) => persistBooleanPreference(SHOW_WATCHED_STORAGE_KEY, value));
 	searchQuery.subscribe((value) => persistStringPreference(SEARCH_QUERY_STORAGE_KEY, value));
 	gridScale.subscribe((value) => persistNumberPreference(GRID_SCALE_STORAGE_KEY, value));
-	viewMode.subscribe((value) => persistStringPreference(VIEW_MODE_STORAGE_KEY, value));
 }
 
 // Debounced search to avoid filtering on every keystroke

@@ -239,26 +239,6 @@
     cursor: pointer;
   }
 
-  .card-shell.list {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 1rem;
-    align-items: center;
-    padding: 0.85rem 1rem;
-    border-radius: 22px;
-    border: 1px solid rgba(248, 250, 252, 0.14);
-    background:
-      linear-gradient(135deg, rgba(14, 20, 36, 0.92), rgba(8, 12, 24, 0.85)),
-      radial-gradient(circle at top left, rgba(229, 9, 20, 0.12), transparent 55%);
-    box-shadow: 0 24px 60px -42px rgba(2, 6, 23, 0.85);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-  }
-
-  .card-shell.list:hover {
-    border-color: rgba(248, 250, 252, 0.26);
-    box-shadow: 0 28px 70px -40px rgba(2, 6, 23, 0.9);
-  }
-
   .card-frame {
     position: relative;
     aspect-ratio: var(--card-ratio, 2 / 3);

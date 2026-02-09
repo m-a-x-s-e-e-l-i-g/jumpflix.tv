@@ -15,6 +15,7 @@
   import { showPlayer, selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
   import Tracklist from '$lib/tv/Tracklist.svelte';
   import { getProviderLink, type ProviderLink } from '$lib/tv/provider-links';
+  import { withUtm } from '$lib/utils';
   import { setWatchedStatus, PROGRESS_CHANGE_EVENT } from '$lib/tv/watchHistory';
   import { flushWatchHistoryNow } from '$lib/tv/watchHistory';
   import type { WatchProgress } from '$lib/tv/watchHistory';
@@ -397,7 +398,7 @@
         {/if}
         <div class="detail-meta-actions">
           {#if (selected as any).trakt}
-            <a href={(selected as any).trakt} target="_blank" rel="noopener noreferrer" class="detail-icon" aria-label="View on Trakt" title="View on Trakt">
+            <a href={withUtm((selected as any).trakt)} target="_blank" rel="noopener noreferrer" class="detail-icon" aria-label="View on Trakt" title="View on Trakt">
               <img src="https://trakt.tv/assets/logos/logomark.square.gradient-b644b16c38ff775861b4b1f58c1230f6a097a2466ab33ae00445a505c33fcb91.svg" alt="" class="detail-icon-img" loading="lazy" decoding="async" />
               <span class="sr-only">View on Trakt</span>
             </a>
@@ -441,7 +442,7 @@
             <button on:click={() => {
               if (selected?.type === 'series' && selectedEpisode) { 
                 if (selectedEpisode.externalUrl) {
-                  if (browser) window.open(selectedEpisode.externalUrl, '_blank');
+                  if (browser) window.open(withUtm(selectedEpisode.externalUrl), '_blank', 'noopener');
                   return;
                 }
                 onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeasonNum);

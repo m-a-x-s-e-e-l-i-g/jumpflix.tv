@@ -32,6 +32,7 @@
 	import AdminMenuButton from '$lib/components/AdminMenuButton.svelte';
 	import HelpTipsButton from '$lib/components/HelpTipsButton.svelte';
 	import ContentSuggestionDialog from '$lib/components/ContentSuggestionDialog.svelte';
+	import { withUtm } from '$lib/utils';
 	import { selectedEpisode as selectedEpisodeStore } from '$lib/tv/store';
 	import {
 		SCROLL_CONTEXT_KEY,
@@ -795,7 +796,7 @@
 					<p class="mb-2 text-sm text-muted-foreground">{m.settings_links()}</p>
 					<div class="flex flex-col gap-2">
 						<a
-							href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv"
+							href={withUtm('https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv')}
 							target="_blank"
 							rel="noopener noreferrer"
 							class="group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
@@ -804,7 +805,7 @@
 							<span class="font-medium transition-colors group-hover:text-foreground">GitHub</span>
 						</a>
 						<a
-							href="https://pkfr.nl"
+							href={withUtm('https://pkfr.nl')}
 							target="_blank"
 							rel="noopener noreferrer"
 							class="group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
@@ -815,7 +816,7 @@
 							>
 						</a>
 						<a
-							href="https://maxmade.nl"
+							href={withUtm('https://maxmade.nl')}
 							target="_blank"
 							rel="noopener noreferrer"
 							class="group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
@@ -834,7 +835,7 @@
 				class="flex items-center justify-between gap-3 border-t border-border bg-background/95 p-4 text-xs text-muted-foreground md:justify-end"
 			>
 				<a
-					href="https://maxmade.nl"
+					href={withUtm('https://maxmade.nl')}
 					target="_blank"
 					rel="noopener noreferrer"
 					title="MAXmade - Max Seelig"

@@ -654,7 +654,7 @@
           averageRating={ratingsSummary?.averageRating || 0}
           ratingCount={ratingsSummary?.ratingCount || 0}
         />
-        <p class="detail-review-note">Reviews coming soon.</p>
+        <p class="detail-review-note">Reviews feature is coming soon.</p>
       </aside>
     </div>
   </section>

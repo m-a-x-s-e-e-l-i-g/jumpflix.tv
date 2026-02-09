@@ -4,7 +4,6 @@
   import { get } from 'svelte/store';
   import { toast } from 'svelte-sonner';
   import * as m from '$lib/paraglide/messages';
-  import PlayerModal from '$lib/tv/PlayerModal.svelte';
   import TvHeroSection from '$lib/tv/TvHeroSection.svelte';
   import TvSearchControls from '$lib/tv/TvSearchControls.svelte';
   import TvCatalogGrid from '$lib/tv/TvCatalogGrid.svelte';
@@ -29,10 +28,11 @@
       selectedEpisode,
       openEpisode,
       selectEpisode,
-      setContent
+      setContent,
+      sortedAllContent
     } from '$lib/tv/store';
   import { getLatestWatchProgressByBaseId } from '$lib/tv/watchHistory';
-  import type { ContentItem, Movie } from '$lib/tv/types';
+  import type { ContentItem, Episode, Movie } from '$lib/tv/types';
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { buildItemUrl, buildPageTitle, extractSeasonEpisodeFromPath, openExternalContent } from '$lib/tv/helpers/navigation';
@@ -63,6 +63,8 @@
   let pageTitle = $state<string | null>(null);
   let logoTilt = $state(0);
   let columns = $state(1);
+  let PlayerModalComponent = $state<any>(null);
+  let playerModalLoading = $state(false);
   const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
   let catalogMinHeight = $state(0);
   let ratingDialogOpen = $state(false);
@@ -80,6 +82,14 @@
   let exitConfirmUntil = 0;
 
   const EXIT_CONFIRM_TIMEOUT_MS = 2000;
+
+  async function loadPlayerModal() {
+    if (PlayerModalComponent || playerModalLoading) return;
+    playerModalLoading = true;
+    const module = await import('$lib/tv/PlayerModal.svelte');
+    PlayerModalComponent = module.default as any;
+    playerModalLoading = false;
+  }
 
   function isAndroidStandalone() {
     if (!browser) return false;
@@ -127,6 +137,13 @@
     if ((initialItem as any).type === 'series' && typeof initialEpisodeNumber === 'number' && Number.isFinite(initialEpisodeNumber)) {
       const n = Math.max(1, Math.floor(initialEpisodeNumber));
       selectEpisode({ id: `pos:${n}`, title: `Episode ${n}`, position: n } as any);
+    }
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    if ($showPlayer) {
+      void loadPlayerModal();
     }
   });
 
@@ -491,13 +508,19 @@
     </div>
   {/if}
 </div>
-<PlayerModal
-	show={$showPlayer}
-	selected={$selectedContent}
-	selectedEpisode={$selectedEpisode}
-  close={handlePlayerClose}
-  on:playbackCompleted={handlePlaybackCompleted}
-/>
+{#if $showPlayer}
+  {#if PlayerModalComponent}
+    <PlayerModalComponent
+      show={$showPlayer}
+      selected={$selectedContent}
+      selectedEpisode={$selectedEpisode}
+      close={handlePlayerClose}
+      on:playbackCompleted={handlePlaybackCompleted}
+    />
+  {:else}
+    <div class="player-modal-loading" aria-live="polite">Loading player…</div>
+  {/if}
+{/if}
 
 <RatingPromptDialog
   bind:open={ratingDialogOpen}
@@ -541,6 +564,18 @@
     background: linear-gradient(185deg, rgba(5, 7, 18, 1) 0%, rgba(5, 7, 18, 0.35) 62%, rgba(5, 7, 18, 0) 100%);
     mix-blend-mode: soft-light;
     pointer-events: none;
+  }
+
+  .player-modal-loading {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(5, 7, 18, 0.9);
+    color: #e2e8f0;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    z-index: 50;
   }
 
   @media (min-width: 768px) {

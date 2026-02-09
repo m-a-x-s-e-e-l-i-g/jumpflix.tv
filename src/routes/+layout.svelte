@@ -363,6 +363,15 @@
 			showPopcorn = true;
 		});
 
+		const runIdle = (task: () => void) => {
+			if ('requestIdleCallback' in window) {
+				(window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
+					.requestIdleCallback(task, { timeout: 1500 });
+			} else {
+				setTimeout(task, 0);
+			}
+		};
+
 		const handlePwaInstallElement = (event: Event) => {
 			const detail = (event as CustomEvent).detail;
 			if (detail) {
@@ -380,91 +389,93 @@
 		}
 		loading.set(false);
 		
-		// Force session refresh to ensure we have the latest auth state
-		// This helps recover from stale cached states and account switching issues
-		const refreshTimeout = setTimeout(() => {
-			console.warn('[Auth Debug] Session refresh timed out');
-		}, 5000);
-		
-		supabase.auth.getSession().then(({ data: freshSession, error }) => {
-			clearTimeout(refreshTimeout);
+		runIdle(() => {
+			// Force session refresh to ensure we have the latest auth state
+			// This helps recover from stale cached states and account switching issues
+			const refreshTimeout = setTimeout(() => {
+				console.warn('[Auth Debug] Session refresh timed out');
+			}, 5000);
 			
-			if (error) {
-				console.error('[Auth Debug] Error refreshing session:', error);
-				return;
-			}
-			
-			const serverUserId = data.session?.user?.id;
-			const clientUserId = freshSession.session?.user?.id;
-			
-			// Detect account mismatch - this is the critical issue!
-			if (serverUserId && clientUserId && serverUserId !== clientUserId) {
-				console.error('[Auth Debug] ACCOUNT MISMATCH DETECTED!', {
-					serverUserId,
-					clientUserId,
-					serverEmail: data.user?.email,
-					clientEmail: freshSession.session?.user?.email
-				});
+			supabase.auth.getSession().then(({ data: freshSession, error }) => {
+				clearTimeout(refreshTimeout);
 				
-				// Force a full page reload to clear the stale state
-				toast.error('Session mismatch detected. Reloading...');
-				setTimeout(() => window.location.reload(), 1000);
-				return;
-			}
-			
-			if (freshSession.session && !data.session) {
-				// We have a valid session that wasn't passed from server
-				// This can happen with service worker caching issues
-				console.warn('[Auth Debug] Found valid session not passed from server, updating...');
-				session.set(freshSession.session);
-				user.set(freshSession.session.user);
-			} else if (!freshSession.session && data.session) {
-				// Server said we're logged in but client doesn't have session
-				// This is the "broken session" state - client cookies are invalid
-				toast.error('Your session is invalid. Please sign in again.');
+				if (error) {
+					console.error('[Auth Debug] Error refreshing session:', error);
+					return;
+				}
 				
-				// Force sign out to clear the broken state
-				supabase.auth.signOut({ scope: 'local' }).then(() => {
-					session.set(null);
-					user.set(null);
-					// Clear caches
-					if ('caches' in window) {
-						caches.keys().then(names => {
-							names.forEach(name => caches.delete(name));
-						});
-					}
-					setTimeout(() => window.location.reload(), 500);
-				});
-				return;
-			} else if (freshSession.session && clientUserId === serverUserId) {
-				// Sessions match - but let's validate the token is actually working
-				// by making a quick authenticated request
-				supabase.auth.getUser().then(({ data: userData, error: userError }) => {
-					if (userError || !userData.user) {
-						// Token is invalid even though session exists
-						toast.error('Your session has expired. Please sign in again.');
-						
-						// Force sign out
-						supabase.auth.signOut({ scope: 'local' }).then(() => {
-							session.set(null);
-							user.set(null);
-							if ('caches' in window) {
-								caches.keys().then(names => {
-									names.forEach(name => caches.delete(name));
-								});
-							}
-							setTimeout(() => window.location.reload(), 500);
-						});
-					} else {
-						// Everything is valid, update to ensure we have the latest session data
-						session.set(freshSession.session);
-						user.set(freshSession.session.user);
-					}
-				});
-			}
-		}).catch((err) => {
-			clearTimeout(refreshTimeout);
-			console.error('[Auth Debug] Failed to get session:', err);
+				const serverUserId = data.session?.user?.id;
+				const clientUserId = freshSession.session?.user?.id;
+				
+				// Detect account mismatch - this is the critical issue!
+				if (serverUserId && clientUserId && serverUserId !== clientUserId) {
+					console.error('[Auth Debug] ACCOUNT MISMATCH DETECTED!', {
+						serverUserId,
+						clientUserId,
+						serverEmail: data.user?.email,
+						clientEmail: freshSession.session?.user?.email
+					});
+					
+					// Force a full page reload to clear the stale state
+					toast.error('Session mismatch detected. Reloading...');
+					setTimeout(() => window.location.reload(), 1000);
+					return;
+				}
+				
+				if (freshSession.session && !data.session) {
+					// We have a valid session that wasn't passed from server
+					// This can happen with service worker caching issues
+					console.warn('[Auth Debug] Found valid session not passed from server, updating...');
+					session.set(freshSession.session);
+					user.set(freshSession.session.user);
+				} else if (!freshSession.session && data.session) {
+					// Server said we're logged in but client doesn't have session
+					// This is the "broken session" state - client cookies are invalid
+					toast.error('Your session is invalid. Please sign in again.');
+					
+					// Force sign out to clear the broken state
+					supabase.auth.signOut({ scope: 'local' }).then(() => {
+						session.set(null);
+						user.set(null);
+						// Clear caches
+						if ('caches' in window) {
+							caches.keys().then(names => {
+								names.forEach(name => caches.delete(name));
+							});
+						}
+						setTimeout(() => window.location.reload(), 500);
+					});
+					return;
+				} else if (freshSession.session && clientUserId === serverUserId) {
+					// Sessions match - but let's validate the token is actually working
+					// by making a quick authenticated request
+					supabase.auth.getUser().then(({ data: userData, error: userError }) => {
+						if (userError || !userData.user) {
+							// Token is invalid even though session exists
+							toast.error('Your session has expired. Please sign in again.');
+							
+							// Force sign out
+							supabase.auth.signOut({ scope: 'local' }).then(() => {
+								session.set(null);
+								user.set(null);
+								if ('caches' in window) {
+									caches.keys().then(names => {
+										names.forEach(name => caches.delete(name));
+									});
+								}
+								setTimeout(() => window.location.reload(), 500);
+							});
+						} else {
+							// Everything is valid, update to ensure we have the latest session data
+							session.set(freshSession.session);
+							user.set(freshSession.session.user);
+						}
+					});
+				}
+			}).catch((err) => {
+				clearTimeout(refreshTimeout);
+				console.error('[Auth Debug] Failed to get session:', err);
+			});
 		});
 		
 		// Handle Supabase auth callback from email confirmation
@@ -516,7 +527,9 @@
 			}
 		};
 		
-		handleAuthCallback();
+		runIdle(() => {
+			handleAuthCallback();
+		});
 		
 		// Listen for auth state changes and update stores
 		const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
@@ -546,11 +559,14 @@
 			}
 		});
 		
-		const stopWatchHistory = initWatchHistory();
+		let stopWatchHistory: ReturnType<typeof initWatchHistory> | undefined;
+		runIdle(() => {
+			stopWatchHistory = initWatchHistory();
+		});
 		const cleanupFns = [
 			addEventListeners(),
 			setupScrollEffects(),
-			stopWatchHistory,
+			() => stopWatchHistory?.(),
 			() => authListener.subscription.unsubscribe(),
 			() => window.removeEventListener('pwa-install-element', handlePwaInstallElement as EventListener)
 		];

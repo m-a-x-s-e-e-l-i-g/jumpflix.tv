@@ -28,3 +28,6 @@ project.inlang/cache/
 
 # Database backups
 backups/
+
+# Prerender cache
+.cache/

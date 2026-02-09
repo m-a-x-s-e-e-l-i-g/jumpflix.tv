@@ -519,157 +519,157 @@
       </aside>
 
       <div class="detail-main">
-        <section class="detail-section detail-overview">
-          <div class="detail-overview-grid">
+        <div class="detail-main-content">
+          <section class="detail-section detail-overview">
             <div class="detail-overview-copy">
               <h3>Overview</h3>
               <p>{selected.description || 'No description available.'}</p>
             </div>
-            <div class="detail-overview-rating">
-              <h3>Bangerometer</h3>
-              <div class="detail-rating detail-rating--hero">
-                <BangerMeter
-                  mediaId={selected.id}
-                  initialRating={currentUserRating}
-                  onRatingChange={handleRatingChange}
-                  onRatingDelete={handleRatingDelete}
-                  onAuthRequired={handleAuthRequired}
-                  isWatched={watchProgress?.isWatched || false}
-                  averageRating={ratingsSummary?.averageRating || 0}
-                  ratingCount={ratingsSummary?.ratingCount || 0}
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {#if selected.facets}
-          <section class="detail-section">
-            <h3>Facets</h3>
-            <FacetChips facets={selected.facets} />
           </section>
-        {/if}
 
-        {#if (selected as any).creators?.length}
-          <section class="detail-section">
-            <h3>Creators</h3>
-            <div class="detail-tags">
-              {#each (showAllCreators ? (selected as any).creators : (selected as any).creators.slice(0, MAX_NAMES)) as c}
-                <span>{c}</span>
-              {/each}
-              {#if (selected as any).creators.length > MAX_NAMES}
-                <button class="detail-tags-more" on:click={() => showAllCreators = !showAllCreators} title={showAllCreators ? 'Show fewer' : 'Show all'}>
-                  {#if showAllCreators}−{/if}{#if !showAllCreators}+{/if}
-                  {(selected as any).creators.length - MAX_NAMES}
-                </button>
-              {/if}
-            </div>
-          </section>
-        {/if}
+          {#if selected.facets}
+            <section class="detail-section">
+              <h3>Facets</h3>
+              <FacetChips facets={selected.facets} />
+            </section>
+          {/if}
 
-        {#if (selected as any).starring?.length}
-          <section class="detail-section">
-            <h3>Starring</h3>
-            <div class="detail-tags">
-              {#each (showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES)) as s}
-                <span>{s}</span>
-              {/each}
-              {#if (selected as any).starring.length > MAX_NAMES}
-                <button class="detail-tags-more" on:click={() => showAllStarring = !showAllStarring} title={showAllStarring ? 'Show fewer' : 'Show all'}>
-                  {#if showAllStarring}−{/if}{#if !showAllStarring}+{/if}
-                  {(selected as any).starring.length - MAX_NAMES}
-                </button>
-              {/if}
-            </div>
-          </section>
-        {/if}
-
-        {#if selected.type === 'movie' && Array.isArray(selected.tracks) && selected.tracks.length}
-          <section class="detail-section">
-            <h3>Tracklist</h3>
-            <Tracklist tracks={selected.tracks} />
-          </section>
-        {/if}
-
-        {#if selected.type === 'series'}
-          <section class="detail-section">
-            <div class="detail-episodes-header">
-              <h3>{m.tv_episodes()}</h3>
-              {#if (selected as any).seasons?.length > 0}
-                <select
-                  id="detail-season-select"
-                  class="detail-select"
-                  bind:value={selectedSeason}
-                  disabled={(selected as any).seasons?.length <= 1}
-                  on:change={(e) => {
-                    const next = Number((e.currentTarget as HTMLSelectElement).value);
-                    selectedSeason = next;
-                    const seasonForUrl = Number.isFinite(next) ? Math.max(1, next) : 1;
-                    Promise.resolve().then(() => onSelectEpisode('pos:1', 'Episode 1', 1, seasonForUrl));
-                    Promise.resolve().then(() => { try { episodesListEl?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} });
-                  }}
-                >
-                  {#each (selected as any).seasons as s}
-                    <option value={s.seasonNumber} class="bg-black text-gray-100">
-                      {s.customName || `Season ${s.seasonNumber}`}
-                    </option>
-                  {/each}
-                </select>
-              {/if}
-            </div>
-
-            {#if loadingEpisodes}
-              <p class="detail-muted">Loading episodes…</p>
-            {:else if episodes.length === 0}
-              <p class="detail-muted">No episodes found.</p>
-            {:else}
-              <ul class="detail-episodes" bind:this={episodesListEl}>
-                {#each episodes as ep}
-                  {@const epProgress = getEpisodeWatchProgress(ep.id)}
-                  <li>
-                    <button type="button" class={`detail-episode ${selectedEpisode && selectedEpisode.id === ep.id ? 'detail-episode--active' : ''}`}
-                      on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeasonNum)}>
-                      <div class="detail-episode-thumb">
-                        {#if ep.thumbnail}
-                          <img src={ep.thumbnail} alt={decode(ep.title)} class={epProgress?.isWatched ? 'is-watched' : ''} loading="lazy" decoding="async" />
-                        {:else}
-                          <div class="detail-episode-fallback"></div>
-                        {/if}
-                        {#if epProgress?.isWatched}
-                          <div class="detail-episode-status"><CheckIcon class="w-4 h-4" /></div>
-                        {/if}
-                        {#if epProgress && epProgress.percent > 0}
-                          <div class="detail-episode-progress">
-                            <div style:width="{epProgress.percent}%"></div>
-                          </div>
-                        {/if}
-                      </div>
-                      <div class="detail-episode-info">
-                        <span>Ep {ep.position}</span>
-                        <strong>{decode(ep.title)}</strong>
-                      </div>
-                    </button>
-                    {#if isAuthenticated}
-                      <button
-                        type="button"
-                        on:click={(e) => toggleEpisodeWatchedStatus(ep.id, e)}
-                        class="detail-episode-toggle"
-                        title={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
-                        aria-label={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
-                      >
-                        {#if epProgress?.isWatched}
-                          <EyeOffIcon class="w-4 h-4" />
-                        {:else}
-                          <EyeIcon class="w-4 h-4" />
-                        {/if}
-                      </button>
-                    {/if}
-                  </li>
+          {#if (selected as any).creators?.length}
+            <section class="detail-section">
+              <h3>Creators</h3>
+              <div class="detail-tags">
+                {#each (showAllCreators ? (selected as any).creators : (selected as any).creators.slice(0, MAX_NAMES)) as c}
+                  <span>{c}</span>
                 {/each}
-              </ul>
-            {/if}
-          </section>
-        {/if}
+                {#if (selected as any).creators.length > MAX_NAMES}
+                  <button class="detail-tags-more" on:click={() => showAllCreators = !showAllCreators} title={showAllCreators ? 'Show fewer' : 'Show all'}>
+                    {#if showAllCreators}−{/if}{#if !showAllCreators}+{/if}
+                    {(selected as any).creators.length - MAX_NAMES}
+                  </button>
+                {/if}
+              </div>
+            </section>
+          {/if}
+
+          {#if (selected as any).starring?.length}
+            <section class="detail-section">
+              <h3>Starring</h3>
+              <div class="detail-tags">
+                {#each (showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES)) as s}
+                  <span>{s}</span>
+                {/each}
+                {#if (selected as any).starring.length > MAX_NAMES}
+                  <button class="detail-tags-more" on:click={() => showAllStarring = !showAllStarring} title={showAllStarring ? 'Show fewer' : 'Show all'}>
+                    {#if showAllStarring}−{/if}{#if !showAllStarring}+{/if}
+                    {(selected as any).starring.length - MAX_NAMES}
+                  </button>
+                {/if}
+              </div>
+            </section>
+          {/if}
+
+          {#if selected.type === 'movie' && Array.isArray(selected.tracks) && selected.tracks.length}
+            <section class="detail-section">
+              <h3>Tracklist</h3>
+              <Tracklist tracks={selected.tracks} />
+            </section>
+          {/if}
+
+          {#if selected.type === 'series'}
+            <section class="detail-section">
+              <div class="detail-episodes-header">
+                <h3>{m.tv_episodes()}</h3>
+                {#if (selected as any).seasons?.length > 0}
+                  <select
+                    id="detail-season-select"
+                    class="detail-select"
+                    bind:value={selectedSeason}
+                    disabled={(selected as any).seasons?.length <= 1}
+                    on:change={(e) => {
+                      const next = Number((e.currentTarget as HTMLSelectElement).value);
+                      selectedSeason = next;
+                      const seasonForUrl = Number.isFinite(next) ? Math.max(1, next) : 1;
+                      Promise.resolve().then(() => onSelectEpisode('pos:1', 'Episode 1', 1, seasonForUrl));
+                      Promise.resolve().then(() => { try { episodesListEl?.scrollTo({ top: 0, behavior: 'smooth' }); } catch {} });
+                    }}
+                  >
+                    {#each (selected as any).seasons as s}
+                      <option value={s.seasonNumber} class="bg-black text-gray-100">
+                        {s.customName || `Season ${s.seasonNumber}`}
+                      </option>
+                    {/each}
+                  </select>
+                {/if}
+              </div>
+
+              {#if loadingEpisodes}
+                <p class="detail-muted">Loading episodes…</p>
+              {:else if episodes.length === 0}
+                <p class="detail-muted">No episodes found.</p>
+              {:else}
+                <ul class="detail-episodes" bind:this={episodesListEl}>
+                  {#each episodes as ep}
+                    {@const epProgress = getEpisodeWatchProgress(ep.id)}
+                    <li>
+                      <button type="button" class={`detail-episode ${selectedEpisode && selectedEpisode.id === ep.id ? 'detail-episode--active' : ''}`}
+                        on:click={() => onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeasonNum)}>
+                        <div class="detail-episode-thumb">
+                          {#if ep.thumbnail}
+                            <img src={ep.thumbnail} alt={decode(ep.title)} class={epProgress?.isWatched ? 'is-watched' : ''} loading="lazy" decoding="async" />
+                          {:else}
+                            <div class="detail-episode-fallback"></div>
+                          {/if}
+                          {#if epProgress?.isWatched}
+                            <div class="detail-episode-status"><CheckIcon class="w-4 h-4" /></div>
+                          {/if}
+                          {#if epProgress && epProgress.percent > 0}
+                            <div class="detail-episode-progress">
+                              <div style:width="{epProgress.percent}%"></div>
+                            </div>
+                          {/if}
+                        </div>
+                        <div class="detail-episode-info">
+                          <span>Ep {ep.position}</span>
+                          <strong>{decode(ep.title)}</strong>
+                        </div>
+                      </button>
+                      {#if isAuthenticated}
+                        <button
+                          type="button"
+                          on:click={(e) => toggleEpisodeWatchedStatus(ep.id, e)}
+                          class="detail-episode-toggle"
+                          title={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+                          aria-label={epProgress?.isWatched ? 'Mark as unwatched' : 'Mark as watched'}
+                        >
+                          {#if epProgress?.isWatched}
+                            <EyeOffIcon class="w-4 h-4" />
+                          {:else}
+                            <EyeIcon class="w-4 h-4" />
+                          {/if}
+                        </button>
+                      {/if}
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+            </section>
+          {/if}
+        </div>
+
+        <aside class="detail-review-sidebar">
+          <h3>Ratings &amp; Reviews</h3>
+          <BangerMeter
+            mediaId={selected.id}
+            initialRating={currentUserRating}
+            onRatingChange={handleRatingChange}
+            onRatingDelete={handleRatingDelete}
+            onAuthRequired={handleAuthRequired}
+            isWatched={watchProgress?.isWatched || false}
+            averageRating={ratingsSummary?.averageRating || 0}
+            ratingCount={ratingsSummary?.ratingCount || 0}
+          />
+          <p class="detail-review-note">Reviews coming soon.</p>
+        </aside>
       </div>
     </div>
   </section>
@@ -906,39 +906,18 @@
     background: linear-gradient(90deg, rgba(229, 9, 20, 0.9), rgba(229, 9, 20, 0.6));
   }
 
-  .detail-rating {
-    border-radius: 20px;
-    padding: 1rem;
-    border: 1px solid rgba(248, 250, 252, 0.15);
-    background: rgba(8, 12, 24, 0.6);
-  }
-
-  .detail-rating--hero {
-    padding: 1.35rem;
-    max-width: 520px;
-    width: 100%;
-    border-color: rgba(229, 9, 20, 0.35);
-    background:
-      linear-gradient(140deg, rgba(12, 18, 34, 0.92), rgba(8, 12, 24, 0.82)),
-      radial-gradient(circle at 18% 22%, rgba(229, 9, 20, 0.18), transparent 55%),
-      radial-gradient(circle at 85% 18%, rgba(37, 99, 235, 0.16), transparent 55%);
-    box-shadow: 0 35px 70px -45px rgba(2, 6, 23, 0.9);
-  }
-
-  .detail-overview-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
-    gap: 1.5rem;
-    align-items: start;
-  }
-
-  .detail-overview-rating .detail-rating--hero {
-    max-width: 100%;
-  }
 
   .detail-main {
     display: grid;
     gap: 1.6rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+    align-items: start;
+  }
+
+  .detail-main-content {
+    display: grid;
+    gap: 1.6rem;
+    grid-column: 1;
   }
 
   .detail-section h3 {
@@ -946,6 +925,32 @@
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: rgba(226, 232, 240, 0.7);
+  }
+
+  .detail-section.detail-overview {
+    margin-bottom: -0.4rem;
+  }
+
+  .detail-review-sidebar {
+    display: grid;
+    gap: 0.6rem;
+    align-content: start;
+    padding: 0.9rem;
+    border-radius: 22px;
+    border: 1px solid rgba(248, 250, 252, 0.12);
+    background: linear-gradient(140deg, rgba(226, 232, 240, 0.14), rgba(148, 163, 184, 0.08));
+    backdrop-filter: blur(24px) saturate(115%);
+    box-shadow: 0 28px 60px -45px rgba(2, 6, 23, 0.85);
+    min-height: 420px;
+    grid-column: 2;
+  }
+
+  .detail-review-note {
+    margin-top: 0.2rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.55);
   }
 
   .detail-section p {
@@ -1137,8 +1142,17 @@
       grid-template-columns: 1fr;
     }
 
-    .detail-overview-grid {
+    .detail-main {
       grid-template-columns: 1fr;
+    }
+
+    .detail-main-content {
+      grid-column: 1 / -1;
+    }
+
+    .detail-review-sidebar {
+      grid-column: 1 / -1;
+      min-height: 0;
     }
 
     .detail-aside {

@@ -950,6 +950,7 @@
     grid-column: auto;
     min-width: 0;
     overflow: hidden;
+    min-width: 320px;
   }
 
   .detail-review-note {
@@ -1178,11 +1179,11 @@
     }
 
     .detail-main {
-      order: 2;
+      order: 3;
     }
 
     .detail-review-sidebar {
-      order: 3;
+      order: 2;
     }
   }
 

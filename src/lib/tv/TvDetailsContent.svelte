@@ -1236,6 +1236,12 @@
     }
   }
 
+  @media (min-width: 641px) {
+    .detail-header {
+      padding-top: 3.5rem;
+    }
+  }
+
   .provider-icon {
     display: inline-block;
     background-color: currentColor;

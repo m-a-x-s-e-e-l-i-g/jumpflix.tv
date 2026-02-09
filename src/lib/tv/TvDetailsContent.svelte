@@ -35,8 +35,6 @@
   } from '$lib/tv/details-helpers';
   import AuthDialog from '$lib/components/AuthDialog.svelte';
   import FacetChips from '$lib/components/FacetChips.svelte';
-  import ContentSuggestionDialog from '$lib/components/ContentSuggestionDialog.svelte';
-  import PencilIcon from '@lucide/svelte/icons/pencil';
   import {
     dispatchRatingUpdated,
     RATING_UPDATED_EVENT,
@@ -379,22 +377,8 @@
     <header class="detail-header">
       <div class="detail-header-top">
         <div>
-          <a href="/" class="detail-back" aria-label="Back to catalog">Back to catalog</a>
           <h2 class="detail-title jf-display">{selected.title}</h2>
         </div>
-        {#if isAuthenticated}
-          <ContentSuggestionDialog
-            selected={selected}
-            selectedEpisode={selectedEpisode}
-            selectedSeasonNumber={selected?.type === 'series' ? selectedSeasonNum : null}
-            triggerAriaLabel="Suggest change / report issue"
-            triggerClass="detail-suggest"
-          >
-            {#snippet trigger()}
-              <PencilIcon class="w-4 h-4" />
-            {/snippet}
-          </ContentSuggestionDialog>
-        {/if}
       </div>
 
       <div class="detail-meta">
@@ -691,6 +675,7 @@
   .detail-header {
     display: grid;
     gap: 1rem;
+    position: relative;
   }
 
   .detail-header-top {
@@ -707,19 +692,34 @@
   }
 
   .detail-back {
+    position: absolute;
+    top: 0;
+    left: 0.75rem;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    border-radius: 999px;
+    height: 2.25rem;
+    padding: 0 0.85rem;
+    border-radius: 0.75rem;
     border: 1px solid rgba(248, 250, 252, 0.2);
-    padding: 0.35rem 0.9rem;
+    background: rgba(8, 12, 24, 0.75);
+    color: rgba(248, 250, 252, 0.85);
     font-size: 0.6rem;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: rgba(248, 250, 252, 0.75);
-    background: rgba(8, 12, 24, 0.6);
-    margin-top: 3rem;
-    margin-bottom: 0.75rem;
+    box-shadow: 0 10px 30px -20px rgba(2, 6, 23, 0.8);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .detail-back:hover {
+    transform: translateY(-2px);
+    background: rgba(15, 23, 42, 0.85);
+    box-shadow: 0 16px 34px -22px rgba(2, 6, 23, 0.9);
+  }
+
+  .detail-back:focus-visible {
+    outline: 2px solid rgba(229, 9, 20, 0.6);
+    outline-offset: 3px;
   }
 
   :global(.detail-suggest) {
@@ -1177,7 +1177,7 @@
     }
 
     .detail-back {
-      margin-top: 1.5rem;
+      margin-top: 0;
       margin-bottom: 0.5rem;
     }
 

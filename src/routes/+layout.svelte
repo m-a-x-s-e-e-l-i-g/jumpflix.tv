@@ -18,6 +18,8 @@
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import HomeIcon from '@lucide/svelte/icons/home';
 	import BarChart3Icon from '@lucide/svelte/icons/bar-chart-3';
+	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import GithubIcon from '@lucide/svelte/icons/github';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
@@ -29,6 +31,8 @@
 	import UserProfileButton from '$lib/components/UserProfileButton.svelte';
 	import AdminMenuButton from '$lib/components/AdminMenuButton.svelte';
 	import HelpTipsButton from '$lib/components/HelpTipsButton.svelte';
+	import ContentSuggestionDialog from '$lib/components/ContentSuggestionDialog.svelte';
+	import { selectedEpisode as selectedEpisodeStore } from '$lib/tv/store';
 	import {
 		SCROLL_CONTEXT_KEY,
 		type ScrollSubscriber,
@@ -88,6 +92,9 @@
 	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
 	const isStatsRoute = $derived(
 		$page.url.pathname === '/stats' || $page.url.pathname.startsWith('/stats/')
+	);
+	const isDetailRoute = $derived(
+		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
 	);
 	const isNavigatingToStats = $derived((() => {
 		const toPath = $navigating?.to?.url?.pathname;
@@ -676,47 +683,77 @@
 <div class="relative z-[var(--z-index-content)]">
 	<!-- Top-left settings cog that opens a left-side sheet -->
 	<SheetRoot bind:open={sheetOpen}>
-		<div
-			class="absolute top-4 left-4 z-[var(--z-index-settings)] flex gap-2"
+		<nav
+			class="absolute top-4 left-4 right-4 z-[var(--z-index-settings)] flex items-start justify-between gap-2"
+			aria-label="Site actions"
 		>
-			<SheetTrigger 
-				aria-label={m.settings_open()}
-				class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-			>
-				<CogIcon class="size-5" />
-				<span class="sr-only">{m.settings_open()}</span>
-			</SheetTrigger>
+			<div class="flex items-center gap-2">
+				{#if !isDetailRoute}
+					<SheetTrigger 
+						aria-label={m.settings_open()}
+						class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					>
+						<CogIcon class="size-5" />
+						<span class="sr-only">{m.settings_open()}</span>
+					</SheetTrigger>
 
-			<HelpTipsButton />
+					<HelpTipsButton />
+				{/if}
 
-			{#if isStatsRoute || isAdminRoute}
-				<a
-					href="/"
-					aria-label="Catalog"
-					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+				{#if isStatsRoute || isAdminRoute || isDetailRoute}
+					<a
+						href="/"
+						aria-label={isDetailRoute ? 'Back to catalog' : 'Catalog'}
+						class={
+							isDetailRoute
+								? 'relative inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border bg-background/90 px-3 text-sm font-medium text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
+								: 'relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
+						}
+					>
+						{#if isDetailRoute}
+							<ArrowLeftIcon class="size-4" />
+							<span>Back to catalog</span>
+						{:else}
+							<HomeIcon class="size-5" />
+							<span class="sr-only">Catalog</span>
+						{/if}
+					</a>
+				{/if}
+
+				{#if !isDetailRoute && !isStatsRoute}
+					<a
+						href="/stats"
+						aria-label="Stats"
+						class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					>
+						<BarChart3Icon class="size-5" />
+						<span class="sr-only">Stats</span>
+					</a>
+				{/if}
+
+				{#if !isDetailRoute}
+					{#if data?.isAdmin && $user}
+						<AdminMenuButton />
+					{/if}
+					
+					<UserProfileButton />
+				{/if}
+			</div>
+
+			{#if isDetailRoute && $user && data?.item}
+				<ContentSuggestionDialog
+					selected={data.item}
+					selectedEpisode={$selectedEpisodeStore}
+					selectedSeasonNumber={data.initialSeasonNumber ?? null}
+					triggerAriaLabel="Suggest change / report issue"
+					triggerClass="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>
-					<HomeIcon class="size-5" />
-					<span class="sr-only">Catalog</span>
-				</a>
+					{#snippet trigger()}
+						<PencilIcon class="size-4" />
+					{/snippet}
+				</ContentSuggestionDialog>
 			{/if}
-
-			{#if !isStatsRoute}
-				<a
-					href="/stats"
-					aria-label="Stats"
-					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-				>
-					<BarChart3Icon class="size-5" />
-					<span class="sr-only">Stats</span>
-				</a>
-			{/if}
-
-			{#if data?.isAdmin && $user}
-				<AdminMenuButton />
-			{/if}
-			
-			<UserProfileButton />
-		</div>
+		</nav>
 
 		<SheetContent side="left" class="flex h-full flex-col p-0">
 			<SheetHeader class="px-4 pt-4">

@@ -124,7 +124,7 @@
 
   .hero-cta {
     display: inline-flex;
-    align-items: center;
+    align-items: end;
     gap: 0.75rem;
     border-radius: 999px;
     background: linear-gradient(120deg, rgba(229, 9, 20, 0.95), rgba(229, 9, 20, 0.7));

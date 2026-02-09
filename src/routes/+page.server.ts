@@ -1,4 +1,5 @@
-import { fail, type Actions, type PageServerLoad } from "@sveltejs/kit";
+import { fail, type Actions } from "@sveltejs/kit";
+import type { PageServerLoad } from "./$types";
 import { sendTelegramMessage } from "$lib/server/telegram";
 
 export const load: PageServerLoad = async ({ parent, setHeaders }) => {

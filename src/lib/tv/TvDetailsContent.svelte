@@ -733,6 +733,7 @@
     border: 1px solid rgba(248, 250, 252, 0.2);
     color: rgba(248, 250, 252, 0.75);
     background: rgba(8, 12, 24, 0.6);
+    cursor: pointer;
     transition: transform 0.2s ease, color 0.2s ease;
   }
 
@@ -781,6 +782,7 @@
     border-radius: 999px;
     border: 1px solid rgba(248, 250, 252, 0.2);
     color: rgba(248, 250, 252, 0.75);
+    cursor: pointer;
     transition: transform 0.2s ease, color 0.2s ease;
     background: rgba(8, 12, 24, 0.6);
   }
@@ -854,6 +856,7 @@
     justify-content: center;
     align-items: center;
     gap: 0.6rem;
+    cursor: pointer;
     box-shadow: 0 20px 45px -30px rgba(229, 9, 20, 0.8);
   }
 
@@ -871,6 +874,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    cursor: pointer;
   }
 
   .detail-toggle--active {

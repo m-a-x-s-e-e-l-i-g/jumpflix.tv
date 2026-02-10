@@ -1,3 +1,4 @@
+import { withUtm } from '$lib/utils';
 import type { ContentItem, Episode } from './types';
 
 export type ProviderLink = {
@@ -16,7 +17,7 @@ export function getProviderLink(item: ContentItem, episode: Episode | null): Pro
       if (!id) return null;
       return {
         kind: 'youtube',
-        url: `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`,
+        url: withUtm(`https://www.youtube.com/watch?v=${encodeURIComponent(id)}`),
         title: 'Open on YouTube',
         ariaLabel: 'Open on YouTube'
       };
@@ -27,7 +28,7 @@ export function getProviderLink(item: ContentItem, episode: Episode | null): Pro
       if (!id) return null;
       return {
         kind: 'vimeo',
-        url: `https://vimeo.com/${encodeURIComponent(id)}`,
+        url: withUtm(`https://vimeo.com/${encodeURIComponent(id)}`),
         title: 'Open on Vimeo',
         ariaLabel: 'Open on Vimeo'
       };
@@ -42,7 +43,7 @@ export function getProviderLink(item: ContentItem, episode: Episode | null): Pro
     if (!id) return null;
     return {
       kind: 'youtube',
-      url: `https://www.youtube.com/watch?v=${encodeURIComponent(id)}`,
+      url: withUtm(`https://www.youtube.com/watch?v=${encodeURIComponent(id)}`),
       title: 'Open episode on YouTube',
       ariaLabel: 'Open episode on YouTube'
     };

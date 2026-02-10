@@ -14,6 +14,7 @@ const seed = new Date().toISOString().slice(0, 10);
 const SHOW_PAID_STORAGE_KEY = 'jumpflix.tv:showPaid';
 const SHOW_WATCHED_STORAGE_KEY = 'jumpflix.tv:showWatched';
 const SEARCH_QUERY_STORAGE_KEY = 'jumpflix.tv:searchQuery';
+const GRID_SCALE_STORAGE_KEY = 'jumpflix.tv:gridScale';
 
 // Remember toggle preferences across sessions on the same device.
 function loadBooleanPreference(key: string, defaultValue = true): boolean {
@@ -56,6 +57,27 @@ function persistStringPreference(key: string, value: string) {
 	}
 }
 
+function loadNumberPreference(key: string, defaultValue: number): number {
+	if (!browser) return defaultValue;
+	try {
+		const raw = localStorage.getItem(key);
+		if (raw === null) return defaultValue;
+		const value = Number(raw);
+		return Number.isFinite(value) ? value : defaultValue;
+	} catch {
+		return defaultValue;
+	}
+}
+
+function persistNumberPreference(key: string, value: number) {
+	if (!browser) return;
+	try {
+		localStorage.setItem(key, String(value));
+	} catch {
+		/* noop */
+	}
+}
+
 export const baseContent = writable<ContentItem[]>([]);
 
 type ContentMeta = {
@@ -93,8 +115,8 @@ export const sortBy = writable<SortBy>('default');
 export const showWatched = writable(loadBooleanPreference(SHOW_WATCHED_STORAGE_KEY));
 export const selectedContent = writable<ContentItem | null>(null);
 export const showPlayer = writable(false);
-export const showDetailsPanel = writable(false);
 export const selectedIndex = writable(0);
+export const gridScale = writable(loadNumberPreference(GRID_SCALE_STORAGE_KEY, 1));
 // When playing a single episode from a series, this holds the selected episode
 export const selectedEpisode = writable<Episode | null>(null);
 
@@ -200,6 +222,7 @@ if (browser) {
 	showPaid.subscribe((value) => persistBooleanPreference(SHOW_PAID_STORAGE_KEY, value));
 	showWatched.subscribe((value) => persistBooleanPreference(SHOW_WATCHED_STORAGE_KEY, value));
 	searchQuery.subscribe((value) => persistStringPreference(SEARCH_QUERY_STORAGE_KEY, value));
+	gridScale.subscribe((value) => persistNumberPreference(GRID_SCALE_STORAGE_KEY, value));
 }
 
 // Debounced search to avoid filtering on every keystroke
@@ -330,20 +353,6 @@ export function selectEpisode(ep: Episode) {
 export function closePlayer() {
 	showPlayer.set(false);
 	selectedEpisode.set(null);
-
-	// On mobile, show the details panel when closing the player if there's selected content
-	if (browser && typeof window !== 'undefined' && window.innerWidth < 768) {
-		const current = get(selectedContent);
-		if (current) {
-			showDetailsPanel.set(true);
-		}
-	}
-}
-export function openDetailsPanel() {
-	showDetailsPanel.set(true);
-}
-export function closeDetailsPanel() {
-	showDetailsPanel.set(false);
 }
 
 // Helper to update sort

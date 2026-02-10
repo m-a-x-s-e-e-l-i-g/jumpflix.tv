@@ -4,6 +4,7 @@
   import XIcon from '@lucide/svelte/icons/x';
   import { Dialog } from 'bits-ui';
   import { toast } from 'svelte-sonner';
+  import type { Snippet } from 'svelte';
   import type {
     ContentItem,
     Episode,
@@ -22,7 +23,8 @@
     selectedSeasonNumber = null,
     triggerClass = 'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-gray-700/50 text-gray-300 border border-gray-600/50 hover:bg-gray-700 transition',
     triggerLabel = 'Suggest change / report issue',
-    triggerAriaLabel = 'Suggest change / report issue'
+    triggerAriaLabel = 'Suggest change / report issue',
+    trigger = undefined
   } = $props<{
     selected: ContentItem | null;
     selectedEpisode?: Episode | null;
@@ -30,6 +32,7 @@
     triggerClass?: string;
     triggerLabel?: string;
     triggerAriaLabel?: string;
+    trigger?: Snippet;
   }>();
 
   let open = $state(false);
@@ -521,7 +524,11 @@
 
 <Dialog.Root bind:open>
   <Dialog.Trigger class={triggerClass} aria-label={triggerAriaLabel} title={triggerAriaLabel}>
-    <slot name="trigger">{triggerLabel}</slot>
+    {#if trigger}
+      {@render trigger()}
+    {:else}
+      {triggerLabel}
+    {/if}
   </Dialog.Trigger>
   <Dialog.Portal>
     <Dialog.Overlay class="fixed inset-0 z-40 bg-black/78 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />

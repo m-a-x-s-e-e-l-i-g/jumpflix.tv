@@ -29,6 +29,7 @@
 
 	let mounted = false;
 	let playerEl: MediaPlayerElement | null = null;
+	let vidstackLoadPromise: Promise<void> | null = null;
 
 	type RemoteControl = {
 		setTarget?: (target: EventTarget | null) => void;
@@ -87,6 +88,20 @@
 	let progressCommitDeadline = 0;
 	const PROGRESS_UPDATE_INTERVAL = 5000; // Update every 5 seconds
 	const PROGRESS_COMMIT_DELAY_MS = 250;
+
+	async function ensureVidstackLoaded() {
+		if (!browser) return;
+		if (!vidstackLoadPromise) {
+			vidstackLoadPromise = Promise.all([
+				import('vidstack/player'),
+				import('vidstack/player/layouts/default'),
+				import('vidstack/icons'),
+				import('vidstack/player/styles/default/theme.css'),
+				import('vidstack/player/styles/default/layouts/video.css')
+			]).then(() => undefined);
+		}
+		await vidstackLoadPromise;
+	}
 
 	$: if (browser && playerEl) {
 		cleanupGestures?.();
@@ -1168,6 +1183,7 @@
 
 	onMount(() => {
 		mounted = true;
+		void ensureVidstackLoaded();
 
 		if (browser && typeof window !== 'undefined') {
 			cleanupMobileQuery?.();

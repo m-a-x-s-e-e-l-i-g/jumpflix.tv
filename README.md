@@ -29,7 +29,6 @@ The goal: an elegant, fast, mobile‑friendly discovery hub honoring the culture
 - 🔀 Deterministic random ordering (stable shuffle per session) with multiple sort modes (title, year, duration)
 - 💸 Paid vs free toggle (surface free community films first if you want)
 - ▶️ Custom video player for YouTube / Vimeo with **slowmotion**!
-- ⌨️ Keyboard navigation
 - ✅ Track what you've watched & progress tracking
 - 🌍 Internationalization (English + Dutch via Paraglide i18n)
 - 🗄️ Supabase backend for content management with interactive admin CLI
@@ -263,14 +262,6 @@ interface MediaItem {
 ```
 
 Helper utilities (`src/lib/tv/utils.ts`) provide deterministic shuffling, sorting, search matching, and embed URL builders.
-
-## 🎮 Keyboard Shortcuts
-
-| Key        | Action                                  |
-| ---------- | --------------------------------------- |
-| Arrow Keys | Navigate grid items                     |
-| Enter      | Open selected (inline player / details) |
-| Escape     | Close player / fullscreen / overlays    |
 
 ## 🧊 Deterministic Shuffle
 

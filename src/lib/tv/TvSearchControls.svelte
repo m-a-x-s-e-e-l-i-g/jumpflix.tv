@@ -35,25 +35,17 @@
   const isLoggedIn = $derived(Boolean($user));
 </script>
 
-<div id="search" class="relative z-10 mx-auto mt-30 w-full max-w-5xl">
+<div id="search" class="search-wrap">
   <div class={containerClass}>
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
-      <form
-        class="relative flex-1 min-w-[260px] group"
-        onsubmit={(event) => event.preventDefault()}
-      >
-        <span class="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#f87171] transition-colors z-10">
+    <div class="search-grid">
+      <form class="search-input" onsubmit={(event) => event.preventDefault()}>
+        <span class="search-icon" aria-hidden="true">
           <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z" />
           </svg>
         </span>
         {#if $searchQuery}
-          <button
-            type="button"
-            class="absolute inset-y-0 right-3 flex items-center rounded-md p-1 text-gray-400 transition-colors hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#e50914] focus:ring-offset-2 focus:ring-offset-slate-950/70 z-10"
-            onclick={clearSearch}
-            aria-label="Clear search"
-          >
+          <button type="button" class="search-clear" onclick={clearSearch} aria-label="Clear search">
             <svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -67,19 +59,17 @@
           spellcheck="false"
           placeholder={m.tv_searchPlaceholder()}
           aria-label="Search content"
-          class="h-12 w-full rounded-2xl border border-white/10 bg-slate-900/80 pr-12 text-sm text-gray-100 placeholder-gray-400 shadow-sm transition focus:border-[#e50914]/80 focus:outline-none focus:ring-2 focus:ring-[#e50914]/70"
-          style="padding-left: 3rem;"
+          class="search-field"
         />
         <button type="submit" class="hidden" aria-hidden="true" tabindex="-1"></button>
       </form>
 
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center lg:justify-end lg:pl-6">
+      <div class="search-controls">
         <label class={labelClass}>
           <span>{m.tv_showPaid()}</span>
           <Switch
-            checked={$showPaid}
+            bind:checked={$showPaid}
             ariaLabel={m.tv_showPaid()}
-            on:change={(event) => showPaid.set(event.detail)}
           />
         </label>
 
@@ -87,40 +77,43 @@
           <label class={labelClass}>
             <span>{m.tv_showWatched()}</span>
             <Switch
-              checked={$showWatched}
+              bind:checked={$showWatched}
               ariaLabel={m.tv_showWatched()}
-              on:change={(event) => showWatched.set(event.detail)}
             />
           </label>
         {/if}
 
-        <div class="relative min-w-[170px]">
-          <select
-            value={$sortBy}
-            onchange={handleSortChange}
-            class={selectClass}
-          >
+        <div class="search-select">
+          <select value={$sortBy} onchange={handleSortChange} class={selectClass}>
             {#each Object.entries(sortLabels) as [value, label]}
               <option value={value}>{label}</option>
             {/each}
           </select>
-          <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-300">▾</span>
+          <span class="search-caret" aria-hidden="true">▾</span>
         </div>
+
       </div>
     </div>
   </div>
 </div>
 
 <style>
+  .search-wrap {
+    position: relative;
+    z-index: 10;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    padding: 0 clamp(1.5rem, 3vw, 3.75rem);
+  }
+
   .tv-search-surface {
     position: relative;
-    border-radius: 28px;
-    padding: 1.5rem;
-    border: 1px solid rgba(148, 163, 184, 0.15);
-    background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.68));
-    box-shadow:
-      0 35px 100px -50px rgba(2, 6, 23, 0.8),
-      0 18px 50px -38px rgba(2, 6, 23, 0.65);
+    border-radius: 30px;
+    padding: 1.6rem;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    background: linear-gradient(155deg, rgba(14, 19, 36, 0.96), rgba(10, 14, 26, 0.88));
+    box-shadow: 0 40px 100px -55px rgba(2, 6, 23, 0.9);
     overflow: hidden;
   }
 
@@ -129,26 +122,90 @@
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(130deg, rgba(59, 130, 246, 0.18), rgba(244, 114, 182, 0.14));
-    opacity: 0.85;
+    background: linear-gradient(130deg, rgba(229, 9, 20, 0.14), rgba(37, 99, 235, 0.16));
+    opacity: 0.9;
     pointer-events: none;
     mix-blend-mode: screen;
   }
 
-  .tv-search-toggle {
-    display: flex;
+  .search-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 1.2rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     align-items: center;
-    gap: 0.75rem;
-    border-radius: 20px;
-    border: 1px solid rgba(148, 163, 184, 0.25);
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.66));
-    padding: 0.75rem 1rem;
-    font-size: 0.72rem;
-    font-weight: 600;
+  }
+
+  .search-input {
+    position: relative;
+    min-width: 240px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(226, 232, 240, 0.6);
+  }
+
+  .search-clear {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 999px;
+    padding: 0.2rem;
+    color: rgba(226, 232, 240, 0.6);
+    transition: color 0.2s ease;
+  }
+
+  .search-clear:hover {
+    color: rgba(248, 250, 252, 0.9);
+  }
+
+  .search-field {
+    width: 100%;
+    height: 3.1rem;
+    border-radius: 22px;
+    border: 1px solid rgba(248, 250, 252, 0.15);
+    background: rgba(7, 10, 20, 0.72);
+    padding: 0 3rem 0 3rem;
+    font-size: 0.9rem;
+    color: rgba(248, 250, 252, 0.92);
+    box-shadow: inset 0 0 0 1px rgba(248, 250, 252, 0.04);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .search-field:focus {
+    outline: none;
+    border-color: rgba(229, 9, 20, 0.6);
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.2);
+  }
+
+  .search-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+
+  .tv-search-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    background: rgba(8, 12, 24, 0.65);
+    padding: 0.6rem 1rem;
+    font-size: 0.68rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.18em;
-    color: rgba(226, 232, 240, 0.9);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    letter-spacing: 0.2em;
+    color: rgba(226, 232, 240, 0.85);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
@@ -157,26 +214,40 @@
     box-shadow: 0 12px 30px -22px rgba(2, 6, 23, 0.55);
   }
 
+  .search-select {
+    position: relative;
+    min-width: 180px;
+  }
+
   .tv-search-select {
     appearance: none;
     width: 100%;
     border-radius: 18px;
-    border: 1px solid rgba(148, 163, 184, 0.35);
-    background: linear-gradient(150deg, rgba(15, 23, 42, 0.94), rgba(15, 23, 42, 0.76));
-    padding: 0.65rem 2.6rem 0.65rem 1rem;
-    font-size: 0.78rem;
-    font-weight: 600;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    background: rgba(10, 14, 26, 0.7);
+    padding: 0.6rem 2.4rem 0.6rem 1rem;
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.11em;
-    color: rgba(226, 232, 240, 0.95);
+    letter-spacing: 0.14em;
+    color: rgba(226, 232, 240, 0.9);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     color-scheme: dark;
   }
 
   .tv-search-select:focus {
     outline: none;
-    border-color: rgba(244, 114, 182, 0.55);
-    box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.15);
+    border-color: rgba(229, 9, 20, 0.6);
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.2);
+  }
+
+  .search-caret {
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    color: rgba(226, 232, 240, 0.7);
   }
 
   .tv-search-select option {
@@ -186,8 +257,13 @@
 
   @media (max-width: 640px) {
     .tv-search-surface {
-      padding: 1.25rem;
+      padding: 1.2rem;
       border-radius: 24px;
+    }
+
+    .search-controls {
+      flex-direction: column;
+      align-items: flex-start;
     }
 
     .tv-search-select {

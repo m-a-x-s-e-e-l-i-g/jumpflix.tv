@@ -34,21 +34,61 @@ function removeUndefined<T extends Record<string, any>>(obj: T): T {
 	return result as T;
 }
 
+const PRERENDER_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const PRERENDER_CACHE_DIR = '.cache';
+const CONTENT_CACHE_FILE = 'jumpflix-content.json';
+const EPISODES_CACHE_FILE = 'jumpflix-episodes.json';
+
+function isPrerenderCacheEnabled(): boolean {
+	return typeof process !== 'undefined' && process.env?.JUMPFLIX_PRERENDER_CACHE === '1';
+}
+
+async function readPrerenderCache<T>(fileName: string): Promise<T | null> {
+	if (!isPrerenderCacheEnabled()) return null;
+	try {
+		const fs = await import('fs/promises');
+		const path = await import('path');
+		const cachePath = path.join(process.cwd(), PRERENDER_CACHE_DIR, fileName);
+		const raw = await fs.readFile(cachePath, 'utf-8');
+		const parsed = JSON.parse(raw) as { fetchedAt?: number; items?: T };
+		if (!parsed?.items || !parsed?.fetchedAt) return null;
+		if (Date.now() - parsed.fetchedAt > PRERENDER_CACHE_TTL_MS) return null;
+		return parsed.items;
+	} catch {
+		return null;
+	}
+}
+
+async function writePrerenderCache<T>(fileName: string, items: T): Promise<void> {
+	if (!isPrerenderCacheEnabled()) return;
+	try {
+		const fs = await import('fs/promises');
+		const path = await import('path');
+		const cacheDir = path.join(process.cwd(), PRERENDER_CACHE_DIR);
+		await fs.mkdir(cacheDir, { recursive: true });
+		const cachePath = path.join(cacheDir, fileName);
+		await fs.writeFile(cachePath, JSON.stringify({ fetchedAt: Date.now(), items }));
+	} catch {
+		// Best-effort cache; ignore failures.
+	}
+}
+
 // Helper to map facets from database row
 function mapFacets(row: MediaItemRow): Facets | undefined {
+	// Calculate automatic facets
+	const era = calculateEraFacet(row.year);
+
 	const hasFacets = row.facet_type || 
 		(row.facet_mood && row.facet_mood.length > 0) || 
 		(row.facet_movement && row.facet_movement.length > 0) || 
 		row.facet_environment || 
 		row.facet_film_style || 
-		row.facet_theme;
+		row.facet_theme || 
+		era;
 	
 	if (!hasFacets) {
 		return undefined;
 	}
-
-	// Calculate automatic facets
-	const era = calculateEraFacet(row.year);
 
 	return removeUndefined({
 		type: row.facet_type ?? undefined,
@@ -181,60 +221,143 @@ function mapSeries(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryR
 	});
 }
 
+const CONTENT_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+let contentCache: { items: ContentItem[]; fetchedAt: number } | null = null;
+let contentInFlight: Promise<ContentItem[]> | null = null;
+
 export async function fetchAllContent(): Promise<ContentItem[]> {
+	const now = Date.now();
+	if (contentCache && now - contentCache.fetchedAt < CONTENT_CACHE_TTL_MS) {
+		return contentCache.items;
+	}
+	if (contentInFlight) {
+		return contentInFlight;
+	}
+
+	const diskCached = await readPrerenderCache<ContentItem[]>(CONTENT_CACHE_FILE);
+	if (diskCached) {
+		contentCache = { items: diskCached, fetchedAt: Date.now() };
+		return diskCached;
+	}
+
+	contentInFlight = (async () => {
+		try {
+			const supabase = createSupabaseClient();
+			const { data, error } = await supabase
+				.from('media_items')
+				.select(
+					`
+						*,
+						video_songs (
+							*,
+							song:songs!video_songs_song_id_fkey ( * )
+						),
+						series_seasons (
+							*,
+							series_episodes ( * )
+						)
+					`
+				);
+
+			if (error) {
+				console.error('[content-service] Failed to load media items:', error);
+				contentCache = { items: [], fetchedAt: Date.now() };
+				return [];
+			}
+
+			if (!data) {
+				contentCache = { items: [], fetchedAt: Date.now() };
+				return [];
+			}
+
+			const rows = data as unknown as MediaItemWithSeasonsAndTracks[];
+			const summaryByMediaId = new Map<number, MediaRatingSummaryRow>();
+
+			const mediaIds = rows.map((row) => row.id);
+			if (mediaIds.length) {
+				const { data: ratingRows, error: ratingsError } = await supabase
+					.from('media_ratings_summary')
+					.select('*')
+					.in('media_id', mediaIds);
+
+				if (ratingsError) {
+					console.warn('[content-service] Failed to load rating summaries:', ratingsError);
+				} else if (ratingRows && ratingRows.length) {
+					for (const summary of ratingRows) {
+						summaryByMediaId.set(summary.media_id, summary);
+					}
+				}
+			}
+			const items: ContentItem[] = rows.map((row) => {
+				const ratingSummary = summaryByMediaId.get(row.id) ?? null;
+				return isSeriesRow(row) ? mapSeries(row, ratingSummary) : mapMovie(row, ratingSummary);
+			});
+
+			const sorted = items.sort((a, b) => a.title.localeCompare(b.title));
+			contentCache = { items: sorted, fetchedAt: Date.now() };
+			await writePrerenderCache(CONTENT_CACHE_FILE, sorted);
+			return sorted;
+		} catch (err) {
+			console.error('[content-service] Unexpected error:', err);
+			contentCache = { items: [], fetchedAt: Date.now() };
+			return [];
+		} finally {
+			contentInFlight = null;
+		}
+	})();
+
+	return contentInFlight;
+}
+
+type SeriesEpisodeEntry = {
+	slug: string;
+	seasonNumber: number;
+	episodeNumber: number;
+};
+
+export async function fetchSeriesEpisodeEntries(): Promise<SeriesEpisodeEntry[]> {
 	try {
+		const cached = await readPrerenderCache<SeriesEpisodeEntry[]>(EPISODES_CACHE_FILE);
+		if (cached) return cached;
+
 		const supabase = createSupabaseClient();
 		const { data, error } = await supabase
-			.from('media_items')
+			.from('series_episodes')
 			.select(
 				`
-					*,
-					video_songs (
-						*,
-						song:songs!video_songs_song_id_fkey ( * )
-					),
-					series_seasons (
-						*,
-						series_episodes ( * )
+					episode_number,
+					season:series_seasons (
+						season_number,
+						series:media_items ( slug, type )
 					)
 				`
 			);
 
 		if (error) {
-			console.error('[content-service] Failed to load media items:', error);
+			console.error('[content-service] Failed to load series episodes:', error);
 			return [];
 		}
 
-		if (!data) {
-			return [];
+		const entries: SeriesEpisodeEntry[] = [];
+		for (const row of (data ?? []) as any[]) {
+			const episodeNumber = Number(row.episode_number);
+			const seasonNumber = Number(row?.season?.season_number);
+			const slug = row?.season?.series?.slug;
+			const type = row?.season?.series?.type;
+			if (type !== 'series' || !slug) continue;
+			if (!Number.isFinite(episodeNumber) || episodeNumber < 1) continue;
+			if (!Number.isFinite(seasonNumber) || seasonNumber < 1) continue;
+			entries.push({
+				slug,
+				seasonNumber: Math.floor(seasonNumber),
+				episodeNumber: Math.floor(episodeNumber)
+			});
 		}
 
-		const rows = data as unknown as MediaItemWithSeasonsAndTracks[];
-		const summaryByMediaId = new Map<number, MediaRatingSummaryRow>();
-
-		const mediaIds = rows.map((row) => row.id);
-		if (mediaIds.length) {
-			const { data: ratingRows, error: ratingsError } = await supabase
-				.from('media_ratings_summary')
-				.select('*')
-				.in('media_id', mediaIds);
-
-			if (ratingsError) {
-				console.warn('[content-service] Failed to load rating summaries:', ratingsError);
-			} else if (ratingRows && ratingRows.length) {
-				for (const summary of ratingRows) {
-					summaryByMediaId.set(summary.media_id, summary);
-				}
-			}
-		}
-		const items: ContentItem[] = rows.map((row) => {
-			const ratingSummary = summaryByMediaId.get(row.id) ?? null;
-			return isSeriesRow(row) ? mapSeries(row, ratingSummary) : mapMovie(row, ratingSummary);
-		});
-
-		return items.sort((a, b) => a.title.localeCompare(b.title));
+		await writePrerenderCache(EPISODES_CACHE_FILE, entries);
+		return entries;
 	} catch (err) {
-		console.error('[content-service] Unexpected error:', err);
+		console.error('[content-service] Unexpected error loading episodes:', err);
 		return [];
 	}
 }

@@ -4,75 +4,114 @@
   import { get } from 'svelte/store';
   import { toast } from 'svelte-sonner';
   import * as m from '$lib/paraglide/messages';
-  import PlayerModal from '$lib/tv/PlayerModal.svelte';
-  import MobileDetailsOverlay from '$lib/tv/MobileDetailsOverlay.svelte';
   import TvHeroSection from '$lib/tv/TvHeroSection.svelte';
   import TvSearchControls from '$lib/tv/TvSearchControls.svelte';
   import TvCatalogGrid from '$lib/tv/TvCatalogGrid.svelte';
   import TvPageBackdrop from '$lib/tv/TvPageBackdrop.svelte';
-  import TvDesktopDetailsPanel from '$lib/tv/TvDesktopDetailsPanel.svelte';
+  import TvDetailPanel from '$lib/tv/TvDetailPanel.svelte';
   import RatingPromptDialog from '$lib/components/RatingPromptDialog.svelte';
   import { getUserRating } from '$lib/ratings';
   import {
       visibleContent,
-      visibleKeys,
-      sortedAllContent,
       searchQuery,
       showPaid,
       showWatched,
       sortBy,
+      gridScale,
       selectedContent,
       showPlayer,
-      showDetailsPanel,
       selectedIndex,
       selectContent,
       openContent,
       closePlayer,
-      closeDetailsPanel,
       selectedEpisode,
       openEpisode,
       selectEpisode,
-      setContent
+      setContent,
+      sortedAllContent
     } from '$lib/tv/store';
   import { getLatestWatchProgressByBaseId } from '$lib/tv/watchHistory';
-  import type { ContentItem, Movie } from '$lib/tv/types';
+  import type { ContentItem, Episode, Movie } from '$lib/tv/types';
   import { browser } from '$app/environment';
-  import { goto } from '$app/navigation';
+  import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
   import { buildItemUrl, buildPageTitle, extractSeasonEpisodeFromPath, openExternalContent } from '$lib/tv/helpers/navigation';
-  import { clampIndex, computeColumns, ensureVisibleSelection, isTypingTarget } from '$lib/tv/helpers/grid';
+  import { computeColumns } from '$lib/tv/helpers/grid';
   import { SCROLL_CONTEXT_KEY, type ScrollSubscription } from '$lib/scroll-context';
 
-  export let content: ContentItem[] = [];
-  export let initialItem: ContentItem | null = null;
-  export let initialEpisodeNumber: number | null = null;
-  export let initialSeasonNumber: number | null = null;
+  let {
+    content = [],
+    initialItem = null,
+    initialEpisodeNumber = null,
+    initialSeasonNumber = null
+  } = $props<{
+    content?: ContentItem[];
+    initialItem?: ContentItem | null;
+    initialEpisodeNumber?: number | null;
+    initialSeasonNumber?: number | null;
+  }>();
 
-  $: {
+  $effect(() => {
     const pageContent = ($page?.data as any)?.content;
     const items = Array.isArray(pageContent) && pageContent.length ? pageContent : content;
     setContent(items ?? []);
+  });
+
+  let isMobile = $state(false);
+  let gridEl = $state<HTMLElement | null>(null);
+  let currentPath = $state('');
+  let pageTitle = $state<string | null>(null);
+  let logoTilt = $state(0);
+  let columns = $state(1);
+  let PlayerModalComponent = $state<any>(null);
+  let playerModalLoading = $state(false);
+  const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
+  let catalogMinHeight = $state(0);
+  let ratingDialogOpen = $state(false);
+  let ratingDialogMovie = $state<Movie | null>(null);
+  let ratingRefreshToken = $state(0);
+  let ratingDialogCheckToken = 0;
+  let lastCatalogScrollY = 0;
+  let restoreCatalogScroll = false;
+
+  const isDetailRoute = $derived(
+    $page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
+  );
+
+  const isDetailPathname = (pathname: string) =>
+    pathname.startsWith('/movie/') || pathname.startsWith('/series/');
+
+  async function scrollAfterNav(target: number) {
+    if (!browser) return;
+    await tick();
+    const clamped = Math.max(0, target);
+    const applyScroll = () => window.scrollTo(0, clamped);
+    requestAnimationFrame(() => {
+      applyScroll();
+      requestAnimationFrame(() => {
+        applyScroll();
+        setTimeout(() => {
+          if (Math.abs(window.scrollY - clamped) > 2) {
+            applyScroll();
+          }
+        }, 0);
+      });
+    });
   }
 
-  let isMobile = false;
-  let gridEl: HTMLElement | null = null;
-  let lastSelectionSource: 'keyboard' | 'click' | 'programmatic' = 'programmatic';
-  let currentPath = '';
-  let pageTitle: string | null = null;
-  let logoTilt = 0;
-  let columns = 1;
-  let restoreMobileOverlay = false;
-  const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
-  let catalogMinHeight = 0;
-  let ratingDialogOpen = false;
-  let ratingDialogMovie: Movie | null = null;
-  let ratingRefreshToken = 0;
-  let ratingDialogCheckToken = 0;
+  const selectedForDetail = $derived($selectedContent ?? initialItem ?? null);
 
   let allowExitBack = false;
   let exitConfirmUntil = 0;
-  let overlayBackTrapArmed = false;
 
   const EXIT_CONFIRM_TIMEOUT_MS = 2000;
+
+  async function loadPlayerModal() {
+    if (PlayerModalComponent || playerModalLoading) return;
+    playerModalLoading = true;
+    const module = await import('$lib/tv/PlayerModal.svelte');
+    PlayerModalComponent = module.default as any;
+    playerModalLoading = false;
+  }
 
   function isAndroidStandalone() {
     if (!browser) return false;
@@ -85,20 +124,12 @@
     return isAndroid && Boolean(isStandalone);
   }
 
-  function closeMobileOverlayStateOnly() {
-    lastSelectionSource = 'programmatic';
-    setMobileDetails(false);
-    selectedContent.set(null);
-    selectedEpisode.set(null);
-    pageTitle = null;
-  }
-
   function armOverviewExitTrap() {
     if (!browser) return;
     if (!isAndroidStandalone()) return;
     if (!isMobile) return;
     if (window.location.pathname !== '/') return;
-    if (get(showDetailsPanel) || get(showPlayer)) return;
+    if (get(showPlayer)) return;
 
     const state: any = window.history.state;
     if (state?.jf_exitTrap) return;
@@ -122,43 +153,33 @@
     goto(url, { replaceState: !!opts?.replace, noScroll: true, keepFocus: true });
   }
 
-  function setMobileDetails(open: boolean) {
-    if (!browser) return;
-    showDetailsPanel.set(open);
-    const cls = 'overflow-hidden';
-    if (open) {
-      document.documentElement.classList.add(cls);
-    } else if (!$showPlayer) {
-      document.documentElement.classList.remove(cls);
-    }
-  }
-
-  $: if (browser && initialItem) {
+  $effect(() => {
+    if (!initialItem) return;
     selectContent(initialItem);
-    if (window.innerWidth < 768) {
-      setMobileDetails(true);
-    }
     if ((initialItem as any).type === 'series' && typeof initialEpisodeNumber === 'number' && Number.isFinite(initialEpisodeNumber)) {
       const n = Math.max(1, Math.floor(initialEpisodeNumber));
       selectEpisode({ id: `pos:${n}`, title: `Episode ${n}`, position: n } as any);
     }
-  }
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    if ($showPlayer) {
+      void loadPlayerModal();
+    }
+  });
 
   function handleSelect(item: ContentItem) {
-    lastSelectionSource = 'click';
     selectContent(item);
     if (browser) nav(buildItemUrl(item));
-    if (browser && isMobile) setMobileDetails(true);
   }
 
   function handleOpenContent(item: ContentItem) {
-    if (browser && isMobile) setMobileDetails(false);
     if (browser) nav(buildItemUrl(item));
     openContent(item);
   }
 
   function handleOpenEpisode(videoId: string, title: string, episodeNumber?: number, seasonNumber?: number) {
-    if (browser && isMobile) setMobileDetails(false);
     if (browser && $selectedContent && $selectedContent.type === 'series') {
       const url = episodeNumber
         ? buildItemUrl($selectedContent, { episodeNumber, seasonNumber: seasonNumber ?? undefined })
@@ -278,108 +299,23 @@
     }
   }
 
-  $: if (browser) {
-    if (isMobile && $showDetailsPanel) {
-      document.documentElement.classList.add('overflow-hidden');
-    } else if (!$showPlayer) {
-      document.documentElement.classList.remove('overflow-hidden');
-    }
-  }
-
-  $: if (browser) {
+  $effect(() => {
+    if (!browser) return;
     columns = computeColumns(gridEl);
+  });
+
+  function handleScaleChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const next = Number(target.value);
+    if (!Number.isFinite(next)) return;
+    gridScale.set(Math.min(1.25, Math.max(0.8, next)));
   }
 
-  function setIndex(idx: number) {
-    const list = $visibleContent;
-    if (!list.length) return;
-    const clamped = clampIndex(list.length, idx);
-    selectedIndex.set(clamped);
-    selectedContent.set(list[clamped]);
-    ensureVisibleSelection({
-      gridEl,
-      visibleContent: list,
-      allContent: $sortedAllContent,
-      index: clamped
-    });
-  }
-
-  function handleKeydown(event: KeyboardEvent) {
-    if ($showPlayer && event.key === 'Escape') {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      handlePlayerClose();
-      return;
-    }
-    if (event.key === 'Escape' && document.fullscreenElement) {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      document.exitFullscreen();
-      handlePlayerClose();
-      return;
-    }
-    if (isTypingTarget(event.target) || $showPlayer) {
-      return;
-    }
-
-    const list = $visibleContent;
-    if (!list.length) return;
-
-    const idx = $selectedIndex;
-    const current = $selectedContent;
-
-    switch (event.key) {
-      case 'ArrowRight':
-        event.preventDefault();
-        lastSelectionSource = 'keyboard';
-        setIndex(idx + 1);
-        break;
-      case 'ArrowLeft':
-        event.preventDefault();
-        lastSelectionSource = 'keyboard';
-        setIndex(idx - 1);
-        break;
-      case 'ArrowDown':
-        event.preventDefault();
-        lastSelectionSource = 'keyboard';
-        setIndex(idx + columns);
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        lastSelectionSource = 'keyboard';
-        setIndex(idx - columns);
-        break;
-      case 'Enter':
-        if (current) {
-          event.preventDefault();
-          lastSelectionSource = 'keyboard';
-          openContent(current);
-        }
-        break;
-    }
-  }
-
-  function handleMobileBack() {
-    lastSelectionSource = 'programmatic';
-    setMobileDetails(false);
-    selectedContent.set(null);
-    selectedEpisode.set(null);
-    pageTitle = null;
-    if (browser) {
-      const target = '/';
-      if (currentPath !== target) {
-        nav(target, { replace: true });
-        currentPath = target;
-      }
-    }
-  }
 
   onMount(() => {
     currentPath = `${get(page).url.pathname}${get(page).url.search}`;
 
-    // In Android standalone (installed PWA), tweak back gesture behavior:
-    // - When the mobile details overlay is open, back closes it (and returns to '/').
-    // - On the catalog overview ('/'), require double-back to exit.
+    // In Android standalone (installed PWA), require double-back to exit on catalog overview.
     const handlePopState = () => {
       if (!browser) return;
       if (!isAndroidStandalone() || !isMobile) return;
@@ -389,18 +325,7 @@
         return;
       }
 
-      // Priority 1: close mobile overlay
-      if (get(showDetailsPanel)) {
-        if (window.location.pathname === '/') {
-          closeMobileOverlayStateOnly();
-          armOverviewExitTrap();
-          return;
-        }
-        handleMobileBack();
-        return;
-      }
-
-      // Priority 2: double-back to exit on catalog overview
+      // Double-back to exit on catalog overview
       if (window.location.pathname === '/' && !get(showPlayer)) {
         const now = Date.now();
         if (now > exitConfirmUntil) {
@@ -419,6 +344,30 @@
     };
 
     window.addEventListener('popstate', handlePopState);
+
+    beforeNavigate((nav) => {
+      if (!browser || !nav.from || !nav.to) return;
+      const fromPath = nav.from.url.pathname;
+      const toPath = nav.to.url.pathname;
+      if (fromPath === '/' && isDetailPathname(toPath)) {
+        lastCatalogScrollY = window.scrollY;
+        restoreCatalogScroll = true;
+      }
+    });
+
+    afterNavigate((nav) => {
+      if (!browser || !nav.from || !nav.to) return;
+      const fromPath = nav.from.url.pathname;
+      const toPath = nav.to.url.pathname;
+      if (fromPath === '/' && isDetailPathname(toPath)) {
+        void scrollAfterNav(0);
+        return;
+      }
+      if (restoreCatalogScroll && isDetailPathname(fromPath) && toPath === '/') {
+        void scrollAfterNav(lastCatalogScrollY);
+        restoreCatalogScroll = false;
+      }
+    });
     
     // Lock scroll position when content filters change to prevent jumpy behavior
     let lastScrollY = 0;
@@ -446,10 +395,10 @@
           searchQuery.set(nextQuery);
         }
 
-        // If user navigated back to '/', ensure the mobile overlay closes.
-        if (browser && isMobile && get(showDetailsPanel)) {
-          closeMobileOverlayStateOnly();
-        }
+        selectedContent.set(null);
+        selectedEpisode.set(null);
+        selectedIndex.set(0);
+        pageTitle = null;
 
         armOverviewExitTrap();
       }
@@ -464,7 +413,7 @@
 
     const updateCatalogMinHeight = () => {
       if (!browser) return;
-      const searchEl = document.getElementById('tv-search-controls');
+      const searchEl = document.getElementById('search');
       const searchHeight = searchEl?.getBoundingClientRect().height ?? 0;
       const viewportHeight = window.innerHeight;
       catalogMinHeight = Math.max(0, viewportHeight - searchHeight);
@@ -472,26 +421,7 @@
 
     const updateIsMobile = () => {
       const nextIsMobile = window.innerWidth < 768;
-      const leavingMobile = isMobile && !nextIsMobile;
-      if (leavingMobile) {
-        restoreMobileOverlay = get(showDetailsPanel);
-        if (restoreMobileOverlay) {
-          showDetailsPanel.set(false);
-        }
-      }
-
       isMobile = nextIsMobile;
-
-      if (!nextIsMobile) {
-        showDetailsPanel.set(false);
-        return;
-      }
-
-      if (restoreMobileOverlay && get(selectedContent)) {
-        setMobileDetails(true);
-      }
-
-      restoreMobileOverlay = false;
     };
     updateIsMobile();
     columns = computeColumns(gridEl);
@@ -499,7 +429,7 @@
 
     armOverviewExitTrap();
 
-    const searchEl = document.getElementById('tv-search-controls');
+    const searchEl = document.getElementById('search');
     const searchHeightObserver = (typeof ResizeObserver !== 'undefined')
       ? new ResizeObserver(() => updateCatalogMinHeight())
       : null;
@@ -513,7 +443,6 @@
       updateCatalogMinHeight();
     };
     window.addEventListener('resize', resizeHandler);
-    document.addEventListener('keydown', handleKeydown, true);
     // Removed fullscreenchange listener that was closing player on fullscreen exit
 
   const maxTilt = 6.5;
@@ -553,7 +482,6 @@
           };
         })();
     return () => {
-      document.removeEventListener('keydown', handleKeydown, true);
       window.removeEventListener('resize', resizeHandler);
       window.removeEventListener('popstate', handlePopState);
       searchHeightObserver?.disconnect();
@@ -564,7 +492,8 @@
     };
   });
 
-  $: if (browser && $selectedContent) {
+  $effect(() => {
+    if (!browser || !$selectedContent || currentPath === '/') return;
     const fromPath = extractSeasonEpisodeFromPath(currentPath);
     const episodeHint = ($selectedEpisode?.position && Number.isFinite($selectedEpisode.position))
       ? Math.max(1, Math.floor($selectedEpisode.position))
@@ -579,35 +508,16 @@
       const target = buildItemUrl($selectedContent);
       const current = currentPath;
       if (current !== target) {
-        if (lastSelectionSource === 'keyboard') {
-          window.history.replaceState({}, '', target);
-          currentPath = target;
-        } else {
-          nav(target, { replace: true });
-          currentPath = target;
-        }
+        nav(target, { replace: true });
+        currentPath = target;
       }
     }
-  }
+  });
 
-  $: priorityKeys = new Set(($visibleContent || [])
+  const priorityKeys = $derived(new Set(($visibleContent || [])
     .slice(0, Math.max(columns * 2, 8))
-    .map((it) => `${it.type}:${it.id}`));
+    .map((it) => `${it.type}:${it.id}`)));
 
-  // If the PWA was opened directly on a detail URL (history length = 1), Android back would
-  // immediately close the app. Add one history entry when the mobile overlay opens so the
-  // first back gesture triggers `popstate` and can close the overlay to '/'.
-  $: if (browser && isAndroidStandalone() && isMobile && $showDetailsPanel && $selectedContent) {
-    if (!overlayBackTrapArmed && window.history.length <= 1) {
-      const state: any = window.history.state;
-      if (!state?.jf_overlayTrap) {
-        window.history.pushState({ ...state, jf_overlayTrap: true }, '', window.location.href);
-      }
-      overlayBackTrapArmed = true;
-    }
-  } else {
-    overlayBackTrapArmed = false;
-  }
 </script>
 
 <svelte:head>
@@ -616,60 +526,69 @@
 	{/if}
 </svelte:head>
 
-<div class="relative isolate min-h-screen bg-background text-foreground tv-page overflow-x-hidden md:pr-[420px] xl:pr-[460px]">
+<div class="relative isolate min-h-screen bg-background text-foreground tv-page overflow-x-hidden">
   <TvPageBackdrop />
-  <section class="relative isolate overflow-hidden px-6 pt-24 pb-16 sm:pt-32 sm:pb-20">
-    <div class="hero-overlay" aria-hidden="true"></div>
-
-    <TvHeroSection {logoTilt} />
-
-    <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} />
-  </section>
-  <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
-    <TvCatalogGrid
-      bind:gridElement={gridEl}
-      sortedAllContent={$sortedAllContent}
-      visibleContent={$visibleContent}
-      visibleKeys={$visibleKeys}
-      selectedContent={$selectedContent}
-      {isMobile}
-      priorityKeys={priorityKeys}
-      onSelect={handleSelect}
-    />
-    <TvDesktopDetailsPanel
-      selected={$selectedContent}
+  {#if isDetailRoute}
+    <TvDetailPanel
+      selected={selectedForDetail}
       openContent={handleOpenContent}
       openExternal={openExternalContent}
       onOpenEpisode={handleOpenEpisode}
       onSelectEpisode={handleSelectEpisode}
       selectedEpisode={$selectedEpisode}
       initialSeasonNumber={initialSeasonNumber}
-      {isMobile}
       ratingRefreshToken={ratingRefreshToken}
     />
-    <MobileDetailsOverlay
-      show={$showDetailsPanel}
-      {isMobile}
-      selected={$selectedContent}
-      openContent={handleOpenContent}
-      openExternal={openExternalContent}
-      onOpenEpisode={handleOpenEpisode}
-      onSelectEpisode={handleSelectEpisode}
-      selectedEpisode={$selectedEpisode}
-      {closeDetailsPanel}
-      initialSeason={initialSeasonNumber ?? undefined}
-      onBack={handleMobileBack}
-      ratingRefreshToken={ratingRefreshToken}
-    />
-  </div>
+  {:else}
+    <section class="relative isolate overflow-hidden pt-24 sm:pt-32">
+      <div class="hero-overlay" aria-hidden="true"></div>
+
+      <TvHeroSection {logoTilt} />
+
+      <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} />
+
+      {#if !isMobile}
+        <div class="catalog-toolbar" aria-label="Catalog view controls">
+          <label class="catalog-zoom">
+            <span>Zoom</span>
+            <input
+              type="range"
+              min="0.8"
+              max="1.25"
+              step="0.05"
+              value={$gridScale}
+              oninput={handleScaleChange}
+            />
+          </label>
+        </div>
+      {/if}
+    </section>
+    <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
+      <TvCatalogGrid
+        bind:gridElement={gridEl}
+        visibleContent={$visibleContent}
+        selectedContent={$selectedContent}
+        {isMobile}
+        priorityKeys={priorityKeys}
+        gridScale={isMobile ? 1 : $gridScale}
+        onSelect={handleSelect}
+      />
+    </div>
+  {/if}
 </div>
-<PlayerModal
-	show={$showPlayer}
-	selected={$selectedContent}
-	selectedEpisode={$selectedEpisode}
-  close={handlePlayerClose}
-  on:playbackCompleted={handlePlaybackCompleted}
-/>
+{#if $showPlayer}
+  {#if PlayerModalComponent}
+    <PlayerModalComponent
+      show={$showPlayer}
+      selected={$selectedContent}
+      selectedEpisode={$selectedEpisode}
+      close={handlePlayerClose}
+      on:playbackCompleted={handlePlaybackCompleted}
+    />
+  {:else}
+    <div class="player-modal-loading" aria-live="polite">Loading player…</div>
+  {/if}
+{/if}
 
 <RatingPromptDialog
   bind:open={ratingDialogOpen}
@@ -679,21 +598,21 @@
 
 <style>
   :global(.tv-page) {
-    --hero-gradient: linear-gradient(150deg, #050712 5%, #0c1430 45%, #1a233e 100%);
-    --hero-gradient-opacity: 0.98;
-    --hero-glow-one: radial-gradient(circle at center, rgba(229, 9, 20, 0.7), rgba(229, 9, 20, 0));
-    --hero-glow-two: radial-gradient(circle at center, rgba(59, 130, 246, 0.55), rgba(59, 130, 246, 0));
-    --hero-grid-line-x: rgba(255, 255, 255, 0.08);
-    --hero-grid-line-y: rgba(255, 255, 255, 0.05);
-    --hero-grid-opacity: 0.55;
-    --hero-glow-page-opacity: 0.72;
-    --hero-overlay: radial-gradient(circle at 40% 20%, rgba(229, 9, 20, 0.34), transparent 55%),
-      radial-gradient(circle at 70% 10%, rgba(59, 130, 246, 0.28), transparent 60%),
-      linear-gradient(182deg, rgba(5, 7, 18, 0.2) 0%, rgba(5, 7, 18, 0.12) 58%, rgba(5, 7, 18, 0) 100%);
+    --hero-gradient: linear-gradient(160deg, rgba(6, 9, 18, 0.98) 10%, rgba(10, 14, 26, 0.95) 55%, rgba(8, 13, 24, 1) 100%);
+    --hero-gradient-opacity: 1;
+    --hero-glow-one: radial-gradient(circle at center, rgba(229, 9, 20, 0.55), rgba(229, 9, 20, 0));
+    --hero-glow-two: radial-gradient(circle at center, rgba(37, 99, 235, 0.45), rgba(37, 99, 235, 0));
+    --hero-grid-line-x: rgba(255, 255, 255, 0.06);
+    --hero-grid-line-y: rgba(255, 255, 255, 0.04);
+    --hero-grid-opacity: 0.4;
+    --hero-glow-page-opacity: 0.6;
+    --hero-overlay: radial-gradient(circle at 30% 18%, rgba(229, 9, 20, 0.26), transparent 60%),
+      radial-gradient(circle at 75% 12%, rgba(37, 99, 235, 0.24), transparent 62%),
+      linear-gradient(180deg, rgba(5, 7, 18, 0.16) 0%, rgba(5, 7, 18, 0.12) 55%, rgba(5, 7, 18, 0) 100%);
     --hero-overlay-blend: screen;
-    --hero-logo-text-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
-    --hero-title-gradient: linear-gradient(120deg, rgba(255, 255, 255, 0.95), rgba(229, 9, 20, 0.95) 45%, rgba(244, 114, 182, 0.95) 90%);
-    --hero-title-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+    --hero-logo-text-shadow: 0 16px 35px rgba(2, 6, 23, 0.65);
+    --hero-title-gradient: linear-gradient(120deg, rgba(255, 255, 255, 0.98), rgba(229, 9, 20, 0.9) 45%, rgba(59, 130, 246, 0.85) 90%);
+    --hero-title-shadow: 0 18px 40px rgba(2, 6, 23, 0.75);
   }
 
   .hero-overlay {
@@ -703,16 +622,28 @@
     pointer-events: none;
     background: var(--hero-overlay);
     mix-blend-mode: var(--hero-overlay-blend);
-    opacity: 0.98;
+    opacity: 0.92;
   }
 
   .hero-overlay::after {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(182deg, rgba(5, 7, 18, 1) 0%, rgba(5, 7, 18, 0.28) 62%, rgba(5, 7, 18, 0) 100%);
+    background: linear-gradient(185deg, rgba(5, 7, 18, 1) 0%, rgba(5, 7, 18, 0.35) 62%, rgba(5, 7, 18, 0) 100%);
     mix-blend-mode: soft-light;
     pointer-events: none;
+  }
+
+  .player-modal-loading {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(5, 7, 18, 0.9);
+    color: #e2e8f0;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    z-index: 50;
   }
 
   @media (min-width: 768px) {
@@ -733,6 +664,33 @@
     :global(.tv-page .tv-main) {
       width: 100%;
     }
+  }
+
+  .catalog-toolbar {
+    margin-top: 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 clamp(1.5rem, 3vw, 3.75rem);
+  }
+
+  .catalog-zoom {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.2);
+    background: rgba(8, 12, 24, 0.65);
+    padding: 0.45rem 0.9rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.75);
+  }
+
+  .catalog-zoom input[type='range'] {
+    accent-color: rgba(229, 9, 20, 0.9);
+    height: 4px;
+    width: 140px;
   }
 
   :global(.tv-layout main) {

@@ -63,15 +63,18 @@
 </script>
 
 <div class="mx-auto w-full max-w-6xl px-6 pt-20 pb-10">
-  <h1 class="text-2xl font-semibold text-white">Content suggestions</h1>
-  <p class="mt-1 text-sm text-white/60">Review, edit, approve or decline user suggestions.</p>
+  <div class="rounded-3xl jf-surface p-6 md:p-8">
+    <p class="jf-label">Admin desk</p>
+    <h1 class="mt-2 text-3xl font-semibold text-white">Content suggestions</h1>
+    <p class="mt-2 text-sm text-white/60">Review, edit, approve or decline user suggestions.</p>
+  </div>
 
   {#if data.error}
     <div class="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">{data.error}</div>
   {/if}
 
   <div class="mt-6 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-5">
-    <aside class="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <aside class="rounded-2xl jf-surface-soft p-4">
       <div class="text-sm font-medium text-white/80">Queue</div>
       <div class="mt-3 space-y-2 max-h-[70vh] overflow-auto pr-1">
         {#if !allSuggestions.length}
@@ -131,7 +134,7 @@
       </div>
     </aside>
 
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-5">
+    <section class="rounded-2xl jf-surface-soft p-5">
       {#if !selected}
         <div class="text-sm text-white/60">
           {pendingSuggestions.length === 0 ? 'Nothing to do' : 'Select a suggestion to review.'}

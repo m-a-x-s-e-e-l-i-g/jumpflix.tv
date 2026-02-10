@@ -1,10 +1,5 @@
 <script lang="ts">
 	import '../app.css';
-	import 'vidstack/player/styles/default/theme.css';
-	import 'vidstack/player/styles/default/layouts/video.css';
-	import 'vidstack/player';
-	import 'vidstack/player/layouts/default';
-	import 'vidstack/icons';
 	import { onMount, setContext } from 'svelte';
 	import { get } from 'svelte/store';
 	import type { Action } from 'svelte/action';
@@ -23,6 +18,8 @@
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import HomeIcon from '@lucide/svelte/icons/home';
 	import BarChart3Icon from '@lucide/svelte/icons/bar-chart-3';
+	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import GithubIcon from '@lucide/svelte/icons/github';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
@@ -30,11 +27,13 @@
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 	import TvPage from '$lib/tv/TvPage.svelte';
-	import { showDetailsPanel } from '$lib/tv/store';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import UserProfileButton from '$lib/components/UserProfileButton.svelte';
 	import AdminMenuButton from '$lib/components/AdminMenuButton.svelte';
 	import HelpTipsButton from '$lib/components/HelpTipsButton.svelte';
+	import ContentSuggestionDialog from '$lib/components/ContentSuggestionDialog.svelte';
+	import { withUtm } from '$lib/utils';
+	import { selectedEpisode as selectedEpisodeStore } from '$lib/tv/store';
 	import {
 		SCROLL_CONTEXT_KEY,
 		type ScrollSubscriber,
@@ -43,6 +42,32 @@
 	import { initWatchHistory } from '$lib/tv/watchHistory';
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
+
+	function isStandaloneMode() {
+		if (typeof window === 'undefined') return false;
+		return window.matchMedia('(display-mode: standalone)').matches
+			|| (navigator as any).standalone === true;
+	}
+
+	function openPwaInstallPrompt() {
+		if (isStandaloneMode()) {
+			toast.message(m.install_installed());
+			return;
+		}
+		if (!pwaInstallRef || typeof pwaInstallRef.showDialog !== 'function') {
+			if (import.meta.env.DEV) {
+				toast.message(m.install_dev());
+			} else {
+				toast.message(m.install_not_available());
+			}
+			return;
+		}
+		try {
+			pwaInstallRef.showDialog(true);
+		} catch {
+			toast.error(m.install_error());
+		}
+	}
 
 	// data from +layout.ts
 	let { children, data } = $props<{
@@ -58,16 +83,19 @@
 		};
 	}>();
 
-	let isMobile = $state(false);
 	// current locale from Paraglide (reactive state)
 	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
 	let sheetOpen = $state(false);
 	let reduceMotion = $state(false);
 	let systemReduceMotion = $state(false);
+	let showPopcorn = $state(false);
 
 	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
 	const isStatsRoute = $derived(
 		$page.url.pathname === '/stats' || $page.url.pathname.startsWith('/stats/')
+	);
+	const isDetailRoute = $derived(
+		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
 	);
 	const isNavigatingToStats = $derived((() => {
 		const toPath = $navigating?.to?.url?.pathname;
@@ -217,8 +245,7 @@
 			rotateFactor: 0.019
 		}
 	];
-	const mobilePopcorns = popcorns.slice(0, 4);
-	const activePopcorns = $derived(isMobile ? mobilePopcorns : popcorns);
+	const activePopcorns = $derived(popcorns);
 
 	const PARALLAX_STRENGTH = 0.06;
 	const SCROLL_UPDATE_THRESHOLD = 6; // Minimum scroll delta (px) before refreshing parallax to cut down style recalculations
@@ -281,20 +308,9 @@
 		};
 	};
 
-	if (typeof window !== 'undefined') {
-		isMobile = window.innerWidth < 768;
-	}
-
 	function addEventListeners(): () => void {
 		if (typeof window === 'undefined') return () => {};
-		const updateSize = () => {
-			isMobile = window.innerWidth < 768;
-		};
-		updateSize();
-		window.addEventListener('resize', updateSize);
-		return () => {
-			window.removeEventListener('resize', updateSize);
-		};
+		return () => {};
 	}
 
 	function setupScrollEffects(): () => void {
@@ -350,6 +366,29 @@
 
 	onMount(() => {
 		if (typeof window === 'undefined') return;
+
+		requestAnimationFrame(() => {
+			showPopcorn = true;
+		});
+
+		const runIdle = (task: () => void) => {
+			if ('requestIdleCallback' in window) {
+				(window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
+					.requestIdleCallback(task, { timeout: 1500 });
+			} else {
+				setTimeout(task, 0);
+			}
+		};
+
+		const handlePwaInstallElement = (event: Event) => {
+			const detail = (event as CustomEvent).detail;
+			if (detail) {
+				pwaInstallRef = detail;
+			}
+		};
+
+		pwaInstallRef = document.querySelector('pwa-install');
+		window.addEventListener('pwa-install-element', handlePwaInstallElement as EventListener);
 		
 		// Initialize auth stores with data from server
 		if (data.session) {
@@ -358,91 +397,93 @@
 		}
 		loading.set(false);
 		
-		// Force session refresh to ensure we have the latest auth state
-		// This helps recover from stale cached states and account switching issues
-		const refreshTimeout = setTimeout(() => {
-			console.warn('[Auth Debug] Session refresh timed out');
-		}, 5000);
-		
-		supabase.auth.getSession().then(({ data: freshSession, error }) => {
-			clearTimeout(refreshTimeout);
+		runIdle(() => {
+			// Force session refresh to ensure we have the latest auth state
+			// This helps recover from stale cached states and account switching issues
+			const refreshTimeout = setTimeout(() => {
+				console.warn('[Auth Debug] Session refresh timed out');
+			}, 5000);
 			
-			if (error) {
-				console.error('[Auth Debug] Error refreshing session:', error);
-				return;
-			}
-			
-			const serverUserId = data.session?.user?.id;
-			const clientUserId = freshSession.session?.user?.id;
-			
-			// Detect account mismatch - this is the critical issue!
-			if (serverUserId && clientUserId && serverUserId !== clientUserId) {
-				console.error('[Auth Debug] ACCOUNT MISMATCH DETECTED!', {
-					serverUserId,
-					clientUserId,
-					serverEmail: data.user?.email,
-					clientEmail: freshSession.session?.user?.email
-				});
+			supabase.auth.getSession().then(({ data: freshSession, error }) => {
+				clearTimeout(refreshTimeout);
 				
-				// Force a full page reload to clear the stale state
-				toast.error('Session mismatch detected. Reloading...');
-				setTimeout(() => window.location.reload(), 1000);
-				return;
-			}
-			
-			if (freshSession.session && !data.session) {
-				// We have a valid session that wasn't passed from server
-				// This can happen with service worker caching issues
-				console.warn('[Auth Debug] Found valid session not passed from server, updating...');
-				session.set(freshSession.session);
-				user.set(freshSession.session.user);
-			} else if (!freshSession.session && data.session) {
-				// Server said we're logged in but client doesn't have session
-				// This is the "broken session" state - client cookies are invalid
-				toast.error('Your session is invalid. Please sign in again.');
+				if (error) {
+					console.error('[Auth Debug] Error refreshing session:', error);
+					return;
+				}
 				
-				// Force sign out to clear the broken state
-				supabase.auth.signOut({ scope: 'local' }).then(() => {
-					session.set(null);
-					user.set(null);
-					// Clear caches
-					if ('caches' in window) {
-						caches.keys().then(names => {
-							names.forEach(name => caches.delete(name));
-						});
-					}
-					setTimeout(() => window.location.reload(), 500);
-				});
-				return;
-			} else if (freshSession.session && clientUserId === serverUserId) {
-				// Sessions match - but let's validate the token is actually working
-				// by making a quick authenticated request
-				supabase.auth.getUser().then(({ data: userData, error: userError }) => {
-					if (userError || !userData.user) {
-						// Token is invalid even though session exists
-						toast.error('Your session has expired. Please sign in again.');
-						
-						// Force sign out
-						supabase.auth.signOut({ scope: 'local' }).then(() => {
-							session.set(null);
-							user.set(null);
-							if ('caches' in window) {
-								caches.keys().then(names => {
-									names.forEach(name => caches.delete(name));
-								});
-							}
-							setTimeout(() => window.location.reload(), 500);
-						});
-					} else {
-						// Everything is valid, update to ensure we have the latest session data
-						session.set(freshSession.session);
-						user.set(freshSession.session.user);
-					}
-				});
-			}
-		}).catch((err) => {
-			clearTimeout(refreshTimeout);
-			console.error('[Auth Debug] Failed to get session:', err);
+				const serverUserId = data.session?.user?.id;
+				const clientUserId = freshSession.session?.user?.id;
+				
+				// Detect account mismatch - this is the critical issue!
+				if (serverUserId && clientUserId && serverUserId !== clientUserId) {
+					console.error('[Auth Debug] ACCOUNT MISMATCH DETECTED!', {
+						serverUserId,
+						clientUserId,
+						serverEmail: data.user?.email,
+						clientEmail: freshSession.session?.user?.email
+					});
+					
+					// Force a full page reload to clear the stale state
+					toast.error('Session mismatch detected. Reloading...');
+					setTimeout(() => window.location.reload(), 1000);
+					return;
+				}
+				
+				if (freshSession.session && !data.session) {
+					// We have a valid session that wasn't passed from server
+					// This can happen with service worker caching issues
+					console.warn('[Auth Debug] Found valid session not passed from server, updating...');
+					session.set(freshSession.session);
+					user.set(freshSession.session.user);
+				} else if (!freshSession.session && data.session) {
+					// Server said we're logged in but client doesn't have session
+					// This is the "broken session" state - client cookies are invalid
+					toast.error('Your session is invalid. Please sign in again.');
+					
+					// Force sign out to clear the broken state
+					supabase.auth.signOut({ scope: 'local' }).then(() => {
+						session.set(null);
+						user.set(null);
+						// Clear caches
+						if ('caches' in window) {
+							caches.keys().then(names => {
+								names.forEach(name => caches.delete(name));
+							});
+						}
+						setTimeout(() => window.location.reload(), 500);
+					});
+					return;
+				} else if (freshSession.session && clientUserId === serverUserId) {
+					// Sessions match - but let's validate the token is actually working
+					// by making a quick authenticated request
+					supabase.auth.getUser().then(({ data: userData, error: userError }) => {
+						if (userError || !userData.user) {
+							// Token is invalid even though session exists
+							toast.error('Your session has expired. Please sign in again.');
+							
+							// Force sign out
+							supabase.auth.signOut({ scope: 'local' }).then(() => {
+								session.set(null);
+								user.set(null);
+								if ('caches' in window) {
+									caches.keys().then(names => {
+										names.forEach(name => caches.delete(name));
+									});
+								}
+								setTimeout(() => window.location.reload(), 500);
+							});
+						} else {
+							// Everything is valid, update to ensure we have the latest session data
+							session.set(freshSession.session);
+							user.set(freshSession.session.user);
+						}
+					});
+				}
+			}).catch((err) => {
+				clearTimeout(refreshTimeout);
+				console.error('[Auth Debug] Failed to get session:', err);
+			});
 		});
 		
 		// Handle Supabase auth callback from email confirmation
@@ -494,7 +535,9 @@
 			}
 		};
 		
-		handleAuthCallback();
+		runIdle(() => {
+			handleAuthCallback();
+		});
 		
 		// Listen for auth state changes and update stores
 		const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
@@ -524,8 +567,17 @@
 			}
 		});
 		
-		const stopWatchHistory = initWatchHistory();
-		const cleanupFns = [addEventListeners(), setupScrollEffects(), stopWatchHistory, () => authListener.subscription.unsubscribe()];
+		let stopWatchHistory: ReturnType<typeof initWatchHistory> | undefined;
+		runIdle(() => {
+			stopWatchHistory = initWatchHistory();
+		});
+		const cleanupFns = [
+			addEventListeners(),
+			setupScrollEffects(),
+			() => stopWatchHistory?.(),
+			() => authListener.subscription.unsubscribe(),
+			() => window.removeEventListener('pwa-install-element', handlePwaInstallElement as EventListener)
+		];
 		return () => {
 			for (const cleanup of cleanupFns) {
 				cleanup?.();
@@ -593,82 +645,116 @@
 	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
-<div
-	class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden"
-	aria-hidden="true"
-	class:popcorn-hidden={reduceMotion}
->
-	{#each activePopcorns as popcorn (popcorn.id)}
-		<div
-			class="popcorn-item"
-			use:popcornParallax={popcorn}
-			style:left={`${popcorn.left}%`}
-			style:top={`${popcorn.top}vh`}
-			style:width={`${popcorn.size}px`}
-			style:height={`${popcorn.size}px`}
-		>
+{#if showPopcorn}
+	<div
+		class="popcorn-layer pointer-events-none fixed inset-0 z-[var(--z-index-background-decor)] overflow-hidden"
+		aria-hidden="true"
+		class:popcorn-hidden={reduceMotion}
+	>
+		{#each activePopcorns as popcorn (popcorn.id)}
 			<div
-				class="popcorn-bob"
-				style={`--popcorn-duration:${popcorn.floatDuration}s; --popcorn-delay:${popcorn.floatDelay}s; --popcorn-sway:${popcorn.sway}px;`}
-				style:animation-play-state={reduceMotion ? 'paused' : 'running'}
-				style:opacity={popcorn.opacity}
+				class="popcorn-item"
+				use:popcornParallax={popcorn}
+				style:left={`${popcorn.left}%`}
+				style:top={`${popcorn.top}vh`}
+				style:width={`${popcorn.size}px`}
+				style:height={`${popcorn.size}px`}
 			>
-				<img
-					src="/images/popcorn.svg"
-					alt=""
-					class="h-full w-full object-contain"
-					draggable="false"
-				/>
+				<div
+					class="popcorn-bob"
+					style={`--popcorn-duration:${popcorn.floatDuration}s; --popcorn-delay:${popcorn.floatDelay}s; --popcorn-sway:${popcorn.sway}px;`}
+					style:animation-play-state={reduceMotion ? 'paused' : 'running'}
+					style:opacity={popcorn.opacity}
+				>
+					<img
+						src="/images/popcorn.svg"
+						alt=""
+						class="h-full w-full object-contain"
+						decoding="async"
+						loading="lazy"
+						fetchpriority="low"
+						draggable="false"
+					/>
+				</div>
 			</div>
-		</div>
-	{/each}
-</div>
+		{/each}
+	</div>
+{/if}
 
 <div class="relative z-[var(--z-index-content)]">
 	<!-- Top-left settings cog that opens a left-side sheet -->
 	<SheetRoot bind:open={sheetOpen}>
-		<div
-			class="absolute top-4 left-4 z-[var(--z-index-settings)] flex gap-2"
-			class:hidden={$showDetailsPanel && isMobile}
+		<nav
+			class="absolute top-4 left-4 right-4 z-[var(--z-index-settings)] flex items-start justify-between gap-2"
+			aria-label="Site actions"
 		>
-			<SheetTrigger 
-				aria-label={m.settings_open()}
-				class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-			>
-				<CogIcon class="size-5" />
-				<span class="sr-only">{m.settings_open()}</span>
-			</SheetTrigger>
+			<div class="flex items-center gap-2">
+				{#if !isDetailRoute}
+					<SheetTrigger 
+						aria-label={m.settings_open()}
+						class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					>
+						<CogIcon class="size-5" />
+						<span class="sr-only">{m.settings_open()}</span>
+					</SheetTrigger>
 
-			<HelpTipsButton />
+					<HelpTipsButton />
+				{/if}
 
-			{#if isStatsRoute || isAdminRoute}
-				<a
-					href="/"
-					aria-label="Catalog"
-					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+				{#if isStatsRoute || isAdminRoute || isDetailRoute}
+					<a
+						href="/"
+						aria-label={isDetailRoute ? 'Back to catalog' : 'Catalog'}
+						class={
+							isDetailRoute
+								? 'relative inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border bg-background/90 px-3 text-sm font-medium text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
+								: 'relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
+						}
+					>
+						{#if isDetailRoute}
+							<ArrowLeftIcon class="size-4" />
+							<span>Back to catalog</span>
+						{:else}
+							<HomeIcon class="size-5" />
+							<span class="sr-only">Catalog</span>
+						{/if}
+					</a>
+				{/if}
+
+				{#if !isDetailRoute && !isStatsRoute}
+					<a
+						href="/stats"
+						aria-label="Stats"
+						class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					>
+						<BarChart3Icon class="size-5" />
+						<span class="sr-only">Stats</span>
+					</a>
+				{/if}
+
+				{#if !isDetailRoute}
+					{#if data?.isAdmin && $user}
+						<AdminMenuButton />
+					{/if}
+					
+					<UserProfileButton />
+				{/if}
+			</div>
+
+			{#if isDetailRoute && $user && data?.item}
+				<ContentSuggestionDialog
+					selected={data.item}
+					selectedEpisode={$selectedEpisodeStore}
+					selectedSeasonNumber={data.initialSeasonNumber ?? null}
+					triggerAriaLabel="Suggest change / report issue"
+					triggerClass="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>
-					<HomeIcon class="size-5" />
-					<span class="sr-only">Catalog</span>
-				</a>
+					{#snippet trigger()}
+						<PencilIcon class="size-4" />
+					{/snippet}
+				</ContentSuggestionDialog>
 			{/if}
-
-			{#if !isStatsRoute}
-				<a
-					href="/stats"
-					aria-label="Stats"
-					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-				>
-					<BarChart3Icon class="size-5" />
-					<span class="sr-only">Stats</span>
-				</a>
-			{/if}
-
-			{#if data?.isAdmin && $user}
-				<AdminMenuButton />
-			{/if}
-			
-			<UserProfileButton />
-		</div>
+		</nav>
 
 		<SheetContent side="left" class="flex h-full flex-col p-0">
 			<SheetHeader class="px-4 pt-4">
@@ -695,12 +781,22 @@
 						</button>
 					{/each}
 				</div>
+				<div class="mt-6">
+					<p class="mb-2 text-sm text-muted-foreground">{m.settings_install()}</p>
+					<button
+						onclick={openPwaInstallPrompt}
+						class="group relative flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					>
+						<span class="font-medium transition-colors group-hover:text-foreground">{m.settings_install_cta()}</span>
+						<span class="text-xs text-muted-foreground">PWA</span>
+					</button>
+				</div>
 				<!-- Project Links -->
 				<div class="mt-6">
 					<p class="mb-2 text-sm text-muted-foreground">{m.settings_links()}</p>
 					<div class="flex flex-col gap-2">
 						<a
-							href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv"
+							href={withUtm('https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv')}
 							target="_blank"
 							rel="noopener noreferrer"
 							class="group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
@@ -709,7 +805,7 @@
 							<span class="font-medium transition-colors group-hover:text-foreground">GitHub</span>
 						</a>
 						<a
-							href="https://pkfr.nl"
+							href={withUtm('https://pkfr.nl')}
 							target="_blank"
 							rel="noopener noreferrer"
 							class="group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
@@ -720,7 +816,7 @@
 							>
 						</a>
 						<a
-							href="https://maxmade.nl"
+							href={withUtm('https://maxmade.nl')}
 							target="_blank"
 							rel="noopener noreferrer"
 							class="group relative flex items-center gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
@@ -739,7 +835,7 @@
 				class="flex items-center justify-between gap-3 border-t border-border bg-background/95 p-4 text-xs text-muted-foreground md:justify-end"
 			>
 				<a
-					href="https://maxmade.nl"
+					href={withUtm('https://maxmade.nl')}
 					target="_blank"
 					rel="noopener noreferrer"
 					title="MAXmade - Max Seelig"
@@ -784,8 +880,8 @@
 	<!-- Global toast container -->
 	<Toaster richColors position="bottom-center" theme="dark" />
 
-	<!-- Global PWA install prompt (auto-managed, suppressed after dismissal for 2 weeks) -->
-	<PWAInstallPrompt />
+	<!-- Global PWA install prompt (manual trigger only) -->
+	<PWAInstallPrompt autoOpen={false} />
 </div>
 
 <style>

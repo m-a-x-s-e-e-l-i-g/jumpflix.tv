@@ -1,6 +1,7 @@
 import { browser } from '$app/environment';
 import { getEpisodeUrl, getUrlForItem } from '$lib/tv/slug';
 import type { ContentItem } from '$lib/tv/types';
+import { withUtm } from '$lib/utils';
 
 export function buildItemUrl(
   item: ContentItem,
@@ -56,5 +57,5 @@ export function buildPageTitle(
 
 export function openExternalContent(content: ContentItem) {
   if (!content?.externalUrl || !browser) return;
-  window.open(content.externalUrl, '_blank', 'noopener');
+  window.open(withUtm(content.externalUrl), '_blank', 'noopener');
 }

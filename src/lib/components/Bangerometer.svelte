@@ -454,10 +454,12 @@
 
 <style>
   .banger-meter-container {
+    position: relative;
     padding: 1rem;
     background: rgba(17, 24, 39, 0.6);
     border-radius: 12px;
     border: 1px solid rgba(75, 85, 99, 0.3);
+    overflow: visible;
     transition: all 0.3s ease;
   }
 

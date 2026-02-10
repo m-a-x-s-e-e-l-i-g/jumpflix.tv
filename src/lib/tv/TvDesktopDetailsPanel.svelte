@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SidebarDetails from '$lib/tv/SidebarDetails.svelte';
+  import TvDetailsContent from '$lib/tv/TvDetailsContent.svelte';
   import type { ContentItem, Episode } from '$lib/tv/types';
 
   export let selected: ContentItem | null;
@@ -19,21 +19,19 @@
   ) => void;
   export let selectedEpisode: Episode | null = null;
   export let initialSeasonNumber: number | null = null;
-  export let isMobile = false;
   export let ratingRefreshToken = 0;
 
   const panelClass = 'hidden md:flex w-[460px] px-6 pt-14 pb-6 fixed right-0 top-0 bottom-0 overflow-y-auto flex-col tv-details-panel';
 </script>
 
 <div class={panelClass}>
-  <SidebarDetails
+  <TvDetailsContent
     {selected}
     {openContent}
     {openExternal}
     {onOpenEpisode}
     {onSelectEpisode}
     {selectedEpisode}
-    {isMobile}
     {ratingRefreshToken}
     initialSeason={initialSeasonNumber ?? undefined}
   />

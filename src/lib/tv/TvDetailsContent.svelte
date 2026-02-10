@@ -378,7 +378,7 @@
     <header class="detail-header">
       <div class="detail-header-top">
         <div>
-          <h2 class="detail-title jf-display">{selected.title}</h2>
+          <h1 class="detail-title jf-display">{selected.title}</h1>
         </div>
       </div>
 
@@ -507,21 +507,21 @@
         <div class="detail-main-content">
           <section class="detail-section detail-overview">
             <div class="detail-overview-copy">
-              <h3>Overview</h3>
+              <h2>Overview</h2>
               <p>{selected.description || 'No description available.'}</p>
             </div>
           </section>
 
           {#if selected.facets}
             <section class="detail-section">
-              <h3>Facets</h3>
+              <h2>Facets</h2>
               <FacetChips facets={selected.facets} />
             </section>
           {/if}
 
           {#if (selected as any).creators?.length}
             <section class="detail-section">
-              <h3>Creators</h3>
+              <h2>Creators</h2>
               <div class="detail-tags">
                 {#each (showAllCreators ? (selected as any).creators : (selected as any).creators.slice(0, MAX_NAMES)) as c}
                   <span>{c}</span>
@@ -538,7 +538,7 @@
 
           {#if (selected as any).starring?.length}
             <section class="detail-section">
-              <h3>Starring</h3>
+              <h2>Starring</h2>
               <div class="detail-tags">
                 {#each (showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES)) as s}
                   <span>{s}</span>
@@ -555,7 +555,7 @@
 
           {#if selected.type === 'movie' && Array.isArray(selected.tracks) && selected.tracks.length}
             <section class="detail-section">
-              <h3>Tracklist</h3>
+              <h2>Tracklist</h2>
               <Tracklist tracks={selected.tracks} />
             </section>
           {/if}
@@ -563,7 +563,7 @@
           {#if selected.type === 'series'}
             <section class="detail-section">
               <div class="detail-episodes-header">
-                <h3>{m.tv_episodes()}</h3>
+                <h2>{m.tv_episodes()}</h2>
                 {#if (selected as any).seasons?.length > 0}
                   <select
                     id="detail-season-select"
@@ -643,7 +643,7 @@
       </div>
 
       <aside class="detail-review-sidebar">
-        <h3>Ratings &amp; Reviews</h3>
+        <h2>Ratings &amp; Reviews</h2>
         <BangerMeter
           mediaId={selected.id}
           initialRating={currentUserRating}
@@ -931,7 +931,7 @@
     min-width: 0;
   }
 
-  .detail-section h3 {
+  .detail-section h2 {
     font-size: 0.85rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;
@@ -966,7 +966,7 @@
     color: rgba(226, 232, 240, 0.55);
   }
 
-  .detail-review-sidebar h3 {
+  .detail-review-sidebar h2 {
     font-size: 0.85rem;
     letter-spacing: 0.2em;
     text-transform: uppercase;

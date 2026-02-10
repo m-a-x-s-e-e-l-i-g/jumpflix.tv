@@ -495,9 +495,10 @@
   $effect(() => {
     if (!browser || !$selectedContent || currentPath === '/') return;
     const fromPath = extractSeasonEpisodeFromPath(currentPath);
-    const episodeHint = ($selectedEpisode?.position && Number.isFinite($selectedEpisode.position))
-      ? Math.max(1, Math.floor($selectedEpisode.position))
-      : fromPath.episode;
+    const hasEpisodeInPath = typeof fromPath.episode === 'number';
+    const episodeHint = hasEpisodeInPath
+      ? fromPath.episode
+      : undefined;
     const seasonHint = fromPath.season ?? (typeof initialSeasonNumber === 'number'
       ? Math.max(1, Math.floor(initialSeasonNumber))
       : undefined);

@@ -3,6 +3,7 @@
   import { isInlinePlayable } from './utils';
   import { getUrlForItem, getEpisodeUrl } from './slug';
   import { browser } from '$app/environment';
+  import { page } from '$app/stores';
   import { toast } from 'svelte-sonner';
   import * as Select from "$lib/components/ui/select/index.js";
   import Link2Icon from '@lucide/svelte/icons/link-2';
@@ -153,6 +154,8 @@
     getWatchProgressForSelected();
   }
 
+  $: isSeriesWithoutEpisode = selected?.type === 'series' && !selectedEpisode;
+
   // Reset expansion state when selection changes
   $: if (selected) {
     showAllCreators = false;
@@ -296,36 +299,30 @@
     episodes = [];
     loadingEpisodes = false;
   }
-  // Default-select first episode when episodes list updates and current selection is missing
-  // IMPORTANT: Defer the write to avoid updating a store inside an effect that reads it (prevents update-depth loops)
-  // Context: Switching between series updates `selected` and the fetched `episodes` list.
-  // If we synchronously call `onSelectEpisode`, the upstream store changes in the same
-  // reactive turn and can re-trigger this effect repeatedly. Deferring breaks the cycle.
+  // Default-select first episode locally when episodes load so the base series URL stays stable.
   $: if (browser && episodes && episodes.length > 0) {
     const curId = selectedEpisode?.id ?? null;
     const exists = curId ? episodes.some((ep) => ep.id === curId) : false;
+    const hasEpisodeInPath = $page.url.pathname.includes('/seasons/') && $page.url.pathname.includes('/episodes/');
+    const hydrateEpisode = (ep: Episode) => ({
+      ...ep,
+      title: ep.title ? decode(ep.title) : `Episode ${ep.position ?? ''}`.trim()
+    });
 
-    if (!curId) {
-      const first = episodes[0];
-      Promise.resolve().then(() => onSelectEpisode(first.id, first.title, first.position || 1, selectedSeasonNum));
+    if (!curId && !hasEpisodeInPath) {
+      // Base series URL without an explicit episode should not auto-select.
+    } else if (!curId) {
+      updateSelectedEpisode(hydrateEpisode(episodes[0]));
     } else if (curId.startsWith?.('pos:')) {
       const pos = Number(curId.split(':')[1] || '1');
       const found = episodes.find((ep) => (ep.position || 0) === pos) || episodes[0];
-      Promise.resolve().then(() => onSelectEpisode(found.id, found.title, found.position || 1, selectedSeasonNum));
+      updateSelectedEpisode(hydrateEpisode(found));
     } else if (!exists) {
-      const first = episodes[0];
-      Promise.resolve().then(() => onSelectEpisode(first.id, first.title, first.position || 1, selectedSeasonNum));
-    }
-
-    if (curId) {
+      updateSelectedEpisode(hydrateEpisode(episodes[0]));
+    } else if (curId) {
       const match = episodes.find((ep) => ep.id === curId);
       if (match) {
-        const hydratedTitle = match.title ? decode(match.title) : `Episode ${match.position ?? ''}`.trim();
-        const hydrated: Episode = {
-          ...match,
-          title: hydratedTitle
-        };
-        updateSelectedEpisode(hydrated);
+        updateSelectedEpisode(hydrateEpisode(match));
       }
     }
   }
@@ -439,7 +436,9 @@
 
         <div class="detail-actions">
           {#if !$showPlayer}
-            <button on:click={() => {
+            <button
+              disabled={isSeriesWithoutEpisode}
+              on:click={() => {
               if (selected?.type === 'series' && selectedEpisode) { 
                 if (selectedEpisode.externalUrl) {
                   if (browser) window.open(withUtm(selectedEpisode.externalUrl), '_blank', 'noopener');
@@ -858,6 +857,14 @@
     gap: 0.6rem;
     cursor: pointer;
     box-shadow: 0 20px 45px -30px rgba(229, 9, 20, 0.8);
+  }
+
+  .detail-play:disabled {
+    border-color: rgba(148, 163, 184, 0.3);
+    background: rgba(30, 41, 59, 0.35);
+    color: rgba(226, 232, 240, 0.65);
+    cursor: not-allowed;
+    box-shadow: none;
   }
 
   .detail-toggle {

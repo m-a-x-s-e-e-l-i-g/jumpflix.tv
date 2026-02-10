@@ -32,12 +32,12 @@
             decoding="async"
           />
         </a>
-        <div class="hero-logo-text" aria-hidden="true">
+        <h1 class="hero-logo-text">
           <span style={`--logo-scroll-tilt: ${logoTilt.toFixed(3)}deg;`}>JUMPFLIX</span>
-        </div>
+        </h1>
       </div>
 
-      <h1 class="hero-title jf-display">{m.tv_heroHeading()}</h1>
+      <h2 class="hero-title jf-display">{m.tv_heroHeading()}</h2>
       <p class="hero-dek">{m.tv_heroTagline()}</p>
 
       <div class="hero-actions">

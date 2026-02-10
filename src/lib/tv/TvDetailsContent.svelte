@@ -398,8 +398,8 @@
         {/if}
         <div class="detail-meta-actions">
           {#if (selected as any).trakt}
-            <a href={withUtm((selected as any).trakt)} target="_blank" rel="noopener noreferrer" class="detail-icon" aria-label="View on Trakt" title="View on Trakt">
-              <img src="https://trakt.tv/assets/logos/logomark.square.gradient-b644b16c38ff775861b4b1f58c1230f6a097a2466ab33ae00445a505c33fcb91.svg" alt="" class="detail-icon-img" loading="lazy" decoding="async" />
+            <a href={withUtm((selected as any).trakt)} target="_blank" rel="noopener noreferrer" aria-label="View on Trakt" title="View on Trakt">
+                <img src="/icons/brand-trakt.svg" alt="Trakt logo" class="detail-icon-img" loading="lazy" decoding="async" />
               <span class="sr-only">View on Trakt</span>
             </a>
           {/if}

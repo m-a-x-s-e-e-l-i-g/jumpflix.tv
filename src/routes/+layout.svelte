@@ -668,7 +668,7 @@
 				>
 					<img
 						src="/images/popcorn.svg"
-						alt=""
+						alt="popcorn"
 						class="h-full w-full object-contain"
 						decoding="async"
 						loading="lazy"

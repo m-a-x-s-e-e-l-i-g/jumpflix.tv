@@ -36,6 +36,7 @@
 		"@types/inquirer": "^9.0.9",
 		"@types/node": "^22",
 		"autoprefixer": "^10.4.20",
+		"baseline-browser-mapping": "^2.9.19",
 		"bits-ui": "^2.14.2",
 		"blurhash": "^2.0.5",
 		"eslint": "^9.22.0",

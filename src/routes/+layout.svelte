@@ -94,6 +94,7 @@
 	const isStatsRoute = $derived(
 		$page.url.pathname === '/stats' || $page.url.pathname.startsWith('/stats/')
 	);
+	const isAboutRoute = $derived($page.url.pathname === '/about');
 	const isDetailRoute = $derived(
 		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
 	);
@@ -701,7 +702,7 @@
 					<HelpTipsButton />
 				{/if}
 
-				{#if isStatsRoute || isAdminRoute || isDetailRoute}
+				{#if isStatsRoute || isAdminRoute || isAboutRoute || isDetailRoute}
 					<a
 						href="/"
 						aria-label={isDetailRoute ? 'Back to catalog' : 'Catalog'}
@@ -851,7 +852,7 @@
 		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
 		{#if $page.error}
 			{@render children?.()}
-		{:else if isAdminRoute || isStatsRoute}
+		{:else if isAdminRoute || isStatsRoute || isAboutRoute}
 			{@render children?.()}
 		{:else}
 			<TvPage

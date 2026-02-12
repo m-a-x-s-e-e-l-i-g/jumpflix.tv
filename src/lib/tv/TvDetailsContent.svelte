@@ -464,7 +464,7 @@
                   return;
                 }
                 
-                // No playable source available - do nothing
+                // Neither playable inline nor has external URL - do nothing
                 return; 
               }
               if (isInlinePlayable(selected)) openContent(selected);
@@ -478,7 +478,7 @@
                   {:else if selectedEpisode.externalUrl || selected?.externalUrl}
                     { m.tv_watchOn() } {selected?.provider || 'External'}
                   {:else}
-                    {m.tv_playSelectedEpisode()}
+                    {m.tv_noPlayer()}
                   {/if}
                 {:else}
                   Play series

@@ -2,56 +2,6 @@
 	<title>About JUMPFLIX</title>
 </svelte:head>
 
-<script lang="ts">
-	let parkourVideo: HTMLVideoElement | null = null;
-	const normalRate = 1;
-	const slowRate = 0.25;
-	let isSlowMotion = false;
-	let longPressTimeout: ReturnType<typeof setTimeout> | null = null;
-
-	function setPlaybackRate(rate: number) {
-		if (!parkourVideo) return;
-		parkourVideo.playbackRate = rate;
-	}
-
-	function setSlowMotion(enabled: boolean) {
-		if (isSlowMotion === enabled) return;
-		isSlowMotion = enabled;
-		setPlaybackRate(enabled ? slowRate : normalRate);
-	}
-
-	function onWindowKeyDown(e: KeyboardEvent) {
-		if (e.code !== 'Space') return;
-		const target = e.target as HTMLElement | null;
-		if (target && ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(target.tagName)) return;
-		if (e.repeat) return;
-		e.preventDefault();
-		setSlowMotion(true);
-	}
-
-	function onWindowKeyUp(e: KeyboardEvent) {
-		if (e.code !== 'Space') return;
-		setSlowMotion(false);
-	}
-
-	function onVideoPointerDown() {
-		if (longPressTimeout) clearTimeout(longPressTimeout);
-		longPressTimeout = setTimeout(() => {
-			setSlowMotion(true);
-		}, 250);
-	}
-
-	function onVideoPointerUpOrCancel() {
-		if (longPressTimeout) {
-			clearTimeout(longPressTimeout);
-			longPressTimeout = null;
-		}
-		setSlowMotion(false);
-	}
-</script>
-
-<svelte:window on:keydown={onWindowKeyDown} on:keyup={onWindowKeyUp} />
-
 <div class="mx-auto w-full max-w-6xl p-4 md:p-8">
 	<div
 		class="secret-achievement mt-[50px] mb-6 overflow-hidden rounded-3xl jf-surface border border-primary/30 p-6 md:p-8"
@@ -288,16 +238,8 @@
 							muted
                             loop
 							playsinline
-							preload="metadata"
 							class="h-full w-full object-cover"
-							bind:this={parkourVideo}
-							on:pointerdown={onVideoPointerDown}
-							on:pointerup={onVideoPointerUpOrCancel}
-							on:pointercancel={onVideoPointerUpOrCancel}
-							on:pointerleave={onVideoPointerUpOrCancel}
 						>
-							<track kind="captions" src="/images/parkour.vtt" srclang="en" label="English" />
-							Your browser does not support the video tag.
 						</video>
 					</div>
 				</div>

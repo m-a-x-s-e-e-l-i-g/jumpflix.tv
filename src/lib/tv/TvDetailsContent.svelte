@@ -69,6 +69,14 @@
   let showAllStarring = false;
   const MAX_NAMES = 8; // number of names to show before collapsing
 
+  // Helper to check if an episode can be played inline (has a valid YouTube video ID)
+  function isEpisodePlayable(episode: Episode | null): boolean {
+    if (!episode || !episode.id) return false;
+    // YouTube video IDs are 11 characters, alphanumeric + dash/underscore
+    // If the ID doesn't match this pattern, it's likely a database ID, not a video ID
+    return /^[A-Za-z0-9_-]{11}$/.test(episode.id);
+  }
+
   // Watch progress tracking
   let watchProgress: { percent: number; isWatched: boolean; position: number } | null = null;
   let watchProgressMap: Map<string, WatchProgress> = new Map();
@@ -440,10 +448,19 @@
               disabled={isSeriesWithoutEpisode}
               on:click={() => {
               if (selected?.type === 'series' && selectedEpisode) { 
-                if (selectedEpisode.externalUrl) {
-                  if (browser) window.open(withUtm(selectedEpisode.externalUrl), '_blank', 'noopener');
-                  return;
+                // Check if episode can be played inline (has valid YouTube video ID)
+                const canPlayInline = isEpisodePlayable(selectedEpisode);
+                
+                if (!canPlayInline) {
+                  // Episode cannot be played inline - try to open external URL
+                  const externalUrl = selectedEpisode.externalUrl || selected.externalUrl;
+                  if (externalUrl && browser) {
+                    window.open(withUtm(externalUrl), '_blank', 'noopener');
+                    return;
+                  }
                 }
+                
+                // Episode has valid YouTube video ID - play it
                 onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeasonNum);
                 return; 
               }
@@ -453,7 +470,7 @@
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
               {#if selected?.type === 'series'}
                 {#if selectedEpisode}
-                  {#if selectedEpisode.externalUrl}
+                  {#if !isEpisodePlayable(selectedEpisode) && (selectedEpisode.externalUrl || selected?.externalUrl)}
                     { m.tv_watchOn() } {selected?.provider || 'External'}
                   {:else}
                     {m.tv_playSelectedEpisode()}

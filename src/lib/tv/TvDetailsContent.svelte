@@ -451,17 +451,20 @@
                 // Check if episode can be played inline (has valid YouTube video ID)
                 const canPlayInline = isEpisodePlayable(selectedEpisode);
                 
-                if (!canPlayInline) {
-                  // Episode cannot be played inline - try to open external URL
-                  const externalUrl = selectedEpisode.externalUrl || selected.externalUrl;
-                  if (externalUrl && browser) {
-                    window.open(withUtm(externalUrl), '_blank', 'noopener');
-                    return;
-                  }
+                if (canPlayInline) {
+                  // Episode has valid YouTube video ID - play it
+                  onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeasonNum);
+                  return;
                 }
                 
-                // Episode has valid YouTube video ID - play it
-                onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeasonNum);
+                // Episode cannot be played inline - try to open external URL
+                const externalUrl = selectedEpisode.externalUrl || selected.externalUrl;
+                if (externalUrl && browser) {
+                  window.open(withUtm(externalUrl), '_blank', 'noopener');
+                  return;
+                }
+                
+                // No playable source available - do nothing
                 return; 
               }
               if (isInlinePlayable(selected)) openContent(selected);
@@ -470,7 +473,9 @@
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
               {#if selected?.type === 'series'}
                 {#if selectedEpisode}
-                  {#if !isEpisodePlayable(selectedEpisode) && (selectedEpisode.externalUrl || selected?.externalUrl)}
+                  {#if isEpisodePlayable(selectedEpisode)}
+                    {m.tv_playSelectedEpisode()}
+                  {:else if selectedEpisode.externalUrl || selected?.externalUrl}
                     { m.tv_watchOn() } {selected?.provider || 'External'}
                   {:else}
                     {m.tv_playSelectedEpisode()}

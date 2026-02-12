@@ -41,6 +41,9 @@ export function getProviderLink(item: ContentItem, episode: Episode | null): Pro
   if (item.type === 'series' && episode?.id) {
     const id = String(episode.id).trim();
     if (!id) return null;
+    // Only show YouTube link if the ID matches YouTube video ID pattern (11 chars, alphanumeric + dash/underscore)
+    // Database IDs (numeric or longer strings) should not show a YouTube link
+    if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return null;
     return {
       kind: 'youtube',
       url: withUtm(`https://www.youtube.com/watch?v=${encodeURIComponent(id)}`),

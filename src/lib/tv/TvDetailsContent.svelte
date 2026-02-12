@@ -376,6 +376,11 @@
 
   let providerLink: ProviderLink | null = null;
   $: providerLink = selected ? getProviderLink(selected, selectedEpisode) : null;
+
+  // Fallback external source for series when no inline player is available.
+  // Prefer explicit externalUrl, then trakt metadata link.
+  $: seriesExternalSourceUrl =
+    selected?.type === 'series' ? (selected.externalUrl || (selected as any).trakt || undefined) : undefined;
 </script>
 
 {#if selected}
@@ -445,8 +450,16 @@
         <div class="detail-actions">
           {#if !$showPlayer}
             <button
-              disabled={isSeriesWithoutEpisode}
+              disabled={isSeriesWithoutEpisode && !seriesExternalSourceUrl}
               on:click={() => {
+              if (selected?.type === 'series' && !selectedEpisode) {
+                // No episode selected/available: open series external source if present.
+                if (seriesExternalSourceUrl && browser) {
+                  window.open(withUtm(seriesExternalSourceUrl), '_blank', 'noopener');
+                }
+                return;
+              }
+
               if (selected?.type === 'series' && selectedEpisode) { 
                 // Check if episode can be played inline (has valid YouTube video ID)
                 const canPlayInline = isEpisodePlayable(selectedEpisode);
@@ -458,7 +471,7 @@
                 }
                 
                 // Episode cannot be played inline - try to open external URL
-                const externalUrl = selectedEpisode.externalUrl || selected.externalUrl;
+                const externalUrl = selectedEpisode.externalUrl || selected.externalUrl || seriesExternalSourceUrl;
                 if (externalUrl && browser) {
                   window.open(withUtm(externalUrl), '_blank', 'noopener');
                   return;
@@ -469,19 +482,24 @@
               }
               if (isInlinePlayable(selected)) openContent(selected);
               else if (selected?.externalUrl) openExternal(selected);
+              else if ((selected as any)?.trakt && browser) window.open(withUtm((selected as any).trakt), '_blank', 'noopener');
             }} class="detail-play">
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
               {#if selected?.type === 'series'}
                 {#if selectedEpisode}
                   {#if isEpisodePlayable(selectedEpisode)}
                     {m.tv_playSelectedEpisode()}
-                  {:else if selectedEpisode.externalUrl || selected?.externalUrl}
-                    { m.tv_watchOn() } {selected?.provider || 'External'}
+                  {:else if selectedEpisode.externalUrl || seriesExternalSourceUrl}
+                    { m.tv_watchOn() } {selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
                   {:else}
                     {m.tv_noPlayer()}
                   {/if}
                 {:else}
-                  Play series
+                  {#if seriesExternalSourceUrl}
+                    { m.tv_watchOn() } {selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
+                  {:else}
+                    Play series
+                  {/if}
                 {/if}
               {:else}
                 {#if isInlinePlayable(selected)}

@@ -131,7 +131,13 @@
 
 			<h2 class="pt-2 text-xl font-semibold tracking-tight md:text-2xl">Why JUMPFLIX?</h2>
 			<p>
-				I separated the project from pkfr.nl (I like separating my codebases anyway), and I
+				I separated the project from <a
+					href="https://pkfr.nl"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="font-medium text-foreground underline underline-offset-4 decoration-muted-foreground/60 transition hover:decoration-foreground"
+				>pkfr.nl</a
+				> (I like separating my codebases anyway), and I
 				realized this shouldn’t just be Dutch-focused. The idea was bigger.
 			</p>
 			<p>
@@ -188,7 +194,7 @@
 			<ul class="list-disc space-y-2 pl-5 text-muted-foreground">
 				<li>
 					Spot markers on the playback scrubber, so you can see every location used in a
-					video (in collab with Parkour.Spot)
+					video (in collab with <a href="https://parkour.spot" target="_blank" rel="noopener noreferrer" class="text-foreground underline underline-offset-4 decoration-muted-foreground/60 transition hover:decoration-foreground">Parkour.Spot</a>)
 				</li>
 				<li><span aria-hidden="true">✓</span> Automatic song scraping so you can search videos by song name</li>
 			</ul>
@@ -261,7 +267,7 @@
 						target="_blank"
 						rel="noopener noreferrer"
 						class="ml-1 font-medium text-foreground underline underline-offset-4 decoration-muted-foreground/60 transition hover:decoration-foreground"
-						>www.maxmade.nl</a
+						>MAXmade.nl</a
 					>
 				</p>
 
@@ -280,6 +286,7 @@
 							src="/images/parkour.mp4"
 							autoplay
 							muted
+                            loop
 							playsinline
 							preload="metadata"
 							class="h-full w-full object-cover"

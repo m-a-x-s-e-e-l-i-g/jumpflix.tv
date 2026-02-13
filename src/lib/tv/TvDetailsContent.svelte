@@ -81,6 +81,81 @@
   let watchProgress: { percent: number; isWatched: boolean; position: number } | null = null;
   let watchProgressMap: Map<string, WatchProgress> = new Map();
 
+  let playObserverEl: HTMLElement | null = null;
+  let playObserver: IntersectionObserver | null = null;
+  let showStickyPlay = false;
+  let isSmallScreen = false;
+
+  function setupStickyPlayObserver() {
+    if (!browser) return;
+    playObserver?.disconnect();
+    playObserver = null;
+
+    if (!isSmallScreen || !playObserverEl) {
+      showStickyPlay = false;
+      return;
+    }
+
+    playObserver = new IntersectionObserver(
+      ([entry]) => {
+        // Show the fixed button only after the original scrolls out of view.
+        showStickyPlay = !entry.isIntersecting;
+      },
+      { threshold: 0.01 }
+    );
+    playObserver.observe(playObserverEl);
+  }
+
+  $: if (browser) {
+    // Re-evaluate when mobile breakpoint or target element changes.
+    isSmallScreen;
+    playObserverEl;
+    setupStickyPlayObserver();
+  }
+
+  function handlePlayClick() {
+    if (!selected) return;
+
+    if (selected?.type === 'series' && !selectedEpisode) {
+      // No episode selected/available: open series external source if present.
+      if (seriesExternalSourceUrl && browser) {
+        window.open(withUtm(seriesExternalSourceUrl), '_blank', 'noopener');
+      }
+      return;
+    }
+
+    if (selected?.type === 'series' && selectedEpisode) {
+      // Check if episode can be played inline (has valid YouTube video ID)
+      const canPlayInline = isEpisodePlayable(selectedEpisode);
+
+      if (canPlayInline) {
+        // Episode has valid YouTube video ID - play it
+        onOpenEpisode(
+          selectedEpisode.id,
+          decode(selectedEpisode.title),
+          selectedEpisode.position || 1,
+          selectedSeasonNum
+        );
+        return;
+      }
+
+      // Episode cannot be played inline - try to open external URL
+      const externalUrl = selectedEpisode.externalUrl || selected.externalUrl || seriesExternalSourceUrl;
+      if (externalUrl && browser) {
+        window.open(withUtm(externalUrl), '_blank', 'noopener');
+        return;
+      }
+
+      // Neither playable inline nor has external URL - do nothing
+      return;
+    }
+
+    if (isInlinePlayable(selected)) openContent(selected);
+    else if (selected?.externalUrl) openExternal(selected);
+    else if ((selected as any)?.trakt && browser)
+      window.open(withUtm((selected as any).trakt), '_blank', 'noopener');
+  }
+
   function getWatchProgressForSelected(): void {
     if (!browser || !selected) {
       watchProgress = null;
@@ -134,6 +209,19 @@
   }
 
   onMount(() => {
+    let mql: MediaQueryList | null = null;
+    let mqlHandler: (() => void) | null = null;
+
+    if (browser) {
+      mql = window.matchMedia('(max-width: 640px)');
+      const applyMatch = () => {
+        isSmallScreen = mql?.matches ?? false;
+      };
+      applyMatch();
+      mqlHandler = () => applyMatch();
+      mql.addEventListener('change', mqlHandler);
+    }
+
     getWatchProgressForSelected();
 
     const handleProgressChange: EventListener = () => {
@@ -151,6 +239,13 @@
     return () => {
       window.removeEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
       window.removeEventListener(RATING_UPDATED_EVENT, handleRatingUpdated as EventListener);
+
+      playObserver?.disconnect();
+      playObserver = null;
+
+      if (mql && mqlHandler) {
+        mql.removeEventListener('change', mqlHandler);
+      }
     };
   });
 
@@ -385,6 +480,42 @@
 
 {#if selected}
   <section class="detail-wrap">
+    {#if showStickyPlay && !$showPlayer}
+      <div class="detail-play-fixedbar">
+        <div class="detail-play-fixedinner">
+          <button
+            disabled={isSeriesWithoutEpisode && !seriesExternalSourceUrl}
+            on:click={handlePlayClick}
+            class="detail-play"
+          >
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
+            {#if selected?.type === 'series'}
+              {#if selectedEpisode}
+                {#if isEpisodePlayable(selectedEpisode)}
+                  {m.tv_playSelectedEpisode()}
+                {:else if selectedEpisode.externalUrl || seriesExternalSourceUrl}
+                  { m.tv_watchOn() } {selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
+                {:else}
+                  {m.tv_noPlayer()}
+                {/if}
+              {:else}
+                {#if seriesExternalSourceUrl}
+                  { m.tv_watchOn() } {selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
+                {:else}
+                  Play series
+                {/if}
+              {/if}
+            {:else}
+              {#if isInlinePlayable(selected)}
+                { m.tv_playNow() }
+              {:else}
+                { m.tv_watchOn() } {selected?.provider || 'External'}
+              {/if}
+            {/if}
+          </button>
+        </div>
+      </div>
+    {/if}
     <header class="detail-header">
       <div class="detail-header-top">
         <div>
@@ -448,68 +579,40 @@
         </div>
 
         <div class="detail-actions">
-          {#if !$showPlayer}
-            <button
-              disabled={isSeriesWithoutEpisode && !seriesExternalSourceUrl}
-              on:click={() => {
-              if (selected?.type === 'series' && !selectedEpisode) {
-                // No episode selected/available: open series external source if present.
-                if (seriesExternalSourceUrl && browser) {
-                  window.open(withUtm(seriesExternalSourceUrl), '_blank', 'noopener');
-                }
-                return;
-              }
-
-              if (selected?.type === 'series' && selectedEpisode) { 
-                // Check if episode can be played inline (has valid YouTube video ID)
-                const canPlayInline = isEpisodePlayable(selectedEpisode);
-                
-                if (canPlayInline) {
-                  // Episode has valid YouTube video ID - play it
-                  onOpenEpisode(selectedEpisode.id, decode(selectedEpisode.title), selectedEpisode.position || 1, selectedSeasonNum);
-                  return;
-                }
-                
-                // Episode cannot be played inline - try to open external URL
-                const externalUrl = selectedEpisode.externalUrl || selected.externalUrl || seriesExternalSourceUrl;
-                if (externalUrl && browser) {
-                  window.open(withUtm(externalUrl), '_blank', 'noopener');
-                  return;
-                }
-                
-                // Neither playable inline nor has external URL - do nothing
-                return; 
-              }
-              if (isInlinePlayable(selected)) openContent(selected);
-              else if (selected?.externalUrl) openExternal(selected);
-              else if ((selected as any)?.trakt && browser) window.open(withUtm((selected as any).trakt), '_blank', 'noopener');
-            }} class="detail-play">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
-              {#if selected?.type === 'series'}
-                {#if selectedEpisode}
-                  {#if isEpisodePlayable(selectedEpisode)}
-                    {m.tv_playSelectedEpisode()}
-                  {:else if selectedEpisode.externalUrl || seriesExternalSourceUrl}
-                    { m.tv_watchOn() } {selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
+          <div class="detail-play-observer" bind:this={playObserverEl}>
+            {#if !$showPlayer}
+              <button
+                disabled={isSeriesWithoutEpisode && !seriesExternalSourceUrl}
+                on:click={handlePlayClick}
+                class="detail-play"
+              >
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M8 5v10l8-5-8-5z"/></svg>
+                {#if selected?.type === 'series'}
+                  {#if selectedEpisode}
+                    {#if isEpisodePlayable(selectedEpisode)}
+                      {m.tv_playSelectedEpisode()}
+                    {:else if selectedEpisode.externalUrl || seriesExternalSourceUrl}
+                      { m.tv_watchOn() } {selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
+                    {:else}
+                      {m.tv_noPlayer()}
+                    {/if}
                   {:else}
-                    {m.tv_noPlayer()}
+                    {#if seriesExternalSourceUrl}
+                      { m.tv_watchOn() } {selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
+                    {:else}
+                      Play series
+                    {/if}
                   {/if}
                 {:else}
-                  {#if seriesExternalSourceUrl}
-                    { m.tv_watchOn() } {selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
+                  {#if isInlinePlayable(selected)}
+                    { m.tv_playNow() }
                   {:else}
-                    Play series
+                    { m.tv_watchOn() } {selected?.provider || 'External'}
                   {/if}
                 {/if}
-              {:else}
-                {#if isInlinePlayable(selected)}
-                  { m.tv_playNow() }
-                {:else}
-                  { m.tv_watchOn() } {selected?.provider || 'External'}
-                {/if}
-              {/if}
-            </button>
-          {/if}
+              </button>
+            {/if}
+          </div>
 
           {#if isAuthenticated && selected.type === 'movie'}
             <button
@@ -1288,6 +1391,24 @@
       width: 100%;
       max-width: 360px;
       margin: 0 auto;
+    }
+
+    .detail-play-fixedbar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0.75rem;
+      top: calc(env(safe-area-inset-top) + 0.75rem);
+      z-index: 35;
+      pointer-events: none;
+    }
+
+    .detail-play-fixedinner {
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto;
+      padding: 0 1.25rem;
+      pointer-events: auto;
     }
 
     .detail-episodes {

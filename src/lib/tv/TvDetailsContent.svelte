@@ -20,9 +20,10 @@
   import { setWatchedStatus, PROGRESS_CHANGE_EVENT } from '$lib/tv/watchHistory';
   import { flushWatchHistoryNow } from '$lib/tv/watchHistory';
   import type { WatchProgress } from '$lib/tv/watchHistory';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { user as authUser } from '$lib/stores/authStore';
   import BangerMeter from '$lib/components/Bangerometer.svelte';
+  import { fetchMediaReviews, fetchUserReview, upsertReview, type ReviewRow } from '$lib/reviews';
   import {
     applyRatingEventUpdate,
     buildBaseId,
@@ -51,6 +52,20 @@
   let currentUserRating: number | null = null;
   let ratingsSummary: { averageRating: number; ratingCount: number } | null = null;
   let showAuthDialog = false;
+
+  // Reviews state
+  let reviews: ReviewRow[] = [];
+  let reviewsLoading = false;
+  let reviewsError: string | null = null;
+
+  let reviewComposerOpen = false;
+  let myReviewText = '';
+  let myReviewId: number | null = null;
+  let myReviewSaving = false;
+  let myReviewError: string | null = null;
+  let reviewTextareaEl: HTMLTextAreaElement | null = null;
+
+  let reviewsRequestToken = 0;
 
   export let selected: ContentItem | null;
   export let openContent: (c: ContentItem) => void;
@@ -267,6 +282,20 @@
     currentUserRating = null;
     // Use the rating data already available on the content item to prevent flashing
     ratingsSummary = getInitialRatingsSummary(selected);
+
+    // Reset reviews immediately when item changes
+    reviews = [];
+    reviewsLoading = false;
+    reviewsError = null;
+    reviewComposerOpen = false;
+    myReviewText = '';
+    myReviewId = null;
+    myReviewSaving = false;
+    myReviewError = null;
+  }
+
+  $: if (browser && selected?.id) {
+    void loadReviewsForSelected();
   }
 
   $: if (browser && selected && ratingRefreshToken >= 0) {
@@ -304,6 +333,10 @@
         ratingCount: summary?.ratingCount
       });
     }
+
+    if (isAuthenticated) {
+      await openReviewComposer();
+    }
   }
 
   async function handleRatingDelete() {
@@ -319,6 +352,89 @@
         averageRating: summary?.averageRating,
         ratingCount: summary?.ratingCount
       });
+    }
+
+    reviewComposerOpen = false;
+  }
+
+  function fmtReviewDate(value?: string | null) {
+    if (!value) return '';
+    try {
+      return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {
+      return value;
+    }
+  }
+
+  function deriveAuthorName() {
+    const meta = ($authUser as any)?.user_metadata ?? {};
+    return (
+      meta?.name ||
+      meta?.username ||
+      $authUser?.email ||
+      null
+    );
+  }
+
+  async function loadReviewsForSelected() {
+    if (!browser || !selected) return;
+
+    const mediaId = Number(selected.id);
+    if (!Number.isFinite(mediaId)) return;
+
+    const currentRequest = ++reviewsRequestToken;
+    reviewsLoading = true;
+    reviewsError = null;
+
+    try {
+      const list = await fetchMediaReviews(mediaId, 25);
+      if (currentRequest !== reviewsRequestToken) return;
+      reviews = list;
+
+      if (isAuthenticated && $authUser?.id) {
+        const mine = await fetchUserReview(mediaId, $authUser.id);
+        if (currentRequest !== reviewsRequestToken) return;
+        myReviewId = mine?.id ?? null;
+        myReviewText = mine?.body ?? '';
+      }
+    } catch (error: any) {
+      if (currentRequest !== reviewsRequestToken) return;
+      reviewsError = error?.message ?? 'Failed to load reviews';
+      reviews = [];
+    } finally {
+      if (currentRequest === reviewsRequestToken) {
+        reviewsLoading = false;
+      }
+    }
+  }
+
+  async function openReviewComposer() {
+    if (!isAuthenticated || !selected) return;
+    reviewComposerOpen = true;
+    await tick();
+    reviewTextareaEl?.focus();
+  }
+
+  async function submitMyReview() {
+    if (!selected || !$authUser?.id) return;
+    myReviewSaving = true;
+    myReviewError = null;
+    try {
+      const saved = await upsertReview({
+        mediaId: selected.id,
+        userId: $authUser.id,
+        body: myReviewText,
+        authorName: deriveAuthorName()
+      });
+      myReviewId = saved.id;
+      myReviewText = saved.body;
+      reviewComposerOpen = false;
+      void loadReviewsForSelected();
+      toast.success('Review posted');
+    } catch (error: any) {
+      myReviewError = error?.message ?? 'Failed to post review';
+    } finally {
+      myReviewSaving = false;
     }
   }
 
@@ -796,7 +912,66 @@
           averageRating={ratingsSummary?.averageRating || 0}
           ratingCount={ratingsSummary?.ratingCount || 0}
         />
-        <p class="detail-review-note">Reviews feature is coming soon.</p>
+
+        {#if isAuthenticated && currentUserRating}
+          {#if !reviewComposerOpen}
+            <button type="button" class="detail-review-cta" on:click={openReviewComposer}>
+              Write a review
+            </button>
+          {:else}
+            <div class="detail-review-composer">
+              <div class="detail-review-composer-title">{myReviewId ? 'Update your review' : 'Write a short review'}</div>
+              <textarea
+                bind:this={reviewTextareaEl}
+                bind:value={myReviewText}
+                rows="4"
+                placeholder="What stood out? Would you recommend it?"
+                class="detail-review-textarea"
+                disabled={myReviewSaving}
+              ></textarea>
+              {#if myReviewError}
+                <div class="detail-review-error">{myReviewError}</div>
+              {/if}
+              <div class="detail-review-composer-actions">
+                <button type="button" class="detail-review-btn" disabled={myReviewSaving} on:click={() => (reviewComposerOpen = false)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="detail-review-btn detail-review-btn--primary"
+                  disabled={myReviewSaving || !myReviewText.trim()}
+                  on:click={submitMyReview}
+                >
+                  {myReviewId ? 'Update' : 'Post'}
+                </button>
+              </div>
+            </div>
+          {/if}
+        {/if}
+
+        <div class="detail-reviews">
+          <div class="detail-reviews-title">Reviews</div>
+          {#if reviewsLoading}
+            <p class="detail-review-note">Loading reviews…</p>
+          {:else if reviewsError}
+            <p class="detail-review-note">{reviewsError}</p>
+          {:else if reviews.length === 0}
+            <p class="detail-review-note">No reviews yet.</p>
+          {:else}
+            <div class="detail-reviews-list">
+              {#each reviews as r (r.id)}
+                <article class="detail-review-item">
+                  <div class="detail-review-meta">
+                    <span>{r.author_name ?? 'Anonymous'}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{fmtReviewDate(r.created_at)}</span>
+                  </div>
+                  <div class="detail-review-body">{r.body}</div>
+                </article>
+              {/each}
+            </div>
+          {/if}
+        </div>
       </aside>
     </div>
   </section>
@@ -1114,6 +1289,157 @@
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: rgba(226, 232, 240, 0.55);
+  }
+
+  .detail-review-cta {
+    margin-top: 0.35rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.3rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.18);
+    background: rgba(8, 12, 24, 0.6);
+    color: rgba(226, 232, 240, 0.85);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .detail-review-cta:hover {
+    transform: translateY(-1px);
+    background: rgba(15, 23, 42, 0.75);
+  }
+
+  .detail-review-composer {
+    margin-top: 0.45rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(248, 250, 252, 0.12);
+    background: rgba(8, 12, 24, 0.7);
+    padding: 0.9rem;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .detail-review-composer-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .detail-review-textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 88px;
+    border-radius: 0.85rem;
+    border: 1px solid rgba(248, 250, 252, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.75rem 0.85rem;
+    color: rgba(226, 232, 240, 0.88);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    outline: none;
+  }
+
+  .detail-review-textarea:focus {
+    border-color: rgba(229, 9, 20, 0.55);
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.2);
+  }
+
+  .detail-review-composer-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .detail-review-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.1rem;
+    padding: 0 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(248, 250, 252, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(226, 232, 240, 0.8);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .detail-review-btn:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateY(-1px);
+  }
+
+  .detail-review-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .detail-review-btn--primary {
+    border-color: rgba(229, 9, 20, 0.55);
+    background: rgba(229, 9, 20, 0.18);
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .detail-review-btn--primary:hover {
+    background: rgba(229, 9, 20, 0.24);
+  }
+
+  .detail-review-error {
+    font-size: 0.75rem;
+    color: rgba(254, 202, 202, 0.92);
+  }
+
+  .detail-reviews {
+    margin-top: 0.35rem;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .detail-reviews-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .detail-reviews-list {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .detail-review-item {
+    border-radius: 1rem;
+    border: 1px solid rgba(248, 250, 252, 0.12);
+    background: rgba(8, 12, 24, 0.65);
+    padding: 0.85rem;
+  }
+
+  .detail-review-meta {
+    display: inline-flex;
+    gap: 0.45rem;
+    align-items: baseline;
+    font-size: 0.65rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(226, 232, 240, 0.55);
+  }
+
+  .detail-review-body {
+    margin-top: 0.55rem;
+    white-space: pre-wrap;
+    color: rgba(226, 232, 240, 0.82);
+    line-height: 1.55;
+    font-size: 0.9rem;
   }
 
   .detail-review-sidebar h2 {

@@ -8,19 +8,22 @@
   } from '$lib/components/ui/dialog';
   import Bangerometer from '$lib/components/Bangerometer.svelte';
   import AuthDialog from '$lib/components/AuthDialog.svelte';
-  import type { Movie } from '$lib/tv/types';
+  import Button from '$lib/components/ui/Button.svelte';
+  import type { ContentItem } from '$lib/tv/types';
   import { getUserRating, getMediaRatingSummary, saveRating, deleteRating } from '$lib/ratings';
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher, onMount, tick } from 'svelte';
+  import { user as authUser } from '$lib/stores/authStore';
   import {
     dispatchRatingUpdated,
     RATING_UPDATED_EVENT,
     type RatingUpdatedDetail
   } from '$lib/rating-events';
+  import { fetchUserReview, upsertReview } from '$lib/reviews';
 
   let {
     open = $bindable(false),
     movie = null
-  } = $props<{ open?: boolean; movie?: Movie | null }>();
+  } = $props<{ open?: boolean; movie?: ContentItem | null }>();
 
   const dispatch = createEventDispatcher<{
     ratingSaved: {
@@ -37,6 +40,16 @@
     averageRating: 0,
     ratingCount: 0
   });
+
+  const isAuthenticated = $derived(Boolean($authUser));
+
+  let reviewPromptOpen = $state(false);
+  let reviewText = $state('');
+  let reviewSaving = $state(false);
+  let reviewError = $state<string | null>(null);
+  let existingReviewId = $state<number | null>(null);
+  let reviewLoadedForMediaId: string | number | null = null;
+  let reviewTextareaEl = $state<HTMLTextAreaElement | null>(null);
   let requestToken = 0;
   let lastLoadedId: string | number | null = null;
 
@@ -55,6 +68,11 @@
     if (!open) {
       requestToken += 1;
       showAuthDialog = false;
+      reviewPromptOpen = false;
+      reviewText = '';
+      reviewError = null;
+      existingReviewId = null;
+      reviewLoadedForMediaId = null;
     }
   });
 
@@ -81,6 +99,14 @@
       if (currentRequest !== requestToken) return;
       userRating = user;
       ratingSummary = summary ?? { averageRating: 0, ratingCount: 0 };
+
+      if (isAuthenticated && $authUser?.id) {
+        void loadMyReview(targetId, currentRequest);
+      } else {
+        existingReviewId = null;
+        reviewText = '';
+        reviewLoadedForMediaId = null;
+      }
     } catch (error) {
       if (currentRequest !== requestToken) return;
       console.error('Failed to load rating info', error);
@@ -90,6 +116,24 @@
       if (currentRequest === requestToken) {
         loading = false;
       }
+    }
+  }
+
+  async function loadMyReview(targetId: number | string, currentRequest: number) {
+    try {
+      if (!$authUser?.id) return;
+      const review = await fetchUserReview(targetId, $authUser.id);
+      if (currentRequest !== requestToken) return;
+      reviewLoadedForMediaId = targetId;
+      existingReviewId = review?.id ?? null;
+      reviewText = review?.body ?? '';
+      reviewError = null;
+    } catch (error) {
+      if (currentRequest !== requestToken) return;
+      console.error('Failed to load review', error);
+      reviewLoadedForMediaId = targetId;
+      existingReviewId = null;
+      reviewText = '';
     }
   }
 
@@ -116,6 +160,15 @@
         rating,
         summary: updatedSummary ?? ratingSummary
       });
+
+      if (isAuthenticated) {
+        reviewPromptOpen = true;
+        if (reviewLoadedForMediaId !== movie.id && $authUser?.id) {
+          await loadMyReview(movie.id, requestToken);
+        }
+        await tick();
+        reviewTextareaEl?.focus();
+      }
     } catch (error) {
       console.error('Failed to save rating', error);
     }
@@ -126,6 +179,7 @@
     try {
       await deleteRating(movie.id);
       userRating = null;
+      reviewPromptOpen = false;
       const updatedSummary = await getMediaRatingSummary(movie.id);
       ratingSummary = updatedSummary ?? { averageRating: 0, ratingCount: 0 };
       const numericId = Number(movie.id);
@@ -145,6 +199,47 @@
     } catch (error) {
       console.error('Failed to delete rating', error);
     }
+  }
+
+  function deriveAuthorName() {
+    const meta = ($authUser as any)?.user_metadata ?? {};
+    return (
+      meta?.name ||
+      meta?.username ||
+      $authUser?.email ||
+      null
+    );
+  }
+
+  async function submitReview() {
+    if (!movie || !isAuthenticated || !$authUser?.id) return;
+    reviewSaving = true;
+    reviewError = null;
+    try {
+      const saved = await upsertReview({
+        mediaId: movie.id,
+        userId: $authUser.id,
+        body: reviewText,
+        authorName: deriveAuthorName()
+      });
+      existingReviewId = saved.id;
+      reviewText = saved.body;
+      reviewPromptOpen = false;
+    } catch (error: any) {
+      reviewError = error?.message ?? 'Failed to post review';
+    } finally {
+      reviewSaving = false;
+    }
+  }
+
+  async function openReviewPrompt() {
+    if (!movie) return;
+    reviewPromptOpen = true;
+    if (reviewLoadedForMediaId !== movie.id && isAuthenticated && $authUser?.id) {
+      await loadMyReview(movie.id, requestToken);
+    }
+    await tick();
+    reviewTextareaEl?.focus();
   }
 
   function syncFromRatingEvent(detail?: RatingUpdatedDetail) {
@@ -167,7 +262,7 @@
 <DialogRoot bind:open>
   <DialogContent class="max-w-xl space-y-5">
     <DialogHeader>
-      <DialogTitle>Rate {movie?.title ?? 'this film'}</DialogTitle>
+      <DialogTitle>Rate {movie?.title ?? 'this title'}</DialogTitle>
       <DialogDescription>
         Share your Bangerometer score so others know if it's worth a rewatch.
       </DialogDescription>
@@ -212,6 +307,49 @@
         onAuthRequired={() => (showAuthDialog = true)}
         startExpanded={true}
       />
+
+      {#if isAuthenticated && userRating}
+        {#if reviewPromptOpen}
+          <div class="space-y-3 rounded-lg border border-border bg-muted/10 p-4">
+            <div>
+              <div class="text-sm font-medium text-foreground">Write a short review</div>
+              <div class="mt-1 text-xs text-muted-foreground">Tell others why you gave it {userRating}/10.</div>
+            </div>
+
+            <textarea
+              bind:this={reviewTextareaEl}
+              bind:value={reviewText}
+              rows="4"
+              placeholder="What stood out? Would you recommend it?"
+              class="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+              disabled={reviewSaving}
+            ></textarea>
+
+            {#if reviewError}
+              <div class="text-xs text-destructive">{reviewError}</div>
+            {/if}
+
+            <div class="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" disabled={reviewSaving} onclick={() => (reviewPromptOpen = false)}>
+                Skip
+              </Button>
+              <Button
+                size="sm"
+                disabled={reviewSaving || !reviewText.trim()}
+                onclick={submitReview}
+              >
+                {existingReviewId ? 'Update review' : 'Post review'}
+              </Button>
+            </div>
+          </div>
+        {:else}
+          <div class="flex justify-end">
+            <Button variant="outline" size="sm" onclick={openReviewPrompt}>
+              Write a review
+            </Button>
+          </div>
+        {/if}
+      {/if}
     {:else}
       <p class="text-sm text-muted-foreground">Pick a movie to rate.</p>
     {/if}

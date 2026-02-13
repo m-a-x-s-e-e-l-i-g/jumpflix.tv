@@ -56,6 +56,15 @@
 				<WrenchIcon class="size-4" />
 				<span>Suggestions</span>
 			</a>
+
+			<a
+				href="/admin/reviews"
+				onclick={() => (showAdminMenu = false)}
+				class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
+			>
+				<WrenchIcon class="size-4" />
+				<span>Reviews</span>
+			</a>
 		</div>
 	{/if}
 </div>

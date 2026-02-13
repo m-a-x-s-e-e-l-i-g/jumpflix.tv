@@ -67,7 +67,7 @@
   const subscribeToScroll = getContext<ScrollSubscription | undefined>(SCROLL_CONTEXT_KEY);
   let catalogMinHeight = $state(0);
   let ratingDialogOpen = $state(false);
-  let ratingDialogMovie = $state<Movie | null>(null);
+  let ratingDialogMovie = $state<ContentItem | null>(null);
   let ratingRefreshToken = $state(0);
   let ratingDialogCheckToken = 0;
   let lastCatalogScrollY = 0;
@@ -223,34 +223,34 @@
     );
   }
 
-  async function openRatingDialogIfNeeded(movie: Movie) {
+  async function openRatingDialogIfNeeded(item: ContentItem) {
     if (!browser || ratingDialogOpen) return;
     const currentCheck = ++ratingDialogCheckToken;
     try {
-      const existingRating = await getUserRating(movie.id);
+      const existingRating = await getUserRating(item.id);
       if (currentCheck !== ratingDialogCheckToken) return;
       if (existingRating !== null) {
         return;
       }
-      ratingDialogMovie = movie;
+      ratingDialogMovie = item;
       ratingDialogOpen = true;
     } catch (error) {
       if (currentCheck === ratingDialogCheckToken) {
         console.error('Failed to verify rating status', error);
-        ratingDialogMovie = movie;
+        ratingDialogMovie = item;
         ratingDialogOpen = true;
       }
     }
   }
 
   async function maybePromptForMovieRating(item: ContentItem | null) {
-    if (!browser || !item || item.type !== 'movie') return;
+    if (!browser || !item || (item.type !== 'movie' && item.type !== 'series')) return;
     if (ratingDialogOpen) return;
     const baseId = buildBaseId(item);
     if (!baseId) return;
     const latest = getLatestWatchProgressByBaseId(baseId);
     if (latest?.isWatched) {
-      await openRatingDialogIfNeeded(item as Movie);
+      await openRatingDialogIfNeeded(item);
     }
   }
 
@@ -272,15 +272,15 @@
     const detail = event.detail;
     let finished = detail?.content ?? null;
 
-    if ((!finished || finished.type !== 'movie') && detail?.mediaId) {
+    if ((!finished || (finished.type !== 'movie' && finished.type !== 'series')) && detail?.mediaId) {
       const fallback = findContentByMediaKey(detail.mediaId);
-      if (fallback && fallback.type === 'movie') {
+      if (fallback && (fallback.type === 'movie' || fallback.type === 'series')) {
         finished = fallback;
       }
     }
 
-    if (finished && finished.type === 'movie') {
-      void openRatingDialogIfNeeded(finished as Movie);
+    if (finished && (finished.type === 'movie' || finished.type === 'series')) {
+      void openRatingDialogIfNeeded(finished);
     }
   }
 

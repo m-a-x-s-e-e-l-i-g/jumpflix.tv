@@ -4,6 +4,7 @@
 		users_signed_in_last_15m: number;
 		users_signed_in_last_24h: number;
 		ratings_count: number;
+		reviews_count: number;
 		average_rating: number;
 		watch_history_rows: number;
 		watch_users: number;
@@ -195,6 +196,11 @@
 			<div class="text-xs text-muted-foreground">Average rating</div>
 			<div class="mt-1 text-2xl font-semibold">{(data.overview.average_rating ?? 0).toFixed(2)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">{formatNumber(data.overview.ratings_count ?? 0)} ratings</div>
+		</div>
+		<div class="rounded-2xl jf-surface-soft p-4">
+			<div class="text-xs text-muted-foreground">Reviews posted</div>
+			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.overview.reviews_count ?? 0)}</div>
+			<div class="mt-1 text-xs text-muted-foreground">Across films + series</div>
 		</div>
 		<div class="rounded-2xl jf-surface-soft p-4">
 			<div class="text-xs text-muted-foreground">Creators</div>

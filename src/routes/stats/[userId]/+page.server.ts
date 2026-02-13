@@ -96,6 +96,7 @@ export const load = async ({ params, locals, setHeaders }) => {
 		stats: {
 			averageRating: Number(overview.average_rating) || 0,
 			ratingCount: Number(overview.ratings_count) || 0,
+			reviewsCount: Number(overview.reviews_count) || 0,
 			suggestionsCount,
 			watchedCount: Number(overview.watched_items) || 0,
 			watchedEpisodesCount: Number(overview.watched_episodes) || 0,

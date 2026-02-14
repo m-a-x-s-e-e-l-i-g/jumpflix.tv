@@ -19,6 +19,7 @@
     type RatingUpdatedDetail
   } from '$lib/rating-events';
   import { fetchUserReview, upsertReview } from '$lib/reviews';
+  import { getPublicUserName } from '$lib/utils';
 
   let {
     open = $bindable(false),
@@ -203,12 +204,10 @@
 
   function deriveAuthorName() {
     const meta = ($authUser as any)?.user_metadata ?? {};
-    return (
-      meta?.name ||
-      meta?.username ||
-      $authUser?.email ||
-      null
-    );
+    return getPublicUserName({
+      name: meta?.name || meta?.username || null,
+      email: $authUser?.email ?? null
+    });
   }
 
   async function submitReview() {

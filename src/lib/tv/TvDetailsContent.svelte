@@ -37,6 +37,7 @@
     updateRating
   } from '$lib/tv/details-helpers';
   import AuthDialog from '$lib/components/AuthDialog.svelte';
+  import { getPublicUserName, getPublicUserNameOrFallback } from '$lib/utils';
   import FacetChips from '$lib/components/FacetChips.svelte';
   import {
     dispatchRatingUpdated,
@@ -368,12 +369,11 @@
 
   function deriveAuthorName() {
     const meta = ($authUser as any)?.user_metadata ?? {};
-    return (
-      meta?.name ||
-      meta?.username ||
-      $authUser?.email ||
-      null
-    );
+
+    return getPublicUserName({
+      name: meta?.name || meta?.username || null,
+      email: $authUser?.email ?? null
+    });
   }
 
   async function loadReviewsForSelected() {
@@ -962,7 +962,7 @@
               {#each reviews as r (r.id)}
                 <article class="detail-review-item">
                   <div class="detail-review-meta">
-                    <span>{r.author_name ?? 'Anonymous'}</span>
+                    <span>{getPublicUserNameOrFallback({ name: r.author_name }, 'Anonymous')}</span>
                     <span aria-hidden="true">·</span>
                     <span>{fmtReviewDate(r.created_at)}</span>
                   </div>

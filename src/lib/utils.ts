@@ -42,6 +42,34 @@ export function withUtm(url: string, options: UtmOptions = {}): string {
 	}
 }
 
+export function getEmailLocalPart(value?: string | null): string | null {
+	const raw = String(value ?? '').trim();
+	if (!raw) return null;
+	const at = raw.indexOf('@');
+	if (at <= 0) return null;
+	const part = raw.slice(0, at).trim();
+	return part || null;
+}
+
+export function getPublicUserName(params: { name?: string | null; email?: string | null }): string | null {
+	const name = String(params.name ?? '').trim();
+	if (name) {
+		if (name.includes('@')) return getEmailLocalPart(name) ?? null;
+		return name;
+	}
+
+	const email = String(params.email ?? '').trim();
+	if (!email) return null;
+	return getEmailLocalPart(email) ?? null;
+}
+
+export function getPublicUserNameOrFallback(
+	params: { name?: string | null; email?: string | null },
+	fallback: string
+): string {
+	return getPublicUserName(params) ?? fallback;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type WithoutChild<T> = T extends { child?: any } ? Omit<T, "child"> : T;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

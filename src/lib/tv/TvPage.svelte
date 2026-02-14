@@ -555,8 +555,8 @@
             <input
               type="range"
               min="0.8"
-              max="1.25"
-              step="0.05"
+              max="1"
+              step="0.1"
               value={$gridScale}
               oninput={handleScaleChange}
             />

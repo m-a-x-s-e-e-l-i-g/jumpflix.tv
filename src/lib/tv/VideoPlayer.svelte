@@ -57,7 +57,6 @@
 	let cleanupAutoHide: (() => void) | null = null;
 	let cleanupProgressTracking: (() => void) | null = null;
 	let cleanupPlaybackComplete: (() => void) | null = null;
-	let cleanupYouTubeProvider: (() => void) | null = null;
 	let controlsEl: HTMLElement | null = null;
 	let hideControlsTimer: ReturnType<typeof setTimeout> | null = null;
 	let controlsVisible = true;
@@ -93,15 +92,6 @@
 	const PROGRESS_UPDATE_INTERVAL = 5000; // Update every 5 seconds
 	const PROGRESS_COMMIT_DELAY_MS = 250;
 
-	// Detect iOS devices (iPhone, iPad, iPod)
-	function isIOSDevice(): boolean {
-		if (!browser) return false;
-		const ua = navigator.userAgent?.toLowerCase?.() ?? '';
-		return /iphone|ipad|ipod/.test(ua);
-	}
-
-	const isIOS = isIOSDevice();
-
 	$: if (browser && playerEl) {
 		cleanupGestures?.();
 		cleanupGestures = setupGestureHandlers(playerEl);
@@ -134,14 +124,6 @@
 		cleanupPlaybackComplete = null;
 	}
 
-	$: if (browser && playerEl) {
-		cleanupYouTubeProvider?.();
-		cleanupYouTubeProvider = setupYouTubeProvider(playerEl);
-	} else if (!browser || !playerEl) {
-		cleanupYouTubeProvider?.();
-		cleanupYouTubeProvider = null;
-	}
-
 	onDestroy(() => {
 		cleanupGestures?.();
 		cleanupGestures = null;
@@ -151,8 +133,6 @@
 		cleanupProgressTracking = null;
 		cleanupPlaybackComplete?.();
 		cleanupPlaybackComplete = null;
-		cleanupYouTubeProvider?.();
-		cleanupYouTubeProvider = null;
 		cleanupMobileQuery?.();
 		cleanupMobileQuery = null;
 		mobileQuery = null;
@@ -324,37 +304,6 @@
 		} else {
 			scheduleProgressCommit();
 		}
-	}
-
-	function setupYouTubeProvider(player: MediaPlayerElement) {
-		if (!browser) return () => {};
-
-		const handleProviderChange = (event: Event) => {
-			const customEvent = event as CustomEvent;
-			const provider = customEvent?.detail;
-			// Check if this is a YouTube provider by checking for YouTube-specific properties
-			if (
-				provider &&
-				typeof provider === 'object' &&
-				'cookies' in provider &&
-				'type' in provider &&
-				provider.type === 'youtube'
-			) {
-				// Enable cookies for YouTube provider only on iOS to improve Safari compatibility
-				// Keep Android behavior unchanged to avoid playback issues
-				if (isIOS) {
-					provider.cookies = true;
-				}
-			}
-		};
-
-		player.addEventListener('provider-change', handleProviderChange);
-
-		const cleanup = () => {
-			player.removeEventListener('provider-change', handleProviderChange);
-		};
-
-		return cleanup;
 	}
 
 	function setupProgressTracking(player: MediaPlayerElement) {
@@ -1358,7 +1307,6 @@
 			poster={resolvedPoster}
 			playsinline
 			crossOrigin
-			load={isIOS ? 'eager' : 'idle'}
 			autoplay={autoPlay ? true : undefined}
 		>
 			<media-provider data-no-controls></media-provider>

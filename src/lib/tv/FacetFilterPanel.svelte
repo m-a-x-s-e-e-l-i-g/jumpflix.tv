@@ -122,8 +122,8 @@
     selectedFacets.set({});
   }
   
-  $: hasAnyFilters = Object.values($selectedFacets).some(arr => Array.isArray(arr) && arr.length > 0);
-  $: filterCount = Object.values($selectedFacets).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
+  const hasAnyFilters = $derived(Object.values($selectedFacets).some(arr => Array.isArray(arr) && arr.length > 0));
+  const filterCount = $derived(Object.values($selectedFacets).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0));
 </script>
 
 <div class="facet-filter-container">

@@ -1319,9 +1319,8 @@
 			title={playerTitle}
 			poster={resolvedPoster}
 			playsInline
-			crossOrigin
-			load="idle"
-			autoplay={autoPlay ? true : undefined}
+			crossOrigin="anonymous"
+			autoPlay
 		>
 			<media-provider data-no-controls></media-provider>
 

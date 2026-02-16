@@ -107,6 +107,17 @@ export type SortBy =
   | 'rating-desc'
   | 'rating-asc';
 
+// Selected facets for filtering content
+export interface SelectedFacets {
+  type?: FacetType[];
+  mood?: FacetMood[];
+  movement?: FacetMovement[];
+  environment?: FacetEnvironment[];
+  filmStyle?: FacetFilmStyle[];
+  theme?: FacetTheme[];
+  era?: FacetEra[];
+}
+
 export interface TvState {
   searchQuery: string;
   showPaid: boolean; // show paid content
@@ -114,6 +125,7 @@ export interface TvState {
   showWatched?: boolean;
   watchedBaseIds?: Set<string>;
   inProgressBaseIds?: Set<string>;
+  selectedFacets?: SelectedFacets;
 }
 
 export const DEFAULT_TV_STATE: TvState = {

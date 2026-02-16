@@ -3,17 +3,19 @@
   import Switch from '$lib/components/ui/Switch.svelte';
   import * as m from '$lib/paraglide/messages';
   import { sortLabels } from '$lib/tv/utils';
-  import type { SortBy } from '$lib/tv/types';
+  import type { SortBy, SelectedFacets } from '$lib/tv/types';
   import { user } from '$lib/stores/authStore';
+  import FacetFilterPanel from './FacetFilterPanel.svelte';
 
   interface Props {
     searchQuery: Writable<string>;
     showPaid: Writable<boolean>;
     showWatched: Writable<boolean>;
     sortBy: Writable<SortBy>;
+    selectedFacets: Writable<SelectedFacets>;
   }
 
-  let { searchQuery, showPaid, showWatched, sortBy }: Props = $props();
+  let { searchQuery, showPaid, showWatched, sortBy, selectedFacets }: Props = $props();
 
   function clearSearch() {
     searchQuery.set('');
@@ -65,6 +67,8 @@
       </form>
 
       <div class="search-controls">
+        <FacetFilterPanel {selectedFacets} />
+        
         <label class={labelClass}>
           <span>{m.tv_showPaid()}</span>
           <Switch

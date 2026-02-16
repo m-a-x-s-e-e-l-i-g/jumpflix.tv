@@ -28,7 +28,8 @@
       openEpisode,
       selectEpisode,
       setContent,
-      sortedAllContent
+      sortedAllContent,
+      selectedFacets
     } from '$lib/tv/store';
   import { getLatestWatchProgressByBaseId } from '$lib/tv/watchHistory';
   import type { ContentItem, Episode, Movie } from '$lib/tv/types';
@@ -546,7 +547,7 @@
 
       <TvHeroSection {logoTilt} />
 
-      <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} />
+      <TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} {selectedFacets} />
 
       {#if !isMobile}
         <div class="catalog-toolbar" aria-label="Catalog view controls">

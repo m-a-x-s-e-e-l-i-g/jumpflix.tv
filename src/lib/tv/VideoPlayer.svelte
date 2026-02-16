@@ -1319,6 +1319,7 @@
 			title={playerTitle}
 			poster={resolvedPoster}
 			playsinline
+			crossOrigin
 			load="idle"
 			autoplay={autoPlay ? true : undefined}
 		>

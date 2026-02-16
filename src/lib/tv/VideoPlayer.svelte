@@ -1357,6 +1357,7 @@
 			title={playerTitle}
 			poster={resolvedPoster}
 			playsinline
+			crossOrigin
 			load={isIOS ? 'eager' : 'idle'}
 			autoplay={autoPlay ? true : undefined}
 		>

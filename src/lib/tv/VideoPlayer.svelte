@@ -1318,7 +1318,7 @@
 			src={resolvedSrc}
 			title={playerTitle}
 			poster={resolvedPoster}
-			playsinline
+			playsInline
 			crossOrigin
 			load="idle"
 			autoplay={autoPlay ? true : undefined}

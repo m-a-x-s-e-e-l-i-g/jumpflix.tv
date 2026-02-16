@@ -240,10 +240,10 @@
   .filter-panel {
     position: absolute;
     top: calc(100% + 0.5rem);
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 50;
-    min-width: 600px;
-    max-width: 90vw;
+    width: min(600px, calc(100vw - 3rem));
     max-height: 70vh;
     overflow-y: auto;
     border-radius: 16px;
@@ -367,9 +367,7 @@
   
   @media (max-width: 768px) {
     .filter-panel {
-      min-width: 90vw;
-      left: 50%;
-      transform: translateX(-50%);
+      width: calc(100vw - 2rem);
     }
     
     .facet-chips {

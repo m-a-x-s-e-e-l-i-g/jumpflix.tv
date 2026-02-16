@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Writable } from 'svelte/store';
   import type { SelectedFacets, FacetType, FacetMood, FacetMovement, FacetEnvironment, FacetFilmStyle, FacetTheme, FacetEra } from './types';
+  import { Dialog as DialogRoot, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
   
   interface Props {
     selectedFacets: Writable<SelectedFacets>;
@@ -94,7 +95,7 @@
     }
   };
   
-  let isExpanded = $state(false);
+  let isOpen = $state(false);
   
   function toggleFacet(category: keyof SelectedFacets, value: string) {
     selectedFacets.update(current => {
@@ -126,64 +127,66 @@
   const filterCount = $derived(Object.values($selectedFacets).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0));
 </script>
 
-<div class="facet-filter-container">
-  <button 
-    class="filter-toggle"
-    onclick={() => isExpanded = !isExpanded}
-    aria-expanded={isExpanded}
-    aria-label="Toggle facet filters"
-  >
-    <span class="filter-icon">
-      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-      </svg>
-    </span>
-    <span class="filter-text">Filters</span>
-    {#if filterCount > 0}
-      <span class="filter-badge">{filterCount}</span>
-    {/if}
-    <span class="filter-caret" class:expanded={isExpanded}>▾</span>
-  </button>
-  
-  {#if isExpanded}
-    <div class="filter-panel">
-      <div class="filter-header">
-        <h3 class="filter-title">Filter by Facets</h3>
-        {#if hasAnyFilters}
-          <button class="clear-button" onclick={clearAllFilters}>
-            Clear all
-          </button>
-        {/if}
-      </div>
-      
-      <div class="filter-categories">
-        {#each Object.entries(facetCategories) as [categoryKey, category]}
-          <div class="filter-category">
-            <h4 class="category-label">{category.label}</h4>
-            <div class="facet-chips">
-              {#each category.options as option}
-                {@const isSelected = isFacetSelected(categoryKey as keyof SelectedFacets, option.value)}
-                <button
-                  class="facet-chip"
-                  class:selected={isSelected}
-                  onclick={() => toggleFacet(categoryKey as keyof SelectedFacets, option.value)}
-                  aria-pressed={isSelected}
-                >
-                  <span class="chip-emoji">{option.emoji}</span>
-                  <span class="chip-label">{option.label}</span>
-                </button>
-              {/each}
-            </div>
-          </div>
-        {/each}
-      </div>
-    </div>
+<button 
+  class="filter-toggle"
+  onclick={() => isOpen = true}
+  aria-label="Open facet filters"
+>
+  <span class="filter-icon">
+    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+    </svg>
+  </span>
+  <span class="filter-text">Filters</span>
+  {#if filterCount > 0}
+    <span class="filter-badge">{filterCount}</span>
   {/if}
-</div>
+</button>
+
+<DialogRoot bind:open={isOpen}>
+  <DialogContent class="max-h-[85vh] max-w-3xl overflow-y-auto">
+    <div class="dialog-header-with-action">
+      <DialogHeader>
+        <DialogTitle>Filter by Facets</DialogTitle>
+      </DialogHeader>
+      {#if hasAnyFilters}
+        <button class="clear-button" onclick={clearAllFilters}>
+          Clear all
+        </button>
+      {/if}
+    </div>
+    
+    <div class="filter-categories">
+      {#each Object.entries(facetCategories) as [categoryKey, category]}
+        <div class="filter-category">
+          <h4 class="category-label">{category.label}</h4>
+          <div class="facet-chips">
+            {#each category.options as option}
+              {@const isSelected = isFacetSelected(categoryKey as keyof SelectedFacets, option.value)}
+              <button
+                class="facet-chip"
+                class:selected={isSelected}
+                onclick={() => toggleFacet(categoryKey as keyof SelectedFacets, option.value)}
+                aria-pressed={isSelected}
+              >
+                <span class="chip-emoji">{option.emoji}</span>
+                <span class="chip-label">{option.label}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/each}
+    </div>
+  </DialogContent>
+</DialogRoot>
 
 <style>
-  .facet-filter-container {
-    position: relative;
+  .dialog-header-with-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
   }
   
   .filter-toggle {
@@ -228,60 +231,6 @@
     color: white;
   }
   
-  .filter-caret {
-    transition: transform 0.2s ease;
-    margin-left: -0.2rem;
-  }
-  
-  .filter-caret.expanded {
-    transform: rotate(180deg);
-  }
-  
-  .filter-panel {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 50;
-    width: min(600px, calc(100vw - 3rem));
-    max-height: 70vh;
-    overflow-y: auto;
-    border-radius: 16px;
-    border: 1px solid rgba(248, 250, 252, 0.2);
-    background: linear-gradient(155deg, rgba(14, 19, 36, 0.98), rgba(10, 14, 26, 0.96));
-    box-shadow: 0 20px 60px -20px rgba(2, 6, 23, 0.8);
-    padding: 1.5rem;
-    animation: slideDown 0.2s ease-out;
-  }
-  
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .filter-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid rgba(248, 250, 252, 0.1);
-  }
-  
-  .filter-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: rgba(248, 250, 252, 0.95);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-  
   .clear-button {
     font-size: 0.75rem;
     font-weight: 600;
@@ -291,6 +240,9 @@
     transition: all 0.2s ease;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    background: transparent;
+    border: none;
+    cursor: pointer;
   }
   
   .clear-button:hover {
@@ -365,9 +317,10 @@
     white-space: nowrap;
   }
   
-  @media (max-width: 768px) {
-    .filter-panel {
-      width: calc(100vw - 2rem);
+  @media (max-width: 640px) {
+    .filter-toggle {
+      padding: 0.5rem 0.8rem;
+      font-size: 0.65rem;
     }
     
     .facet-chips {
@@ -377,31 +330,6 @@
     .facet-chip {
       padding: 0.35rem 0.6rem;
       font-size: 0.7rem;
-    }
-  }
-  
-  @media (max-width: 640px) {
-    .filter-toggle {
-      padding: 0.5rem 0.8rem;
-      font-size: 0.65rem;
-    }
-    
-    .filter-panel {
-      padding: 1rem;
-      max-height: 60vh;
-    }
-    
-    .filter-header {
-      margin-bottom: 1rem;
-      padding-bottom: 0.75rem;
-    }
-    
-    .filter-title {
-      font-size: 0.875rem;
-    }
-    
-    .filter-categories {
-      gap: 1rem;
     }
   }
 </style>

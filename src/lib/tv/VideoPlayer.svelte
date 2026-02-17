@@ -1181,9 +1181,69 @@
 	const VIMEO_DOMAIN = /^(?:https?:\/\/)?(?:www\.|player\.)?vimeo\.com/i;
 	const HAS_PROTOCOL = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
 
+	let isIOSDevice = false;
+	let youtubeEmbedUrl: string | null = null;
+	let useYouTubeEmbedFallback = false;
+
+	function detectIOSDevice() {
+		if (!browser) return false;
+		try {
+			const ua = navigator.userAgent ?? '';
+			if (/iPad|iPhone|iPod/i.test(ua)) return true;
+			// iPadOS 13+ reports as Mac; use touch points heuristic.
+			const platform = (navigator as unknown as { platform?: string }).platform ?? '';
+			const maxTouchPoints = (navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints ?? 0;
+			return platform === 'MacIntel' && maxTouchPoints > 1;
+		} catch {
+			return false;
+		}
+	}
+
+	function isYouTubeUrl(value: string) {
+		return YOUTUBE_DOMAIN.test(value);
+	}
+
+	function extractYouTubeVideoId(value: string): string | null {
+		const trimmed = value.trim();
+		if (!trimmed) return null;
+		try {
+			const url = new URL(trimmed);
+			const host = url.hostname.toLowerCase();
+			if (host === 'youtu.be') {
+				const id = url.pathname.replace(/^\/+/, '').split('/')[0];
+				return id || null;
+			}
+			if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
+				const path = url.pathname;
+				if (path === '/watch') {
+					const id = url.searchParams.get('v');
+					return id || null;
+				}
+				const embedMatch = path.match(/^\/(?:embed|shorts)\/([^/?#]+)/i);
+				if (embedMatch) return embedMatch[1] || null;
+			}
+		} catch {
+			// ignore
+		}
+		return null;
+	}
+
+	function buildYouTubeEmbedUrl(value: string, shouldAutoplay: boolean): string | null {
+		if (!isYouTubeUrl(value)) return null;
+		const videoId = extractYouTubeVideoId(value);
+		if (!videoId) return null;
+		const params = new URLSearchParams();
+		params.set('playsinline', '1');
+		params.set('rel', '0');
+		params.set('modestbranding', '1');
+		params.set('iv_load_policy', '3');
+		if (shouldAutoplay) params.set('autoplay', '1');
+		return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${params.toString()}`;
+	}
+
 	onMount(() => {
 		mounted = true;
-		void ensureVidstackLoaded();
+		isIOSDevice = detectIOSDevice();
 
 		if (browser && typeof window !== 'undefined') {
 			cleanupMobileQuery?.();
@@ -1226,6 +1286,13 @@
 			}
 		};
 	});
+
+	$: youtubeEmbedUrl = resolvedSrc ? buildYouTubeEmbedUrl(resolvedSrc, autoPlay) : null;
+	$: useYouTubeEmbedFallback = !!(mounted && browser && isIOSDevice && resolvedSrc && youtubeEmbedUrl);
+
+	$: if (mounted && browser && !useYouTubeEmbedFallback) {
+		void ensureVidstackLoaded();
+	}
 
 	$: if (playerEl && isMobileViewport) {
 		enforceMobileVolume(playerEl);
@@ -1312,40 +1379,66 @@
 
 {#if shouldRender}
 	{#key `${keySeed}:${resolvedSrc}`}
-		<media-player
-			bind:this={playerEl}
-			class="vidstack-player"
-			src={resolvedSrc}
-			title={playerTitle}
-			poster={resolvedPoster}
-			playsinline
-			load="idle"
-			autoplay={autoPlay ? true : undefined}
-		>
-			<media-provider data-no-controls></media-provider>
-
-			<media-controls
-				class="player-controls"
-				data-jumpflix-gesture-ignore="true"
-				data-hidden={controlsVisible ? undefined : ''}
-				bind:this={controlsEl}
-			>
+		{#if useYouTubeEmbedFallback}
+			<div class="youtube-fallback" data-youtube-fallback>
 				{#if typeof onClose === 'function'}
 					<div class="controls-top">
-						<media-controls-group class="controls-group top">
+						<div class="controls-group top">
 							<button
 								type="button"
 								class="player-close-button"
 								aria-label="Close player"
-								data-jumpflix-gesture-ignore="true"
 								on:click={onClose}
 							>
 								<span class="icon" aria-hidden="true"><XIcon /></span>
 							</button>
-						</media-controls-group>
+						</div>
 					</div>
 				{/if}
-				<div class="controls-surface">
+				<iframe
+					class="youtube-iframe"
+					src={youtubeEmbedUrl ?? undefined}
+					title={playerTitle ?? 'YouTube player'}
+					allow="autoplay; encrypted-media; picture-in-picture"
+					allowfullscreen
+					referrerpolicy="strict-origin-when-cross-origin"
+				></iframe>
+			</div>
+		{:else}
+			<media-player
+				bind:this={playerEl}
+				class="vidstack-player"
+				src={resolvedSrc}
+				title={playerTitle}
+				poster={resolvedPoster}
+				playsInline
+				crossOrigin="anonymous"
+				autoPlay
+			>
+				<media-provider data-no-controls></media-provider>
+
+				<media-controls
+					class="player-controls"
+					data-jumpflix-gesture-ignore="true"
+					data-hidden={controlsVisible ? undefined : ''}
+					bind:this={controlsEl}
+				>
+					{#if typeof onClose === 'function'}
+						<div class="controls-top">
+							<media-controls-group class="controls-group top">
+								<button
+									type="button"
+									class="player-close-button"
+									aria-label="Close player"
+									data-jumpflix-gesture-ignore="true"
+									on:click={onClose}
+								>
+									<span class="icon" aria-hidden="true"><XIcon /></span>
+								</button>
+							</media-controls-group>
+						</div>
+					{/if}
+					<div class="controls-surface">
 					<media-controls-group class="controls-group scrub">
 						<media-time-slider
 							class="time-slider"
@@ -1438,7 +1531,8 @@
 					</div>
 				</div>
 			</media-controls>
-		</media-player>
+			</media-player>
+		{/if}
 	{/key}
 {:else}
 	<div class="player-loader" role="status" aria-live="polite">
@@ -1452,6 +1546,22 @@
 		block-size: 100%;
 		background: #000;
 		position: relative;
+	}
+
+	.youtube-fallback {
+		inline-size: 100%;
+		block-size: 100%;
+		background: #000;
+		position: relative;
+	}
+
+	.youtube-iframe {
+		position: absolute;
+		inset: 0;
+		inline-size: 100%;
+		block-size: 100%;
+		border: 0;
+		display: block;
 	}
 
 	.player-loader {

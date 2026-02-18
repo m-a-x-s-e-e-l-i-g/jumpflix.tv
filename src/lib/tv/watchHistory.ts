@@ -28,12 +28,12 @@ export type WatchProgressEventOrigin = 'local' | 'remote';
 export type WatchProgressEventDetail =
 	| { kind: 'update'; progress: WatchProgress; origin: WatchProgressEventOrigin }
 	| {
-		kind: 'delete';
-		mediaId: string;
-		mediaType?: WatchProgress['type'];
-		watchedAt?: string;
-		origin: WatchProgressEventOrigin;
-	}
+			kind: 'delete';
+			mediaId: string;
+			mediaType?: WatchProgress['type'];
+			watchedAt?: string;
+			origin: WatchProgressEventOrigin;
+	  }
 	| { kind: 'clear-all'; origin: WatchProgressEventOrigin };
 
 type PendingRecord =
@@ -192,7 +192,8 @@ function fromRow(row: {
 }
 
 function toRow(progress: WatchProgress): WatchHistoryInsert {
-	if (!currentUserId) throw new Error('Cannot persist watch progress without an authenticated user');
+	if (!currentUserId)
+		throw new Error('Cannot persist watch progress without an authenticated user');
 	const row: Database['public']['Tables']['watch_history']['Insert'] = {
 		user_id: currentUserId,
 		media_id: progress.mediaId,
@@ -213,7 +214,10 @@ export function parseWatchedAt(value: string | undefined | null): number {
 	return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
-export function pickLatestProgress(current: WatchProgress | null, candidate: WatchProgress): WatchProgress {
+export function pickLatestProgress(
+	current: WatchProgress | null,
+	candidate: WatchProgress
+): WatchProgress {
 	if (!current) return candidate;
 	const currentTime = parseWatchedAt(current.watchedAt);
 	const candidateTime = parseWatchedAt(candidate.watchedAt);
@@ -316,7 +320,11 @@ export function getResumePosition(mediaId: string, duration: number): number | n
 
 export function clearWatchProgress(
 	mediaId: string,
-	options?: { origin?: WatchProgressEventOrigin; mediaType?: WatchProgress['type']; watchedAt?: string }
+	options?: {
+		origin?: WatchProgressEventOrigin;
+		mediaType?: WatchProgress['type'];
+		watchedAt?: string;
+	}
 ): void {
 	ensureInitialized();
 	if (!isTrackingEnabled()) return;

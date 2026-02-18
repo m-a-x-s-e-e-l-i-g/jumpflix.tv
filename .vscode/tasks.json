@@ -5,35 +5,23 @@
 			"label": "Install deps",
 			"type": "shell",
 			"command": "npm",
-			"args": [
-				"install"
-			],
-			"problemMatcher": [
-				"$npm-stderr"
-			],
+			"args": ["install"],
+			"problemMatcher": ["$npm-stderr"],
 			"group": "build"
 		},
 		{
 			"label": "Typecheck",
 			"type": "shell",
 			"command": "npm",
-			"args": [
-				"run",
-				"check",
-				"--silent"
-			],
-			"problemMatcher": [
-				"$tsc"
-			],
+			"args": ["run", "check", "--silent"],
+			"problemMatcher": ["$tsc"],
 			"group": "build"
 		},
 		{
 			"label": "Install deps",
 			"type": "shell",
 			"command": "npm",
-			"args": [
-				"install"
-			],
+			"args": ["install"],
 			"isBackground": false,
 			"group": "build"
 		},
@@ -41,9 +29,7 @@
 			"label": "Install deps",
 			"type": "shell",
 			"command": "npm",
-			"args": [
-				"install"
-			],
+			"args": ["install"],
 			"isBackground": false,
 			"group": "build"
 		}

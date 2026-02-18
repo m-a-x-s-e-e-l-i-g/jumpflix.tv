@@ -11,9 +11,18 @@ import * as prompts from '@inquirer/prompts';
 import * as dotenv from 'dotenv';
 import { generateBlurhashFromUrl, generateBlurhashFromFile } from './utils/blurhash-generator.js';
 import { syncAllSeriesEpisodes, syncPlaylistEpisodes } from './utils/youtube-sync.js';
-import { bestEffortSearchSpotifyTrack, extractSpotifyTrackId, fetchSpotifyTrack } from './utils/spotify.js';
+import {
+	bestEffortSearchSpotifyTrack,
+	extractSpotifyTrackId,
+	fetchSpotifyTrack
+} from './utils/spotify.js';
 import { fetchYouTubeTrackCandidates, parseTimecodeToSeconds } from './utils/youtube-tracklist.js';
-import { clearVideoTracklist, fetchVideoTracklist, upsertSongFromSpotify, upsertVideoSong } from './utils/tracklist-db.js';
+import {
+	clearVideoTracklist,
+	fetchVideoTracklist,
+	upsertSongFromSpotify,
+	upsertVideoSong
+} from './utils/tracklist-db.js';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import * as readline from 'readline';
@@ -54,7 +63,7 @@ function setupGlobalKeyListener() {
 	if (process.stdin.isTTY) {
 		readline.emitKeypressEvents(process.stdin);
 		process.stdin.setRawMode(true);
-		
+
 		process.stdin.on('keypress', (str, key) => {
 			if (key && key.name === 'escape') {
 				console.log('\n\n👋 Goodbye!\n');
@@ -91,12 +100,12 @@ async function generateBlurhash(thumbnail: string): Promise<string> {
 	if (thumbnail.startsWith('http://') || thumbnail.startsWith('https://')) {
 		return await generateBlurhashFromUrl(thumbnail);
 	}
-	
+
 	// It's a local path - convert to absolute path if needed
-	const imagePath = thumbnail.startsWith('/') 
+	const imagePath = thumbnail.startsWith('/')
 		? join(projectRoot, 'static', thumbnail)
 		: join(projectRoot, thumbnail);
-	
+
 	return await generateBlurhashFromFile(imagePath);
 }
 
@@ -107,21 +116,22 @@ async function mainMenu() {
 	console.log('💡 Press ESC anytime to exit\n');
 
 	const action = await prompts.select({
-	message: 'What would you like to do?',
-	choices: [
-		{ name: '🎥 Add Movie', value: 'add-movie' },
-		{ name: '📺 Add Series', value: 'add-series' },
-		{ name: '� Manually Manage Episodes', value: 'manage-episodes' },
-		{ name: '�🔄 Auto Refresh Episodes', value: 'refresh-episodes' },
-		{ name: '📋 List All Content', value: 'list-content' },
-		{ name: '✏️  Edit Content', value: 'edit-content' },
-		{ name: '🎵 Manage Tracklists', value: 'manage-tracks' },
-		{ name: '🏷️  Edit Facets', value: 'edit-facets' },
-		{ name: ' Retry Blurhash Generation', value: 'retry-blurhash' },
-		{ name: '🗑️  Delete Content', value: 'delete-content' },
-		{ name: '❌ Exit', value: 'exit' }
-	]
-});	switch (action) {
+		message: 'What would you like to do?',
+		choices: [
+			{ name: '🎥 Add Movie', value: 'add-movie' },
+			{ name: '📺 Add Series', value: 'add-series' },
+			{ name: '� Manually Manage Episodes', value: 'manage-episodes' },
+			{ name: '�🔄 Auto Refresh Episodes', value: 'refresh-episodes' },
+			{ name: '📋 List All Content', value: 'list-content' },
+			{ name: '✏️  Edit Content', value: 'edit-content' },
+			{ name: '🎵 Manage Tracklists', value: 'manage-tracks' },
+			{ name: '🏷️  Edit Facets', value: 'edit-facets' },
+			{ name: ' Retry Blurhash Generation', value: 'retry-blurhash' },
+			{ name: '🗑️  Delete Content', value: 'delete-content' },
+			{ name: '❌ Exit', value: 'exit' }
+		]
+	});
+	switch (action) {
 		case 'add-movie':
 			await addMovie();
 			break;
@@ -186,7 +196,9 @@ async function importTracklistFromYouTubeDescription(
 	ytId: string
 ): Promise<{ imported: number; skipped: number; candidates: number }> {
 	if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
-		console.log('❌ Missing Spotify credentials. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in .env');
+		console.log(
+			'❌ Missing Spotify credentials. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in .env'
+		);
 		console.log('   (Needed to map YouTube track candidates to Spotify tracks.)');
 		return { imported: 0, skipped: 0, candidates: 0 };
 	}
@@ -305,7 +317,9 @@ async function manageTracklists() {
 	try {
 		tracks = await fetchVideoTracklist(supabase, Number(movieId));
 	} catch (e) {
-		console.log(`⚠ Could not load tracklist (did you run migrations?): ${e instanceof Error ? e.message : String(e)}`);
+		console.log(
+			`⚠ Could not load tracklist (did you run migrations?): ${e instanceof Error ? e.message : String(e)}`
+		);
 	}
 
 	console.log(`\nSelected: ${movie.title}`);
@@ -402,7 +416,7 @@ async function bulkImportMissingTracklists() {
 	console.clear();
 	console.log('📥 Bulk import missing tracklists\n');
 	console.log('This will scan all movies and import from YouTube for any movie with 0 tracks.');
-	console.log('Best-effort: unmapped tracks are skipped; failures won\'t stop the run.\n');
+	console.log("Best-effort: unmapped tracks are skipped; failures won't stop the run.\n");
 
 	const confirmed = await prompts.confirm({
 		message: 'Continue?',
@@ -549,7 +563,10 @@ async function addMovie() {
 				blurhash = await generateBlurhash(thumbnail);
 				console.log('✓ Blurhash generated');
 			} catch (error) {
-				console.warn('⚠ Failed to generate blurhash:', error instanceof Error ? error.message : String(error));
+				console.warn(
+					'⚠ Failed to generate blurhash:',
+					error instanceof Error ? error.message : String(error)
+				);
 			}
 		}
 	}
@@ -616,7 +633,9 @@ async function addMovie() {
 			console.error('\n💡 Database sequence issue detected!');
 			console.error('   The ID sequence is out of sync with your data.');
 			console.error('   Run this SQL command in Supabase to fix it:\n');
-			console.error('   SELECT setval(\'media_items_id_seq\', (SELECT MAX(id) FROM media_items) + 1);');
+			console.error(
+				"   SELECT setval('media_items_id_seq', (SELECT MAX(id) FROM media_items) + 1);"
+			);
 			console.error('\n   This will set the sequence to continue after the highest existing ID.');
 		}
 	} else if (data) {
@@ -673,7 +692,10 @@ async function addSeries() {
 				blurhash = await generateBlurhash(thumbnail);
 				console.log('✓ Blurhash generated');
 			} catch (error) {
-				console.warn('⚠ Failed to generate blurhash:', error instanceof Error ? error.message : String(error));
+				console.warn(
+					'⚠ Failed to generate blurhash:',
+					error instanceof Error ? error.message : String(error)
+				);
 			}
 		}
 	}
@@ -733,11 +755,16 @@ async function addSeries() {
 
 	if (seriesError) {
 		console.error('❌ Error adding series:', seriesError.message);
-		if (seriesError.message.includes('duplicate key') || seriesError.message.includes('media_items_pkey')) {
+		if (
+			seriesError.message.includes('duplicate key') ||
+			seriesError.message.includes('media_items_pkey')
+		) {
 			console.error('\n💡 Database sequence issue detected!');
 			console.error('   The ID sequence is out of sync with your data.');
 			console.error('   Run this SQL command in Supabase to fix it:\n');
-			console.error('   SELECT setval(\'media_items_id_seq\', (SELECT MAX(id) FROM media_items) + 1);');
+			console.error(
+				"   SELECT setval('media_items_id_seq', (SELECT MAX(id) FROM media_items) + 1);"
+			);
 			console.error('\n   This will set the sequence to continue after the highest existing ID.');
 		}
 		return;
@@ -752,7 +779,7 @@ async function addSeries() {
 		const seasons = [];
 		for (let i = 1; i <= numSeasons; i++) {
 			console.log(`\n📋 Season ${i}:`);
-			
+
 			const playlistId = await prompts.input({
 				message: `YouTube Playlist ID:`
 			});
@@ -775,7 +802,7 @@ async function addSeries() {
 			console.error('❌ Error adding seasons:', seasonsError.message);
 		} else {
 			console.log(`✅ Added ${numSeasons} season(s)`);
-			
+
 			// Ask if they want to sync episodes now
 			const syncNow = await prompts.confirm({
 				message: 'Sync episodes from YouTube playlists now?',
@@ -827,14 +854,16 @@ async function refreshSeriesEpisodes() {
 	// Fetch all series with their seasons
 	const { data: seriesList, error: fetchError } = await supabase
 		.from('media_items')
-		.select(`
+		.select(
+			`
 			id,
 			title,
 			slug,
 			series_seasons (
 				playlist_id
 			)
-		`)
+		`
+		)
 		.eq('type', 'series')
 		.order('title');
 
@@ -868,7 +897,7 @@ async function refreshSeriesEpisodes() {
 
 	console.log('\n🔄 Syncing episodes...\n');
 	const result = await syncAllSeriesEpisodes(supabase, seriesId);
-	
+
 	console.log(`\n✅ Sync complete!`);
 	console.log(`   Added: ${result.totalAdded} episodes`);
 	console.log(`   Updated: ${result.totalUpdated} episodes`);
@@ -944,7 +973,7 @@ async function refreshSeasonEpisodes() {
 
 	console.log('\n🔄 Syncing episodes...\n');
 	const result = await syncPlaylistEpisodes(supabase, season.id, season.playlist_id);
-	
+
 	console.log(`\n✅ Sync complete!`);
 	console.log(`   Added: ${result.added} episodes`);
 	console.log(`   Updated: ${result.updated} episodes`);
@@ -968,13 +997,15 @@ async function refreshAllEpisodes() {
 	// Fetch all series with their seasons
 	const { data: seriesList, error: fetchError } = await supabase
 		.from('media_items')
-		.select(`
+		.select(
+			`
 			id,
 			title,
 			series_seasons (
 				playlist_id
 			)
-		`)
+		`
+		)
 		.eq('type', 'series')
 		.order('title');
 
@@ -984,7 +1015,7 @@ async function refreshAllEpisodes() {
 	}
 
 	// Filter to only series that have at least one season with a playlist_id
-	const seriesWithPlaylists = seriesList.filter((series: any) => 
+	const seriesWithPlaylists = seriesList.filter((series: any) =>
 		series.series_seasons?.some((season: any) => season.playlist_id)
 	);
 
@@ -994,7 +1025,9 @@ async function refreshAllEpisodes() {
 	}
 
 	console.log(`\n🔄 Refreshing ${seriesWithPlaylists.length} series with YouTube playlists...\n`);
-	console.log(`   (Skipping ${seriesList.length - seriesWithPlaylists.length} series without playlists)\n`);
+	console.log(
+		`   (Skipping ${seriesList.length - seriesWithPlaylists.length} series without playlists)\n`
+	);
 
 	let totalAdded = 0;
 	let totalUpdated = 0;
@@ -1102,17 +1135,17 @@ async function manageEpisodes() {
 
 async function addEpisodeManually(seriesId: number, seasonId: number, seasonNumber: number) {
 	let addAnother = true;
-	
+
 	while (addAnother) {
 		console.log('\n➕ Add Episode Manually\n');
-		
+
 		// Get the series slug for auto-generating thumbnail
 		const { data: series } = await supabase
 			.from('media_items')
 			.select('slug')
 			.eq('id', seriesId)
 			.single();
-		
+
 		if (!series) {
 			console.log('❌ Series not found');
 			return;
@@ -1125,14 +1158,14 @@ async function addEpisodeManually(seriesId: number, seasonId: number, seasonNumb
 			.eq('season_id', seasonId)
 			.order('episode_number', { ascending: false })
 			.limit(1);
-		
-		const nextEpisodeNumber = existingEpisodes && existingEpisodes.length > 0 
-			? (existingEpisodes[0].episode_number || 0) + 1 
-			: 1;
-		
-		const previousDuration = existingEpisodes && existingEpisodes.length > 0
-			? existingEpisodes[0].duration
-			: null;
+
+		const nextEpisodeNumber =
+			existingEpisodes && existingEpisodes.length > 0
+				? (existingEpisodes[0].episode_number || 0) + 1
+				: 1;
+
+		const previousDuration =
+			existingEpisodes && existingEpisodes.length > 0 ? existingEpisodes[0].duration : null;
 
 		console.log(`Series: ${series.slug}`);
 		console.log(`Season: ${seasonNumber}`);
@@ -1143,14 +1176,14 @@ async function addEpisodeManually(seriesId: number, seasonId: number, seasonNumb
 			default: true
 		});
 
-		const episodeNumber = useAutoEpisodeNumber 
-			? nextEpisodeNumber 
+		const episodeNumber = useAutoEpisodeNumber
+			? nextEpisodeNumber
 			: await prompts.number({
-				message: 'Episode number:',
-				min: 1,
-				default: nextEpisodeNumber,
-				required: true
-			});
+					message: 'Episode number:',
+					min: 1,
+					default: nextEpisodeNumber,
+					required: true
+				});
 
 		const title = await prompts.input({
 			message: 'Episode title:',
@@ -1163,18 +1196,18 @@ async function addEpisodeManually(seriesId: number, seasonId: number, seasonNumb
 
 		// Auto-generate thumbnail path
 		const autoThumbnail = `/images/thumbnails/${series.slug}/s${String(seasonNumber).padStart(2, '0')}e${String(episodeNumber).padStart(2, '0')}.webp`;
-		
+
 		const useAutoThumbnail = await prompts.confirm({
 			message: `Use auto-generated thumbnail path?\n  ${autoThumbnail}`,
 			default: true
 		});
 
-		const thumbnail = useAutoThumbnail 
-			? autoThumbnail 
+		const thumbnail = useAutoThumbnail
+			? autoThumbnail
 			: await prompts.input({
-				message: 'Thumbnail URL:',
-				default: autoThumbnail
-			});
+					message: 'Thumbnail URL:',
+					default: autoThumbnail
+				});
 
 		// Use previous episode's duration as default
 		const duration = await prompts.input({
@@ -1235,7 +1268,7 @@ async function editEpisode(seriesId: number, seasonId: number, seasonNumber: num
 		.select('slug')
 		.eq('id', seriesId)
 		.single();
-	
+
 	if (!series) {
 		console.log('❌ Series not found');
 		return;
@@ -1394,7 +1427,10 @@ async function deleteEpisode(seasonId: number) {
 		return;
 	}
 
-	const { error: deleteError } = await supabase.from('series_episodes').delete().eq('id', episodeId);
+	const { error: deleteError } = await supabase
+		.from('series_episodes')
+		.delete()
+		.eq('id', episodeId);
 
 	if (deleteError) {
 		console.error('❌ Error deleting:', deleteError.message);
@@ -1538,7 +1574,7 @@ async function editContent() {
 	});
 	if (thumbnail !== (item.thumbnail || '')) {
 		updates.thumbnail = thumbnail || null;
-		
+
 		// Ask if they want to regenerate blurhash for the new thumbnail
 		if (thumbnail) {
 			const shouldRegenerateBlurhash = await prompts.confirm({
@@ -1552,7 +1588,10 @@ async function editContent() {
 					updates.blurhash = await generateBlurhash(thumbnail);
 					console.log('✓ Blurhash generated');
 				} catch (error) {
-					console.warn('⚠ Failed to generate blurhash:', error instanceof Error ? error.message : String(error));
+					console.warn(
+						'⚠ Failed to generate blurhash:',
+						error instanceof Error ? error.message : String(error)
+					);
 				}
 			}
 		}
@@ -1637,20 +1676,24 @@ async function editFacets() {
 
 	const { data: items, error } = await supabase
 		.from('media_items')
-		.select('id, title, slug, type, facet_type, facet_mood, facet_movement, facet_environment, facet_film_style, facet_theme')
+		.select(
+			'id, title, slug, type, facet_type, facet_mood, facet_movement, facet_environment, facet_film_style, facet_theme'
+		)
 		.order('title')
-		.returns<Array<{
-			id: number;
-			title: string;
-			slug: string;
-			type: 'movie' | 'series';
-			facet_type: string | null;
-			facet_mood: string[] | null;
-			facet_movement: string[] | null;
-			facet_environment: string | null;
-			facet_film_style: string | null;
-			facet_theme: string | null;
-		}>>();
+		.returns<
+			Array<{
+				id: number;
+				title: string;
+				slug: string;
+				type: 'movie' | 'series';
+				facet_type: string | null;
+				facet_mood: string[] | null;
+				facet_movement: string[] | null;
+				facet_environment: string | null;
+				facet_film_style: string | null;
+				facet_theme: string | null;
+			}>
+		>();
 
 	if (error || !items || items.length === 0) {
 		console.log('❌ No content found');
@@ -1664,16 +1707,17 @@ async function editFacets() {
 			{ name: '---', value: 'separator', disabled: true },
 			...items.map((item) => {
 				// Check if any facets are set
-				const hasFacets = item.facet_type || 
-					(item.facet_mood && item.facet_mood.length > 0) || 
-					(item.facet_movement && item.facet_movement.length > 0) || 
-					item.facet_environment || 
-					item.facet_film_style || 
+				const hasFacets =
+					item.facet_type ||
+					(item.facet_mood && item.facet_mood.length > 0) ||
+					(item.facet_movement && item.facet_movement.length > 0) ||
+					item.facet_environment ||
+					item.facet_film_style ||
 					item.facet_theme;
-				
+
 				const facetIndicator = hasFacets ? '[x]' : '[ ]';
 				const typeIcon = item.type === 'movie' ? 'MOV' : 'SER';
-				
+
 				return {
 					name: `${facetIndicator} ${typeIcon} ${item.title} (${item.slug})`,
 					value: String(item.id)
@@ -1681,7 +1725,7 @@ async function editFacets() {
 			})
 		]
 	});
-	
+
 	if (itemId === 'back') {
 		return; // User selected back
 	}
@@ -1713,11 +1757,31 @@ async function editFacets() {
 	const facetMood = await prompts.checkbox({
 		message: 'Mood / Vibe (select all that apply):',
 		choices: [
-			{ name: 'Energetic ⚡ - High-energy vibe with intense action', value: 'energetic', checked: item.facet_mood?.includes('energetic') },
-			{ name: 'Chill 😌 - Relaxed and laid-back atmosphere', value: 'chill', checked: item.facet_mood?.includes('chill') },
-			{ name: 'Gritty 🔥 - Raw, rough, and unpolished street vibe', value: 'gritty', checked: item.facet_mood?.includes('gritty') },
-			{ name: 'Wholesome 💚 - Positive, uplifting, and feel-good content', value: 'wholesome', checked: item.facet_mood?.includes('wholesome') },
-			{ name: 'Artistic 🎨 - Creative expression and aesthetic focus', value: 'artistic', checked: item.facet_mood?.includes('artistic') }
+			{
+				name: 'Energetic ⚡ - High-energy vibe with intense action',
+				value: 'energetic',
+				checked: item.facet_mood?.includes('energetic')
+			},
+			{
+				name: 'Chill 😌 - Relaxed and laid-back atmosphere',
+				value: 'chill',
+				checked: item.facet_mood?.includes('chill')
+			},
+			{
+				name: 'Gritty 🔥 - Raw, rough, and unpolished street vibe',
+				value: 'gritty',
+				checked: item.facet_mood?.includes('gritty')
+			},
+			{
+				name: 'Wholesome 💚 - Positive, uplifting, and feel-good content',
+				value: 'wholesome',
+				checked: item.facet_mood?.includes('wholesome')
+			},
+			{
+				name: 'Artistic 🎨 - Creative expression and aesthetic focus',
+				value: 'artistic',
+				checked: item.facet_mood?.includes('artistic')
+			}
 		]
 	});
 
@@ -1725,13 +1789,37 @@ async function editFacets() {
 	const facetMovement = await prompts.checkbox({
 		message: 'Movement Style (select all that apply):',
 		choices: [
-			{ name: 'Flow (continuous lines)', value: 'flow', checked: item.facet_movement?.includes('flow') },
-			{ name: 'Big Sends (roofs, fear jumps)', value: 'big-sends', checked: item.facet_movement?.includes('big-sends') },
-			{ name: 'Style (heavy acrobatic lines)', value: 'style', checked: item.facet_movement?.includes('style') },
-			{ name: 'Technical (precise, quirky)', value: 'technical', checked: item.facet_movement?.includes('technical') },
+			{
+				name: 'Flow (continuous lines)',
+				value: 'flow',
+				checked: item.facet_movement?.includes('flow')
+			},
+			{
+				name: 'Big Sends (roofs, fear jumps)',
+				value: 'big-sends',
+				checked: item.facet_movement?.includes('big-sends')
+			},
+			{
+				name: 'Style (heavy acrobatic lines)',
+				value: 'style',
+				checked: item.facet_movement?.includes('style')
+			},
+			{
+				name: 'Technical (precise, quirky)',
+				value: 'technical',
+				checked: item.facet_movement?.includes('technical')
+			},
 			{ name: 'Speed / Chase', value: 'speed', checked: item.facet_movement?.includes('speed') },
-			{ name: 'Oldskool (parkour basics)', value: 'oldskool', checked: item.facet_movement?.includes('oldskool') },
-			{ name: 'Contemporary (dance)', value: 'contemporary', checked: item.facet_movement?.includes('contemporary') }
+			{
+				name: 'Oldskool (parkour basics)',
+				value: 'oldskool',
+				checked: item.facet_movement?.includes('oldskool')
+			},
+			{
+				name: 'Contemporary (dance)',
+				value: 'contemporary',
+				checked: item.facet_movement?.includes('contemporary')
+			}
 		]
 	});
 
@@ -1912,7 +2000,7 @@ async function retryBlurhashGeneration() {
 	for (const item of itemsToProcess) {
 		try {
 			console.log(`Processing: ${item.title}`);
-			
+
 			if (!item.thumbnail) {
 				console.log('  ⚠️  Skipped (no thumbnail URL)');
 				failCount++;
@@ -1920,12 +2008,12 @@ async function retryBlurhashGeneration() {
 			}
 
 			const blurhash = await generateBlurhash(item.thumbnail);
-			
+
 			const { error: updateError } = await supabase
 				.from('media_items')
-				.update({ 
+				.update({
 					blurhash,
-					updated_at: new Date().toISOString() 
+					updated_at: new Date().toISOString()
 				})
 				.eq('id', item.id);
 
@@ -1957,12 +2045,14 @@ async function deleteContent() {
 		.from('media_items')
 		.select('id, title, slug, type')
 		.order('title')
-		.returns<Array<{
-			id: number;
-			title: string;
-			slug: string;
-			type: 'movie' | 'series';
-		}>>();
+		.returns<
+			Array<{
+				id: number;
+				title: string;
+				slug: string;
+				type: 'movie' | 'series';
+			}>
+		>();
 
 	if (error || !items || items.length === 0) {
 		console.log('❌ No content found');

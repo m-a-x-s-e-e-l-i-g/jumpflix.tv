@@ -19,65 +19,65 @@
 	"tv_noResults": "No results. Try adjusting filters.",
 	"tv_showPaid": "Paid",
 	"tv_showWatched": "watched",
-	"tv_close": "Close"
-	,"tv_exitConfirm": "Press back again to exit"
-	,"tv_noPlayer": "No player available"
-	,"tv_sort_random": "Sort: Default"
-	,"tv_sort_titleAsc": "Title A–Z"
-	,"tv_sort_yearDesc": "Year (newest)"
-	,"tv_sort_yearAsc": "Year (oldest)"
-	,"tv_sort_durationAsc": "Duration (short → long)"
-	,"tv_sort_durationDesc": "Duration (long → short)"
-	,"tv_badge_movie": "MOVIE"
-	,"tv_badge_playlist": "PLAYLIST"
-	,"tv_creators": "Creators"
-	,"tv_starring": "Starring"
-	,"tv_videos": "Videos"
-	,"tv_type": "Type"
-	,"tv_videoCountSuffix": "videos"
-	,"tv_provider": "Provider"
-	,"tv_showFewer": "Show fewer"
-	,"tv_showAll": "Show all"
-	,"settings": "Settings"
-	,"settings_language": "Language"
-	,"settings_open": "Open settings"
-	,"settings_credits": "Credits"
-	,"settings_links": "Links"
-	,"settings_visualMode": "Visual profile"
-	,"settings_visualStunning": "Stunning"
-	,"settings_visualPerformance": "Performance"
-	,"settings_visualStunningDescription": "Full effects and cinematic animations."
-	,"settings_visualPerformanceDescription": "Minimize effects for smoother browsing."
-	,"settings_languageChanged": "Language changed to {language}"
-	,"error_backHome": "Back to JUMPFLIX"
-	,"tv_episodes": "Episodes"
-	,"tv_playSelectedEpisode": "Play selected episode"
-	,"settings_install": "Install"
-	,"settings_install_cta": "Install JUMPFLIX"
-	,"install_installed": "App installed"
-	,"install_hint": "Use your browser menu to “Add to Home Screen”"
-	,"install_dismissed": "Install dismissed"
-	,"install_thanks": "Thanks! Installing…"
-	,"install_error": "Unable to start install"
-	,"install_not_available": "Install isn't available yet. Try reloading once."
-	,"install_dev": "Install prompts only appear on a production build with a registered service worker."
-	,"submit_film_dialog_title": "Submit a Film"
-	,"submit_film_dialog_description": "Share a parkour film, documentary, or series you think belongs on JUMPFLIX."
-	,"submit_film_field_label": "Title or URL"
-	,"submit_film_placeholder": "e.g. Roof Culture Asia or https://youtube.com/watch?v=..."
-	,"submit_film_cancel": "Cancel"
-	,"submit_film_submit": "Submit"
-	,"submit_film_sending": "Sending…"
-	,"submit_film_error_generic": "Something went wrong."
-	,"submit_film_error_network": "Network error. Please try again."
-	,"submit_film_close": "Close dialog"
-	,"submit_film_success": "Thanks for the submission!"
-	,"tv_markWatched": "Mark as watched"
-	,"tv_markUnwatched": "Mark as unwatched"
-	,"help_buttonLabel": "Show quick tips"
-	,"help_dialogLabel": "JUMPFLIX quick tips"
-	,"help_title": "Quick tips"
-	,"help_close": "Close tips"
-	,"help_tip_slowMotion": "Hold spacebar or longpress in the player for slow motion."
-	,"help_tip_login": "Sign in to track progress"
+	"tv_close": "Close",
+	"tv_exitConfirm": "Press back again to exit",
+	"tv_noPlayer": "No player available",
+	"tv_sort_random": "Sort: Default",
+	"tv_sort_titleAsc": "Title A–Z",
+	"tv_sort_yearDesc": "Year (newest)",
+	"tv_sort_yearAsc": "Year (oldest)",
+	"tv_sort_durationAsc": "Duration (short → long)",
+	"tv_sort_durationDesc": "Duration (long → short)",
+	"tv_badge_movie": "MOVIE",
+	"tv_badge_playlist": "PLAYLIST",
+	"tv_creators": "Creators",
+	"tv_starring": "Starring",
+	"tv_videos": "Videos",
+	"tv_type": "Type",
+	"tv_videoCountSuffix": "videos",
+	"tv_provider": "Provider",
+	"tv_showFewer": "Show fewer",
+	"tv_showAll": "Show all",
+	"settings": "Settings",
+	"settings_language": "Language",
+	"settings_open": "Open settings",
+	"settings_credits": "Credits",
+	"settings_links": "Links",
+	"settings_visualMode": "Visual profile",
+	"settings_visualStunning": "Stunning",
+	"settings_visualPerformance": "Performance",
+	"settings_visualStunningDescription": "Full effects and cinematic animations.",
+	"settings_visualPerformanceDescription": "Minimize effects for smoother browsing.",
+	"settings_languageChanged": "Language changed to {language}",
+	"error_backHome": "Back to JUMPFLIX",
+	"tv_episodes": "Episodes",
+	"tv_playSelectedEpisode": "Play selected episode",
+	"settings_install": "Install",
+	"settings_install_cta": "Install JUMPFLIX",
+	"install_installed": "App installed",
+	"install_hint": "Use your browser menu to “Add to Home Screen”",
+	"install_dismissed": "Install dismissed",
+	"install_thanks": "Thanks! Installing…",
+	"install_error": "Unable to start install",
+	"install_not_available": "Install isn't available yet. Try reloading once.",
+	"install_dev": "Install prompts only appear on a production build with a registered service worker.",
+	"submit_film_dialog_title": "Submit a Film",
+	"submit_film_dialog_description": "Share a parkour film, documentary, or series you think belongs on JUMPFLIX.",
+	"submit_film_field_label": "Title or URL",
+	"submit_film_placeholder": "e.g. Roof Culture Asia or https://youtube.com/watch?v=...",
+	"submit_film_cancel": "Cancel",
+	"submit_film_submit": "Submit",
+	"submit_film_sending": "Sending…",
+	"submit_film_error_generic": "Something went wrong.",
+	"submit_film_error_network": "Network error. Please try again.",
+	"submit_film_close": "Close dialog",
+	"submit_film_success": "Thanks for the submission!",
+	"tv_markWatched": "Mark as watched",
+	"tv_markUnwatched": "Mark as unwatched",
+	"help_buttonLabel": "Show quick tips",
+	"help_dialogLabel": "JUMPFLIX quick tips",
+	"help_title": "Quick tips",
+	"help_close": "Close tips",
+	"help_tip_slowMotion": "Hold spacebar or longpress in the player for slow motion.",
+	"help_tip_login": "Sign in to track progress"
 }

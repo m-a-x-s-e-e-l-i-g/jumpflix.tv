@@ -88,13 +88,25 @@ export async function applyMediaPatch(
 	const remove = patch?.remove && typeof patch.remove === 'object' ? patch.remove : {};
 
 	if ('creators' in add || 'creators' in remove) {
-		next.creators = applyArrayOps((media as any).creators, (add as any).creators, (remove as any).creators);
+		next.creators = applyArrayOps(
+			(media as any).creators,
+			(add as any).creators,
+			(remove as any).creators
+		);
 	}
 	if ('starring' in add || 'starring' in remove) {
-		next.starring = applyArrayOps((media as any).starring, (add as any).starring, (remove as any).starring);
+		next.starring = applyArrayOps(
+			(media as any).starring,
+			(add as any).starring,
+			(remove as any).starring
+		);
 	}
 	if ('facet_mood' in add || 'facet_mood' in remove) {
-		next.facet_mood = applyArrayOps((media as any).facet_mood, (add as any).facet_mood, (remove as any).facet_mood);
+		next.facet_mood = applyArrayOps(
+			(media as any).facet_mood,
+			(add as any).facet_mood,
+			(remove as any).facet_mood
+		);
 	}
 	if ('facet_movement' in add || 'facet_movement' in remove) {
 		next.facet_movement = applyArrayOps(
@@ -105,7 +117,10 @@ export async function applyMediaPatch(
 	}
 
 	if (Object.keys(next).length) {
-		const { error: updateError } = await supabase.from('media_items').update(next).eq('id', mediaId);
+		const { error: updateError } = await supabase
+			.from('media_items')
+			.update(next)
+			.eq('id', mediaId);
 		if (updateError) throw new Error(updateError.message);
 	}
 
@@ -125,7 +140,9 @@ export async function applyMediaPatch(
 		for (const t of tracks) {
 			const action = t?.action === 'remove' ? 'remove' : 'add';
 			const spotifyUrl = String(t?.spotifyUrl ?? t?.spotify_url ?? '').trim();
-			const spotifyTrackId = extractSpotifyTrackId(String(t?.spotifyTrackId ?? t?.spotify_track_id ?? spotifyUrl));
+			const spotifyTrackId = extractSpotifyTrackId(
+				String(t?.spotifyTrackId ?? t?.spotify_track_id ?? spotifyUrl)
+			);
 			if (!spotifyTrackId) throw new Error('Missing Spotify track id/url in track patch');
 
 			if (action === 'remove') {
@@ -149,29 +166,34 @@ export async function applyMediaPatch(
 			const title = String(t?.title ?? '').trim();
 			const artist = String(t?.artist ?? '').trim();
 			if (!title || !artist) {
-				throw new Error('Track add requires title and artist (edit admin payload before approving)');
+				throw new Error(
+					'Track add requires title and artist (edit admin payload before approving)'
+				);
 			}
 
-			const startAtSecondsRaw = t?.startAtSeconds ?? t?.start_at_seconds ?? t?.startOffsetSeconds ?? t?.start_offset_seconds;
+			const startAtSecondsRaw =
+				t?.startAtSeconds ??
+				t?.start_at_seconds ??
+				t?.startOffsetSeconds ??
+				t?.start_offset_seconds;
 			const startAtSeconds = Number.isFinite(Number(startAtSecondsRaw))
 				? Math.max(0, Math.floor(Number(startAtSecondsRaw)))
 				: null;
 			const startTimecode = String(t?.startTimecode ?? t?.start_timecode ?? '').trim() || null;
 			const parsedFromTc = startTimecode ? parseTimecodeToSeconds(startTimecode) : null;
 			const effectiveOffset = startAtSeconds ?? parsedFromTc;
-			if (effectiveOffset === null) throw new Error('Track add requires start offset seconds or a valid timecode');
+			if (effectiveOffset === null)
+				throw new Error('Track add requires start offset seconds or a valid timecode');
 
-			const { error: upsertSongErr } = await supabase
-				.from('songs')
-				.upsert(
-					{
-						spotify_track_id: spotifyTrackId,
-						spotify_url: spotifyUrl || `https://open.spotify.com/track/${spotifyTrackId}`,
-						title,
-						artist
-					} as any,
-					{ onConflict: 'spotify_track_id' }
-				);
+			const { error: upsertSongErr } = await supabase.from('songs').upsert(
+				{
+					spotify_track_id: spotifyTrackId,
+					spotify_url: spotifyUrl || `https://open.spotify.com/track/${spotifyTrackId}`,
+					title,
+					artist
+				} as any,
+				{ onConflict: 'spotify_track_id' }
+			);
 			if (upsertSongErr) throw new Error(upsertSongErr.message);
 
 			const { data: song, error: songErr } = await supabase
@@ -182,18 +204,16 @@ export async function applyMediaPatch(
 			if (songErr) throw new Error(songErr.message);
 			if (!song?.id) throw new Error('Failed to resolve song id');
 
-			const { error: upsertVideoSongErr } = await supabase
-				.from('video_songs')
-				.upsert(
-					{
-						video_id: mediaId,
-						song_id: song.id,
-						start_offset_seconds: effectiveOffset,
-						start_timecode: startTimecode,
-						source: 'manual'
-					} as any,
-					{ onConflict: 'video_id,song_id' }
-				);
+			const { error: upsertVideoSongErr } = await supabase.from('video_songs').upsert(
+				{
+					video_id: mediaId,
+					song_id: song.id,
+					start_offset_seconds: effectiveOffset,
+					start_timecode: startTimecode,
+					source: 'manual'
+				} as any,
+				{ onConflict: 'video_id,song_id' }
+			);
 			if (upsertVideoSongErr) throw new Error(upsertVideoSongErr.message);
 		}
 	}
@@ -215,7 +235,9 @@ export async function applyNewSeason(
 	if (season?.playlist_id !== undefined) row.playlist_id = season.playlist_id || null;
 	if (season?.custom_name !== undefined) row.custom_name = season.custom_name || null;
 
-	const { error } = await supabase.from('series_seasons').upsert(row, { onConflict: 'series_id,season_number' });
+	const { error } = await supabase
+		.from('series_seasons')
+		.upsert(row, { onConflict: 'series_id,season_number' });
 	if (error) throw new Error(error.message);
 }
 
@@ -227,7 +249,8 @@ export async function applyNewEpisode(
 	const seasonNumber = Number(episode?.season_number);
 	const episodeNumber = Number(episode?.episode_number);
 	if (!Number.isFinite(seasonNumber) || seasonNumber < 1) throw new Error('Invalid season_number');
-	if (!Number.isFinite(episodeNumber) || episodeNumber < 1) throw new Error('Invalid episode_number');
+	if (!Number.isFinite(episodeNumber) || episodeNumber < 1)
+		throw new Error('Invalid episode_number');
 
 	const sn = Math.floor(seasonNumber);
 	const en = Math.floor(episodeNumber);
@@ -247,7 +270,11 @@ export async function applyNewEpisode(
 	if (!seasonId) {
 		const { data, error } = await supabase
 			.from('series_seasons')
-			.insert({ series_id: seriesId, season_number: sn, playlist_id: episode?.playlist_id ?? null } as any)
+			.insert({
+				series_id: seriesId,
+				season_number: sn,
+				playlist_id: episode?.playlist_id ?? null
+			} as any)
 			.select('id')
 			.maybeSingle();
 		if (error) throw new Error(error.message);
@@ -267,6 +294,8 @@ export async function applyNewEpisode(
 	if (episode?.thumbnail !== undefined) row.thumbnail = episode.thumbnail || null;
 	if (episode?.duration !== undefined) row.duration = episode.duration || null;
 
-	const { error } = await supabase.from('series_episodes').upsert(row, { onConflict: 'season_id,episode_number' });
+	const { error } = await supabase
+		.from('series_episodes')
+		.upsert(row, { onConflict: 'season_id,episode_number' });
 	if (error) throw new Error(error.message);
 }

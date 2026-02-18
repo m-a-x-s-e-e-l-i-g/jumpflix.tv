@@ -21,10 +21,13 @@ export default defineConfig(({ mode }) => ({
 			'lit-html': 'lit-html'
 		}
 	},
-	define: mode === 'production' ? {} : {
-		// Suppress Lit dev mode warnings in development
-		'globalThis.litProdMode': 'true'
-	},
+	define:
+		mode === 'production'
+			? {}
+			: {
+					// Suppress Lit dev mode warnings in development
+					'globalThis.litProdMode': 'true'
+				},
 	build: {
 		rollupOptions: {
 			output: {

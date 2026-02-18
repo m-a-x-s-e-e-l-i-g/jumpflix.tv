@@ -82,13 +82,15 @@
 		};
 	}>();
 
-	const yearsCoveredLabel: string = $derived((() => {
-		const min = data.yearsCovered?.min;
-		const max = data.yearsCovered?.max;
-		if (min == null || max == null) return '—';
-		if (min === max) return String(min);
-		return `${min} – ${max}`;
-	})());
+	const yearsCoveredLabel: string = $derived(
+		(() => {
+			const min = data.yearsCovered?.min;
+			const max = data.yearsCovered?.max;
+			if (min == null || max == null) return '—';
+			if (min === max) return String(min);
+			return `${min} – ${max}`;
+		})()
+	);
 
 	const formatNumber = (value: number) => new Intl.NumberFormat().format(value);
 
@@ -101,10 +103,16 @@
 		}))
 	);
 
-	const activityYMax: number = $derived(Math.max(1, ...activityPoints.map((point) => point.y ?? 0)));
+	const activityYMax: number = $derived(
+		Math.max(1, ...activityPoints.map((point) => point.y ?? 0))
+	);
 	const activityTotal: number = $derived(activityPoints.reduce((acc, p) => acc + (p.y ?? 0), 0));
-	const activityAvg: number = $derived(activityPoints.length ? activityTotal / activityPoints.length : 0);
-	const activityPeak: number = $derived(Math.max(0, ...activityPoints.map((point) => point.y ?? 0)));
+	const activityAvg: number = $derived(
+		activityPoints.length ? activityTotal / activityPoints.length : 0
+	);
+	const activityPeak: number = $derived(
+		Math.max(0, ...activityPoints.map((point) => point.y ?? 0))
+	);
 	const activityYTicks: { t: number; value: number; y: number }[] = $derived(
 		[0, 0.25, 0.5, 0.75, 1].map((t) => {
 			const value = Math.round(activityYMax * t);
@@ -114,25 +122,25 @@
 	);
 	const activityStartLabel: string = $derived(activityPoints[0]?.x ?? '');
 	const activityEndLabel: string = $derived(activityPoints[activityPoints.length - 1]?.x ?? '');
-	const activityTickIndexes: number[] = $derived((() => {
-		const n = activityPoints.length;
-		if (n <= 1) return [0];
-		const indexes = new Set<number>();
-		indexes.add(0);
-		indexes.add(n - 1);
-		indexes.add(Math.round((n - 1) * 0.33));
-		indexes.add(Math.round((n - 1) * 0.66));
-		return Array.from(indexes).sort((a, b) => a - b);
-	})());
+	const activityTickIndexes: number[] = $derived(
+		(() => {
+			const n = activityPoints.length;
+			if (n <= 1) return [0];
+			const indexes = new Set<number>();
+			indexes.add(0);
+			indexes.add(n - 1);
+			indexes.add(Math.round((n - 1) * 0.33));
+			indexes.add(Math.round((n - 1) * 0.66));
+			return Array.from(indexes).sort((a, b) => a - b);
+		})()
+	);
 
 	const activityPathD: string = $derived(
 		'M ' +
 			activityPoints
 				.map((point, index) => {
 					const x =
-						activityPoints.length === 1
-							? 300
-							: (index / (activityPoints.length - 1)) * 560 + 20;
+						activityPoints.length === 1 ? 300 : (index / (activityPoints.length - 1)) * 560 + 20;
 					const y = 190 - ((point.y ?? 0) / activityYMax) * 150;
 					return `${x} ${y}`;
 				})
@@ -149,7 +157,7 @@
 </svelte:head>
 
 <div class="mx-auto w-full max-w-6xl p-4 md:p-8">
-	<div class="mt-[50px] mb-6 rounded-3xl jf-surface p-6 md:p-8">
+	<div class="jf-surface mt-[50px] mb-6 rounded-3xl p-6 md:p-8">
 		<a
 			href="/"
 			class="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
@@ -169,40 +177,46 @@
 	</div>
 
 	<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
-		<div class="rounded-2xl jf-surface-soft p-4">
+		<div class="jf-surface-soft rounded-2xl p-4">
 			<div class="text-xs text-muted-foreground">Movies</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.catalog.movies ?? 0)}</div>
 		</div>
-		<div class="rounded-2xl jf-surface-soft p-4">
+		<div class="jf-surface-soft rounded-2xl p-4">
 			<div class="text-xs text-muted-foreground">Series</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.catalog.series ?? 0)}</div>
 		</div>
-		<div class="rounded-2xl jf-surface-soft p-4">
+		<div class="jf-surface-soft rounded-2xl p-4">
 			<div class="text-xs text-muted-foreground">Episodes</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.catalog.episodes ?? 0)}</div>
 		</div>
-		<div class="rounded-2xl jf-surface-soft p-4">
+		<div class="jf-surface-soft rounded-2xl p-4">
 			<div class="text-xs text-muted-foreground">Tracks</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.music.tracks ?? 0)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">
 				{formatNumber(data.music.trackLinks ?? 0)} video track links
 			</div>
 		</div>
-		<div class="rounded-2xl jf-surface-soft p-4">
+		<div class="jf-surface-soft rounded-2xl p-4">
 			<div class="text-xs text-muted-foreground">Total registered users</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.overview.total_users ?? 0)}</div>
 		</div>
-		<div class="rounded-2xl jf-surface-soft p-4">
+		<div class="jf-surface-soft rounded-2xl p-4">
 			<div class="text-xs text-muted-foreground">Average rating</div>
-			<div class="mt-1 text-2xl font-semibold">{(data.overview.average_rating ?? 0).toFixed(2)}</div>
-			<div class="mt-1 text-xs text-muted-foreground">{formatNumber(data.overview.ratings_count ?? 0)} ratings</div>
+			<div class="mt-1 text-2xl font-semibold">
+				{(data.overview.average_rating ?? 0).toFixed(2)}
+			</div>
+			<div class="mt-1 text-xs text-muted-foreground">
+				{formatNumber(data.overview.ratings_count ?? 0)} ratings
+			</div>
 		</div>
-		<div class="rounded-2xl jf-surface-soft p-4">
+		<div class="jf-surface-soft rounded-2xl p-4">
 			<div class="text-xs text-muted-foreground">Reviews posted</div>
-			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.overview.reviews_count ?? 0)}</div>
+			<div class="mt-1 text-2xl font-semibold">
+				{formatNumber(data.overview.reviews_count ?? 0)}
+			</div>
 			<div class="mt-1 text-xs text-muted-foreground">Across films + series</div>
 		</div>
-		<div class="rounded-2xl jf-surface-soft p-4">
+		<div class="jf-surface-soft rounded-2xl p-4">
 			<div class="text-xs text-muted-foreground">Creators</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.peopleStats.creators ?? 0)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">Unique names in credits</div>
@@ -241,20 +255,31 @@
 				<svg viewBox="0 0 600 220" class="mt-4 h-56 w-full">
 					<rect x="0" y="0" width="600" height="220" rx="16" class="fill-muted/20" />
 					{#each activityYTicks as tick (tick.t)}
-						<line x1="20" x2="580" y1={tick.y} y2={tick.y} class="stroke-muted/40" stroke-width="1" />
-						<text x="22" y={tick.y - 4} class="fill-muted-foreground" font-size="10">{tick.value}</text>
+						<line
+							x1="20"
+							x2="580"
+							y1={tick.y}
+							y2={tick.y}
+							class="stroke-muted/40"
+							stroke-width="1"
+						/>
+						<text x="22" y={tick.y - 4} class="fill-muted-foreground" font-size="10"
+							>{tick.value}</text
+						>
 					{/each}
 					{#each activityTickIndexes as idx (idx)}
 						{@const label = activityPoints[idx]?.x ?? ''}
-						{@const x = activityPoints.length === 1 ? 300 : (idx / (activityPoints.length - 1)) * 560 + 20}
+						{@const x =
+							activityPoints.length === 1 ? 300 : (idx / (activityPoints.length - 1)) * 560 + 20}
 						{#if label}
-							<text x={x} y="212" text-anchor="middle" class="fill-muted-foreground" font-size="10">
+							<text {x} y="212" text-anchor="middle" class="fill-muted-foreground" font-size="10">
 								{label}
 							</text>
 						{/if}
 					{/each}
 					{#each activityPoints as p, i (p.x)}
-						{@const x = activityPoints.length === 1 ? 300 : (i / (activityPoints.length - 1)) * 560 + 20}
+						{@const x =
+							activityPoints.length === 1 ? 300 : (i / (activityPoints.length - 1)) * 560 + 20}
 						{@const y = 190 - ((p.y ?? 0) / activityYMax) * 150}
 						<circle cx={x} cy={y} r="3" class="fill-primary" />
 					{/each}
@@ -285,7 +310,9 @@
 								style={`width: ${Math.round(((row.count ?? 0) / ratingMax) * 100)}%`}
 							></div>
 						</div>
-						<div class="text-right text-sm tabular-nums text-muted-foreground">{formatNumber(row.count ?? 0)}</div>
+						<div class="text-right text-sm text-muted-foreground tabular-nums">
+							{formatNumber(row.count ?? 0)}
+						</div>
 					</div>
 				{/each}
 			</div>
@@ -308,7 +335,9 @@
 							{#each data.facetStats.facetType as row (row.key)}
 								<div class="grid grid-cols-[1fr_4rem] items-center gap-3">
 									<div class="text-sm capitalize">{row.key}</div>
-									<div class="text-right text-sm tabular-nums text-muted-foreground">{formatNumber(row.count)}</div>
+									<div class="text-right text-sm text-muted-foreground tabular-nums">
+										{formatNumber(row.count)}
+									</div>
 								</div>
 							{/each}
 						</div>
@@ -321,7 +350,9 @@
 						{#each data.facetStats.environment as row (row.key)}
 							<div class="grid grid-cols-[1fr_4rem] items-center gap-3">
 								<div class="text-sm capitalize">{row.key}</div>
-								<div class="text-right text-sm tabular-nums text-muted-foreground">{formatNumber(row.count)}</div>
+								<div class="text-right text-sm text-muted-foreground tabular-nums">
+									{formatNumber(row.count)}
+								</div>
 							</div>
 						{/each}
 					</div>
@@ -341,7 +372,9 @@
 						{#each data.facetStats.filmStyle as row (row.key)}
 							<div class="grid grid-cols-[1fr_4rem] items-center gap-3">
 								<div class="text-sm capitalize">{row.key}</div>
-								<div class="text-right text-sm tabular-nums text-muted-foreground">{formatNumber(row.count)}</div>
+								<div class="text-right text-sm text-muted-foreground tabular-nums">
+									{formatNumber(row.count)}
+								</div>
 							</div>
 						{/each}
 					</div>
@@ -352,7 +385,9 @@
 						{#each data.facetStats.theme as row (row.key)}
 							<div class="grid grid-cols-[1fr_4rem] items-center gap-3">
 								<div class="text-sm capitalize">{row.key}</div>
-								<div class="text-right text-sm tabular-nums text-muted-foreground">{formatNumber(row.count)}</div>
+								<div class="text-right text-sm text-muted-foreground tabular-nums">
+									{formatNumber(row.count)}
+								</div>
 							</div>
 						{/each}
 					</div>
@@ -363,7 +398,9 @@
 						{#each data.facetStats.mood as row (row.key)}
 							<div class="grid grid-cols-[1fr_4rem] items-center gap-3">
 								<div class="text-sm capitalize">{row.key}</div>
-								<div class="text-right text-sm tabular-nums text-muted-foreground">{formatNumber(row.count)}</div>
+								<div class="text-right text-sm text-muted-foreground tabular-nums">
+									{formatNumber(row.count)}
+								</div>
 							</div>
 						{/each}
 					</div>

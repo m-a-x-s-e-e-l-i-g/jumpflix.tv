@@ -19,65 +19,65 @@
 	"tv_noResults": "Geen resultaten. Pas filters aan.",
 	"tv_showPaid": "Betaald",
 	"tv_showWatched": "bekeken",
-	"tv_close": "Sluiten"
-	,"tv_exitConfirm": "Druk nogmaals op terug om af te sluiten"
-	,"tv_noPlayer": "Geen speler beschikbaar"
-	,"tv_sort_random": "Sorteren: Standaard"
-	,"tv_sort_titleAsc": "Titel A–Z"
-	,"tv_sort_yearDesc": "Jaar (nieuwste)"
-	,"tv_sort_yearAsc": "Jaar (oudste)"
-	,"tv_sort_durationAsc": "Duur (kort → lang)"
-	,"tv_sort_durationDesc": "Duur (lang → kort)"
-	,"tv_badge_movie": "FILM"
-	,"tv_badge_playlist": "PLAYLIST"
-	,"tv_creators": "Makers"
-	,"tv_starring": "Met"
-	,"tv_videos": "Video's"
-	,"tv_type": "Type"
-	,"tv_videoCountSuffix": "video's"
-	,"tv_provider": "Aanbieder"
-	,"tv_showFewer": "Minder tonen"
-	,"tv_showAll": "Alles tonen"
-	,"settings": "Instellingen"
-	,"settings_language": "Taal"
-	,"settings_open": "Instellingen openen"
-	,"settings_credits": "Credits"
-	,"settings_links": "Links"
-	,"settings_visualMode": "Visuele modus"
-	,"settings_visualStunning": "Spectaculair"
-	,"settings_visualPerformance": "Prestaties"
-	,"settings_visualStunningDescription": "Alle effecten en filmische animaties."
-	,"settings_visualPerformanceDescription": "Minimale effecten voor soepel bladeren."
-    ,"settings_languageChanged": "Taal gewijzigd naar {language}"
-	,"error_backHome": "Terug naar JUMPFLIX"
-	,"tv_episodes": "Afleveringen"
-	,"tv_playSelectedEpisode": "Aflevering afspelen"
-	,"settings_install": "Installeren"
-	,"settings_install_cta": "JUMPFLIX installeren"
-	,"install_installed": "App geïnstalleerd"
-	,"install_hint": "Gebruik het browsermenu om ‘Aan beginscherm toe te voegen’"
-	,"install_dismissed": "Installatie geannuleerd"
-	,"install_thanks": "Bedankt! Aan het installeren…"
-	,"install_error": "Installatie kan niet worden gestart"
-	,"install_not_available": "Installeren is nog niet beschikbaar. Probeer één keer te herladen."
-	,"install_dev": "Installeren werkt alleen in een productie-build met een geregistreerde service worker."
-	,"submit_film_dialog_title": "Film insturen"
-	,"submit_film_dialog_description": "Deel een parkourfilm, documentaire of serie die volgens jou op JUMPFLIX hoort."
-	,"submit_film_field_label": "Titel of URL"
-	,"submit_film_placeholder": "bijv. Roof Culture Asia of https://youtube.com/watch?v=..."
-	,"submit_film_cancel": "Annuleren"
-	,"submit_film_submit": "Insturen"
-	,"submit_film_sending": "Verzenden…"
-	,"submit_film_error_generic": "Er is iets misgegaan."
-	,"submit_film_error_network": "Netwerkfout. Probeer het opnieuw."
-	,"submit_film_close": "Dialoog sluiten"
-	,"submit_film_success": "Bedankt voor je inzending!"
-	,"tv_markWatched": "Markeren als bekeken"
-	,"tv_markUnwatched": "Markeren als onbekeken"
-	,"help_buttonLabel": "Snelle tips tonen"
-	,"help_dialogLabel": "JUMPFLIX snelle tips"
-	,"help_title": "Snelle tips"
-	,"help_close": "Tips sluiten"
-	,"help_tip_slowMotion": "Houd spatiebalk ingedrukt of longpress in de speler voor slow motion."
-	,"help_tip_login": "Log in om je voortgang bij te houden."
+	"tv_close": "Sluiten",
+	"tv_exitConfirm": "Druk nogmaals op terug om af te sluiten",
+	"tv_noPlayer": "Geen speler beschikbaar",
+	"tv_sort_random": "Sorteren: Standaard",
+	"tv_sort_titleAsc": "Titel A–Z",
+	"tv_sort_yearDesc": "Jaar (nieuwste)",
+	"tv_sort_yearAsc": "Jaar (oudste)",
+	"tv_sort_durationAsc": "Duur (kort → lang)",
+	"tv_sort_durationDesc": "Duur (lang → kort)",
+	"tv_badge_movie": "FILM",
+	"tv_badge_playlist": "PLAYLIST",
+	"tv_creators": "Makers",
+	"tv_starring": "Met",
+	"tv_videos": "Video's",
+	"tv_type": "Type",
+	"tv_videoCountSuffix": "video's",
+	"tv_provider": "Aanbieder",
+	"tv_showFewer": "Minder tonen",
+	"tv_showAll": "Alles tonen",
+	"settings": "Instellingen",
+	"settings_language": "Taal",
+	"settings_open": "Instellingen openen",
+	"settings_credits": "Credits",
+	"settings_links": "Links",
+	"settings_visualMode": "Visuele modus",
+	"settings_visualStunning": "Spectaculair",
+	"settings_visualPerformance": "Prestaties",
+	"settings_visualStunningDescription": "Alle effecten en filmische animaties.",
+	"settings_visualPerformanceDescription": "Minimale effecten voor soepel bladeren.",
+	"settings_languageChanged": "Taal gewijzigd naar {language}",
+	"error_backHome": "Terug naar JUMPFLIX",
+	"tv_episodes": "Afleveringen",
+	"tv_playSelectedEpisode": "Aflevering afspelen",
+	"settings_install": "Installeren",
+	"settings_install_cta": "JUMPFLIX installeren",
+	"install_installed": "App geïnstalleerd",
+	"install_hint": "Gebruik het browsermenu om ‘Aan beginscherm toe te voegen’",
+	"install_dismissed": "Installatie geannuleerd",
+	"install_thanks": "Bedankt! Aan het installeren…",
+	"install_error": "Installatie kan niet worden gestart",
+	"install_not_available": "Installeren is nog niet beschikbaar. Probeer één keer te herladen.",
+	"install_dev": "Installeren werkt alleen in een productie-build met een geregistreerde service worker.",
+	"submit_film_dialog_title": "Film insturen",
+	"submit_film_dialog_description": "Deel een parkourfilm, documentaire of serie die volgens jou op JUMPFLIX hoort.",
+	"submit_film_field_label": "Titel of URL",
+	"submit_film_placeholder": "bijv. Roof Culture Asia of https://youtube.com/watch?v=...",
+	"submit_film_cancel": "Annuleren",
+	"submit_film_submit": "Insturen",
+	"submit_film_sending": "Verzenden…",
+	"submit_film_error_generic": "Er is iets misgegaan.",
+	"submit_film_error_network": "Netwerkfout. Probeer het opnieuw.",
+	"submit_film_close": "Dialoog sluiten",
+	"submit_film_success": "Bedankt voor je inzending!",
+	"tv_markWatched": "Markeren als bekeken",
+	"tv_markUnwatched": "Markeren als onbekeken",
+	"help_buttonLabel": "Snelle tips tonen",
+	"help_dialogLabel": "JUMPFLIX snelle tips",
+	"help_title": "Snelle tips",
+	"help_close": "Tips sluiten",
+	"help_tip_slowMotion": "Houd spatiebalk ingedrukt of longpress in de speler voor slow motion.",
+	"help_tip_login": "Log in om je voortgang bij te houden."
 }

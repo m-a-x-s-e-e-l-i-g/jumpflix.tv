@@ -5,13 +5,13 @@ import { isAdminUser } from '$lib/server/admin';
 export const load = async ({ url, locals }) => {
 	// Get the authenticated session using safe method that validates JWT
 	const { session, user } = await locals.safeGetSession();
-	
+
 	try {
 		const content = await fetchAllContent();
-		
+
 		// Ensure content is JSON serializable by using JSON.parse(JSON.stringify())
 		const serializedContent = JSON.parse(JSON.stringify(content));
-		
+
 		const segments = url.pathname.split('/').filter(Boolean);
 		let item: ContentItem | null = null;
 		let initialEpisodeNumber: number | null = null;
@@ -20,9 +20,13 @@ export const load = async ({ url, locals }) => {
 		if (segments.length >= 2) {
 			const [first, slug, a, b, c, d] = segments;
 			if (first === 'movie' && slug) {
-				item = serializedContent.find((entry: any) => entry.type === 'movie' && entry.slug === slug) ?? null;
+				item =
+					serializedContent.find((entry: any) => entry.type === 'movie' && entry.slug === slug) ??
+					null;
 			} else if (first === 'series' && slug) {
-				const series = serializedContent.find((entry: any) => entry.type === 'series' && entry.slug === slug) ?? null;
+				const series =
+					serializedContent.find((entry: any) => entry.type === 'series' && entry.slug === slug) ??
+					null;
 				item = series;
 				if (series) {
 					if (a === 'seasons' && b && c === 'episodes' && d) {
@@ -42,10 +46,10 @@ export const load = async ({ url, locals }) => {
 			}
 		}
 
-		return { 
-			content: serializedContent, 
-			item, 
-			initialEpisodeNumber, 
+		return {
+			content: serializedContent,
+			item,
+			initialEpisodeNumber,
 			initialSeasonNumber,
 			// Pass session and user to all pages for auth state
 			session,
@@ -54,10 +58,10 @@ export const load = async ({ url, locals }) => {
 		};
 	} catch (error) {
 		console.error('[+layout.server] Error in load function:', error);
-		return { 
-			content: [], 
-			item: null, 
-			initialEpisodeNumber: null, 
+		return {
+			content: [],
+			item: null,
+			initialEpisodeNumber: null,
 			initialSeasonNumber: null,
 			session,
 			user,

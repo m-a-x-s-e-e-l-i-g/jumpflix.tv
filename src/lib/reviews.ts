@@ -16,7 +16,10 @@ function normalizeMediaId(mediaId: number | string): number {
 	return n;
 }
 
-export async function fetchMediaReviews(mediaId: number | string, limit = 20): Promise<ReviewRow[]> {
+export async function fetchMediaReviews(
+	mediaId: number | string,
+	limit = 20
+): Promise<ReviewRow[]> {
 	const normalizedId = normalizeMediaId(mediaId);
 	const { data, error } = await (supabase as any)
 		.from('reviews_with_author')
@@ -29,7 +32,10 @@ export async function fetchMediaReviews(mediaId: number | string, limit = 20): P
 	return (data ?? []) as ReviewRow[];
 }
 
-export async function fetchUserReview(mediaId: number | string, userId: string): Promise<ReviewRow | null> {
+export async function fetchUserReview(
+	mediaId: number | string,
+	userId: string
+): Promise<ReviewRow | null> {
 	const normalizedId = normalizeMediaId(mediaId);
 	if (!userId) return null;
 

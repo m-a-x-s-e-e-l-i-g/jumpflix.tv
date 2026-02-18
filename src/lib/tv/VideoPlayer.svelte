@@ -14,7 +14,11 @@
 	import XIcon from 'lucide-svelte/icons/x';
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
 	import CastIcon from 'lucide-svelte/icons/cast';
-	import { updateWatchProgress, getResumePosition, flushWatchHistoryNow } from '$lib/tv/watchHistory';
+	import {
+		updateWatchProgress,
+		getResumePosition,
+		flushWatchHistoryNow
+	} from '$lib/tv/watchHistory';
 
 	const dispatch = createEventDispatcher<{
 		playbackCompleted: { mediaId: string | null; mediaType: 'movie' | 'series' | 'episode' };
@@ -1192,7 +1196,8 @@
 			if (/iPad|iPhone|iPod/i.test(ua)) return true;
 			// iPadOS 13+ reports as Mac; use touch points heuristic.
 			const platform = (navigator as unknown as { platform?: string }).platform ?? '';
-			const maxTouchPoints = (navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints ?? 0;
+			const maxTouchPoints =
+				(navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints ?? 0;
 			return platform === 'MacIntel' && maxTouchPoints > 1;
 		} catch {
 			return false;
@@ -1288,7 +1293,13 @@
 	});
 
 	$: youtubeEmbedUrl = resolvedSrc ? buildYouTubeEmbedUrl(resolvedSrc, autoPlay) : null;
-	$: useYouTubeEmbedFallback = !!(mounted && browser && isIOSDevice && resolvedSrc && youtubeEmbedUrl);
+	$: useYouTubeEmbedFallback = !!(
+		mounted &&
+		browser &&
+		isIOSDevice &&
+		resolvedSrc &&
+		youtubeEmbedUrl
+	);
 
 	$: if (mounted && browser && !useYouTubeEmbedFallback) {
 		void ensureVidstackLoaded();
@@ -1374,7 +1385,6 @@
 		hasResumed = false;
 		isSeeking = false;
 	}
-
 </script>
 
 {#if shouldRender}
@@ -1439,98 +1449,98 @@
 						</div>
 					{/if}
 					<div class="controls-surface">
-					<media-controls-group class="controls-group scrub">
-						<media-time-slider
-							class="time-slider"
-							aria-label={title ? `Scrub through ${title}` : 'Scrub through video'}
-						>
-							<div class="slider-track" aria-hidden="true">
-								<div class="slider-track-progress"></div>
-								<div class="slider-track-fill"></div>
-							</div>
-							<div class="slider-thumb" aria-hidden="true"></div>
-							<media-slider-preview class="slider-preview">
-								<media-slider-value class="slider-value"></media-slider-value>
-							</media-slider-preview>
-						</media-time-slider>
-					</media-controls-group>
-
-					<div class="controls-row">
-						<media-controls-group class="controls-group left">
-							<media-play-button class="control-button" aria-label="Toggle playback">
-								<span class="icon icon-play"><PlayIcon /></span>
-								<span class="icon icon-pause"><PauseIcon /></span>
-								<span class="icon icon-replay"><RotateCcwIcon /></span>
-							</media-play-button>
-
-							<media-seek-button
-								class="control-button"
-								seconds={-10}
-								aria-label="Jump back 10 seconds"
+						<media-controls-group class="controls-group scrub">
+							<media-time-slider
+								class="time-slider"
+								aria-label={title ? `Scrub through ${title}` : 'Scrub through video'}
 							>
-								<span class="icon"><SkipBackIcon /></span>
-								<span class="label">-10s</span>
-							</media-seek-button>
-
-							<media-seek-button
-								class="control-button"
-								seconds={10}
-								aria-label="Jump forward 10 seconds"
-							>
-								<span class="icon"><SkipForwardIcon /></span>
-								<span class="label">+10s</span>
-							</media-seek-button>
-
-							<div class="time-display" aria-hidden="true">
-								<media-time type="current" class="time-value"></media-time>
-								<span class="time-divider">/</span>
-								<media-time type="duration" class="time-value"></media-time>
-							</div>
+								<div class="slider-track" aria-hidden="true">
+									<div class="slider-track-progress"></div>
+									<div class="slider-track-fill"></div>
+								</div>
+								<div class="slider-thumb" aria-hidden="true"></div>
+								<media-slider-preview class="slider-preview">
+									<media-slider-value class="slider-value"></media-slider-value>
+								</media-slider-preview>
+							</media-time-slider>
 						</media-controls-group>
 
-						<media-controls-group class="controls-group right">
-							{#if !isMobileViewport}
-								<media-mute-button class="control-button" aria-label="Toggle mute">
-									<span class="icon icon-muted"><VolumeXIcon /></span>
-									<span class="icon icon-unmuted"><Volume2Icon /></span>
-								</media-mute-button>
+						<div class="controls-row">
+							<media-controls-group class="controls-group left">
+								<media-play-button class="control-button" aria-label="Toggle playback">
+									<span class="icon icon-play"><PlayIcon /></span>
+									<span class="icon icon-pause"><PauseIcon /></span>
+									<span class="icon icon-replay"><RotateCcwIcon /></span>
+								</media-play-button>
 
-								<media-volume-slider class="volume-slider" aria-label="Adjust volume">
-									<div class="slider-track" aria-hidden="true">
-										<div class="slider-track-progress"></div>
-										<div class="slider-track-fill"></div>
-									</div>
-									<div class="slider-thumb" aria-hidden="true"></div>
-									<media-slider-preview class="slider-preview">
-										<media-slider-value class="slider-value"></media-slider-value>
-									</media-slider-preview>
-								</media-volume-slider>
-							{/if}
+								<media-seek-button
+									class="control-button"
+									seconds={-10}
+									aria-label="Jump back 10 seconds"
+								>
+									<span class="icon"><SkipBackIcon /></span>
+									<span class="label">-10s</span>
+								</media-seek-button>
 
-							<media-airplay-button
-								class="control-button"
-								aria-label="Stream via AirPlay"
-								data-jumpflix-gesture-ignore="true"
-							>
-								<span class="icon"><AirplayIcon /></span>
-							</media-airplay-button>
+								<media-seek-button
+									class="control-button"
+									seconds={10}
+									aria-label="Jump forward 10 seconds"
+								>
+									<span class="icon"><SkipForwardIcon /></span>
+									<span class="label">+10s</span>
+								</media-seek-button>
 
-							<media-google-cast-button
-								class="control-button"
-								aria-label="Cast to device"
-								data-jumpflix-gesture-ignore="true"
-							>
-								<span class="icon"><CastIcon /></span>
-							</media-google-cast-button>
+								<div class="time-display" aria-hidden="true">
+									<media-time type="current" class="time-value"></media-time>
+									<span class="time-divider">/</span>
+									<media-time type="duration" class="time-value"></media-time>
+								</div>
+							</media-controls-group>
 
-							<media-fullscreen-button class="control-button" aria-label="Toggle fullscreen">
-								<span class="icon icon-enter"><Maximize2Icon /></span>
-								<span class="icon icon-exit"><Minimize2Icon /></span>
-							</media-fullscreen-button>
-						</media-controls-group>
+							<media-controls-group class="controls-group right">
+								{#if !isMobileViewport}
+									<media-mute-button class="control-button" aria-label="Toggle mute">
+										<span class="icon icon-muted"><VolumeXIcon /></span>
+										<span class="icon icon-unmuted"><Volume2Icon /></span>
+									</media-mute-button>
+
+									<media-volume-slider class="volume-slider" aria-label="Adjust volume">
+										<div class="slider-track" aria-hidden="true">
+											<div class="slider-track-progress"></div>
+											<div class="slider-track-fill"></div>
+										</div>
+										<div class="slider-thumb" aria-hidden="true"></div>
+										<media-slider-preview class="slider-preview">
+											<media-slider-value class="slider-value"></media-slider-value>
+										</media-slider-preview>
+									</media-volume-slider>
+								{/if}
+
+								<media-airplay-button
+									class="control-button"
+									aria-label="Stream via AirPlay"
+									data-jumpflix-gesture-ignore="true"
+								>
+									<span class="icon"><AirplayIcon /></span>
+								</media-airplay-button>
+
+								<media-google-cast-button
+									class="control-button"
+									aria-label="Cast to device"
+									data-jumpflix-gesture-ignore="true"
+								>
+									<span class="icon"><CastIcon /></span>
+								</media-google-cast-button>
+
+								<media-fullscreen-button class="control-button" aria-label="Toggle fullscreen">
+									<span class="icon icon-enter"><Maximize2Icon /></span>
+									<span class="icon icon-exit"><Minimize2Icon /></span>
+								</media-fullscreen-button>
+							</media-controls-group>
+						</div>
 					</div>
-				</div>
-			</media-controls>
+				</media-controls>
 			</media-player>
 		{/if}
 	{/key}

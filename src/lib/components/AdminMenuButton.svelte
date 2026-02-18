@@ -41,11 +41,11 @@
 	{#if showAdminMenu}
 		<div
 			bind:this={menuRef}
-			class="absolute top-full left-0 mt-2 w-56 rounded-lg border border-border bg-background shadow-lg overflow-hidden z-50"
+			class="absolute top-full left-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-border bg-background shadow-lg"
 		>
-			<div class="px-4 py-3 border-b border-border">
-				<p class="text-sm font-medium text-foreground truncate">Admin</p>
-				<p class="text-xs text-muted-foreground truncate">Tools & moderation</p>
+			<div class="border-b border-border px-4 py-3">
+				<p class="truncate text-sm font-medium text-foreground">Admin</p>
+				<p class="truncate text-xs text-muted-foreground">Tools & moderation</p>
 			</div>
 
 			<a

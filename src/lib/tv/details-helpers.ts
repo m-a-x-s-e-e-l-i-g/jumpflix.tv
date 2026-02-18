@@ -5,7 +5,11 @@ import { deleteRating, getMediaRatingSummary, getUserRating, saveRating } from '
 import type { RatingUpdatedDetail } from '$lib/rating-events';
 
 type RatingSummary = { averageRating: number; ratingCount: number } | null;
-export type WatchProgressSnapshot = { percent: number; isWatched: boolean; position: number } | null;
+export type WatchProgressSnapshot = {
+	percent: number;
+	isWatched: boolean;
+	position: number;
+} | null;
 
 export function buildBaseId(item: ContentItem | null): string | null {
 	if (!item) return null;
@@ -18,7 +22,10 @@ function parseWatchedAt(value: string | undefined | null): number {
 	return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
-function pickLatestProgress(current: WatchProgress | null, candidate: WatchProgress): WatchProgress {
+function pickLatestProgress(
+	current: WatchProgress | null,
+	candidate: WatchProgress
+): WatchProgress {
 	if (!current) return candidate;
 	const currentTime = parseWatchedAt(current.watchedAt);
 	const candidateTime = parseWatchedAt(candidate.watchedAt);

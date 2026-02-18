@@ -8,7 +8,7 @@
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 
-	const supportedLocales = ['en', 'nl'] as const;
+	const supportedLocales = ['en', 'nl', 'ja'] as const;
 	type AuthLocale = (typeof supportedLocales)[number];
 	
 	type AuthView = 'sign_in' | 'sign_up' | 'forgotten_password';
@@ -33,6 +33,10 @@
 		nl: {
 			title: 'Inloggen',
 			fallback: 'Authenticatie is niet geconfigureerd. Stel je Supabase-omgevingsvariabelen in.'
+		},
+		ja: {
+			title: 'サインイン',
+			fallback: '認証が設定されていません。Supabase環境変数を設定してください。'
 		}
 	};
 
@@ -96,6 +100,36 @@
 				switchToSignIn: 'Terug naar inloggen',
 				confirmation: 'Controleer je e-mail voor de resetlink'
 			}
+		},
+		ja: {
+			signIn: {
+				title: 'サインイン',
+				email: 'メールアドレス',
+				password: 'パスワード',
+				button: 'サインイン',
+				loadingButton: 'サインイン中…',
+				switchToSignUp: 'アカウントをお持ちでない方はサインアップ',
+				forgotPassword: 'パスワードをお忘れですか？'
+			},
+			signUp: {
+				title: 'サインアップ',
+				email: 'メールアドレス',
+				password: 'パスワードを作成',
+				button: 'サインアップ',
+				loadingButton: 'サインアップ中…',
+				switchToSignIn: 'すでにアカウントをお持ちの方はサインイン',
+				marketingOptIn: 'JumpFlixに関するニュース、新しいコンテンツ追加、パルクール関連の最新情報を受け取る',
+				privacyPolicy: 'プライバシーポリシー',
+				confirmation: '確認リンクについてメールをご確認ください'
+			},
+			forgotPassword: {
+				title: 'パスワードリセット',
+				email: 'メールアドレス',
+				button: 'リセット手順を送信',
+				loadingButton: '送信中…',
+				switchToSignIn: 'サインインに戻る',
+				confirmation: 'パスワードリセットリンクについてメールをご確認ください'
+			}
 		}
 	};
 
@@ -123,7 +157,8 @@
 		try {
 			const { error } = await supabase.auth.signInWithPassword({ email, password });
 			if (error) throw error;
-			toast.success(locale === 'nl' ? 'Succesvol ingelogd!' : 'Successfully signed in!');
+			const successMessage = locale === 'nl' ? 'Succesvol ingelogd!' : locale === 'ja' ? 'サインインしました！' : 'Successfully signed in!';
+			toast.success(successMessage);
 			open = false;
 			email = '';
 			password = '';

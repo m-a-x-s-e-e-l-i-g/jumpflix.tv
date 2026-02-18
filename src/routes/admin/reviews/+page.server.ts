@@ -9,8 +9,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const supabase = createSupabaseServiceClient();
 	const { data, error } = await (supabase as any)
-		.from('reviews')
-		.select('*, media:media_items(id, title, slug, type)')
+		.from('reviews_with_author')
+		.select('id, user_id, media_id, author_name, body, created_at, updated_at')
 		.order('created_at', { ascending: false })
 		.limit(200);
 
@@ -18,7 +18,32 @@ export const load: PageServerLoad = async ({ locals }) => {
 		return { reviews: [], error: error.message };
 	}
 
-	return { reviews: data ?? [], error: null };
+	const reviews = (data ?? []) as Array<any>;
+	const mediaIds = Array.from(
+		new Set(
+			reviews
+				.map((r) => Number(r.media_id))
+				.filter((id) => Number.isFinite(id))
+		)
+	);
+
+	let mediaById = new Map<number, any>();
+	if (mediaIds.length) {
+		const { data: mediaRows } = await (supabase as any)
+			.from('media_items')
+			.select('id, title, slug, type')
+			.in('id', mediaIds);
+		for (const row of mediaRows ?? []) {
+			mediaById.set(Number(row.id), row);
+		}
+	}
+
+	const hydrated = reviews.map((r) => ({
+		...r,
+		media: mediaById.get(Number(r.media_id)) ?? null
+	}));
+
+	return { reviews: hydrated, error: null };
 };
 
 export const actions: Actions = {

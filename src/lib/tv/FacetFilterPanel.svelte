@@ -93,30 +93,30 @@
         { value: '2030s', label: '2030s', emoji: '🚀' }
       ] as const
     }
-  };
+  } as const;
+
+  const facetCategoryKeys = Object.keys(facetCategories) as Array<keyof typeof facetCategories>;
   
   let isOpen = $state(false);
   
   function toggleFacet(category: keyof SelectedFacets, value: string) {
-    selectedFacets.update(current => {
-      const updated = { ...current };
-      const currentValues = updated[category] || [];
-      
-      if (currentValues.includes(value as any)) {
-        // Remove the value
-        updated[category] = currentValues.filter(v => v !== value) as any;
+    selectedFacets.update((current) => {
+      const updated = { ...current } as Record<string, string[] | undefined>;
+      const currentValues = updated[category] ?? [];
+
+      if (currentValues.includes(value)) {
+        updated[category] = currentValues.filter((v) => v !== value);
       } else {
-        // Add the value
-        updated[category] = [...currentValues, value] as any;
+        updated[category] = [...currentValues, value];
       }
-      
-      return updated;
+
+      return updated as unknown as SelectedFacets;
     });
   }
-  
+
   function isFacetSelected(category: keyof SelectedFacets, value: string): boolean {
-    const values = $selectedFacets[category];
-    return Array.isArray(values) && values.includes(value as any);
+    const values = ($selectedFacets as unknown as Record<string, string[] | undefined>)[category] ?? [];
+    return values.includes(value);
   }
   
   function clearAllFilters() {
@@ -157,16 +157,17 @@
     </div>
     
     <div class="filter-categories">
-      {#each Object.entries(facetCategories) as [categoryKey, category]}
+      {#each facetCategoryKeys as categoryKey}
+        {@const category = facetCategories[categoryKey]}
         <div class="filter-category">
           <h4 class="category-label">{category.label}</h4>
           <div class="facet-chips">
             {#each category.options as option}
-              {@const isSelected = isFacetSelected(categoryKey as keyof SelectedFacets, option.value)}
+              {@const isSelected = isFacetSelected(categoryKey, option.value)}
               <button
                 class="facet-chip"
                 class:selected={isSelected}
-                onclick={() => toggleFacet(categoryKey as keyof SelectedFacets, option.value)}
+                onclick={() => toggleFacet(categoryKey, option.value)}
                 aria-pressed={isSelected}
               >
                 <span class="chip-emoji">{option.emoji}</span>

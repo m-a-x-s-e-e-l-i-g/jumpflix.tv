@@ -19,7 +19,7 @@ function normalizeMediaId(mediaId: number | string): number {
 export async function fetchMediaReviews(mediaId: number | string, limit = 20): Promise<ReviewRow[]> {
 	const normalizedId = normalizeMediaId(mediaId);
 	const { data, error } = await (supabase as any)
-		.from('reviews')
+		.from('reviews_with_author')
 		.select('id, user_id, media_id, author_name, body, created_at, updated_at')
 		.eq('media_id', normalizedId)
 		.order('created_at', { ascending: false })
@@ -34,7 +34,7 @@ export async function fetchUserReview(mediaId: number | string, userId: string):
 	if (!userId) return null;
 
 	const { data, error } = await (supabase as any)
-		.from('reviews')
+		.from('reviews_with_author')
 		.select('id, user_id, media_id, author_name, body, created_at, updated_at')
 		.eq('media_id', normalizedId)
 		.eq('user_id', userId)
@@ -48,7 +48,6 @@ export async function upsertReview(params: {
 	mediaId: number | string;
 	userId: string;
 	body: string;
-	authorName?: string | null;
 }): Promise<ReviewRow> {
 	const normalizedId = normalizeMediaId(params.mediaId);
 	const userId = params.userId;
@@ -58,7 +57,6 @@ export async function upsertReview(params: {
 	if (!body) throw new Error('Review cannot be empty');
 
 	const clampedBody = body.length > 2000 ? body.slice(0, 2000) : body;
-	const authorName = (params.authorName ?? null) ? String(params.authorName).trim().slice(0, 80) : null;
 
 	const { data, error } = await (supabase as any)
 		.from('reviews')
@@ -66,16 +64,23 @@ export async function upsertReview(params: {
 			{
 				media_id: normalizedId,
 				user_id: userId,
-				author_name: authorName,
 				body: clampedBody
 			},
 			{ onConflict: 'user_id,media_id' }
 		)
-		.select('id, user_id, media_id, author_name, body, created_at, updated_at')
+		.select('id')
 		.single();
 
 	if (error) throw new Error(error.message);
-	return data as ReviewRow;
+
+	const { data: hydrated, error: hydratedError } = await (supabase as any)
+		.from('reviews_with_author')
+		.select('id, user_id, media_id, author_name, body, created_at, updated_at')
+		.eq('id', data.id)
+		.single();
+
+	if (hydratedError) throw new Error(hydratedError.message);
+	return hydrated as ReviewRow;
 }
 
 export async function deleteReview(reviewId: number): Promise<void> {

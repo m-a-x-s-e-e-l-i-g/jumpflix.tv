@@ -367,15 +367,6 @@
     }
   }
 
-  function deriveAuthorName() {
-    const meta = ($authUser as any)?.user_metadata ?? {};
-
-    return getPublicUserName({
-      name: meta?.name || meta?.username || null,
-      email: $authUser?.email ?? null
-    });
-  }
-
   async function loadReviewsForSelected() {
     if (!browser || !selected) return;
 
@@ -423,8 +414,7 @@
       const saved = await upsertReview({
         mediaId: selected.id,
         userId: $authUser.id,
-        body: myReviewText,
-        authorName: deriveAuthorName()
+        body: myReviewText
       });
       myReviewId = saved.id;
       myReviewText = saved.body;

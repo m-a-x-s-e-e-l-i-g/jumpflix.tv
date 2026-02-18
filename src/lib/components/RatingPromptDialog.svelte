@@ -202,14 +202,6 @@
     }
   }
 
-  function deriveAuthorName() {
-    const meta = ($authUser as any)?.user_metadata ?? {};
-    return getPublicUserName({
-      name: meta?.name || meta?.username || null,
-      email: $authUser?.email ?? null
-    });
-  }
-
   async function submitReview() {
     if (!movie || !isAuthenticated || !$authUser?.id) return;
     reviewSaving = true;
@@ -218,8 +210,7 @@
       const saved = await upsertReview({
         mediaId: movie.id,
         userId: $authUser.id,
-        body: reviewText,
-        authorName: deriveAuthorName()
+        body: reviewText
       });
       existingReviewId = saved.id;
       reviewText = saved.body;

@@ -61,39 +61,42 @@ async function getUserTables(): Promise<TableInfo[]> {
  */
 async function exportSchema(): Promise<string> {
 	console.log('📋 Exporting schema...');
-	
+
 	let schema = '';
 	schema += '-- JumpFlix Database Schema Backup\n';
 	schema += `-- Generated: ${new Date().toISOString()}\n`;
 	schema += '-- This file combines all migration files into a single schema\n\n';
-	
+
 	// Read and combine all migration files
 	const migrationsDir = path.join(process.cwd(), 'supabase', 'migrations');
-	
+
 	if (fs.existsSync(migrationsDir)) {
-		const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
-		
+		const files = fs
+			.readdirSync(migrationsDir)
+			.filter((f) => f.endsWith('.sql'))
+			.sort();
+
 		if (files.length > 0) {
 			console.log(`  📄 Combining ${files.length} migration files...`);
-			
+
 			schema += 'BEGIN;\n\n';
 			schema += '-- This schema is generated from the following migrations:\n';
-			files.forEach(file => {
+			files.forEach((file) => {
 				schema += `-- - ${file}\n`;
 			});
 			schema += '\n\n';
-			
+
 			for (const file of files) {
 				const filePath = path.join(migrationsDir, file);
 				const content = fs.readFileSync(filePath, 'utf-8');
-				
+
 				schema += `-- ============================================\n`;
 				schema += `-- Migration: ${file}\n`;
 				schema += `-- ============================================\n\n`;
 				schema += content;
 				schema += '\n\n';
 			}
-			
+
 			schema += 'COMMIT;\n';
 		} else {
 			schema += '-- No migration files found\n';
@@ -107,7 +110,7 @@ async function exportSchema(): Promise<string> {
 		schema += await exportSchemaFromIntrospection();
 		schema += '\nCOMMIT;\n';
 	}
-	
+
 	return schema;
 }
 
@@ -117,37 +120,37 @@ async function exportSchema(): Promise<string> {
 async function exportSchemaFromIntrospection(): Promise<string> {
 	let schema = '';
 	const tables = await getUserTables();
-	
+
 	for (const table of tables) {
 		if (table.table_schema !== 'public') continue;
-		
+
 		console.log(`  📄 Introspecting ${table.table_schema}.${table.table_name}`);
-		
+
 		try {
 			// Get a sample row to infer structure
 			const dataResponse = await fetch(`${supabaseUrl}/rest/v1/${table.table_name}?limit=1`, {
 				headers: {
-					'apikey': supabaseKey!,
-					'Authorization': `Bearer ${supabaseKey}`
+					apikey: supabaseKey!,
+					Authorization: `Bearer ${supabaseKey}`
 				}
 			});
 
 			if (dataResponse.ok) {
 				const sampleData = await dataResponse.json();
-				
+
 				schema += `-- Table: ${table.table_schema}.${table.table_name}\n`;
 				schema += `-- NOTE: Inferred from data. Check migrations for accurate schema.\n`;
-				
+
 				if (sampleData && sampleData.length > 0) {
 					const sample = sampleData[0];
 					const columns = Object.keys(sample);
-					
+
 					schema += `CREATE TABLE IF NOT EXISTS ${table.table_schema}.${table.table_name} (\n`;
-					
-					const columnDefs = columns.map(col => {
+
+					const columnDefs = columns.map((col) => {
 						const value = sample[col];
 						let type = 'text';
-						
+
 						// Infer basic types from sample data
 						if (value === null) {
 							type = 'text';
@@ -162,16 +165,18 @@ async function exportSchemaFromIntrospection(): Promise<string> {
 						} else if (typeof value === 'string') {
 							if (value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
 								type = 'timestamptz';
-							} else if (value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+							} else if (
+								value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+							) {
 								type = 'uuid';
 							} else {
 								type = 'text';
 							}
 						}
-						
+
 						return `  ${col} ${type}`;
 					});
-					
+
 					schema += columnDefs.join(',\n');
 					schema += '\n);\n\n';
 				} else {
@@ -182,7 +187,7 @@ async function exportSchemaFromIntrospection(): Promise<string> {
 			schema += `-- Could not introspect ${table.table_name}: ${err instanceof Error ? err.message : String(err)}\n\n`;
 		}
 	}
-	
+
 	return schema;
 }
 
@@ -191,13 +196,13 @@ async function exportSchemaFromIntrospection(): Promise<string> {
  */
 async function exportTableData(tableName: string, schema: string = 'public'): Promise<string> {
 	console.log(`  💾 Exporting data from ${schema}.${tableName}`);
-	
+
 	try {
 		// Use REST API directly - works for all tables regardless of TypeScript types
 		const response = await fetch(`${supabaseUrl}/rest/v1/${tableName}?select=*`, {
 			headers: {
-				'apikey': supabaseKey!,
-				'Authorization': `Bearer ${supabaseKey}`
+				apikey: supabaseKey!,
+				Authorization: `Bearer ${supabaseKey}`
 			}
 		});
 
@@ -207,14 +212,16 @@ async function exportTableData(tableName: string, schema: string = 'public'): Pr
 		}
 
 		const data = await response.json();
-		
+
 		if (!data || data.length === 0) {
 			return `-- No data in ${tableName}\n\n`;
 		}
 
 		return formatDataAsSQL(data, tableName, schema);
 	} catch (err) {
-		console.warn(`  ⚠️  Could not export ${tableName}: ${err instanceof Error ? err.message : String(err)}`);
+		console.warn(
+			`  ⚠️  Could not export ${tableName}: ${err instanceof Error ? err.message : String(err)}`
+		);
 		return `-- Failed to export ${tableName}: ${err instanceof Error ? err.message : String(err)}\n\n`;
 	}
 }
@@ -224,10 +231,10 @@ async function exportTableData(tableName: string, schema: string = 'public'): Pr
  */
 function formatDataAsSQL(data: any[], tableName: string, schema: string): string {
 	let sql = `-- Data for ${schema}.${tableName} (${data.length} rows)\n`;
-	
+
 	for (const row of data) {
 		const columns = Object.keys(row);
-		const values = columns.map(col => {
+		const values = columns.map((col) => {
 			const value = row[col];
 			if (value === null) return 'NULL';
 			if (typeof value === 'string') {
@@ -238,7 +245,7 @@ function formatDataAsSQL(data: any[], tableName: string, schema: string): string
 			}
 			if (Array.isArray(value)) {
 				if (value.length === 0) return 'ARRAY[]::text[]';
-				return `ARRAY[${value.map(v => typeof v === 'string' ? `'${v.replace(/'/g, "''")}'` : v).join(', ')}]`;
+				return `ARRAY[${value.map((v) => (typeof v === 'string' ? `'${v.replace(/'/g, "''")}'` : v)).join(', ')}]`;
 			}
 			if (typeof value === 'object') {
 				return `'${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`;
@@ -258,7 +265,7 @@ function formatDataAsSQL(data: any[], tableName: string, schema: string): string
  */
 async function exportData(): Promise<string> {
 	console.log('💾 Exporting data...');
-	
+
 	let data = '';
 	data += '-- JumpFlix Database Data Backup\n';
 	data += `-- Generated: ${new Date().toISOString()}\n`;
@@ -266,10 +273,10 @@ async function exportData(): Promise<string> {
 	data += 'BEGIN;\n\n';
 
 	const tables = await getUserTables();
-	
+
 	for (const table of tables) {
 		if (table.table_schema !== 'public') continue;
-		
+
 		const tableData = await exportTableData(table.table_name, table.table_schema);
 		data += tableData;
 	}
@@ -283,7 +290,7 @@ async function exportData(): Promise<string> {
  */
 async function copyMigrations(outputDir: string): Promise<void> {
 	console.log('📁 Copying migrations...');
-	
+
 	const migrationsDir = path.join(process.cwd(), 'supabase', 'migrations');
 	const backupMigrationsDir = path.join(outputDir, 'migrations');
 
@@ -312,11 +319,11 @@ async function copyMigrations(outputDir: string): Promise<void> {
  */
 async function exportUsers(): Promise<string> {
 	console.log('👥 Exporting users from Supabase Auth...');
-	
+
 	try {
 		// Use Auth Admin API to list all users
 		const { data, error } = await supabase.auth.admin.listUsers();
-		
+
 		if (error) {
 			console.warn(`  ⚠️  Could not export users: ${error.message}`);
 			return `-- Failed to export users: ${error.message}\n\n`;
@@ -362,18 +369,21 @@ async function exportUsers(): Promise<string> {
 
 		return sql;
 	} catch (err) {
-		console.warn(`  ⚠️  Could not export users: ${err instanceof Error ? err.message : String(err)}`);
+		console.warn(
+			`  ⚠️  Could not export users: ${err instanceof Error ? err.message : String(err)}`
+		);
 		return `-- Failed to export users: ${err instanceof Error ? err.message : String(err)}\n\n`;
 	}
 }
-
 
 /**
  * Create a complete database backup
  */
 async function createBackup(options: BackupOptions): Promise<void> {
-	const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] + '_' + 
-	                 new Date().toTimeString().split(' ')[0].replace(/:/g, '-');
+	const timestamp =
+		new Date().toISOString().replace(/[:.]/g, '-').split('T')[0] +
+		'_' +
+		new Date().toTimeString().split(' ')[0].replace(/:/g, '-');
 	const backupDir = path.join(options.outputDir, `backup_${timestamp}`);
 
 	console.log('\n🔧 Creating backup...');
@@ -457,7 +467,7 @@ Run migrations in order from the migrations/ directory.
 		includeData: options.includeData,
 		includeUsers: options.includeUsers,
 		includeMigrations: options.includeMigrations,
-		tables: (await getUserTables()).map(t => `${t.table_schema}.${t.table_name}`)
+		tables: (await getUserTables()).map((t) => `${t.table_schema}.${t.table_name}`)
 	};
 	fs.writeFileSync(path.join(backupDir, 'backup-info.json'), JSON.stringify(backupInfo, null, 2));
 
@@ -472,7 +482,7 @@ Run migrations in order from the migrations/ directory.
 function getDirectorySize(dirPath: string): number {
 	let size = 0;
 	const files = fs.readdirSync(dirPath, { withFileTypes: true });
-	
+
 	for (const file of files) {
 		const filePath = path.join(dirPath, file.name);
 		if (file.isDirectory()) {
@@ -481,7 +491,7 @@ function getDirectorySize(dirPath: string): number {
 			size += fs.statSync(filePath).size;
 		}
 	}
-	
+
 	return Math.round(size / 1024);
 }
 

@@ -315,20 +315,20 @@ Currently adapter‑auto. For static/edge hosting (e.g. Netlify / Vercel) just b
 
 ## 🧾 Scripts Overview
 
-| Script             | Purpose                                         |
-| ------------------ | ----------------------------------------------- |
-| `dev`              | Start Vite dev server                           |
-| `build`            | Production build + automatic sitemap submission |
-| `build:no-sitemap` | Production build without sitemap submission     |
-| `preview`          | Preview built app                               |
-| `check`            | Type & Svelte diagnostics                       |
-| `lint`             | Prettier check + ESLint                         |
-| `generate:favicon` | Generate favicon files                          |
-| `admin`            | Interactive admin CLI for content management    |
-| `submit-sitemap`   | Submit sitemap to search engines                |
-| `generate:blurhash`| Generate BlurHash placeholders for posters      |
-| `generate:icons`   | Generate PWA icons from brand assets            |
-| `generate:favicon` | Generate favicon files                          |
+| Script              | Purpose                                         |
+| ------------------- | ----------------------------------------------- |
+| `dev`               | Start Vite dev server                           |
+| `build`             | Production build + automatic sitemap submission |
+| `build:no-sitemap`  | Production build without sitemap submission     |
+| `preview`           | Preview built app                               |
+| `check`             | Type & Svelte diagnostics                       |
+| `lint`              | Prettier check + ESLint                         |
+| `generate:favicon`  | Generate favicon files                          |
+| `admin`             | Interactive admin CLI for content management    |
+| `submit-sitemap`    | Submit sitemap to search engines                |
+| `generate:blurhash` | Generate BlurHash placeholders for posters      |
+| `generate:icons`    | Generate PWA icons from brand assets            |
+| `generate:favicon`  | Generate favicon files                          |
 
 ## 📦 Additional Features
 

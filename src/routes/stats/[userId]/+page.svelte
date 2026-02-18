@@ -2,7 +2,14 @@
 	import * as m from '$lib/paraglide/messages';
 
 	type RatingDistRow = { rating: number; count: number };
-	type RatedItem = { id: number; rating: number; title: string; type: string; href: string; updated_at: string };
+	type RatedItem = {
+		id: number;
+		rating: number;
+		title: string;
+		type: string;
+		href: string;
+		updated_at: string;
+	};
 	let { data } = $props<{
 		data: {
 			username: string;
@@ -31,11 +38,12 @@
 	const ratedSorted: RatedItem[] = $derived(
 		(data.stats.ratedItems as RatedItem[])
 			.slice()
-			.sort((a: RatedItem, b: RatedItem) => b.rating - a.rating || b.updated_at.localeCompare(a.updated_at))
+			.sort(
+				(a: RatedItem, b: RatedItem) =>
+					b.rating - a.rating || b.updated_at.localeCompare(a.updated_at)
+			)
 	);
-	const ratedVisible: RatedItem[] = $derived(
-		showAllRated ? ratedSorted : ratedSorted.slice(0, 20)
-	);
+	const ratedVisible: RatedItem[] = $derived(showAllRated ? ratedSorted : ratedSorted.slice(0, 20));
 
 	const formatNumber = (value: number) => new Intl.NumberFormat().format(value);
 	const formatMediaTypeLabel = (mediaType: string) => {
@@ -81,7 +89,9 @@
 </svelte:head>
 
 <div class="mx-auto w-full max-w-6xl p-4 md:p-8">
-	<div class="mt-[50px] mb-6 rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-6 md:p-8">
+	<div
+		class="mt-[50px] mb-6 rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-6 md:p-8"
+	>
 		<a
 			href="/stats"
 			class="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
@@ -172,7 +182,9 @@
 									style={`width: ${Math.round(((row.count ?? 0) / ratingMax) * 100)}%`}
 								></div>
 							</div>
-							<div class="text-right text-sm tabular-nums text-muted-foreground">{formatNumber(row.count ?? 0)}</div>
+							<div class="text-right text-sm text-muted-foreground tabular-nums">
+								{formatNumber(row.count ?? 0)}
+							</div>
 						</div>
 					{/each}
 				</div>
@@ -193,13 +205,15 @@
 					{#each ratedVisible as item (item.id)}
 						<a
 							href={item.href}
-							class="flex items-center justify-between gap-4 py-2 transition hover:bg-muted/30 px-2 -mx-2 rounded-md"
+							class="-mx-2 flex items-center justify-between gap-4 rounded-md px-2 py-2 transition hover:bg-muted/30"
 						>
 							<div class="min-w-0">
 								<div class="truncate text-sm font-medium">{item.title}</div>
 									<div class="text-xs text-muted-foreground">{formatMediaTypeLabel(item.type)}</div>
 							</div>
-							<div class="rounded-full border bg-background px-3 py-1 text-xs font-medium">{item.rating}/10</div>
+							<div class="rounded-full border bg-background px-3 py-1 text-xs font-medium">
+								{item.rating}/10
+							</div>
 						</a>
 					{/each}
 				</div>
@@ -226,7 +240,10 @@
 		{:else}
 			<div class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
 				{#each data.stats.watchedButNotRated as item (item.id)}
-					<a href={item.href} class="rounded-lg border bg-muted/20 px-3 py-2 transition hover:bg-muted/40">
+					<a
+						href={item.href}
+						class="rounded-lg border bg-muted/20 px-3 py-2 transition hover:bg-muted/40"
+					>
 						<div class="truncate text-sm font-medium">{item.title}</div>
 						<div class="text-xs text-muted-foreground">{formatMediaTypeLabel(item.type)}</div>
 					</a>

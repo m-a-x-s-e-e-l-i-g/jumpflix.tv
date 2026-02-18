@@ -13,16 +13,16 @@
 	import * as m from '$lib/paraglide/messages';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
-	
+
 	let authDialogOpen = $state(false);
 	let settingsDialogOpen = $state(false);
 	let showUserMenu = $state(false);
 	let menuRef: HTMLDivElement | undefined = $state(undefined);
 	let buttonRef: HTMLButtonElement | undefined = $state(undefined);
-	
+
 	async function handleSignOut() {
 		if (!supabase) return;
-		
+
 		try {
 			// Clear all auth state before signing out
 			const { error } = await supabase.auth.signOut({ scope: 'local' });
@@ -32,8 +32,8 @@
 			} else {
 				// Clear any cached data
 				if ('caches' in window) {
-					caches.keys().then(names => {
-						names.forEach(name => caches.delete(name));
+					caches.keys().then((names) => {
+						names.forEach((name) => caches.delete(name));
 					});
 				}
 				toast.success('Signed out successfully');
@@ -46,7 +46,7 @@
 			toast.error('An error occurred during sign out');
 		}
 	}
-	
+
 	function getInitials(name: string | undefined): string {
 		if (!name) return '?';
 		const parts = name.split(' ');
@@ -55,17 +55,19 @@
 		}
 		return name[0].toUpperCase();
 	}
-	
+
 	function handleClickOutside(event: MouseEvent) {
-		if (showUserMenu && 
-		    menuRef && 
-		    buttonRef && 
-		    !menuRef.contains(event.target as Node) && 
-		    !buttonRef.contains(event.target as Node)) {
+		if (
+			showUserMenu &&
+			menuRef &&
+			buttonRef &&
+			!menuRef.contains(event.target as Node) &&
+			!buttonRef.contains(event.target as Node)
+		) {
 			showUserMenu = false;
 		}
 	}
-	
+
 	onMount(() => {
 		document.addEventListener('click', handleClickOutside);
 		return () => {
@@ -75,20 +77,22 @@
 </script>
 
 {#if $loading}
-	<div class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm">
+	<div
+		class="relative inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm"
+	>
 		<LoaderIcon class="size-5 animate-spin" />
 	</div>
 {:else if $user}
 	<div class="relative">
 		<button
 			bind:this={buttonRef}
-			onclick={() => showUserMenu = !showUserMenu}
+			onclick={() => (showUserMenu = !showUserMenu)}
 			class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 			aria-label="User menu"
 		>
 			{#if $user.user_metadata?.avatar_url}
-				<img 
-					src={$user.user_metadata.avatar_url} 
+				<img
+					src={$user.user_metadata.avatar_url}
 					alt={$user.user_metadata?.name ?? 'User'}
 					class="h-full w-full rounded-md object-cover"
 				/>
@@ -100,18 +104,21 @@
 				<UserCheckIcon class="size-5" />
 			{/if}
 		</button>
-		
+
 		{#if showUserMenu}
-			<div bind:this={menuRef} class="absolute top-full left-0 mt-2 w-56 rounded-lg border border-border bg-background shadow-lg overflow-hidden z-50">
-				<div class="px-4 py-3 border-b border-border">
-					<p class="text-sm font-medium text-foreground truncate">
+			<div
+				bind:this={menuRef}
+				class="absolute top-full left-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-border bg-background shadow-lg"
+			>
+				<div class="border-b border-border px-4 py-3">
+					<p class="truncate text-sm font-medium text-foreground">
 						{$user.user_metadata?.name ?? $user.email ?? 'User'}
 					</p>
 					{#if $user.email}
-						<p class="text-xs text-muted-foreground truncate">{$user.email}</p>
+						<p class="truncate text-xs text-muted-foreground">{$user.email}</p>
 					{/if}
 				</div>
-				
+
 				<button
 					onclick={() => {
 						showUserMenu = false;
@@ -131,7 +138,7 @@
 					<BarChart3Icon class="size-4" />
 					<span>My stats</span>
 				</a>
-				
+
 				<button
 					onclick={handleSignOut}
 					class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"

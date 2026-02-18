@@ -238,8 +238,26 @@ const debouncedSearch = debounceStore(searchQuery, 160);
 
 // Derived filtered + sorted content
 export const visibleContent = derived(
-	[contentMeta, debouncedSearch, showPaid, sortBy, showWatched, watchedBaseIds, inProgressBaseIds, selectedFacets],
-	([$meta, $search, $showPaid, $sortBy, $showWatched, $watchedBaseIds, $inProgressBaseIds, $selectedFacets]) =>
+	[
+		contentMeta,
+		debouncedSearch,
+		showPaid,
+		sortBy,
+		showWatched,
+		watchedBaseIds,
+		inProgressBaseIds,
+		selectedFacets
+	],
+	([
+		$meta,
+		$search,
+		$showPaid,
+		$sortBy,
+		$showWatched,
+		$watchedBaseIds,
+		$inProgressBaseIds,
+		$selectedFacets
+	]) =>
 		filterAndSortContent($meta.items, $meta.rankMap, {
 			searchQuery: $search,
 			showPaid: $showPaid,

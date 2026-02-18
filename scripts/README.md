@@ -179,7 +179,7 @@ backups/
    ```
 
 3. **Restore Users:**
-   
+
    Users are exported as JSON. Use Supabase dashboard or Auth Admin API to import.
    See `users.sql` for the JSON data and detailed instructions.
 

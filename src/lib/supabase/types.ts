@@ -1,11 +1,4 @@
-export type Json =
-	| string
-	| number
-	| boolean
-	| null
-	| { [key: string]: Json | undefined }
-	| Json[];
-
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
 	public: {
@@ -104,7 +97,16 @@ export type Database = {
 					facet_movement: string[] | null;
 					facet_environment: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
 					facet_film_style: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
-					facet_theme: 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment' | null;
+					facet_theme:
+						| 'journey'
+						| 'team'
+						| 'event'
+						| 'competition'
+						| 'educational'
+						| 'travel'
+						| 'creative'
+						| 'entertainment'
+						| null;
 					created_at: string;
 					updated_at: string;
 				};
@@ -131,7 +133,16 @@ export type Database = {
 					facet_movement?: string[] | null;
 					facet_environment?: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
 					facet_film_style?: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
-					facet_theme?: 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment' | null;
+					facet_theme?:
+						| 'journey'
+						| 'team'
+						| 'event'
+						| 'competition'
+						| 'educational'
+						| 'travel'
+						| 'creative'
+						| 'entertainment'
+						| null;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -158,7 +169,16 @@ export type Database = {
 					facet_movement?: string[] | null;
 					facet_environment?: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
 					facet_film_style?: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
-					facet_theme?: 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment' | null;
+					facet_theme?:
+						| 'journey'
+						| 'team'
+						| 'event'
+						| 'competition'
+						| 'educational'
+						| 'travel'
+						| 'creative'
+						| 'entertainment'
+						| null;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -393,7 +413,16 @@ export type Database = {
 					facet_movement: string[] | null;
 					facet_environment: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
 					facet_film_style: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
-					facet_theme: 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment' | null;
+					facet_theme:
+						| 'journey'
+						| 'team'
+						| 'event'
+						| 'competition'
+						| 'educational'
+						| 'travel'
+						| 'creative'
+						| 'entertainment'
+						| null;
 					facet_length: 'short' | 'medium' | 'feature' | 'long-feature' | null;
 					facet_era: '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000' | null;
 				};

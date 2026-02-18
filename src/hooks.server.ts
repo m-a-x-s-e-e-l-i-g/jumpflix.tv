@@ -18,7 +18,7 @@ export const handle: Handle = sequence(handleSupabase, handleParaglide);
 
 export const handleError: HandleServerError = async ({ error, event, status, message }) => {
 	const errorId = crypto.randomUUID();
-	
+
 	// Log error details (in production, you might want to send to error tracking service)
 	if (!dev) {
 		console.error('Server Error:', {
@@ -27,7 +27,7 @@ export const handleError: HandleServerError = async ({ error, event, status, mes
 			message,
 			url: event.url.pathname,
 			timestamp: new Date().toISOString(),
-			userAgent: event.request.headers.get('user-agent'),
+			userAgent: event.request.headers.get('user-agent')
 		});
 	} else {
 		console.error('Dev Server Error:', error);

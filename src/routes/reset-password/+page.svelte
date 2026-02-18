@@ -12,7 +12,9 @@
 
 	onMount(async () => {
 		// Check if we have a valid session from the recovery link
-		const { data: { session } } = await supabase.auth.getSession();
+		const {
+			data: { session }
+		} = await supabase.auth.getSession();
 		if (!session) {
 			toast.error('Invalid or expired reset link. Please request a new one.');
 			goto('/');
@@ -23,7 +25,7 @@
 
 	async function handleResetPassword(e: Event) {
 		e.preventDefault();
-		
+
 		if (password !== confirmPassword) {
 			toast.error('Passwords do not match');
 			return;
@@ -45,7 +47,7 @@
 			toast.success('Password updated successfully!');
 			password = '';
 			confirmPassword = '';
-			
+
 			// Redirect to home after a short delay
 			setTimeout(() => {
 				goto('/');
@@ -64,15 +66,15 @@
 </svelte:head>
 
 {#if isValidSession}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm">
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm"
+	>
 		<div class="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-lg">
 			<h1 class="mb-6 text-center text-2xl font-bold text-foreground">Reset Your Password</h1>
-			
+
 			<form onsubmit={handleResetPassword} class="space-y-4">
 				<div class="space-y-2">
-					<label for="password" class="text-sm font-medium text-foreground">
-						New Password
-					</label>
+					<label for="password" class="text-sm font-medium text-foreground"> New Password </label>
 					<input
 						id="password"
 						type="password"
@@ -81,7 +83,7 @@
 						disabled={loading}
 						placeholder="Enter new password"
 						minlength="6"
-						class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+						class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none disabled:opacity-50"
 					/>
 				</div>
 
@@ -97,7 +99,7 @@
 						disabled={loading}
 						placeholder="Confirm new password"
 						minlength="6"
-						class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+						class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none disabled:opacity-50"
 					/>
 				</div>
 

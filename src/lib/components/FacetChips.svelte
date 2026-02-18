@@ -261,61 +261,63 @@
 {/if}
 
 <style>
-  .facet-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-    align-items: center;
-    font-size: 0.75rem;
-    line-height: 1rem;
-  }
-  
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.125rem 0.5rem;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 0.25rem;
-    color: rgba(255, 255, 255, 0.9);
-    font-weight: 500;
-    white-space: nowrap;
-    transition: all 0.2s ease;
-    cursor: help;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .chip:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-  }
-  
-  .emoji {
-    font-size: 0.875rem;
-    line-height: 1;
-  }
-  
-  .tooltip-text {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    max-width: 16rem;
-  }
-  
-  @media (max-width: 640px) {
-    .facet-chips {
-      font-size: 0.7rem;
-      gap: 0.25rem;
-    }
-    
-    .chip {
-      padding: 0.1rem 0.375rem;
-      gap: 0.2rem;
-    }
-    
-    .emoji {
-      font-size: 0.75rem;
-    }
-  }
+	.facet-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
+		align-items: center;
+		font-size: 0.75rem;
+		line-height: 1rem;
+	}
+
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 0.125rem 0.5rem;
+		background-color: rgba(255, 255, 255, 0.1);
+		border-radius: 0.25rem;
+		color: rgba(255, 255, 255, 0.9);
+		font-weight: 500;
+		white-space: nowrap;
+		transition: all 0.2s ease;
+		cursor: help;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.chip:hover {
+		background-color: rgba(255, 255, 255, 0.15);
+		transform: translateY(-1px);
+		border-color: rgba(255, 255, 255, 0.2);
+		box-shadow:
+			0 4px 6px -1px rgba(0, 0, 0, 0.3),
+			0 2px 4px -1px rgba(0, 0, 0, 0.2);
+	}
+
+	.emoji {
+		font-size: 0.875rem;
+		line-height: 1;
+	}
+
+	.tooltip-text {
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		max-width: 16rem;
+	}
+
+	@media (max-width: 640px) {
+		.facet-chips {
+			font-size: 0.7rem;
+			gap: 0.25rem;
+		}
+
+		.chip {
+			padding: 0.1rem 0.375rem;
+			gap: 0.2rem;
+		}
+
+		.emoji {
+			font-size: 0.75rem;
+		}
+	}
 </style>

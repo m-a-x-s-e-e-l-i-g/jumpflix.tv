@@ -1,6 +1,14 @@
 import { createSupabaseClient } from '$lib/server/supabaseClient';
 import type { Database } from '$lib/supabase/types';
-import type { ContentItem, Episode, Movie, Season, Series, Facets, VideoTrack } from '$lib/tv/types';
+import type {
+	ContentItem,
+	Episode,
+	Movie,
+	Season,
+	Series,
+	Facets,
+	VideoTrack
+} from '$lib/tv/types';
 
 type MediaItemRow = Database['public']['Tables']['media_items']['Row'];
 type SeriesSeasonRow = Database['public']['Tables']['series_seasons']['Row'];
@@ -8,7 +16,7 @@ type SeriesEpisodeRow = Database['public']['Tables']['series_episodes']['Row'];
 type MediaRatingSummaryRow = Database['public']['Views']['media_ratings_summary']['Row'];
 type VideoSongRow = Database['public']['Tables']['video_songs']['Row'];
 type SongRow = Database['public']['Tables']['songs']['Row'];
-type SeriesSeasonWithEpisodes = SeriesSeasonRow & { 
+type SeriesSeasonWithEpisodes = SeriesSeasonRow & {
 	series_episodes?: SeriesEpisodeRow[] | null;
 };
 
@@ -21,7 +29,9 @@ type VideoSongWithSong = VideoSongRow & { song?: SongRow | null };
 type MediaItemWithSeasonsAndTracks = MediaItemWithSeasons & {
 	video_songs?: VideoSongWithSong[] | null;
 };
-type SeriesSeasonWithEpisodesForPlaylist = SeriesSeasonRow & { episodes?: SeriesEpisodeRow[] | null };
+type SeriesSeasonWithEpisodesForPlaylist = SeriesSeasonRow & {
+	episodes?: SeriesEpisodeRow[] | null;
+};
 
 // Helper to remove undefined values for SvelteKit serialization
 function removeUndefined<T extends Record<string, any>>(obj: T): T {
@@ -77,34 +87,41 @@ async function writePrerenderCache<T>(fileName: string, items: T): Promise<void>
 function mapFacets(row: MediaItemRow): Facets | undefined {
 	// Calculate automatic facets
 	const era = calculateEraFacet(row.year);
+	const length = calculateLengthFacet(row.duration);
 
-	const hasFacets = row.facet_type || 
-		(row.facet_mood && row.facet_mood.length > 0) || 
-		(row.facet_movement && row.facet_movement.length > 0) || 
-		row.facet_environment || 
-		row.facet_film_style || 
-		row.facet_theme || 
-		era;
-	
+	const hasFacets =
+		row.facet_type ||
+		(row.facet_mood && row.facet_mood.length > 0) ||
+		(row.facet_movement && row.facet_movement.length > 0) ||
+		row.facet_environment ||
+		row.facet_film_style ||
+		row.facet_theme ||
+		era ||
+		length;
+
 	if (!hasFacets) {
 		return undefined;
 	}
 
 	return removeUndefined({
 		type: row.facet_type ?? undefined,
-		mood: row.facet_mood && row.facet_mood.length > 0 ? row.facet_mood as any : undefined,
-		movement: row.facet_movement && row.facet_movement.length > 0 ? row.facet_movement as any : undefined,
+		mood: row.facet_mood && row.facet_mood.length > 0 ? (row.facet_mood as any) : undefined,
+		movement:
+			row.facet_movement && row.facet_movement.length > 0 ? (row.facet_movement as any) : undefined,
 		environment: row.facet_environment ?? undefined,
 		filmStyle: row.facet_film_style ?? undefined,
 		theme: row.facet_theme ?? undefined,
-		era: era ?? undefined
+		era: era ?? undefined,
+		length: length ?? undefined
 	});
 }
 
 // Calculate era facet from year string
-function calculateEraFacet(year: string | null): '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000' | null {
+function calculateEraFacet(
+	year: string | null
+): '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000' | null {
 	if (!year || !/^\d{4}$/.test(year)) return null;
-	
+
 	const yearNum = parseInt(year);
 	if (yearNum >= 2030) return '2030s';
 	if (yearNum >= 2020) return '2020s';
@@ -113,10 +130,37 @@ function calculateEraFacet(year: string | null): '2000s' | '2010s' | '2020s' | '
 	return 'pre-2000';
 }
 
+// Calculate length facet from duration string
+// Duration format examples: "5m", "1h 12m", "40m", "2h"
+function calculateLengthFacet(
+	duration: string | null
+): 'short-form' | 'medium-form' | 'long-form' | null {
+	if (!duration || typeof duration !== 'string') return null;
 
-function mapMovie(row: MediaItemWithSeasonsAndTracks, ratingSummary: MediaRatingSummaryRow | null): Movie {
-	
-	const tracksSource = Array.isArray((row as any).video_songs) ? ((row as any).video_songs as VideoSongWithSong[]) : [];
+	let minutes = 0;
+	const hMatch = duration.match(/(\d+)\s*h/i);
+	const mMatch = duration.match(/(\d+)\s*m/i);
+
+	if (hMatch) minutes += parseInt(hMatch[1]) * 60;
+	if (mMatch) minutes += parseInt(mMatch[1]);
+
+	if (minutes === 0) return null;
+
+	// Short-form: under 15 minutes (typical for shorts, clips, trailers)
+	// Medium-form: 15-45 minutes (typical for session edits, short films)
+	// Long-form: 45+ minutes (typical for feature films, documentaries)
+	if (minutes < 15) return 'short-form';
+	if (minutes < 45) return 'medium-form';
+	return 'long-form';
+}
+
+function mapMovie(
+	row: MediaItemWithSeasonsAndTracks,
+	ratingSummary: MediaRatingSummaryRow | null
+): Movie {
+	const tracksSource = Array.isArray((row as any).video_songs)
+		? ((row as any).video_songs as VideoSongWithSong[])
+		: [];
 	const tracks: VideoTrack[] | undefined = tracksSource.length
 		? tracksSource
 				.filter((vs) => Boolean(vs.song))
@@ -173,7 +217,9 @@ function mapMovie(row: MediaItemWithSeasonsAndTracks, ratingSummary: MediaRating
 	});
 }
 
-function mapSeason(row: Pick<SeriesSeasonRow, 'id' | 'season_number' | 'playlist_id' | 'custom_name'>): Season {
+function mapSeason(
+	row: Pick<SeriesSeasonRow, 'id' | 'season_number' | 'playlist_id' | 'custom_name'>
+): Season {
 	return removeUndefined({
 		id: row.id,
 		seasonNumber: row.season_number,
@@ -243,10 +289,8 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 	contentInFlight = (async () => {
 		try {
 			const supabase = createSupabaseClient();
-			const { data, error } = await supabase
-				.from('media_items')
-				.select(
-					`
+			const { data, error } = await supabase.from('media_items').select(
+				`
 						*,
 						video_songs (
 							*,
@@ -257,7 +301,7 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 							series_episodes ( * )
 						)
 					`
-				);
+			);
 
 			if (error) {
 				console.error('[content-service] Failed to load media items:', error);
@@ -321,17 +365,15 @@ export async function fetchSeriesEpisodeEntries(): Promise<SeriesEpisodeEntry[]>
 		if (cached) return cached;
 
 		const supabase = createSupabaseClient();
-		const { data, error } = await supabase
-			.from('series_episodes')
-			.select(
-				`
+		const { data, error } = await supabase.from('series_episodes').select(
+			`
 					episode_number,
 					season:series_seasons (
 						season_number,
 						series:media_items ( slug, type )
 					)
 				`
-			);
+		);
 
 		if (error) {
 			console.error('[content-service] Failed to load series episodes:', error);
@@ -385,7 +427,7 @@ export async function fetchEpisodesByPlaylist(playlistId: string): Promise<Episo
 					external_url
 				)
 			`
-			)
+		)
 		.eq('playlist_id', playlistId)
 		.maybeSingle<SeriesSeasonWithEpisodesForPlaylist>();
 
@@ -441,7 +483,7 @@ export async function fetchEpisodesBySeasonId(seasonId: number): Promise<Episode
 					external_url
 				)
 			`
-			)
+		)
 		.eq('id', seasonId)
 		.maybeSingle<SeriesSeasonWithEpisodesForPlaylist>();
 
@@ -461,8 +503,9 @@ export async function fetchEpisodesBySeasonId(seasonId: number): Promise<Episode
 		.sort((a, b) => (a.episode_number ?? 0) - (b.episode_number ?? 0))
 		.map((episode) => {
 			// Check if episode has a valid video_id (not null, undefined, or empty string)
-			const hasValidVideoId = episode.video_id && typeof episode.video_id === 'string' && episode.video_id.trim() !== '';
-			
+			const hasValidVideoId =
+				episode.video_id && typeof episode.video_id === 'string' && episode.video_id.trim() !== '';
+
 			return removeUndefined({
 				id: episode.video_id ?? String(episode.id),
 				title: episode.title ?? `Episode ${episode.episode_number ?? ''}`,

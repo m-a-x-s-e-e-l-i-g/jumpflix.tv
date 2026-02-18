@@ -140,10 +140,48 @@ export function matchesSearch(item: ContentItem, q: string): boolean {
   return haystacks.some(h => (h || '').toLowerCase().includes(needle));
 }
 
+export function matchesFacets(item: ContentItem, selectedFacets?: TvState['selectedFacets']): boolean {
+  if (!selectedFacets) return true;
+  const facets = item.facets;
+  if (!facets) return false;
+
+  // Check each facet category - all selected facets must match (AND logic within category, OR logic for values)
+  if (selectedFacets.type && selectedFacets.type.length > 0) {
+    if (!facets.type || !selectedFacets.type.includes(facets.type)) return false;
+  }
+
+  if (selectedFacets.mood && selectedFacets.mood.length > 0) {
+    if (!facets.mood || !facets.mood.some(m => selectedFacets.mood!.includes(m))) return false;
+  }
+
+  if (selectedFacets.movement && selectedFacets.movement.length > 0) {
+    if (!facets.movement || !facets.movement.some(m => selectedFacets.movement!.includes(m))) return false;
+  }
+
+  if (selectedFacets.environment && selectedFacets.environment.length > 0) {
+    if (!facets.environment || !selectedFacets.environment.includes(facets.environment)) return false;
+  }
+
+  if (selectedFacets.filmStyle && selectedFacets.filmStyle.length > 0) {
+    if (!facets.filmStyle || !selectedFacets.filmStyle.includes(facets.filmStyle)) return false;
+  }
+
+  if (selectedFacets.theme && selectedFacets.theme.length > 0) {
+    if (!facets.theme || !selectedFacets.theme.includes(facets.theme)) return false;
+  }
+
+  if (selectedFacets.era && selectedFacets.era.length > 0) {
+    if (!facets.era || !selectedFacets.era.includes(facets.era)) return false;
+  }
+
+  return true;
+}
+
 export function filterAndSortContent(all: ContentItem[], rankMap: Map<string, number>, state: TvState): ContentItem[] {
   const filtered = all
     .filter(item => state.showPaid ? true : !item.paid)
-    .filter(item => matchesSearch(item, state.searchQuery));
+    .filter(item => matchesSearch(item, state.searchQuery))
+    .filter(item => matchesFacets(item, state.selectedFacets));
 
   const sorted = [...filtered];
   const watchedSet = state.watchedBaseIds;

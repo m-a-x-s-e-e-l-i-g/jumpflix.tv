@@ -1,6 +1,6 @@
 import { writable, derived, type Readable, get } from 'svelte/store';
 import { browser } from '$app/environment';
-import type { ContentItem, Episode, SortBy } from './types';
+import type { ContentItem, Episode, SortBy, SelectedFacets } from './types';
 import { buildRankMap, filterAndSortContent, isInlinePlayable, keyFor } from './utils';
 import {
 	getAllWatchProgress,
@@ -119,6 +119,8 @@ export const selectedIndex = writable(0);
 export const gridScale = writable(loadNumberPreference(GRID_SCALE_STORAGE_KEY, 1));
 // When playing a single episode from a series, this holds the selected episode
 export const selectedEpisode = writable<Episode | null>(null);
+// Selected facets for filtering
+export const selectedFacets = writable<SelectedFacets>({});
 
 // Track thumbnails that have successfully loaded so we can keep them cached
 export const loadedThumbnails = writable<Set<string>>(new Set());
@@ -236,15 +238,16 @@ const debouncedSearch = debounceStore(searchQuery, 160);
 
 // Derived filtered + sorted content
 export const visibleContent = derived(
-	[contentMeta, debouncedSearch, showPaid, sortBy, showWatched, watchedBaseIds, inProgressBaseIds],
-	([$meta, $search, $showPaid, $sortBy, $showWatched, $watchedBaseIds, $inProgressBaseIds]) =>
+	[contentMeta, debouncedSearch, showPaid, sortBy, showWatched, watchedBaseIds, inProgressBaseIds, selectedFacets],
+	([$meta, $search, $showPaid, $sortBy, $showWatched, $watchedBaseIds, $inProgressBaseIds, $selectedFacets]) =>
 		filterAndSortContent($meta.items, $meta.rankMap, {
 			searchQuery: $search,
 			showPaid: $showPaid,
 			sortBy: $sortBy,
 			showWatched: $showWatched,
 			watchedBaseIds: $watchedBaseIds,
-			inProgressBaseIds: $inProgressBaseIds
+			inProgressBaseIds: $inProgressBaseIds,
+			selectedFacets: $selectedFacets
 		})
 );
 

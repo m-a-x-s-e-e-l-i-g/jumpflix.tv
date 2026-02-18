@@ -11,6 +11,7 @@
 	"tv_playNow": "Nu afspelen",
 	"tv_watchOn": "Bekijk op ",
 	"tv_paid": "Betaald",
+	"tv_new": "NIEUW",
 	"tv_play": "Afspelen",
 	"tv_open": "Openen",
 	"tv_selectPlaceholder": "Selecteer een item om details te zien.",
@@ -158,5 +159,17 @@
 	"about_subtitle": "Een filmisch museum voor parkour — gebouwd voor langspeelfilms, series en behoud.",
 	"about_secretTitle": "JE HEBT EEN GEHEIM GEVONDEN",
 	"about_secretHint": "Houd spatiebalk ingedrukt of longpress video voor slowmotion! 🤫",
-	"about_thisIsMe": "Dit ben ik die dingen spring haha"
+	"about_thisIsMe": "Dit ben ik die dingen spring haha",
+	"tv_overview": "Overzicht",
+	"tv_facets": "Facetten",
+	"tv_noDescription": "Geen beschrijving beschikbaar.",
+	"tv_athletes": "Atleten",
+	"tv_backToCatalog": "Terug naar catalogus",
+	"tv_openInSpotify": "Open in Spotify",
+	"tv_openSpotify": "Open",
+	"stats_backToCatalog": "Terug naar catalogus",
+	"stats_films": "Films",
+	"stats_series": "Series",
+	"stats_episodes": "Afleveringen",
+	"stats_acrossFilmsAndSeries": "Over films + series"
 }

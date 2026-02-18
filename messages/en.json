@@ -11,6 +11,7 @@
 	"tv_playNow": "Play now",
 	"tv_watchOn": "Watch on ",
 	"tv_paid": "Paid",
+	"tv_new": "NEW",
 	"tv_play": "Play",
 	"tv_open": "Open",
 	"tv_selectPlaceholder": "Select an item to see details.",
@@ -158,5 +159,17 @@
 	"about_subtitle": "A cinematic museum for parkour — built for long-form films, series, and preservation.",
 	"about_secretTitle": "YOU FOUND A SECRET",
 	"about_secretHint": "Hold spacebar or longpress video for slowmotion! 🤫",
-	"about_thisIsMe": "This is me jumping stuff haha"
+	"about_thisIsMe": "This is me jumping stuff haha",
+	"tv_overview": "Overview",
+	"tv_facets": "Facets",
+	"tv_noDescription": "No description available.",
+	"tv_athletes": "Athletes",
+	"tv_backToCatalog": "Back to catalog",
+	"tv_openInSpotify": "Open in Spotify",
+	"tv_openSpotify": "Open",
+	"stats_backToCatalog": "Back to catalog",
+	"stats_films": "Films",
+	"stats_series": "Series",
+	"stats_episodes": "Episodes",
+	"stats_acrossFilmsAndSeries": "Across films + series"
 }

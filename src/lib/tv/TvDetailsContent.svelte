@@ -818,14 +818,14 @@
 				<div class="detail-main-content">
 					<section class="detail-section detail-overview">
 						<div class="detail-overview-copy">
-							<h2>Overview</h2>
-							<p>{selected.description || 'No description available.'}</p>
+							<h2>{m.tv_overview()}</h2>
+							<p>{selected.description || m.tv_noDescription()}</p>
 						</div>
 					</section>
 
 					{#if selected.facets}
 						<section class="detail-section">
-							<h2>Facets</h2>
+							<h2>{m.tv_facets()}</h2>
 							<FacetChips facets={selected.facets} />
 						</section>
 					{/if}
@@ -853,7 +853,7 @@
 
 					{#if (selected as any).starring?.length}
 						<section class="detail-section">
-							<h2>{m.tv_starring()}</h2>
+							<h2>{m.tv_athletes()}</h2>
 							<div class="detail-tags">
 								{#each showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES) as s}
 									<span>{s}</span>

@@ -440,8 +440,7 @@
 			const saved = await upsertReview({
 				mediaId: selected.id,
 				userId: $authUser.id,
-				body: myReviewText,
-				authorName: deriveAuthorName()
+				body: myReviewText
 			});
 			myReviewId = saved.id;
 			myReviewText = saved.body;

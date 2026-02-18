@@ -109,19 +109,11 @@
           </select>
           <span class="search-caret" aria-hidden="true">▾</span>
         </div>
-
-				<div class="search-select">
-					<select value={$sortBy} onchange={handleSortChange} class={selectClass}>
-						{#each Object.entries(sortLabels) as [value, label]}
-							<option {value}>{label}</option>
-						{/each}
-					</select>
-					<span class="search-caret" aria-hidden="true">▾</span>
-				</div>
 			</div>
 		</div>
 	</div>
 </div>
+
 
 <style>
 	.search-wrap {

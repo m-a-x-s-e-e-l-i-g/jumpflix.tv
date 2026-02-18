@@ -2,7 +2,11 @@
 	import { m } from '$lib/paraglide/messages.js';
 	import { goto } from '$app/navigation';
 
-	let { status = 500, title = '', message = '' } = $props<{ status?: number; title?: string; message?: string }>();
+	let {
+		status = 500,
+		title = '',
+		message = ''
+	} = $props<{ status?: number; title?: string; message?: string }>();
 
 	const statusLabel = $derived(getStatusLabel(status));
 	const displayTitle = $derived(title?.trim() || statusLabel);
@@ -134,7 +138,10 @@
 		background: #e50914;
 		color: #ffffff;
 		box-shadow: 0 24px 48px -22px rgba(229, 9, 20, 0.7);
-		transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease,
+			background-color 0.2s ease;
 	}
 
 	.primary-action:hover {
@@ -146,7 +153,9 @@
 	.primary-action:focus-visible {
 		outline: 2px solid hsl(var(--ring));
 		outline-offset: 3px;
-		box-shadow: 0 24px 48px -22px rgba(229, 9, 20, 0.7), 0 0 0 4px rgba(229, 9, 20, 0.2);
+		box-shadow:
+			0 24px 48px -22px rgba(229, 9, 20, 0.7),
+			0 0 0 4px rgba(229, 9, 20, 0.2);
 	}
 
 	@media (min-width: 640px) {

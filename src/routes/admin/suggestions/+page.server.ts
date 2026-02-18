@@ -2,7 +2,12 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { requireAdmin } from '$lib/server/admin';
-import { applyMediaPatch, applyNewEpisode, applyNewSeason, type MediaPatch } from '$lib/server/content-suggestions';
+import {
+	applyMediaPatch,
+	applyNewEpisode,
+	applyNewSeason,
+	type MediaPatch
+} from '$lib/server/content-suggestions';
 
 const INVALID_JSON = Symbol('invalid-json');
 
@@ -16,7 +21,6 @@ function safeParseJson(value: FormDataEntryValue | null): any | null {
 		return INVALID_JSON;
 	}
 }
-
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const { user } = await locals.safeGetSession();
@@ -88,7 +92,10 @@ export const actions: Actions = {
 		const mediaId = Number((suggestion as any).media_id);
 		if (!Number.isFinite(mediaId)) return fail(400, { message: 'Invalid media_id' });
 
-		const effectivePatch: MediaPatch = (parsed ?? (suggestion as any).admin_payload ?? (suggestion as any).payload ?? {}) as any;
+		const effectivePatch: MediaPatch = (parsed ??
+			(suggestion as any).admin_payload ??
+			(suggestion as any).payload ??
+			{}) as any;
 
 		try {
 			const kind = String((suggestion as any).kind ?? '');

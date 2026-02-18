@@ -26,7 +26,9 @@ export const load = async ({ parent, setHeaders }) => {
 		subtitle: string | null;
 	};
 
-	function parseMediaKey(key: string):
+	function parseMediaKey(
+		key: string
+	):
 		| { kind: 'movie'; itemId: number }
 		| { kind: 'series'; itemId: number }
 		| { kind: 'episode'; seriesId: number; episodeVideoId: string }
@@ -59,12 +61,18 @@ export const load = async ({ parent, setHeaders }) => {
 		supabase.rpc('admin_top_watched_media', { limit_n: 10 })
 	]);
 
-	const rpcErrors = [overviewRes.error, activityRes.error, ratingsDistRes.error, topMediaRes.error].filter(
-		(e): e is NonNullable<typeof e> => Boolean(e)
-	);
+	const rpcErrors = [
+		overviewRes.error,
+		activityRes.error,
+		ratingsDistRes.error,
+		topMediaRes.error
+	].filter((e): e is NonNullable<typeof e> => Boolean(e));
 	if (rpcErrors.length > 0) {
 		const message = rpcErrors.map((e) => e.message).join(' | ');
-		if (message.includes('Could not find the function') || message.includes('admin_stats_overview')) {
+		if (
+			message.includes('Could not find the function') ||
+			message.includes('admin_stats_overview')
+		) {
 			throw error(
 				500,
 				'Missing stats SQL functions in Supabase. Apply the migration supabase/migrations/20260128000000_add_admin_stats_functions.sql to your Supabase project.'
@@ -90,9 +98,7 @@ export const load = async ({ parent, setHeaders }) => {
 		episodesCountRes.error,
 		tracksCountRes.error,
 		trackLinksCountRes.error
-	].filter(
-		(e): e is NonNullable<typeof e> => Boolean(e)
-	);
+	].filter((e): e is NonNullable<typeof e> => Boolean(e));
 	if (countErrors.length > 0) {
 		throw error(500, countErrors.map((e) => e.message).join(' | '));
 	}
@@ -198,8 +204,13 @@ export const load = async ({ parent, setHeaders }) => {
 	const rawTop = ((topMediaRes.data as any[]) ?? []) as TopWatchedRpcRow[];
 	const parsed = rawTop
 		.map((row) => ({ row, parsed: parseMediaKey(row.media_id) }))
-		.filter((entry): entry is { row: TopWatchedRpcRow; parsed: NonNullable<ReturnType<typeof parseMediaKey>> } =>
-			Boolean(entry.parsed)
+		.filter(
+			(
+				entry
+			): entry is {
+				row: TopWatchedRpcRow;
+				parsed: NonNullable<ReturnType<typeof parseMediaKey>>;
+			} => Boolean(entry.parsed)
 		);
 
 	const movieIds = Array.from(

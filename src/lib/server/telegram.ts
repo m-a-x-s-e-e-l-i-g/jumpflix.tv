@@ -10,7 +10,9 @@ export async function sendTelegramMessage(
 	}
 ): Promise<void> {
 	if (!BOT_TOKEN || !CHANNEL_ID) {
-		throw new Error('Telegram configuration missing. Ensure TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID are set.');
+		throw new Error(
+			'Telegram configuration missing. Ensure TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID are set.'
+		);
 	}
 
 	const payload = {

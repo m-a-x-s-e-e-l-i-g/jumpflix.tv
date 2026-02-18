@@ -1,7 +1,6 @@
 import { error } from '@sveltejs/kit';
 
-const UUID_RE =
-	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const load = async ({ params, locals, setHeaders }) => {
 	const userId = params.userId;
@@ -22,12 +21,18 @@ export const load = async ({ params, locals, setHeaders }) => {
 		supabase.rpc('user_watched_not_rated', { target_user: userId, limit_n: 50 })
 	]);
 
-	const rpcErrors = [overviewRes.error, distRes.error, ratedRes.error, watchedNotRatedRes.error].filter(
-		(e): e is NonNullable<typeof e> => Boolean(e)
-	);
+	const rpcErrors = [
+		overviewRes.error,
+		distRes.error,
+		ratedRes.error,
+		watchedNotRatedRes.error
+	].filter((e): e is NonNullable<typeof e> => Boolean(e));
 	if (rpcErrors.length > 0) {
 		const message = rpcErrors.map((e) => e.message).join(' | ');
-		if (message.includes('Could not find the function') || message.includes('user_stats_overview')) {
+		if (
+			message.includes('Could not find the function') ||
+			message.includes('user_stats_overview')
+		) {
 			throw error(
 				500,
 				'Missing stats SQL functions in Supabase. Apply the migration supabase/migrations/20260204000000_add_user_stats_functions.sql to your Supabase project.'
@@ -49,14 +54,16 @@ export const load = async ({ params, locals, setHeaders }) => {
 	}));
 
 	const ratedRows = ((ratedRes.data ?? []) as any[]) ?? [];
-	const ratedItems = (ratedRows as Array<{
-		media_id: number;
-		rating: number;
-		updated_at: string;
-		type: string;
-		title: string;
-		slug: string;
-	}>).map((r) => ({
+	const ratedItems = (
+		ratedRows as Array<{
+			media_id: number;
+			rating: number;
+			updated_at: string;
+			type: string;
+			title: string;
+			slug: string;
+		}>
+	).map((r) => ({
 		id: Number(r.media_id) || 0,
 		rating: Number(r.rating) || 0,
 		updated_at: String(r.updated_at ?? ''),
@@ -66,13 +73,15 @@ export const load = async ({ params, locals, setHeaders }) => {
 	}));
 
 	const watchedRows = ((watchedNotRatedRes.data ?? []) as any[]) ?? [];
-	const watchedButNotRated = (watchedRows as Array<{
-		id: number;
-		type: string;
-		title: string;
-		slug: string;
-		last_watched: string;
-	}>).map((item) => ({
+	const watchedButNotRated = (
+		watchedRows as Array<{
+			id: number;
+			type: string;
+			title: string;
+			slug: string;
+			last_watched: string;
+		}>
+	).map((item) => ({
 		id: Number(item.id) || 0,
 		title: String(item.title ?? ''),
 		type: String(item.type ?? ''),

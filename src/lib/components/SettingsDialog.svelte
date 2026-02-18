@@ -2,7 +2,12 @@
 	import { user } from '$lib/stores/authStore';
 	import { supabase } from '$lib/supabaseClient';
 	import { getLocale } from '$lib/paraglide/runtime.js';
-	import { Dialog as DialogRoot, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
+	import {
+		Dialog as DialogRoot,
+		DialogContent,
+		DialogHeader,
+		DialogTitle
+	} from '$lib/components/ui/dialog';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Switch from '$lib/components/ui/Switch.svelte';
 	import { toast } from 'svelte-sonner';
@@ -15,7 +20,7 @@
 	}>();
 
 	const locale = $derived(getLocale());
-	
+
 	let username = $state('');
 	let marketingOptIn = $state(false);
 	let loading = $state(true);
@@ -50,15 +55,18 @@
 			passwordChangedSuccess: 'Password changed successfully',
 			passwordChangeError: 'Failed to change password',
 			preferences: 'Communication Preferences',
-			marketingOptIn: 'Send me news and updates about JumpFlix, new content additions, and parkour-related updates',
+			marketingOptIn:
+				'Send me news and updates about JumpFlix, new content additions, and parkour-related updates',
 			saveButton: 'Save Changes',
 			savingButton: 'Saving...',
 			dangerZone: 'Danger Zone',
 			deleteAccount: 'Delete Account',
-			deleteWarning: 'Once you delete your account, there is no going back. All your watch history and preferences will be permanently deleted.',
+			deleteWarning:
+				'Once you delete your account, there is no going back. All your watch history and preferences will be permanently deleted.',
 			deleteButton: 'Delete My Account',
 			deleteConfirmTitle: 'Are you absolutely sure?',
-			deleteConfirmText: 'This action cannot be undone. This will permanently delete your account and remove all your data from our servers.',
+			deleteConfirmText:
+				'This action cannot be undone. This will permanently delete your account and remove all your data from our servers.',
 			cancelButton: 'Cancel',
 			confirmDeleteButton: 'Yes, delete my account',
 			deletingButton: 'Deleting...',
@@ -90,15 +98,18 @@
 			passwordChangedSuccess: 'Wachtwoord succesvol gewijzigd',
 			passwordChangeError: 'Kan wachtwoord niet wijzigen',
 			preferences: 'Communicatievoorkeuren',
-			marketingOptIn: 'Stuur mij nieuws en updates over JumpFlix, nieuwe content en parkour-gerelateerde updates',
+			marketingOptIn:
+				'Stuur mij nieuws en updates over JumpFlix, nieuwe content en parkour-gerelateerde updates',
 			saveButton: 'Wijzigingen opslaan',
 			savingButton: 'Opslaan...',
 			dangerZone: 'Gevaarlijke Zone',
 			deleteAccount: 'Account verwijderen',
-			deleteWarning: 'Als je je account verwijdert, is er geen weg terug. Al je kijkgeschiedenis en voorkeuren worden permanent verwijderd.',
+			deleteWarning:
+				'Als je je account verwijdert, is er geen weg terug. Al je kijkgeschiedenis en voorkeuren worden permanent verwijderd.',
 			deleteButton: 'Verwijder mijn account',
 			deleteConfirmTitle: 'Weet je het zeker?',
-			deleteConfirmText: 'Deze actie kan niet ongedaan worden gemaakt. Dit zal je account permanent verwijderen en alle gegevens van onze servers verwijderen.',
+			deleteConfirmText:
+				'Deze actie kan niet ongedaan worden gemaakt. Dit zal je account permanent verwijderen en alle gegevens van onze servers verwijderen.',
 			cancelButton: 'Annuleren',
 			confirmDeleteButton: 'Ja, verwijder mijn account',
 			deletingButton: 'Verwijderen...',
@@ -114,12 +125,12 @@
 
 	async function loadPreferences() {
 		if (!supabase || !$user) return;
-		
+
 		loading = true;
 		try {
 			// Load user metadata
 			username = $user.user_metadata?.name || '';
-			
+
 			// Load preferences
 			const { data, error } = await supabase
 				.from('user_preferences')
@@ -143,7 +154,7 @@
 
 	async function saveSettings() {
 		if (!supabase || !$user) return;
-		
+
 		saving = true;
 		try {
 			// Update user metadata (username)
@@ -174,16 +185,16 @@
 
 	async function deleteAccount() {
 		if (!supabase || !$user) return;
-		
+
 		deleteLoading = true;
 		try {
 			// Delete user account (this will cascade delete all related data)
 			const { error } = await supabase.rpc('delete_user_account');
-			
+
 			if (error) throw error;
 
 			toast.success(text.deletedSuccess);
-			
+
 			// Sign out and redirect to home
 			await supabase.auth.signOut();
 			open = false;
@@ -198,7 +209,7 @@
 
 	async function changePassword() {
 		if (!supabase || !$user) return;
-		
+
 		// Validate passwords
 		if (newPassword !== confirmNewPassword) {
 			toast.error(text.passwordMismatch);
@@ -232,7 +243,7 @@
 			if (error) throw error;
 
 			toast.success(text.passwordChangedSuccess);
-			
+
 			// Clear password fields
 			currentPassword = '';
 			newPassword = '';
@@ -255,7 +266,7 @@
 
 <DialogRoot bind:open>
 	{@render children?.()}
-	
+
 	<DialogContent class="max-h-[85vh] max-w-2xl overflow-y-auto">
 		<DialogHeader>
 			<DialogTitle>{text.title}</DialogTitle>
@@ -263,14 +274,14 @@
 
 		{#if loading}
 			<div class="flex items-center justify-center py-12">
-				<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+				<div class="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
 			</div>
 		{:else}
 			<div class="space-y-6">
 				<!-- Profile Section -->
 				<section class="space-y-3">
 					<h3 class="text-sm font-semibold">{text.profile}</h3>
-					
+
 					<div class="space-y-3 rounded-lg border border-border bg-card p-3">
 						<div class="space-y-1.5">
 							<label for="username" class="text-xs font-medium">
@@ -281,7 +292,7 @@
 								type="text"
 								bind:value={username}
 								placeholder={text.usernamePlaceholder}
-								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none"
 							/>
 						</div>
 
@@ -294,7 +305,7 @@
 								type="email"
 								value={$user?.email || ''}
 								disabled
-								class="w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground cursor-not-allowed"
+								class="w-full cursor-not-allowed rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground"
 							/>
 							<p class="text-xs text-muted-foreground">{text.emailNote}</p>
 						</div>
@@ -304,10 +315,10 @@
 				<!-- Security Section -->
 				<section class="space-y-3">
 					<h3 class="text-sm font-semibold">{text.security}</h3>
-					
+
 					<div class="space-y-3 rounded-lg border border-border bg-card p-3">
 						<h4 class="text-xs font-medium">{text.changePassword}</h4>
-						
+
 						<div class="space-y-1.5">
 							<label for="currentPassword" class="text-xs font-medium">
 								{text.currentPassword}
@@ -318,7 +329,7 @@
 								bind:value={currentPassword}
 								placeholder={text.currentPasswordPlaceholder}
 								disabled={changingPassword}
-								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none disabled:opacity-50"
 							/>
 						</div>
 
@@ -333,7 +344,7 @@
 								placeholder={text.newPasswordPlaceholder}
 								disabled={changingPassword}
 								minlength="6"
-								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none disabled:opacity-50"
 							/>
 						</div>
 
@@ -348,14 +359,17 @@
 								placeholder={text.confirmPasswordPlaceholder}
 								disabled={changingPassword}
 								minlength="6"
-								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+								class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none disabled:opacity-50"
 							/>
 						</div>
 
 						<div class="flex justify-end">
-							<Button 
+							<Button
 								onclick={changePassword}
-								disabled={changingPassword || !currentPassword || !newPassword || !confirmNewPassword}
+								disabled={changingPassword ||
+									!currentPassword ||
+									!newPassword ||
+									!confirmNewPassword}
 								variant="outline"
 								size="xs"
 							>
@@ -368,16 +382,16 @@
 				<!-- Communication Preferences -->
 				<section class="space-y-3">
 					<h3 class="text-sm font-semibold">{text.preferences}</h3>
-					
+
 					<div class="space-y-2 rounded-lg border border-border bg-card p-3">
-						<div class="flex items-start gap-3 p-2 rounded-md hover:bg-muted/50 transition">
+						<div class="flex items-start gap-3 rounded-md p-2 transition hover:bg-muted/50">
 							<div class="pt-0.5">
 								<Switch bind:checked={marketingOptIn} ariaLabel={text.marketingOptIn} />
 							</div>
 							<button
 								type="button"
-								class="text-xs flex-1 text-left"
-								onclick={() => marketingOptIn = !marketingOptIn}
+								class="flex-1 text-left text-xs"
+								onclick={() => (marketingOptIn = !marketingOptIn)}
 							>
 								{text.marketingOptIn}
 							</button>
@@ -387,52 +401,43 @@
 
 				<!-- Save Button -->
 				<div class="flex justify-end pt-2">
-					<Button 
-						onclick={saveSettings} 
-						disabled={saving}
-						variant="primary"
-						size="sm"
-					>
+					<Button onclick={saveSettings} disabled={saving} variant="primary" size="sm">
 						{saving ? text.savingButton : text.saveButton}
 					</Button>
 				</div>
 
 				<!-- Danger Zone -->
-				<section class="space-y-3 pt-4 border-t border-border">
+				<section class="space-y-3 border-t border-border pt-4">
 					<h3 class="text-sm font-semibold text-destructive">{text.dangerZone}</h3>
-					
-					<div class="rounded-lg border border-destructive/50 bg-destructive/5 p-3 space-y-2">
+
+					<div class="space-y-2 rounded-lg border border-destructive/50 bg-destructive/5 p-3">
 						<div>
 							<h4 class="text-xs font-medium text-destructive">{text.deleteAccount}</h4>
-							<p class="text-xs text-muted-foreground mt-1">
+							<p class="mt-1 text-xs text-muted-foreground">
 								{text.deleteWarning}
 							</p>
 						</div>
 
 						{#if !showDeleteConfirm}
-							<Button 
-								onclick={() => showDeleteConfirm = true}
-								variant="destructive"
-								size="xs"
-							>
+							<Button onclick={() => (showDeleteConfirm = true)} variant="destructive" size="xs">
 								{text.deleteButton}
 							</Button>
 						{:else}
 							<div class="space-y-2 pt-1">
-								<div class="rounded-md bg-background border border-destructive p-2">
-									<p class="font-semibold text-xs">{text.deleteConfirmTitle}</p>
-									<p class="text-xs text-muted-foreground mt-1">{text.deleteConfirmText}</p>
+								<div class="rounded-md border border-destructive bg-background p-2">
+									<p class="text-xs font-semibold">{text.deleteConfirmTitle}</p>
+									<p class="mt-1 text-xs text-muted-foreground">{text.deleteConfirmText}</p>
 								</div>
 								<div class="flex gap-2">
-									<Button 
-										onclick={() => showDeleteConfirm = false}
+									<Button
+										onclick={() => (showDeleteConfirm = false)}
 										variant="outline"
 										size="xs"
 										disabled={deleteLoading}
 									>
 										{text.cancelButton}
 									</Button>
-									<Button 
+									<Button
 										onclick={deleteAccount}
 										variant="destructive"
 										size="xs"

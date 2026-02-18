@@ -2,7 +2,12 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { isAdminUser } from '$lib/server/admin';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
-import { applyMediaPatch, applyNewEpisode, applyNewSeason, type MediaPatch } from '$lib/server/content-suggestions';
+import {
+	applyMediaPatch,
+	applyNewEpisode,
+	applyNewSeason,
+	type MediaPatch
+} from '$lib/server/content-suggestions';
 import { trySendTelegramMessage } from '$lib/server/telegram';
 
 function asTrimmedString(value: unknown): string | null {
@@ -56,7 +61,10 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 			return json({ error: 'episode target is only supported for series' }, { status: 400 });
 		}
 		if (!seasonNumber || !episodeNumber) {
-			return json({ error: 'seasonNumber and episodeNumber are required for episode suggestions' }, { status: 400 });
+			return json(
+				{ error: 'seasonNumber and episodeNumber are required for episode suggestions' },
+				{ status: 400 }
+			);
 		}
 	}
 
@@ -111,7 +119,11 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 				if (kind === 'new_season') {
 					await applyNewSeason(supabase, mediaId, (effectivePatch as any).season ?? effectivePatch);
 				} else if (kind === 'new_episode') {
-					await applyNewEpisode(supabase, mediaId, (effectivePatch as any).episode ?? effectivePatch);
+					await applyNewEpisode(
+						supabase,
+						mediaId,
+						(effectivePatch as any).episode ?? effectivePatch
+					);
 				} else {
 					await applyMediaPatch(supabase, mediaId, effectivePatch);
 				}

@@ -20,11 +20,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const reviews = (data ?? []) as Array<any>;
 	const mediaIds = Array.from(
-		new Set(
-			reviews
-				.map((r) => Number(r.media_id))
-				.filter((id) => Number.isFinite(id))
-		)
+		new Set(reviews.map((r) => Number(r.media_id)).filter((id) => Number.isFinite(id)))
 	);
 
 	let mediaById = new Map<number, any>();

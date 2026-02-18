@@ -19,65 +19,144 @@
 	"tv_noResults": "No results. Try adjusting filters.",
 	"tv_showPaid": "Paid",
 	"tv_showWatched": "watched",
-	"tv_close": "Close"
-	,"tv_exitConfirm": "Press back again to exit"
-	,"tv_noPlayer": "No player available"
-	,"tv_sort_random": "Sort: Default"
-	,"tv_sort_titleAsc": "Title A–Z"
-	,"tv_sort_yearDesc": "Year (newest)"
-	,"tv_sort_yearAsc": "Year (oldest)"
-	,"tv_sort_durationAsc": "Duration (short → long)"
-	,"tv_sort_durationDesc": "Duration (long → short)"
-	,"tv_badge_movie": "MOVIE"
-	,"tv_badge_playlist": "PLAYLIST"
-	,"tv_creators": "Creators"
-	,"tv_starring": "Starring"
-	,"tv_videos": "Videos"
-	,"tv_type": "Type"
-	,"tv_videoCountSuffix": "videos"
-	,"tv_provider": "Provider"
-	,"tv_showFewer": "Show fewer"
-	,"tv_showAll": "Show all"
-	,"settings": "Settings"
-	,"settings_language": "Language"
-	,"settings_open": "Open settings"
-	,"settings_credits": "Credits"
-	,"settings_links": "Links"
-	,"settings_visualMode": "Visual profile"
-	,"settings_visualStunning": "Stunning"
-	,"settings_visualPerformance": "Performance"
-	,"settings_visualStunningDescription": "Full effects and cinematic animations."
-	,"settings_visualPerformanceDescription": "Minimize effects for smoother browsing."
-	,"settings_languageChanged": "Language changed to {language}"
-	,"error_backHome": "Back to JUMPFLIX"
-	,"tv_episodes": "Episodes"
-	,"tv_playSelectedEpisode": "Play selected episode"
-	,"settings_install": "Install"
-	,"settings_install_cta": "Install JUMPFLIX"
-	,"install_installed": "App installed"
-	,"install_hint": "Use your browser menu to “Add to Home Screen”"
-	,"install_dismissed": "Install dismissed"
-	,"install_thanks": "Thanks! Installing…"
-	,"install_error": "Unable to start install"
-	,"install_not_available": "Install isn't available yet. Try reloading once."
-	,"install_dev": "Install prompts only appear on a production build with a registered service worker."
-	,"submit_film_dialog_title": "Submit a Film"
-	,"submit_film_dialog_description": "Share a parkour film, documentary, or series you think belongs on JUMPFLIX."
-	,"submit_film_field_label": "Title or URL"
-	,"submit_film_placeholder": "e.g. Roof Culture Asia or https://youtube.com/watch?v=..."
-	,"submit_film_cancel": "Cancel"
-	,"submit_film_submit": "Submit"
-	,"submit_film_sending": "Sending…"
-	,"submit_film_error_generic": "Something went wrong."
-	,"submit_film_error_network": "Network error. Please try again."
-	,"submit_film_close": "Close dialog"
-	,"submit_film_success": "Thanks for the submission!"
-	,"tv_markWatched": "Mark as watched"
-	,"tv_markUnwatched": "Mark as unwatched"
-	,"help_buttonLabel": "Show quick tips"
-	,"help_dialogLabel": "JUMPFLIX quick tips"
-	,"help_title": "Quick tips"
-	,"help_close": "Close tips"
-	,"help_tip_slowMotion": "Hold spacebar or longpress in the player for slow motion."
-	,"help_tip_login": "Sign in to track progress"
+	"tv_close": "Close",
+	"tv_exitConfirm": "Press back again to exit",
+	"tv_noPlayer": "No player available",
+	"tv_sort_random": "Sort: Default",
+	"tv_sort_titleAsc": "Title A–Z",
+	"tv_sort_yearDesc": "Year (newest)",
+	"tv_sort_yearAsc": "Year (oldest)",
+	"tv_sort_durationAsc": "Duration (short → long)",
+	"tv_sort_durationDesc": "Duration (long → short)",
+	"tv_badge_movie": "MOVIE",
+	"tv_badge_playlist": "PLAYLIST",
+	"tv_creators": "Creators",
+	"tv_starring": "Starring",
+	"tv_videos": "Videos",
+	"tv_type": "Type",
+	"tv_videoCountSuffix": "videos",
+	"tv_provider": "Provider",
+	"tv_showFewer": "Show fewer",
+	"tv_showAll": "Show all",
+	"settings": "Settings",
+	"settings_language": "Language",
+	"settings_open": "Open settings",
+	"settings_credits": "Credits",
+	"settings_links": "Links",
+	"settings_visualMode": "Visual profile",
+	"settings_visualStunning": "Stunning",
+	"settings_visualPerformance": "Performance",
+	"settings_visualStunningDescription": "Full effects and cinematic animations.",
+	"settings_visualPerformanceDescription": "Minimize effects for smoother browsing.",
+	"settings_languageChanged": "Language changed to {language}",
+	"error_backHome": "Back to JUMPFLIX",
+	"tv_episodes": "Episodes",
+	"tv_playSelectedEpisode": "Play selected episode",
+	"settings_install": "Install",
+	"settings_install_cta": "Install JUMPFLIX",
+	"install_installed": "App installed",
+	"install_hint": "Use your browser menu to “Add to Home Screen”",
+	"install_dismissed": "Install dismissed",
+	"install_thanks": "Thanks! Installing…",
+	"install_error": "Unable to start install",
+	"install_not_available": "Install isn't available yet. Try reloading once.",
+	"install_dev": "Install prompts only appear on a production build with a registered service worker.",
+	"submit_film_dialog_title": "Submit a Film",
+	"submit_film_dialog_description": "Share a parkour film, documentary, or series you think belongs on JUMPFLIX.",
+	"submit_film_field_label": "Title or URL",
+	"submit_film_placeholder": "e.g. Roof Culture Asia or https://youtube.com/watch?v=...",
+	"submit_film_cancel": "Cancel",
+	"submit_film_submit": "Submit",
+	"submit_film_sending": "Sending…",
+	"submit_film_error_generic": "Something went wrong.",
+	"submit_film_error_network": "Network error. Please try again.",
+	"submit_film_close": "Close dialog",
+	"submit_film_success": "Thanks for the submission!",
+	"tv_markWatched": "Mark as watched",
+	"tv_markUnwatched": "Mark as unwatched",
+	"help_buttonLabel": "Show quick tips",
+	"help_dialogLabel": "JUMPFLIX quick tips",
+	"help_title": "Quick tips",
+	"help_close": "Close tips",
+	"help_tip_slowMotion": "Hold spacebar or longpress in the player for slow motion.",
+	"help_tip_login": "Sign in to track progress",
+	"tv_tracklist": "Tracklist",
+	"tv_ratingsAndReviews": "Ratings & Reviews",
+	"tv_reviews": "Reviews",
+	"tv_noReviews": "No reviews yet.",
+	"tv_loadingReviews": "Loading reviews…",
+	"tv_writeReview": "Write a review",
+	"tv_updateReview": "Update your review",
+	"tv_writeShortReview": "Write a short review",
+	"tv_reviewPlaceholder": "What stood out? Would you recommend it?",
+	"tv_reviewCancel": "Cancel",
+	"tv_reviewPost": "Post",
+	"tv_reviewUpdate": "Update",
+	"tv_season": "Season",
+	"tv_episode": "Episode",
+	"tv_ep": "Ep",
+	"tv_loadingEpisodes": "Loading episodes…",
+	"tv_noEpisodes": "No episodes found.",
+	"facet_type": "Type",
+	"facet_mood": "Mood",
+	"facet_movement": "Movement",
+	"facet_environment": "Environment",
+	"facet_filmStyle": "Film Style",
+	"facet_theme": "Theme",
+	"facet_era": "Era",
+	"facet_type_fiction": "Fiction",
+	"facet_type_documentary": "Documentary",
+	"facet_type_session": "Session",
+	"facet_type_event": "Event",
+	"facet_type_tutorial": "Tutorial",
+	"facet_mood_energetic": "Energetic",
+	"facet_mood_chill": "Chill",
+	"facet_mood_gritty": "Gritty",
+	"facet_mood_wholesome": "Wholesome",
+	"facet_mood_artistic": "Artistic",
+	"facet_movement_flow": "Flow",
+	"facet_movement_bigSends": "Big Sends",
+	"facet_movement_style": "Style",
+	"facet_movement_technical": "Technical",
+	"facet_movement_speed": "Speed",
+	"facet_movement_oldskool": "Oldskool",
+	"facet_movement_contemporary": "Contemporary",
+	"facet_environment_street": "Street",
+	"facet_environment_rooftops": "Rooftops",
+	"facet_environment_nature": "Nature",
+	"facet_environment_urbex": "Urbex",
+	"facet_environment_gym": "Gym",
+	"facet_filmStyle_cinematic": "Cinematic",
+	"facet_filmStyle_streetCinematic": "Street-Cinematic",
+	"facet_filmStyle_skateish": "Skate-ish",
+	"facet_filmStyle_raw": "Raw",
+	"facet_filmStyle_pov": "POV",
+	"facet_filmStyle_longtakes": "Long Takes",
+	"facet_filmStyle_musicDriven": "Music-Driven",
+	"facet_filmStyle_montage": "Montage",
+	"facet_filmStyle_slowmo": "Slowmo",
+	"facet_filmStyle_gonzo": "Gonzo",
+	"facet_filmStyle_vintage": "Vintage",
+	"facet_filmStyle_minimalist": "Minimalist",
+	"facet_filmStyle_experimental": "Experimental",
+	"facet_theme_journey": "Journey",
+	"facet_theme_team": "Team",
+	"facet_theme_competition": "Competition",
+	"facet_theme_educational": "Educational",
+	"facet_theme_travel": "Travel",
+	"facet_theme_creative": "Creative",
+	"facet_theme_entertainment": "Entertainment",
+	"facet_era_pre2000": "Pre-2000",
+	"facet_era_2000s": "2000s",
+	"facet_era_2010s": "2010s",
+	"facet_era_2020s": "2020s",
+	"facet_era_2030s": "2030s",
+	"facet_clearAll": "Clear all",
+	"facet_filters": "Filters",
+	"about_backToCatalog": "Back to catalog",
+	"about_title": "About JUMPFLIX",
+	"about_subtitle": "A cinematic museum for parkour — built for long-form films, series, and preservation.",
+	"about_secretTitle": "YOU FOUND A SECRET",
+	"about_secretHint": "Hold spacebar or longpress video for slowmotion! 🤫",
+	"about_thisIsMe": "This is me jumping stuff haha"
 }

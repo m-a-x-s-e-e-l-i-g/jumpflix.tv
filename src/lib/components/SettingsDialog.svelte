@@ -118,6 +118,49 @@
 			loadError: 'Kan voorkeuren niet laden',
 			saveError: 'Kan instellingen niet opslaan',
 			deleteError: 'Kan account niet verwijderen'
+		},
+		ja: {
+			title: 'アカウント設定',
+			profile: 'プロフィール',
+			username: '表示名',
+			usernamePlaceholder: 'あなたの表示名',
+			email: 'メールアドレス',
+			emailNote: 'メールアドレスは変更できません',
+			security: 'セキュリティ',
+			changePassword: 'パスワード変更',
+			currentPassword: '現在のパスワード',
+			currentPasswordPlaceholder: '現在のパスワードを入力',
+			newPassword: '新しいパスワード',
+			newPasswordPlaceholder: '新しいパスワードを入力（10文字以上）',
+			confirmPassword: '新しいパスワードの確認',
+			confirmPasswordPlaceholder: '新しいパスワードを再入力',
+			changePasswordButton: 'パスワードを更新',
+			changingPasswordButton: '更新中...',
+			passwordMismatch: 'パスワードが一致しません',
+			passwordTooShort: 'パスワードは10文字以上である必要があります',
+			passwordChangedSuccess: 'パスワードが正常に変更されました',
+			passwordChangeError: 'パスワードの変更に失敗しました',
+			preferences: '通信設定',
+			marketingOptIn:
+				'JumpFlixに関するニュース、新しいコンテンツ追加、パルクール関連の最新情報を受け取る',
+			saveButton: '変更を保存',
+			savingButton: '保存中...',
+			dangerZone: '危険な操作',
+			deleteAccount: 'アカウント削除',
+			deleteWarning:
+				'アカウントを削除すると元に戻せません。視聴履歴と設定はすべて完全に削除されます。',
+			deleteButton: 'アカウントを削除',
+			deleteConfirmTitle: '本当によろしいですか？',
+			deleteConfirmText:
+				'この操作は取り消せません。アカウントは完全に削除され、すべてのデータがサーバーから削除されます。',
+			cancelButton: 'キャンセル',
+			confirmDeleteButton: 'はい、アカウントを削除します',
+			deletingButton: '削除中...',
+			savedSuccess: '設定が正常に保存されました',
+			deletedSuccess: 'アカウントが正常に削除されました',
+			loadError: '設定の読み込みに失敗しました',
+			saveError: '設定の保存に失敗しました',
+			deleteError: 'アカウントの削除に失敗しました'
 		}
 	};
 

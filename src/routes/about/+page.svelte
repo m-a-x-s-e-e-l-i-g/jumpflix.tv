@@ -1,3 +1,7 @@
+<script lang="ts">
+	import * as m from '$lib/paraglide/messages';
+</script>
+
 <svelte:head>
 	<title>About JUMPFLIX</title>
 </svelte:head>
@@ -8,9 +12,9 @@
 	>
 		<div class="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 			<div>
-				<p class="jf-display text-xl text-foreground md:text-3xl">YOU FOUND A SECRET</p>
+				<p class="jf-display text-xl text-foreground md:text-3xl">{m.about_secretTitle()}</p>
 				<p class="mt-2 text-sm text-muted-foreground md:text-base">
-					Hold spacebar or longpress video for slowmotion! 🤫
+					{m.about_secretHint()}
 				</p>
 			</div>
 
@@ -30,12 +34,12 @@
 			class="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
 		>
 			<span aria-hidden="true">←</span>
-			<span>Back to catalog</span>
+			<span>{m.about_backToCatalog()}</span>
 		</a>
 
-		<h1 class="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">About JUMPFLIX</h1>
+		<h1 class="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">{m.about_title()}</h1>
 		<p class="mt-2 max-w-3xl text-sm text-muted-foreground md:text-base">
-			A cinematic museum for parkour — built for long-form films, series, and preservation.
+			{m.about_subtitle()}
 		</p>
 	</div>
 
@@ -252,7 +256,7 @@
 						</video>
 					</div>
 				</div>
-				<p class="text-xs text-muted-foreground">This is me jumping stuff haha</p>
+				<p class="text-xs text-muted-foreground">{m.about_thisIsMe()}</p>
 			</div>
 		</div>
 	</div>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
+
 	type RatingDistRow = { rating: number; count: number };
 	type RatedItem = {
 		id: number;
@@ -44,12 +46,25 @@
 	const ratedVisible: RatedItem[] = $derived(showAllRated ? ratedSorted : ratedSorted.slice(0, 20));
 
 	const formatNumber = (value: number) => new Intl.NumberFormat().format(value);
+	const formatMediaTypeLabel = (mediaType: string) => {
+		switch (mediaType) {
+			case 'movie':
+				return m.tv_pillFilm();
+			case 'series':
+				return m.tv_pillSeries();
+			case 'episode':
+				return m.tv_episode();
+			default:
+				return mediaType;
+		}
+	};
+
 	const formatDuration = (seconds: number) => {
 		const mins = Math.max(0, Math.round((seconds ?? 0) / 60));
-		if (mins < 60) return `${mins} min`;
+		if (mins < 60) return m.stats_durationMinutes({ minutes: String(mins) });
 		const h = Math.floor(mins / 60);
-		const m = mins % 60;
-		return `${h}h ${m}m`;
+		const minutesRemainder = mins % 60;
+		return m.stats_durationHoursMinutes({ hours: String(h), minutes: String(minutesRemainder) });
 	};
 
 	const ratingMax: number = $derived(
@@ -68,7 +83,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.username}'s Stats</title>
+	<title>{m.stats_userTitle({ username: data.username })}</title>
 	<meta name="robots" content="noindex, nofollow" />
 	<link rel="canonical" href={`https://www.jumpflix.tv/stats/${data.userId}`} />
 </svelte:head>
@@ -82,35 +97,37 @@
 			class="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
 		>
 			<span aria-hidden="true">←</span>
-			<span>Back to public stats</span>
+			<span>{m.stats_backToPublicStats()}</span>
 		</a>
-		<h1 class="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">{data.username}'s stats</h1>
+		<h1 class="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">
+			{m.stats_userTitle({ username: data.username })}
+		</h1>
 		<p class="mt-2 max-w-2xl text-sm text-muted-foreground md:text-base">
-			These are <span class="font-medium text-foreground">{data.username}</span>'s stats.
+			{m.stats_userDescription({ username: data.username })}
 		</p>
 		<div class="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
-			<span class="rounded-full border bg-background/60 px-3 py-1">Not indexed</span>
-			<span class="rounded-full border bg-background/60 px-3 py-1"
-				>Based on watch history + ratings</span
-			>
+			<span class="rounded-full border bg-background/60 px-3 py-1">{m.stats_badge_notIndexed()}</span>
+			<span class="rounded-full border bg-background/60 px-3 py-1">
+				{m.stats_badge_basedOnWatchHistoryAndRatings()}
+			</span>
 		</div>
 	</div>
 
 	<div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-6">
 		<div class="rounded-xl border p-4">
-			<div class="text-xs text-muted-foreground">Average rating</div>
+			<div class="text-xs text-muted-foreground">{m.stats_averageRating()}</div>
 			<div class="mt-1 text-2xl font-semibold">{data.stats.averageRating.toFixed(2)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">
-				{formatNumber(data.stats.ratingCount)} ratings
+				{m.stats_ratingsCount({ count: formatNumber(data.stats.ratingCount) })}
 			</div>
 		</div>
 		<div class="rounded-xl border p-4">
-			<div class="text-xs text-muted-foreground">Reviews placed</div>
+			<div class="text-xs text-muted-foreground">{m.stats_reviewsPlaced()}</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.stats.reviewsCount)}</div>
-			<div class="mt-1 text-xs text-muted-foreground">Short written reviews</div>
+			<div class="mt-1 text-xs text-muted-foreground">{m.stats_shortWrittenReviews()}</div>
 		</div>
 		<div class="rounded-xl border p-4">
-			<div class="text-xs text-muted-foreground">Suggestions submitted</div>
+			<div class="text-xs text-muted-foreground">{m.stats_suggestionsSubmitted()}</div>
 			<div class="mt-1 text-2xl font-semibold">
 				{#if data.stats.suggestionsCount === null}
 					—
@@ -118,43 +135,42 @@
 					{formatNumber(data.stats.suggestionsCount)}
 				{/if}
 			</div>
-			<div class="mt-1 text-xs text-muted-foreground">Content change reports</div>
+			<div class="mt-1 text-xs text-muted-foreground">{m.stats_contentChangeReports()}</div>
 		</div>
 		<div class="rounded-xl border p-4">
-			<div class="text-xs text-muted-foreground">Watched items</div>
+			<div class="text-xs text-muted-foreground">{m.stats_watchedItems()}</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.stats.watchedCount)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">
-				{formatNumber(data.stats.watchedMoviesCount)} movies · {formatNumber(
-					data.stats.watchedSeriesCount
-				)} series ·
-				{formatNumber(data.stats.watchedEpisodesCount)} episodes
+				{m.stats_watchedBreakdown({
+					movies: formatNumber(data.stats.watchedMoviesCount),
+					series: formatNumber(data.stats.watchedSeriesCount),
+					episodes: formatNumber(data.stats.watchedEpisodesCount)
+				})}
 			</div>
 		</div>
 		<div class="rounded-xl border p-4">
-			<div class="text-xs text-muted-foreground">Time watched (progress)</div>
-			<div class="mt-1 text-2xl font-semibold">
-				{formatDuration(data.stats.totalPositionSeconds)}
-			</div>
+			<div class="text-xs text-muted-foreground">{m.stats_timeWatchedProgress()}</div>
+			<div class="mt-1 text-2xl font-semibold">{formatDuration(data.stats.totalPositionSeconds)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">
-				Avg completion {Math.round(data.stats.avgPercentWatched)}%
+				{m.stats_avgCompletion({ percent: String(Math.round(data.stats.avgPercentWatched)) })}
 			</div>
 		</div>
 		<div class="rounded-xl border p-4">
-			<div class="text-xs text-muted-foreground">Catalog progress</div>
-			<div class="mt-1 text-sm font-medium">Episodes: {watchedEpisodesLabel}</div>
-			<div class="mt-1 text-sm font-medium">Films: {watchedMoviesLabel}</div>
-			<div class="mt-1 text-xs text-muted-foreground">Across your watched history</div>
+			<div class="text-xs text-muted-foreground">{m.stats_catalogProgress()}</div>
+			<div class="mt-1 text-sm font-medium">{m.stats_episodes()}: {watchedEpisodesLabel}</div>
+			<div class="mt-1 text-sm font-medium">{m.stats_films()}: {watchedMoviesLabel}</div>
+			<div class="mt-1 text-xs text-muted-foreground">{m.stats_acrossYourWatchedHistory()}</div>
 		</div>
 	</div>
 
 	<div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
 		<div class="rounded-xl border p-4">
 			<div class="flex items-baseline justify-between gap-3">
-				<h2 class="text-base font-semibold">Ratings distribution</h2>
+				<h2 class="text-base font-semibold">{m.stats_ratingsDistribution()}</h2>
 				<div class="text-xs text-muted-foreground">1–10</div>
 			</div>
 			{#if !hasRatings}
-				<p class="mt-4 text-sm text-muted-foreground">No ratings yet.</p>
+				<p class="mt-4 text-sm text-muted-foreground">{m.stats_noRatingsYet()}</p>
 			{:else}
 				<div class="mt-4 grid gap-2">
 					{#each data.stats.ratingDistribution as row (row.rating)}
@@ -177,11 +193,13 @@
 
 		<div class="rounded-xl border p-4">
 			<div class="flex items-baseline justify-between gap-3">
-				<h2 class="text-base font-semibold">Ranked ratings</h2>
-				<div class="text-xs text-muted-foreground">{formatNumber(ratedSorted.length)} items</div>
+				<h2 class="text-base font-semibold">{m.stats_rankedRatings()}</h2>
+				<div class="text-xs text-muted-foreground">
+					{m.stats_itemsCount({ count: formatNumber(ratedSorted.length) })}
+				</div>
 			</div>
 			{#if ratedSorted.length === 0}
-				<p class="mt-3 text-sm text-muted-foreground">Nothing rated yet.</p>
+				<p class="mt-3 text-sm text-muted-foreground">{m.stats_nothingRatedYet()}</p>
 			{:else}
 				<div class="mt-3 divide-y">
 					{#each ratedVisible as item (item.id)}
@@ -191,7 +209,7 @@
 						>
 							<div class="min-w-0">
 								<div class="truncate text-sm font-medium">{item.title}</div>
-								<div class="text-xs text-muted-foreground">{item.type}</div>
+									<div class="text-xs text-muted-foreground">{formatMediaTypeLabel(item.type)}</div>
 							</div>
 							<div class="rounded-full border bg-background px-3 py-1 text-xs font-medium">
 								{item.rating}/10
@@ -205,7 +223,7 @@
 						onclick={() => (showAllRated = !showAllRated)}
 						class="mt-3 inline-flex items-center justify-center rounded-lg border bg-muted/20 px-3 py-2 text-sm font-medium transition hover:bg-muted/35"
 					>
-						{showAllRated ? 'Show less' : 'Show all'}
+						{showAllRated ? m.tv_showFewer() : m.tv_showAll()}
 					</button>
 				{/if}
 			{/if}
@@ -214,11 +232,11 @@
 
 	<div class="mt-8 rounded-xl border p-4">
 		<div class="flex items-baseline justify-between gap-3">
-			<h2 class="text-base font-semibold">Watched but not rated</h2>
-			<div class="text-xs text-muted-foreground">Up to 50</div>
+			<h2 class="text-base font-semibold">{m.stats_watchedButNotRated()}</h2>
+			<div class="text-xs text-muted-foreground">{m.stats_upTo50()}</div>
 		</div>
 		{#if (data.stats.watchedButNotRated ?? []).length === 0}
-			<p class="mt-3 text-sm text-muted-foreground">All watched items are rated (nice).</p>
+			<p class="mt-3 text-sm text-muted-foreground">{m.stats_allWatchedItemsAreRatedNice()}</p>
 		{:else}
 			<div class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
 				{#each data.stats.watchedButNotRated as item (item.id)}
@@ -227,7 +245,7 @@
 						class="rounded-lg border bg-muted/20 px-3 py-2 transition hover:bg-muted/40"
 					>
 						<div class="truncate text-sm font-medium">{item.title}</div>
-						<div class="text-xs text-muted-foreground">{item.type}</div>
+						<div class="text-xs text-muted-foreground">{formatMediaTypeLabel(item.type)}</div>
 					</a>
 				{/each}
 			</div>

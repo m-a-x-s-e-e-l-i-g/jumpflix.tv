@@ -384,6 +384,15 @@
 		}
 	}
 
+	function deriveAuthorName() {
+		const meta = ($authUser as any)?.user_metadata ?? {};
+
+		return getPublicUserName({
+			name: meta?.name || meta?.username || null,
+			email: $authUser?.email ?? null
+		});
+	}
+
 	async function loadReviewsForSelected() {
 		if (!browser || !selected) return;
 
@@ -644,7 +653,7 @@
 								{m.tv_watchOn()}
 								{selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
 							{:else}
-								Play series
+								{m.tv_playSeries()}
 							{/if}
 						{:else if isInlinePlayable(selected)}
 							{m.tv_playNow()}
@@ -663,7 +672,9 @@
 			</div>
 
 			<div class="detail-meta">
-				<span class="detail-pill">{selected.type === 'movie' ? 'Movie' : 'Series'}</span>
+				<span class="detail-pill">
+					{selected.type === 'movie' ? m.tv_pillFilm() : m.tv_pillSeries()}
+				</span>
 				{#if selected.paid}
 					<span class="detail-pill detail-pill--paid">Paid</span>
 				{/if}
@@ -674,7 +685,14 @@
 					<span>{(selected as any).duration}</span>
 				{/if}
 				{#if selected.type === 'series'}
-					<span>{(selected as any).episodeCount || '?'} episodes</span>
+					<span>
+						{m.tv_episodeCount({
+							count:
+								typeof (selected as any).episodeCount === 'number'
+									? String((selected as any).episodeCount)
+									: '?'
+						})}
+					</span>
 				{/if}
 				<div class="detail-meta-actions">
 					{#if (selected as any).trakt}
@@ -763,7 +781,7 @@
 										{m.tv_watchOn()}
 										{selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
 									{:else}
-										Play series
+										{m.tv_playSeries()}
 									{/if}
 								{:else if isInlinePlayable(selected)}
 									{m.tv_playNow()}
@@ -808,21 +826,21 @@
 				<div class="detail-main-content">
 					<section class="detail-section detail-overview">
 						<div class="detail-overview-copy">
-							<h2>Overview</h2>
-							<p>{selected.description || 'No description available.'}</p>
+							<h2>{m.tv_overview()}</h2>
+							<p>{selected.description || m.tv_noDescription()}</p>
 						</div>
 					</section>
 
 					{#if selected.facets}
 						<section class="detail-section">
-							<h2>Facets</h2>
+							<h2>{m.tv_facets()}</h2>
 							<FacetChips facets={selected.facets} />
 						</section>
 					{/if}
 
 					{#if (selected as any).creators?.length}
 						<section class="detail-section">
-							<h2>Creators</h2>
+							<h2>{m.tv_creators()}</h2>
 							<div class="detail-tags">
 								{#each showAllCreators ? (selected as any).creators : (selected as any).creators.slice(0, MAX_NAMES) as c}
 									<span>{c}</span>
@@ -831,7 +849,7 @@
 									<button
 										class="detail-tags-more"
 										on:click={() => (showAllCreators = !showAllCreators)}
-										title={showAllCreators ? 'Show fewer' : 'Show all'}
+										title={showAllCreators ? m.tv_showFewer() : m.tv_showAll()}
 									>
 										{#if showAllCreators}−{/if}{#if !showAllCreators}+{/if}
 										{(selected as any).creators.length - MAX_NAMES}
@@ -843,7 +861,7 @@
 
 					{#if (selected as any).starring?.length}
 						<section class="detail-section">
-							<h2>Starring</h2>
+							<h2>{m.tv_athletes()}</h2>
 							<div class="detail-tags">
 								{#each showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES) as s}
 									<span>{s}</span>
@@ -852,7 +870,7 @@
 									<button
 										class="detail-tags-more"
 										on:click={() => (showAllStarring = !showAllStarring)}
-										title={showAllStarring ? 'Show fewer' : 'Show all'}
+										title={showAllStarring ? m.tv_showFewer() : m.tv_showAll()}
 									>
 										{#if showAllStarring}−{/if}{#if !showAllStarring}+{/if}
 										{(selected as any).starring.length - MAX_NAMES}
@@ -864,7 +882,7 @@
 
 					{#if selected.type === 'movie' && Array.isArray(selected.tracks) && selected.tracks.length}
 						<section class="detail-section">
-							<h2>Tracklist</h2>
+							<h2>{m.tv_tracklist()}</h2>
 							<Tracklist tracks={selected.tracks} />
 						</section>
 					{/if}
@@ -895,7 +913,7 @@
 									>
 										{#each (selected as any).seasons as s}
 											<option value={s.seasonNumber} class="bg-black text-gray-100">
-												{s.customName || `Season ${s.seasonNumber}`}
+												{s.customName || `${m.tv_season()} ${s.seasonNumber}`}
 											</option>
 										{/each}
 									</select>
@@ -903,9 +921,9 @@
 							</div>
 
 							{#if loadingEpisodes}
-								<p class="detail-muted">Loading episodes…</p>
+								<p class="detail-muted">{m.tv_loadingEpisodes()}</p>
 							{:else if episodes.length === 0}
-								<p class="detail-muted">No episodes found.</p>
+								<p class="detail-muted">{m.tv_noEpisodes()}</p>
 							{:else}
 								<ul class="detail-episodes" bind:this={episodesListEl}>
 									{#each episodes as ep}
@@ -939,7 +957,7 @@
 													{/if}
 												</div>
 												<div class="detail-episode-info">
-													<span>Ep {ep.position}</span>
+													<span>{m.tv_ep()} {ep.position}</span>
 													<strong>{decode(ep.title)}</strong>
 												</div>
 											</button>
@@ -970,7 +988,7 @@
 			</div>
 
 			<aside class="detail-review-sidebar">
-				<h2>Ratings &amp; Reviews</h2>
+				<h2>{m.tv_ratingsAndReviews()}</h2>
 				<BangerMeter
 					mediaId={selected.id}
 					initialRating={currentUserRating}
@@ -985,18 +1003,18 @@
 				{#if isAuthenticated && currentUserRating}
 					{#if !reviewComposerOpen}
 						<button type="button" class="detail-review-cta" on:click={openReviewComposer}>
-							Write a review
+							{m.tv_writeReview()}
 						</button>
 					{:else}
 						<div class="detail-review-composer">
 							<div class="detail-review-composer-title">
-								{myReviewId ? 'Update your review' : 'Write a short review'}
+								{myReviewId ? m.tv_updateReview() : m.tv_writeShortReview()}
 							</div>
 							<textarea
 								bind:this={reviewTextareaEl}
 								bind:value={myReviewText}
 								rows="4"
-								placeholder="What stood out? Would you recommend it?"
+								placeholder={m.tv_reviewPlaceholder()}
 								class="detail-review-textarea"
 								disabled={myReviewSaving}
 							></textarea>
@@ -1010,7 +1028,7 @@
 									disabled={myReviewSaving}
 									on:click={() => (reviewComposerOpen = false)}
 								>
-									Cancel
+									{m.tv_reviewCancel()}
 								</button>
 								<button
 									type="button"
@@ -1018,7 +1036,7 @@
 									disabled={myReviewSaving || !myReviewText.trim()}
 									on:click={submitMyReview}
 								>
-									{myReviewId ? 'Update' : 'Post'}
+									{myReviewId ? m.tv_reviewUpdate() : m.tv_reviewPost()}
 								</button>
 							</div>
 						</div>
@@ -1026,13 +1044,13 @@
 				{/if}
 
 				<div class="detail-reviews">
-					<div class="detail-reviews-title">Reviews</div>
+					<div class="detail-reviews-title">{m.tv_reviews()}</div>
 					{#if reviewsLoading}
-						<p class="detail-review-note">Loading reviews…</p>
+						<p class="detail-review-note">{m.tv_loadingReviews()}</p>
 					{:else if reviewsError}
 						<p class="detail-review-note">{reviewsError}</p>
 					{:else if reviews.length === 0}
-						<p class="detail-review-note">No reviews yet.</p>
+						<p class="detail-review-note">{m.tv_noReviews()}</p>
 					{:else}
 						<div class="detail-reviews-list">
 							{#each reviews as r (r.id)}

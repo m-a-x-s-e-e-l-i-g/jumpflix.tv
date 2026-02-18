@@ -1,335 +1,263 @@
 <script lang="ts">
-	import type { Facets } from '$lib/tv/types';
-	import * as Tooltip from '$lib/components/ui/tooltip';
+  import type { Facets } from '$lib/tv/types';
+  import * as Tooltip from '$lib/components/ui/tooltip';
+  import * as m from '$lib/paraglide/messages';
+  
+  export let facets: Facets | undefined;
 
-	export let facets: Facets | undefined;
+  const facetEmojis: Record<string, string> = {
+    // Type
+    fiction: '🎬',
+    documentary: '📹',
+    session: '🎥',
+    event: '🏆',
+    tutorial: '📚',
 
-	// Comprehensive facet metadata with descriptions and emojis
-	interface FacetMetadata {
-		label: string;
-		description: string;
-		emoji: string;
-	}
+    // Mood
+    energetic: '⚡',
+    chill: '😌',
+    gritty: '🔥',
+    wholesome: '💚',
+    artistic: '🎨',
 
-	const facetMetadata: Record<string, FacetMetadata> = {
-		// Type
-		fiction: {
-			label: 'Fiction',
-			description: 'Narrative-driven parkour film with storyline',
-			emoji: '🎬'
-		},
-		documentary: {
-			label: 'Documentary',
-			description: 'Real stories and insights into parkour culture',
-			emoji: '📹'
-		},
-		session: {
-			label: 'Session',
-			description: 'Team edit or session footage from training',
-			emoji: '🎥'
-		},
-		event: {
-			label: 'Event',
-			description: 'Jam, competition, or organized gathering',
-			emoji: '🏆'
-		},
-		tutorial: {
-			label: 'Tutorial',
-			description: 'Educational content teaching parkour techniques',
-			emoji: '📚'
-		},
+    // Movement
+    flow: '🌊',
+    'big-sends': '🚀',
+    style: '🤸',
+    technical: '⚙️',
+    speed: '🏎️',
+    oldskool: '📼',
+    contemporary: '💃',
 
-		// Mood
-		energetic: {
-			label: 'Energetic',
-			description: 'High-energy vibe with intense action',
-			emoji: '⚡'
-		},
-		chill: {
-			label: 'Chill',
-			description: 'Relaxed and laid-back atmosphere',
-			emoji: '😌'
-		},
-		gritty: {
-			label: 'Gritty',
-			description: 'Raw, rough, and unpolished street vibe',
-			emoji: '🔥'
-		},
-		wholesome: {
-			label: 'Wholesome',
-			description: 'Positive, uplifting, and feel-good content',
-			emoji: '💚'
-		},
-		artistic: {
-			label: 'Artistic',
-			description: 'Creative expression and aesthetic focus',
-			emoji: '🎨'
-		},
+    // Environment
+    street: '🏙️',
+    rooftops: '🏢',
+    nature: '🌲',
+    urbex: '🏚️',
+    gym: '🏋️',
 
-		// Movement
-		flow: {
-			label: 'Flow',
-			description: 'Continuous, fluid movement lines',
-			emoji: '🌊'
-		},
-		'big-sends': {
-			label: 'Big Sends',
-			description: 'Scary jumps, rooftops, and fear challenges',
-			emoji: '🚀'
-		},
-		style: {
-			label: 'Style',
-			description: 'Heavy acrobatic lines and combos',
-			emoji: '🤸'
-		},
-		technical: {
-			label: 'Technical',
-			description: 'Precise, German, quirky, and technical movements',
-			emoji: '⚙️'
-		},
-		speed: {
-			label: 'Speed/Chase',
-			description: 'Fast-paced running and chase sequences',
-			emoji: '🏎️'
-		},
-		oldskool: {
-			label: 'Oldskool',
-			description: 'Classic parkour fundamentals and basics',
-			emoji: '📼'
-		},
-		contemporary: {
-			label: 'Contemporary',
-			description: 'Dance-like movements and fluid transitions',
-			emoji: '💃'
-		},
+    // Film Style
+    cinematic: '🎞️',
+    'street-cinematic': '🛣️',
+    skateish: '🛹',
+    raw: '📱',
+    pov: '👁️',
+    longtakes: '🎥',
+    'music-driven': '🎵',
+    montage: '⚡',
+    slowmo: '🐌',
+    gonzo: '🌀',
+    vintage: '📼',
+    minimalist: '⬜',
+    experimental: '🔮',
 
-		// Environment
-		street: {
-			label: 'Street',
-			description: 'Urban street spots and city locations',
-			emoji: '🏙️'
-		},
-		rooftops: {
-			label: 'Rooftops',
-			description: 'High-altitude rooftop training and jumps',
-			emoji: '🏢'
-		},
-		nature: {
-			label: 'Nature',
-			description: 'Outdoor natural environments and landscapes',
-			emoji: '🌲'
-		},
-		urbex: {
-			label: 'Urbex',
-			description: 'Abandoned buildings and urban exploration',
-			emoji: '🏚️'
-		},
-		gym: {
-			label: 'Gym',
-			description: 'Indoor training facilities and parkour gyms',
-			emoji: '🏋️'
-		},
+    // Theme
+    journey: '🗺️',
+    team: '👥',
+    competition: '🥇',
+    educational: '🎓',
+    travel: '✈️',
+    creative: '✨',
+    entertainment: '🎪',
 
-		// Film Style
-		cinematic: {
-			label: 'Cinematic',
-			description: 'Smooth camera work, controlled shots, strong color grade',
-			emoji: '🎞️'
-		},
-		'street-cinematic': {
-			label: 'Street-Cinematic',
-			description: 'DSLR stability + fisheye inserts, clean yet gritty',
-			emoji: '🛣️'
-		},
-		skateish: {
-			label: 'Skate-ish',
-			description: 'VX/handcam energy, fisheye close-ups, rough and fast',
-			emoji: '🛹'
-		},
-		raw: {
-			label: 'Raw Session',
-			description: 'No polish. Real sound, breathing, slips, banter',
-			emoji: '📱'
-		},
-		pov: {
-			label: 'POV',
-			description: 'First-person or tight follow angle, immersive',
-			emoji: '👁️'
-		},
-		longtakes: {
-			label: 'Long Takes',
-			description: 'Minimal cuts, continuous routes, flow and timing',
-			emoji: '🎥'
-		},
-		'music-driven': {
-			label: 'Music-Driven',
-			description: 'Editing rhythms follow the soundtrack, beat-matched',
-			emoji: '🎵'
-		},
-		montage: {
-			label: 'Montage',
-			description: 'Quick cuts, hype, best moments stacked',
-			emoji: '⚡'
-		},
-		slowmo: {
-			label: 'Slowmo',
-			description: 'Slow motion used to show form, weight shift, control',
-			emoji: '🐌'
-		},
-		gonzo: {
-			label: 'Gonzo',
-			description: 'Handheld chaos, shaky, crowd energy, in the middle of it',
-			emoji: '🌀'
-		},
-		vintage: {
-			label: 'Vintage',
-			description: 'MiniDV, Hi8, 4:3, film grain, nostalgic skate-era vibes',
-			emoji: '📼'
-		},
-		minimalist: {
-			label: 'Minimalist',
-			description: 'Calm framing, few edits, open space, quiet mood',
-			emoji: '⬜'
-		},
-		experimental: {
-			label: 'Experimental',
-			description: 'Non-linear, surreal cuts, visual abstraction',
-			emoji: '🔮'
-		},
+    // Era
+    'pre-2000': '📹',
+    '2000s': '📀',
+    '2010s': '📱',
+    '2020s': '🎬',
+    '2030s': '🚀'
+  };
 
-		// Theme
-		journey: {
-			label: 'Journey',
-			description: 'Personal growth and transformation story',
-			emoji: '🗺️'
-		},
-		team: {
-			label: 'Team Film',
-			description: 'Showcasing team identity and crew dynamics',
-			emoji: '👥'
-		},
-		competition: {
-			label: 'Competition',
-			description: 'Contest or competitive event coverage',
-			emoji: '🥇'
-		},
-		educational: {
-			label: 'Educational',
-			description: 'Teaching techniques and parkour knowledge',
-			emoji: '🎓'
-		},
-		travel: {
-			label: 'Travel',
-			description: 'Exploring new locations and spots around the world',
-			emoji: '✈️'
-		},
-		creative: {
-			label: 'Creative',
-			description: 'Artistic expression and experimental filmmaking',
-			emoji: '✨'
-		},
-		entertainment: {
-			label: 'Entertainment',
-			description: 'Showcase and entertainment-focused content',
-			emoji: '🎪'
-		},
+  const facetLabelMessages: Record<string, () => string> = {
+    // Type
+    fiction: m.facet_type_fiction,
+    documentary: m.facet_type_documentary,
+    session: m.facet_type_session,
+    event: m.facet_type_event,
+    tutorial: m.facet_type_tutorial,
 
-		// Era (auto)
-		'2000s': {
-			label: '2000s',
-			description: 'Released in the 2000s',
-			emoji: '📀'
-		},
-		'2010s': {
-			label: '2010s',
-			description: 'Released in the 2010s',
-			emoji: '📱'
-		},
-		'2020s': {
-			label: '2020s',
-			description: 'Released in the 2020s',
-			emoji: '🎬'
-		},
-		'2030s': {
-			label: '2030s',
-			description: 'Released in the 2030s',
-			emoji: '🚀'
-		},
-		'pre-2000': {
-			label: 'Pre-2000',
-			description: 'Released before 2000',
-			emoji: '📹'
-		}
-	};
+    // Mood
+    energetic: m.facet_mood_energetic,
+    chill: m.facet_mood_chill,
+    gritty: m.facet_mood_gritty,
+    wholesome: m.facet_mood_wholesome,
+    artistic: m.facet_mood_artistic,
 
-	// Helper to get metadata with fallback
-	const getMetadata = (key: string): FacetMetadata => {
-		return (
-			facetMetadata[key] || {
-				label: key,
-				description: '',
-				emoji: ''
-			}
-		);
-	};
+    // Movement
+    flow: m.facet_movement_flow,
+    'big-sends': m.facet_movement_bigSends,
+    style: m.facet_movement_style,
+    technical: m.facet_movement_technical,
+    speed: m.facet_movement_speed,
+    oldskool: m.facet_movement_oldskool,
+    contemporary: m.facet_movement_contemporary,
 
-	// Helper to add facets to result array
-	const addFacet = (
-		result: Array<{ key: string; metadata: FacetMetadata }>,
-		key: string | string[]
-	) => {
-		if (Array.isArray(key)) {
-			key.forEach((k) => result.push({ key: k, metadata: getMetadata(k) }));
-		} else {
-			result.push({ key, metadata: getMetadata(key) });
-		}
-	};
+    // Environment
+    street: m.facet_environment_street,
+    rooftops: m.facet_environment_rooftops,
+    nature: m.facet_environment_nature,
+    urbex: m.facet_environment_urbex,
+    gym: m.facet_environment_gym,
 
-	// Build ordered list of chips to display
-	// Order: Type · Mood · Movement · Environment · Film Style · Theme · Era
-	$: chips = (() => {
-		if (!facets) return [];
+    // Film Style
+    cinematic: m.facet_filmStyle_cinematic,
+    'street-cinematic': m.facet_filmStyle_streetCinematic,
+    skateish: m.facet_filmStyle_skateish,
+    raw: m.facet_filmStyle_raw,
+    pov: m.facet_filmStyle_pov,
+    longtakes: m.facet_filmStyle_longtakes,
+    'music-driven': m.facet_filmStyle_musicDriven,
+    montage: m.facet_filmStyle_montage,
+    slowmo: m.facet_filmStyle_slowmo,
+    gonzo: m.facet_filmStyle_gonzo,
+    vintage: m.facet_filmStyle_vintage,
+    minimalist: m.facet_filmStyle_minimalist,
+    experimental: m.facet_filmStyle_experimental,
 
-		const result: Array<{ key: string; metadata: FacetMetadata }> = [];
+    // Theme
+    journey: m.facet_theme_journey,
+    team: m.facet_theme_team,
+    competition: m.facet_theme_competition,
+    educational: m.facet_theme_educational,
+    travel: m.facet_theme_travel,
+    creative: m.facet_theme_creative,
+    entertainment: m.facet_theme_entertainment,
 
-		// Add facets in order, skipping any that are undefined or empty
-		if (facets.type) addFacet(result, facets.type);
-		if (facets.mood?.length) addFacet(result, facets.mood);
-		if (facets.movement?.length) addFacet(result, facets.movement);
-		if (facets.environment) addFacet(result, facets.environment);
-		if (facets.filmStyle) addFacet(result, facets.filmStyle);
-		if (facets.theme) addFacet(result, facets.theme);
-		if (facets.era) addFacet(result, facets.era);
+    // Era
+    'pre-2000': m.facet_era_pre2000,
+    '2000s': m.facet_era_2000s,
+    '2010s': m.facet_era_2010s,
+    '2020s': m.facet_era_2020s,
+    '2030s': m.facet_era_2030s
+  };
 
-		return result;
-	})();
+  const facetDescriptionMessages: Record<string, () => string> = {
+    // Type
+    fiction: m.facet_type_fiction_desc,
+    documentary: m.facet_type_documentary_desc,
+    session: m.facet_type_session_desc,
+    event: m.facet_type_event_desc,
+    tutorial: m.facet_type_tutorial_desc,
+
+    // Mood
+    energetic: m.facet_mood_energetic_desc,
+    chill: m.facet_mood_chill_desc,
+    gritty: m.facet_mood_gritty_desc,
+    wholesome: m.facet_mood_wholesome_desc,
+    artistic: m.facet_mood_artistic_desc,
+
+    // Movement
+    flow: m.facet_movement_flow_desc,
+    'big-sends': m.facet_movement_bigSends_desc,
+    style: m.facet_movement_style_desc,
+    technical: m.facet_movement_technical_desc,
+    speed: m.facet_movement_speed_desc,
+    oldskool: m.facet_movement_oldskool_desc,
+    contemporary: m.facet_movement_contemporary_desc,
+
+    // Environment
+    street: m.facet_environment_street_desc,
+    rooftops: m.facet_environment_rooftops_desc,
+    nature: m.facet_environment_nature_desc,
+    urbex: m.facet_environment_urbex_desc,
+    gym: m.facet_environment_gym_desc,
+
+    // Film Style
+    cinematic: m.facet_filmStyle_cinematic_desc,
+    'street-cinematic': m.facet_filmStyle_streetCinematic_desc,
+    skateish: m.facet_filmStyle_skateish_desc,
+    raw: m.facet_filmStyle_raw_desc,
+    pov: m.facet_filmStyle_pov_desc,
+    longtakes: m.facet_filmStyle_longtakes_desc,
+    'music-driven': m.facet_filmStyle_musicDriven_desc,
+    montage: m.facet_filmStyle_montage_desc,
+    slowmo: m.facet_filmStyle_slowmo_desc,
+    gonzo: m.facet_filmStyle_gonzo_desc,
+    vintage: m.facet_filmStyle_vintage_desc,
+    minimalist: m.facet_filmStyle_minimalist_desc,
+    experimental: m.facet_filmStyle_experimental_desc,
+
+    // Theme
+    journey: m.facet_theme_journey_desc,
+    team: m.facet_theme_team_desc,
+    competition: m.facet_theme_competition_desc,
+    educational: m.facet_theme_educational_desc,
+    travel: m.facet_theme_travel_desc,
+    creative: m.facet_theme_creative_desc,
+    entertainment: m.facet_theme_entertainment_desc,
+
+    // Era
+    'pre-2000': m.facet_era_pre2000_desc,
+    '2000s': m.facet_era_2000s_desc,
+    '2010s': m.facet_era_2010s_desc,
+    '2020s': m.facet_era_2020s_desc,
+    '2030s': m.facet_era_2030s_desc
+  };
+
+  const getFacetLabel = (key: string, fallback: string): string => {
+    const msg = facetLabelMessages[key];
+    return msg ? msg() : fallback;
+  };
+
+  const getFacetDescription = (key: string): string => {
+    const msg = facetDescriptionMessages[key];
+    return msg ? msg() : '';
+  };
+  
+  // Helper to add facets to result array
+  const addFacet = (result: Array<{ key: string }>, key: string | string[]) => {
+    if (Array.isArray(key)) {
+      key.forEach(k => result.push({ key: k }));
+    } else {
+      result.push({ key });
+    }
+  };
+  
+  // Build ordered list of chips to display
+  // Order: Type · Mood · Movement · Environment · Film Style · Theme · Era
+  $: chips = (() => {
+    if (!facets) return [];
+    
+    const result: Array<{ key: string }> = [];
+    
+    // Add facets in order, skipping any that are undefined or empty
+    if (facets.type) addFacet(result, facets.type);
+    if (facets.mood?.length) addFacet(result, facets.mood);
+    if (facets.movement?.length) addFacet(result, facets.movement);
+    if (facets.environment) addFacet(result, facets.environment);
+    if (facets.filmStyle) addFacet(result, facets.filmStyle);
+    if (facets.theme) addFacet(result, facets.theme);
+    if (facets.era) addFacet(result, facets.era);
+    
+    return result;
+  })();
 </script>
 
 {#if chips.length > 0}
-	<Tooltip.Provider disableCloseOnTriggerClick={true}>
-		<div class="facet-chips" role="list" aria-label="Content facets">
-			{#each chips as chip}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						<span class="chip" role="listitem">
-							{#if chip.metadata.emoji}
-								<span class="emoji" aria-hidden="true">{chip.metadata.emoji}</span>
-							{/if}
-							{chip.metadata.label}
-						</span>
-					</Tooltip.Trigger>
-					<Tooltip.Content
-						class="border border-gray-700 bg-gray-900 text-white"
-						arrowClasses="bg-gray-900"
-					>
-						{#snippet children()}
-							<p class="tooltip-text">{chip.metadata.description}</p>
-						{/snippet}
-					</Tooltip.Content>
-				</Tooltip.Root>
-			{/each}
-		</div>
-	</Tooltip.Provider>
+  <Tooltip.Provider disableCloseOnTriggerClick={true}>
+    <div class="facet-chips" role="list" aria-label="Content facets">
+      {#each chips as chip}
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            <span 
+              class="chip"
+              role="listitem"
+            >
+              {#if facetEmojis[chip.key]}
+                <span class="emoji" aria-hidden="true">{facetEmojis[chip.key]}</span>
+              {/if}
+              {getFacetLabel(chip.key, chip.key)}
+            </span>
+          </Tooltip.Trigger>
+          <Tooltip.Content class="bg-gray-900 text-white border border-gray-700" arrowClasses="bg-gray-900">
+            {#snippet children()}
+              <p class="tooltip-text">{getFacetDescription(chip.key)}</p>
+            {/snippet}
+          </Tooltip.Content>
+        </Tooltip.Root>
+      {/each}
+    </div>
+  </Tooltip.Provider>
 {/if}
 
 <style>

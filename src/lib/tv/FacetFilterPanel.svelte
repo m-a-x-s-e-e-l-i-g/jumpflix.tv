@@ -1,12 +1,22 @@
 <script lang="ts">
 	import type { Writable } from 'svelte/store';
-	import type { SelectedFacets } from './types';
+	import type {
+		SelectedFacets,
+		FacetType,
+		FacetMood,
+		FacetMovement,
+		FacetEnvironment,
+		FacetFilmStyle,
+		FacetTheme,
+		FacetEra
+	} from './types';
 	import {
 		Dialog as DialogRoot,
 		DialogContent,
 		DialogHeader,
 		DialogTitle
 	} from '$lib/components/ui/dialog';
+	import * as m from '$lib/paraglide/messages';
 
 	interface Props {
 		selectedFacets: Writable<SelectedFacets>;
@@ -14,123 +24,114 @@
 
 	let { selectedFacets }: Props = $props();
 
-	// Facet metadata with display names and emojis
-	const facetCategories = {
+	// Facet metadata with display names and emojis (using i18n)
+	const facetCategories = $derived({
 		type: {
-			label: 'Type',
+			label: m.facet_type(),
 			options: [
-				{ value: 'fiction', label: 'Fiction', emoji: '🎬' },
-				{ value: 'documentary', label: 'Documentary', emoji: '📹' },
-				{ value: 'session', label: 'Session', emoji: '🎥' },
-				{ value: 'event', label: 'Event', emoji: '🏆' },
-				{ value: 'tutorial', label: 'Tutorial', emoji: '📚' }
+				{ value: 'fiction', label: m.facet_type_fiction(), emoji: '🎬' },
+				{ value: 'documentary', label: m.facet_type_documentary(), emoji: '📹' },
+				{ value: 'session', label: m.facet_type_session(), emoji: '🎥' },
+				{ value: 'event', label: m.facet_type_event(), emoji: '🏆' },
+				{ value: 'tutorial', label: m.facet_type_tutorial(), emoji: '📚' }
 			] as const
 		},
 		mood: {
-			label: 'Mood',
+			label: m.facet_mood(),
 			options: [
-				{ value: 'energetic', label: 'Energetic', emoji: '⚡' },
-				{ value: 'chill', label: 'Chill', emoji: '😌' },
-				{ value: 'gritty', label: 'Gritty', emoji: '🔥' },
-				{ value: 'wholesome', label: 'Wholesome', emoji: '💚' },
-				{ value: 'artistic', label: 'Artistic', emoji: '🎨' }
+				{ value: 'energetic', label: m.facet_mood_energetic(), emoji: '⚡' },
+				{ value: 'chill', label: m.facet_mood_chill(), emoji: '😌' },
+				{ value: 'gritty', label: m.facet_mood_gritty(), emoji: '🔥' },
+				{ value: 'wholesome', label: m.facet_mood_wholesome(), emoji: '💚' },
+				{ value: 'artistic', label: m.facet_mood_artistic(), emoji: '🎨' }
 			] as const
 		},
 		movement: {
-			label: 'Movement',
+			label: m.facet_movement(),
 			options: [
-				{ value: 'flow', label: 'Flow', emoji: '🌊' },
-				{ value: 'big-sends', label: 'Big Sends', emoji: '🚀' },
-				{ value: 'style', label: 'Style', emoji: '🤸' },
-				{ value: 'technical', label: 'Technical', emoji: '⚙️' },
-				{ value: 'speed', label: 'Speed', emoji: '🏎️' },
-				{ value: 'oldskool', label: 'Oldskool', emoji: '📼' },
-				{ value: 'contemporary', label: 'Contemporary', emoji: '💃' }
+				{ value: 'flow', label: m.facet_movement_flow(), emoji: '🌊' },
+				{ value: 'big-sends', label: m.facet_movement_bigSends(), emoji: '🚀' },
+				{ value: 'style', label: m.facet_movement_style(), emoji: '🤸' },
+				{ value: 'technical', label: m.facet_movement_technical(), emoji: '⚙️' },
+				{ value: 'speed', label: m.facet_movement_speed(), emoji: '🏎️' },
+				{ value: 'oldskool', label: m.facet_movement_oldskool(), emoji: '📼' },
+				{ value: 'contemporary', label: m.facet_movement_contemporary(), emoji: '💃' }
 			] as const
 		},
 		environment: {
-			label: 'Environment',
+			label: m.facet_environment(),
 			options: [
-				{ value: 'street', label: 'Street', emoji: '🏙️' },
-				{ value: 'rooftops', label: 'Rooftops', emoji: '🏢' },
-				{ value: 'nature', label: 'Nature', emoji: '🌲' },
-				{ value: 'urbex', label: 'Urbex', emoji: '🏚️' },
-				{ value: 'gym', label: 'Gym', emoji: '🏋️' }
+				{ value: 'street', label: m.facet_environment_street(), emoji: '🏙️' },
+				{ value: 'rooftops', label: m.facet_environment_rooftops(), emoji: '🏢' },
+				{ value: 'nature', label: m.facet_environment_nature(), emoji: '🌲' },
+				{ value: 'urbex', label: m.facet_environment_urbex(), emoji: '🏚️' },
+				{ value: 'gym', label: m.facet_environment_gym(), emoji: '🏋️' }
 			] as const
 		},
 		filmStyle: {
-			label: 'Film Style',
+			label: m.facet_filmStyle(),
 			options: [
-				{ value: 'cinematic', label: 'Cinematic', emoji: '🎞️' },
-				{ value: 'street-cinematic', label: 'Street-Cinematic', emoji: '🛣️' },
-				{ value: 'skateish', label: 'Skate-ish', emoji: '🛹' },
-				{ value: 'raw', label: 'Raw', emoji: '📱' },
-				{ value: 'pov', label: 'POV', emoji: '👁️' },
-				{ value: 'longtakes', label: 'Long Takes', emoji: '🎥' },
-				{ value: 'music-driven', label: 'Music-Driven', emoji: '🎵' },
-				{ value: 'montage', label: 'Montage', emoji: '⚡' },
-				{ value: 'slowmo', label: 'Slowmo', emoji: '🐌' },
-				{ value: 'gonzo', label: 'Gonzo', emoji: '🌀' },
-				{ value: 'vintage', label: 'Vintage', emoji: '📼' },
-				{ value: 'minimalist', label: 'Minimalist', emoji: '⬜' },
-				{ value: 'experimental', label: 'Experimental', emoji: '🔮' }
+				{ value: 'cinematic', label: m.facet_filmStyle_cinematic(), emoji: '🎞️' },
+				{ value: 'street-cinematic', label: m.facet_filmStyle_streetCinematic(), emoji: '🛣️' },
+				{ value: 'skateish', label: m.facet_filmStyle_skateish(), emoji: '🛹' },
+				{ value: 'raw', label: m.facet_filmStyle_raw(), emoji: '📱' },
+				{ value: 'pov', label: m.facet_filmStyle_pov(), emoji: '👁️' },
+				{ value: 'longtakes', label: m.facet_filmStyle_longtakes(), emoji: '🎥' },
+				{ value: 'music-driven', label: m.facet_filmStyle_musicDriven(), emoji: '🎵' },
+				{ value: 'montage', label: m.facet_filmStyle_montage(), emoji: '⚡' },
+				{ value: 'slowmo', label: m.facet_filmStyle_slowmo(), emoji: '🐌' },
+				{ value: 'gonzo', label: m.facet_filmStyle_gonzo(), emoji: '🌀' },
+				{ value: 'vintage', label: m.facet_filmStyle_vintage(), emoji: '📼' },
+				{ value: 'minimalist', label: m.facet_filmStyle_minimalist(), emoji: '⬜' },
+				{ value: 'experimental', label: m.facet_filmStyle_experimental(), emoji: '🔮' }
 			] as const
 		},
 		theme: {
-			label: 'Theme',
+			label: m.facet_theme(),
 			options: [
-				{ value: 'journey', label: 'Journey', emoji: '🗺️' },
-				{ value: 'team', label: 'Team', emoji: '👥' },
-				{ value: 'competition', label: 'Competition', emoji: '🥇' },
-				{ value: 'educational', label: 'Educational', emoji: '🎓' },
-				{ value: 'travel', label: 'Travel', emoji: '✈️' },
-				{ value: 'creative', label: 'Creative', emoji: '✨' },
-				{ value: 'entertainment', label: 'Entertainment', emoji: '🎪' }
+				{ value: 'journey', label: m.facet_theme_journey(), emoji: '🗺️' },
+				{ value: 'team', label: m.facet_theme_team(), emoji: '👥' },
+				{ value: 'competition', label: m.facet_theme_competition(), emoji: '🥇' },
+				{ value: 'educational', label: m.facet_theme_educational(), emoji: '🎓' },
+				{ value: 'travel', label: m.facet_theme_travel(), emoji: '✈️' },
+				{ value: 'creative', label: m.facet_theme_creative(), emoji: '✨' },
+				{ value: 'entertainment', label: m.facet_theme_entertainment(), emoji: '🎪' }
 			] as const
 		},
 		era: {
-			label: 'Era',
+			label: m.facet_era(),
 			options: [
-				{ value: 'pre-2000', label: 'Pre-2000', emoji: '📹' },
-				{ value: '2000s', label: '2000s', emoji: '📀' },
-				{ value: '2010s', label: '2010s', emoji: '📱' },
-				{ value: '2020s', label: '2020s', emoji: '🎬' },
-				{ value: '2030s', label: '2030s', emoji: '🚀' }
-			] as const
-		},
-		length: {
-			label: 'Length',
-			options: [
-				{ value: 'short-form', label: 'Short Form', emoji: '⚡' },
-				{ value: 'medium-form', label: 'Medium Form', emoji: '⏱️' },
-				{ value: 'long-form', label: 'Long Form', emoji: '🎞️' }
+				{ value: 'pre-2000', label: m.facet_era_pre2000(), emoji: '📹' },
+				{ value: '2000s', label: m.facet_era_2000s(), emoji: '📀' },
+				{ value: '2010s', label: m.facet_era_2010s(), emoji: '📱' },
+				{ value: '2020s', label: m.facet_era_2020s(), emoji: '🎬' },
+				{ value: '2030s', label: m.facet_era_2030s(), emoji: '🚀' }
 			] as const
 		}
-	} as const;
-
-	const facetCategoryKeys = Object.keys(facetCategories) as Array<keyof typeof facetCategories>;
+	});
 
 	let isOpen = $state(false);
 
 	function toggleFacet(category: keyof SelectedFacets, value: string) {
 		selectedFacets.update((current) => {
-			const updated = { ...current } as Record<string, string[] | undefined>;
-			const currentValues = updated[category] ?? [];
+			const updated = { ...current };
+			const currentValues = (updated[category] || []) as unknown[];
 
 			if (currentValues.includes(value)) {
-				updated[category] = currentValues.filter((v) => v !== value);
+				// Remove the value
+				updated[category] = (currentValues.filter((v) => v !== value) as unknown) as any;
 			} else {
-				updated[category] = [...currentValues, value];
+				// Add the value
+				updated[category] = ([...currentValues, value] as unknown) as any;
 			}
 
-			return updated as unknown as SelectedFacets;
+			return updated;
 		});
 	}
 
 	function isFacetSelected(category: keyof SelectedFacets, value: string): boolean {
-		const values =
-			($selectedFacets as unknown as Record<string, string[] | undefined>)[category] ?? [];
-		return values.includes(value);
+		const values = $selectedFacets[category] as unknown;
+		return Array.isArray(values) && (values as unknown[]).includes(value);
 	}
 
 	function clearAllFilters() {
@@ -159,7 +160,7 @@
 			/>
 		</svg>
 	</span>
-	<span class="filter-text">Filters</span>
+	<span class="filter-text">{m.facet_filters()}</span>
 	{#if filterCount > 0}
 		<span class="filter-badge">{filterCount}</span>
 	{/if}
@@ -169,25 +170,29 @@
 	<DialogContent class="max-h-[85vh] max-w-3xl overflow-y-auto">
 		<div class="dialog-header-with-action">
 			<DialogHeader>
-				<DialogTitle>Filter by Facets</DialogTitle>
+				<DialogTitle>{m.facet_filterByFacets()}</DialogTitle>
 			</DialogHeader>
 			{#if hasAnyFilters}
-				<button class="clear-button" onclick={clearAllFilters}> Clear all </button>
+				<button class="clear-button" onclick={clearAllFilters}>
+					{m.facet_clearAll()}
+				</button>
 			{/if}
 		</div>
 
 		<div class="filter-categories">
-			{#each facetCategoryKeys as categoryKey}
-				{@const category = facetCategories[categoryKey]}
+			{#each Object.entries(facetCategories) as [categoryKey, category]}
 				<div class="filter-category">
 					<h4 class="category-label">{category.label}</h4>
 					<div class="facet-chips">
 						{#each category.options as option}
-							{@const isSelected = isFacetSelected(categoryKey, option.value)}
+							{@const isSelected = isFacetSelected(
+								categoryKey as keyof SelectedFacets,
+								option.value
+							)}
 							<button
 								class="facet-chip"
 								class:selected={isSelected}
-								onclick={() => toggleFacet(categoryKey, option.value)}
+								onclick={() => toggleFacet(categoryKey as keyof SelectedFacets, option.value)}
 								aria-pressed={isSelected}
 							>
 								<span class="chip-emoji">{option.emoji}</span>

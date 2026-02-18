@@ -289,15 +289,3 @@ export function isImage(src?: string) {
 export function hasPoster(item: ContentItem) {
 	return typeof item.thumbnail === 'string' && item.thumbnail.includes('/images/posters/');
 }
-
-export const sortLabels: Record<SortBy, string> = {
-	default: 'Sort: Default',
-	'added-desc': 'Recently added',
-	'title-asc': 'Title A–Z',
-	'year-desc': 'Year (newest)',
-	'year-asc': 'Year (oldest)',
-	'duration-asc': 'Duration (short → long)',
-	'duration-desc': 'Duration (long → short)',
-	'rating-desc': 'Rating (high → low)',
-	'rating-asc': 'Rating (low → high)'
-};

@@ -574,37 +574,34 @@
 
 			<TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} {selectedFacets} />
 
-			{#if !isMobile}
-				<div class="catalog-toolbar" aria-label="Catalog view controls">
-					<label class="catalog-zoom">
-						<span>Zoom</span>
-						<input
-							type="range"
-							min="0.8"
-							max="1"
-							step="0.1"
-							value={$gridScale}
-							oninput={handleScaleChange}
-						/>
-					</label>
-				</div>
-			{/if}
-		</section>
-		<div
-			class="catalog-section"
-			style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}
-		>
-			<TvCatalogGrid
-				bind:gridElement={gridEl}
-				visibleContent={$visibleContent}
-				selectedContent={$selectedContent}
-				{isMobile}
-				{priorityKeys}
-				gridScale={isMobile ? 1 : $gridScale}
-				onSelect={handleSelect}
-			/>
-		</div>
-	{/if}
+      {#if !isMobile}
+        <div class="catalog-toolbar" aria-label="Catalog view controls">
+          <label class="catalog-zoom">
+            <span>{m.tv_zoom()}</span>
+            <input
+              type="range"
+              min="0.8"
+              max="1"
+              step="0.1"
+              value={$gridScale}
+              oninput={handleScaleChange}
+            />
+          </label>
+        </div>
+      {/if}
+    </section>
+    <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
+      <TvCatalogGrid
+        bind:gridElement={gridEl}
+        visibleContent={$visibleContent}
+        selectedContent={$selectedContent}
+        {isMobile}
+        priorityKeys={priorityKeys}
+        gridScale={isMobile ? 1 : $gridScale}
+        onSelect={handleSelect}
+      />
+    </div>
+  {/if}
 </div>
 {#if $showPlayer}
 	{#if PlayerModalComponent}

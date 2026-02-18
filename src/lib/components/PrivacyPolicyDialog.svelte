@@ -21,9 +21,23 @@
 
 	<DialogContent class="max-h-[80vh] max-w-2xl overflow-y-auto">
 		<DialogHeader>
-			<DialogTitle>{locale === 'nl' ? 'Privacybeleid' : 'Privacy Policy'}</DialogTitle>
+			<DialogTitle>
+				{#if locale === 'nl'}
+					Privacybeleid
+				{:else if locale === 'ja'}
+					プライバシーポリシー
+				{:else}
+					Privacy Policy
+				{/if}
+			</DialogTitle>
 			<DialogDescription class="text-xs">
-				{locale === 'nl' ? 'Laatst bijgewerkt: 4 november 2025' : 'Last updated: November 4, 2025'}
+				{#if locale === 'nl'}
+					Laatst bijgewerkt: 4 november 2025
+				{:else if locale === 'ja'}
+					最終更新日：2025年11月4日
+				{:else}
+					Last updated: November 4, 2025
+				{/if}
 			</DialogDescription>
 		</DialogHeader>
 
@@ -109,6 +123,76 @@
 					<p class="text-muted-foreground">
 						We nemen de beveiliging van je gegevens serieus en gebruiken industriestandaard
 						beveiligingsmaatregelen, waaronder versleuteling en beveiligde authenticatie.
+					</p>
+				</div>
+			{:else if locale === 'ja'}
+				<div>
+					<h3 class="mb-2 font-semibold">1. 収集するデータ</h3>
+					<p class="mb-2 text-muted-foreground">JumpFlixでは、以下のデータを収集します：</p>
+					<ul class="ml-2 list-inside list-disc space-y-1 text-muted-foreground">
+						<li>
+							<strong class="text-foreground">アカウント情報：</strong
+							>メールアドレスとパスワード（暗号化）
+						</li>
+						<li><strong class="text-foreground">視聴履歴：</strong>視聴した動画と進捗状況</li>
+						<li><strong class="text-foreground">通信設定：</strong>最新情報の受信に関する選択</li>
+					</ul>
+				</div>
+
+				<div>
+					<h3 class="mb-2 font-semibold">2. データの使用方法</h3>
+					<ul class="ml-2 list-inside list-disc space-y-1 text-muted-foreground">
+						<li>JumpFlixへのアクセス提供と視聴進捗の保存</li>
+						<li>アカウントのセキュリティ保護</li>
+						<li>新しいパルクール動画や更新情報の送信（オプトインした場合のみ）</li>
+						<li>サービスの改善</li>
+					</ul>
+				</div>
+
+				<div>
+					<h3 class="mb-2 font-semibold">3. マーケティングとコミュニケーション</h3>
+					<p class="mb-2 text-muted-foreground">
+						アカウント作成時に、以下に関するニュースと更新情報の受信を選択できます：
+					</p>
+					<ul class="ml-2 list-inside list-disc space-y-1 text-muted-foreground">
+						<li>JumpFlixの新作映画とシリーズ</li>
+						<li>プラットフォームの更新</li>
+						<li>パルクール関連コンテンツ</li>
+					</ul>
+					<p class="mt-2 text-muted-foreground">
+						メール内の配信停止リンクから、またはアカウント設定で設定を変更することで、いつでも配信停止できます。
+					</p>
+				</div>
+
+				<div>
+					<h3 class="mb-2 font-semibold">4. データの共有</h3>
+					<p class="mb-2 text-muted-foreground">
+						データを第三者に販売することはありません。以下のサービスとのみデータを共有します：
+					</p>
+					<ul class="ml-2 list-inside list-disc space-y-1 text-muted-foreground">
+						<li>
+							<strong class="text-foreground">Supabase：</strong>認証とデータベースホスティング用
+						</li>
+						<li><strong class="text-foreground">Vimeo/YouTube：</strong>動画再生用</li>
+					</ul>
+				</div>
+
+				<div>
+					<h3 class="mb-2 font-semibold">5. あなたの権利</h3>
+					<p class="mb-2 text-muted-foreground">以下の権利があります：</p>
+					<ul class="ml-2 list-inside list-disc space-y-1 text-muted-foreground">
+						<li>個人データへのアクセス</li>
+						<li>データの修正</li>
+						<li>データの削除</li>
+						<li>データ処理への異議申し立て</li>
+						<li>通信設定の更新</li>
+					</ul>
+				</div>
+
+				<div>
+					<h3 class="mb-2 font-semibold">6. セキュリティ</h3>
+					<p class="text-muted-foreground">
+						データのセキュリティを重視し、暗号化と安全な認証を含む業界標準のセキュリティ対策を使用しています。
 					</p>
 				</div>
 			{:else}

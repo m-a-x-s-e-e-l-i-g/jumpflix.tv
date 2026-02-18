@@ -13,6 +13,7 @@
 	} from '$lib/tv/watchHistory';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
+	import * as m from '$lib/paraglide/messages';
 
 	export let item: ContentItem;
 	export let isSelected = false;
@@ -211,13 +212,13 @@
 
 		<div class="card-badges">
 			{#if isRecentlyAdded && !isWatched}
-				<span class="card-badge card-badge--hot">NEW</span>
+				<span class="card-badge card-badge--hot">{m.tv_new()}</span>
 			{/if}
 			{#if item.paid && !isWatched}
-				<span class="card-badge card-badge--paid">PAID</span>
+				<span class="card-badge card-badge--paid">{m.tv_paid()}</span>
 			{/if}
 			{#if isWatched}
-				<span class="card-badge card-badge--watched">WATCHED</span>
+				<span class="card-badge card-badge--watched">{m.tv_showWatched()}</span>
 			{/if}
 		</div>
 
@@ -234,10 +235,10 @@
 
 		<!-- Progress bar at bottom -->
 		{#if hasProgress}
-			<div class="card-progress" aria-label={`Continue watching at ${progressDisplayPercent}%`}>
+			<div class="card-progress" aria-label={`${m.tv_continueWatchingAt()} ${progressDisplayPercent}%`}>
 				<div class="card-progress-inner">
 					<div class="card-progress-label">
-						<span>CONTINUE</span>
+						<span>{m.tv_continue()}</span>
 						<span>{progressDisplayPercent}%</span>
 					</div>
 					<div class="card-progress-track">

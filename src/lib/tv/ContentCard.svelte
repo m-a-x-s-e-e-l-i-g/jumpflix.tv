@@ -215,10 +215,10 @@
 				<span class="card-badge card-badge--hot">{m.tv_new()}</span>
 			{/if}
 			{#if item.paid && !isWatched}
-				<span class="card-badge card-badge--paid">{m.tv_paid().toUpperCase()}</span>
+				<span class="card-badge card-badge--paid">{m.tv_paid()}</span>
 			{/if}
 			{#if isWatched}
-				<span class="card-badge card-badge--watched">{m.tv_showWatched().toUpperCase()}</span>
+				<span class="card-badge card-badge--watched">{m.tv_showWatched()}</span>
 			{/if}
 		</div>
 

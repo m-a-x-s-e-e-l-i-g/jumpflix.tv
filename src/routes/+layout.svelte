@@ -45,8 +45,10 @@
 
 	function isStandaloneMode() {
 		if (typeof window === 'undefined') return false;
-		return window.matchMedia('(display-mode: standalone)').matches
-			|| (navigator as any).standalone === true;
+		return (
+			window.matchMedia('(display-mode: standalone)').matches ||
+			(navigator as any).standalone === true
+		);
 	}
 
 	function openPwaInstallPrompt() {
@@ -84,7 +86,7 @@
 	}>();
 
 	// current locale from Paraglide (reactive state)
-	let currentLocale: 'en' | 'nl' = $state(getLocale() as any);
+	let currentLocale: 'en' | 'nl' | 'ja' = $state(getLocale() as any);
 	let sheetOpen = $state(false);
 	let reduceMotion = $state(false);
 	let systemReduceMotion = $state(false);
@@ -98,11 +100,13 @@
 	const isDetailRoute = $derived(
 		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
 	);
-	const isNavigatingToStats = $derived((() => {
-		const toPath = $navigating?.to?.url?.pathname;
-		if (!toPath) return false;
-		return toPath === '/stats' || toPath.startsWith('/stats/');
-	})());
+	const isNavigatingToStats = $derived(
+		(() => {
+			const toPath = $navigating?.to?.url?.pathname;
+			if (!toPath) return false;
+			return toPath === '/stats' || toPath.startsWith('/stats/');
+		})()
+	);
 
 	let lastScrollY = 0;
 	const scrollSubscribers = new Set<ScrollSubscriber>();
@@ -114,7 +118,6 @@
 			scrollSubscribers.delete(subscriber);
 		};
 	};
-
 
 	setContext(SCROLL_CONTEXT_KEY, subscribeToScroll);
 
@@ -136,7 +139,8 @@
 	}
 	const langs = [
 		{ code: 'en' as const, flag: '🇬🇧', label: 'English' },
-		{ code: 'nl' as const, flag: '🇳🇱', label: 'Nederlands' }
+		{ code: 'nl' as const, flag: '🇳🇱', label: 'Nederlands' },
+		{ code: 'ja' as const, flag: '🇯🇵', label: '日本語' }
 	];
 
 	type PopcornSpec = {
@@ -374,8 +378,11 @@
 
 		const runIdle = (task: () => void) => {
 			if ('requestIdleCallback' in window) {
-				(window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
-					.requestIdleCallback(task, { timeout: 1500 });
+				(
+					window as Window & {
+						requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void;
+					}
+				).requestIdleCallback(task, { timeout: 1500 });
 			} else {
 				setTimeout(task, 0);
 			}
@@ -390,110 +397,113 @@
 
 		pwaInstallRef = document.querySelector('pwa-install');
 		window.addEventListener('pwa-install-element', handlePwaInstallElement as EventListener);
-		
+
 		// Initialize auth stores with data from server
 		if (data.session) {
 			session.set(data.session);
 			user.set(data.user);
 		}
 		loading.set(false);
-		
+
 		runIdle(() => {
 			// Force session refresh to ensure we have the latest auth state
 			// This helps recover from stale cached states and account switching issues
 			const refreshTimeout = setTimeout(() => {
 				console.warn('[Auth Debug] Session refresh timed out');
 			}, 5000);
-			
-			supabase.auth.getSession().then(({ data: freshSession, error }) => {
-				clearTimeout(refreshTimeout);
-				
-				if (error) {
-					console.error('[Auth Debug] Error refreshing session:', error);
-					return;
-				}
-				
-				const serverUserId = data.session?.user?.id;
-				const clientUserId = freshSession.session?.user?.id;
-				
-				// Detect account mismatch - this is the critical issue!
-				if (serverUserId && clientUserId && serverUserId !== clientUserId) {
-					console.error('[Auth Debug] ACCOUNT MISMATCH DETECTED!', {
-						serverUserId,
-						clientUserId,
-						serverEmail: data.user?.email,
-						clientEmail: freshSession.session?.user?.email
-					});
-					
-					// Force a full page reload to clear the stale state
-					toast.error('Session mismatch detected. Reloading...');
-					setTimeout(() => window.location.reload(), 1000);
-					return;
-				}
-				
-				if (freshSession.session && !data.session) {
-					// We have a valid session that wasn't passed from server
-					// This can happen with service worker caching issues
-					console.warn('[Auth Debug] Found valid session not passed from server, updating...');
-					session.set(freshSession.session);
-					user.set(freshSession.session.user);
-				} else if (!freshSession.session && data.session) {
-					// Server said we're logged in but client doesn't have session
-					// This is the "broken session" state - client cookies are invalid
-					toast.error('Your session is invalid. Please sign in again.');
-					
-					// Force sign out to clear the broken state
-					supabase.auth.signOut({ scope: 'local' }).then(() => {
-						session.set(null);
-						user.set(null);
-						// Clear caches
-						if ('caches' in window) {
-							caches.keys().then(names => {
-								names.forEach(name => caches.delete(name));
-							});
-						}
-						setTimeout(() => window.location.reload(), 500);
-					});
-					return;
-				} else if (freshSession.session && clientUserId === serverUserId) {
-					// Sessions match - but let's validate the token is actually working
-					// by making a quick authenticated request
-					supabase.auth.getUser().then(({ data: userData, error: userError }) => {
-						if (userError || !userData.user) {
-							// Token is invalid even though session exists
-							toast.error('Your session has expired. Please sign in again.');
-							
-							// Force sign out
-							supabase.auth.signOut({ scope: 'local' }).then(() => {
-								session.set(null);
-								user.set(null);
-								if ('caches' in window) {
-									caches.keys().then(names => {
-										names.forEach(name => caches.delete(name));
-									});
-								}
-								setTimeout(() => window.location.reload(), 500);
-							});
-						} else {
-							// Everything is valid, update to ensure we have the latest session data
-							session.set(freshSession.session);
-							user.set(freshSession.session.user);
-						}
-					});
-				}
-			}).catch((err) => {
-				clearTimeout(refreshTimeout);
-				console.error('[Auth Debug] Failed to get session:', err);
-			});
+
+			supabase.auth
+				.getSession()
+				.then(({ data: freshSession, error }) => {
+					clearTimeout(refreshTimeout);
+
+					if (error) {
+						console.error('[Auth Debug] Error refreshing session:', error);
+						return;
+					}
+
+					const serverUserId = data.session?.user?.id;
+					const clientUserId = freshSession.session?.user?.id;
+
+					// Detect account mismatch - this is the critical issue!
+					if (serverUserId && clientUserId && serverUserId !== clientUserId) {
+						console.error('[Auth Debug] ACCOUNT MISMATCH DETECTED!', {
+							serverUserId,
+							clientUserId,
+							serverEmail: data.user?.email,
+							clientEmail: freshSession.session?.user?.email
+						});
+
+						// Force a full page reload to clear the stale state
+						toast.error('Session mismatch detected. Reloading...');
+						setTimeout(() => window.location.reload(), 1000);
+						return;
+					}
+
+					if (freshSession.session && !data.session) {
+						// We have a valid session that wasn't passed from server
+						// This can happen with service worker caching issues
+						console.warn('[Auth Debug] Found valid session not passed from server, updating...');
+						session.set(freshSession.session);
+						user.set(freshSession.session.user);
+					} else if (!freshSession.session && data.session) {
+						// Server said we're logged in but client doesn't have session
+						// This is the "broken session" state - client cookies are invalid
+						toast.error('Your session is invalid. Please sign in again.');
+
+						// Force sign out to clear the broken state
+						supabase.auth.signOut({ scope: 'local' }).then(() => {
+							session.set(null);
+							user.set(null);
+							// Clear caches
+							if ('caches' in window) {
+								caches.keys().then((names) => {
+									names.forEach((name) => caches.delete(name));
+								});
+							}
+							setTimeout(() => window.location.reload(), 500);
+						});
+						return;
+					} else if (freshSession.session && clientUserId === serverUserId) {
+						// Sessions match - but let's validate the token is actually working
+						// by making a quick authenticated request
+						supabase.auth.getUser().then(({ data: userData, error: userError }) => {
+							if (userError || !userData.user) {
+								// Token is invalid even though session exists
+								toast.error('Your session has expired. Please sign in again.');
+
+								// Force sign out
+								supabase.auth.signOut({ scope: 'local' }).then(() => {
+									session.set(null);
+									user.set(null);
+									if ('caches' in window) {
+										caches.keys().then((names) => {
+											names.forEach((name) => caches.delete(name));
+										});
+									}
+									setTimeout(() => window.location.reload(), 500);
+								});
+							} else {
+								// Everything is valid, update to ensure we have the latest session data
+								session.set(freshSession.session);
+								user.set(freshSession.session.user);
+							}
+						});
+					}
+				})
+				.catch((err) => {
+					clearTimeout(refreshTimeout);
+					console.error('[Auth Debug] Failed to get session:', err);
+				});
 		});
-		
+
 		// Handle Supabase auth callback from email confirmation
 		const handleAuthCallback = async () => {
 			const hashParams = new URLSearchParams(window.location.hash.substring(1));
 			const accessToken = hashParams.get('access_token');
 			const refreshToken = hashParams.get('refresh_token');
 			const type = hashParams.get('type');
-			
+
 			if (accessToken && type) {
 				try {
 					// Set the session from the URL tokens
@@ -501,7 +511,7 @@
 						access_token: accessToken,
 						refresh_token: refreshToken || ''
 					});
-					
+
 					if (error) {
 						console.error('Error setting session:', error);
 						toast.error('Failed to confirm email. Please try again.');
@@ -511,7 +521,7 @@
 							session.set(data.session);
 							user.set(data.user);
 						}
-						
+
 						if (type === 'signup') {
 							toast.success('Email confirmed! Welcome to JumpFlix!');
 							// Clean up the URL by removing hash
@@ -524,7 +534,7 @@
 							}
 						}
 					}
-					
+
 					// Clean up the URL by removing hash (if not redirecting)
 					if (type !== 'recovery' || window.location.pathname.includes('/reset-password')) {
 						window.history.replaceState({}, document.title, window.location.pathname);
@@ -535,17 +545,17 @@
 				}
 			}
 		};
-		
+
 		runIdle(() => {
 			handleAuthCallback();
 		});
-		
+
 		// Listen for auth state changes and update stores
 		const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
 			// Detect account switches
 			const currentUserId = get(user)?.id;
 			const newUserId = newSession?.user?.id;
-			
+
 			if (event === 'SIGNED_OUT') {
 				// Clear all auth state
 				session.set(null);
@@ -558,7 +568,7 @@
 					setTimeout(() => window.location.reload(), 500);
 					return;
 				}
-				
+
 				session.set(newSession);
 				user.set(newSession?.user ?? null);
 			} else {
@@ -567,7 +577,7 @@
 				user.set(newSession?.user ?? null);
 			}
 		});
-		
+
 		let stopWatchHistory: ReturnType<typeof initWatchHistory> | undefined;
 		runIdle(() => {
 			stopWatchHistory = initWatchHistory();
@@ -577,7 +587,8 @@
 			setupScrollEffects(),
 			() => stopWatchHistory?.(),
 			() => authListener.subscription.unsubscribe(),
-			() => window.removeEventListener('pwa-install-element', handlePwaInstallElement as EventListener)
+			() =>
+				window.removeEventListener('pwa-install-element', handlePwaInstallElement as EventListener)
 		];
 		return () => {
 			for (const cleanup of cleanupFns) {
@@ -587,7 +598,7 @@
 	});
 
 	// Switch locale without full page reload for instant UX
-	async function changeLocale(code: 'en' | 'nl') {
+	async function changeLocale(code: 'en' | 'nl' | 'ja') {
 		// Avoid default reload behavior; update local state to trigger re-render
 		await (setLocale as any)(code, { reload: false });
 		currentLocale = code;
@@ -621,7 +632,7 @@
 				})
 				.catch(() => {});
 		});
-		
+
 		// Listen for service worker updates and prompt user to reload
 		navigator.serviceWorker?.addEventListener('controllerchange', () => {
 			console.log('[SW] New service worker activated, may need reload for full update');
@@ -636,7 +647,7 @@
 	<meta name="robots" content="index, follow, max-image-preview:large" />
 	<meta name="theme-color" content="#0b1220" />
 	<!-- PWA: iOS/Apple support -->
-	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="mobile-web-app-capable" content="yes" />
 	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 	<meta name="apple-mobile-web-app-title" content="JUMPFLIX" />
 	<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -686,12 +697,12 @@
 	<!-- Top-left settings cog that opens a left-side sheet -->
 	<SheetRoot bind:open={sheetOpen}>
 		<nav
-			class="absolute top-4 left-4 right-4 z-[var(--z-index-settings)] flex items-start justify-between gap-2"
+			class="absolute top-4 right-4 left-4 z-[var(--z-index-settings)] flex items-start justify-between gap-2"
 			aria-label="Site actions"
 		>
 			<div class="flex items-center gap-2">
 				{#if !isDetailRoute}
-					<SheetTrigger 
+					<SheetTrigger
 						aria-label={m.settings_open()}
 						class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 					>
@@ -706,11 +717,9 @@
 					<a
 						href="/"
 						aria-label={isDetailRoute ? 'Back to catalog' : 'Catalog'}
-						class={
-							isDetailRoute
-								? 'relative inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border bg-background/90 px-3 text-sm font-medium text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
-								: 'relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
-						}
+						class={isDetailRoute
+							? 'relative inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border bg-background/90 px-3 text-sm font-medium text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
+							: 'relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'}
 					>
 						{#if isDetailRoute}
 							<ArrowLeftIcon class="size-4" />
@@ -737,7 +746,7 @@
 					{#if data?.isAdmin && $user}
 						<AdminMenuButton />
 					{/if}
-					
+
 					<UserProfileButton />
 				{/if}
 			</div>
@@ -788,7 +797,9 @@
 						onclick={openPwaInstallPrompt}
 						class="group relative flex w-full items-center justify-between gap-3 rounded-xl border border-border bg-background/80 p-3 text-sm text-muted-foreground transition hover:-translate-y-0.5 hover:bg-muted/70 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 					>
-						<span class="font-medium transition-colors group-hover:text-foreground">{m.settings_install_cta()}</span>
+						<span class="font-medium transition-colors group-hover:text-foreground"
+							>{m.settings_install_cta()}</span
+						>
 						<span class="text-xs text-muted-foreground">PWA</span>
 					</button>
 				</div>

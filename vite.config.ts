@@ -11,7 +11,8 @@ export default defineConfig(({ mode }) => ({
 		sveltekit(),
 		paraglideVitePlugin({
 			project: './project.inlang',
-			outdir: './src/lib/paraglide'
+			outdir: './src/lib/paraglide',
+			strategy: ['cookie', 'preferredLanguage', 'baseLocale']
 		})
 	],
 	resolve: {
@@ -21,10 +22,13 @@ export default defineConfig(({ mode }) => ({
 			'lit-html': 'lit-html'
 		}
 	},
-	define: mode === 'production' ? {} : {
-		// Suppress Lit dev mode warnings in development
-		'globalThis.litProdMode': 'true'
-	},
+	define:
+		mode === 'production'
+			? {}
+			: {
+					// Suppress Lit dev mode warnings in development
+					'globalThis.litProdMode': 'true'
+				},
 	build: {
 		rollupOptions: {
 			output: {

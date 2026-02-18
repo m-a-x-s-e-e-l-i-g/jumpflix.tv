@@ -8,6 +8,7 @@ export type FacetEnvironment = 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym
 export type FacetFilmStyle = 'cinematic' | 'street-cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | 'music-driven' | 'montage' | 'slowmo' | 'gonzo' | 'vintage' | 'minimalist' | 'experimental';
 export type FacetTheme = 'journey' | 'team' | 'event' | 'competition' | 'educational' | 'travel' | 'creative' | 'entertainment';
 export type FacetEra = '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000';
+export type FacetLength = 'short-form' | 'medium-form' | 'long-form';
 
 export interface Facets {
   type?: FacetType;
@@ -17,6 +18,7 @@ export interface Facets {
   filmStyle?: FacetFilmStyle;
   theme?: FacetTheme;
   era?: FacetEra; // Auto-calculated from year
+  length?: FacetLength; // Auto-calculated from duration
 }
 
 export interface BaseContent {
@@ -116,6 +118,7 @@ export interface SelectedFacets {
   filmStyle?: FacetFilmStyle[];
   theme?: FacetTheme[];
   era?: FacetEra[];
+  length?: FacetLength[];
 }
 
 export interface TvState {

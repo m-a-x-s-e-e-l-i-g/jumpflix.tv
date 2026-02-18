@@ -174,6 +174,10 @@ export function matchesFacets(item: ContentItem, selectedFacets?: TvState['selec
     if (!facets.era || !selectedFacets.era.includes(facets.era)) return false;
   }
 
+  if (selectedFacets.length && selectedFacets.length.length > 0) {
+    if (!facets.length || !selectedFacets.length.includes(facets.length)) return false;
+  }
+
   return true;
 }
 

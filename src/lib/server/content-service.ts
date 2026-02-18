@@ -77,6 +77,7 @@ async function writePrerenderCache<T>(fileName: string, items: T): Promise<void>
 function mapFacets(row: MediaItemRow): Facets | undefined {
 	// Calculate automatic facets
 	const era = calculateEraFacet(row.year);
+	const length = calculateLengthFacet(row.duration);
 
 	const hasFacets = row.facet_type || 
 		(row.facet_mood && row.facet_mood.length > 0) || 
@@ -84,7 +85,8 @@ function mapFacets(row: MediaItemRow): Facets | undefined {
 		row.facet_environment || 
 		row.facet_film_style || 
 		row.facet_theme || 
-		era;
+		era ||
+		length;
 	
 	if (!hasFacets) {
 		return undefined;
@@ -97,7 +99,8 @@ function mapFacets(row: MediaItemRow): Facets | undefined {
 		environment: row.facet_environment ?? undefined,
 		filmStyle: row.facet_film_style ?? undefined,
 		theme: row.facet_theme ?? undefined,
-		era: era ?? undefined
+		era: era ?? undefined,
+		length: length ?? undefined
 	});
 }
 
@@ -111,6 +114,28 @@ function calculateEraFacet(year: string | null): '2000s' | '2010s' | '2020s' | '
 	if (yearNum >= 2010) return '2010s';
 	if (yearNum >= 2000) return '2000s';
 	return 'pre-2000';
+}
+
+// Calculate length facet from duration string
+// Duration format examples: "5m", "1h 12m", "40m", "2h"
+function calculateLengthFacet(duration: string | null): 'short-form' | 'medium-form' | 'long-form' | null {
+	if (!duration || typeof duration !== 'string') return null;
+	
+	let minutes = 0;
+	const hMatch = duration.match(/(\d+)\s*h/i);
+	const mMatch = duration.match(/(\d+)\s*m/i);
+	
+	if (hMatch) minutes += parseInt(hMatch[1]) * 60;
+	if (mMatch) minutes += parseInt(mMatch[1]);
+	
+	if (minutes === 0) return null;
+	
+	// Short-form: under 15 minutes (typical for shorts, clips, trailers)
+	// Medium-form: 15-45 minutes (typical for session edits, short films)
+	// Long-form: 45+ minutes (typical for feature films, documentaries)
+	if (minutes < 15) return 'short-form';
+	if (minutes < 45) return 'medium-form';
+	return 'long-form';
 }
 
 

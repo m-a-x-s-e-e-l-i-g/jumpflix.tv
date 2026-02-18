@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Writable } from 'svelte/store';
-  import type { SelectedFacets, FacetType, FacetMood, FacetMovement, FacetEnvironment, FacetFilmStyle, FacetTheme, FacetEra } from './types';
+  import type { SelectedFacets } from './types';
   import { Dialog as DialogRoot, DialogContent, DialogHeader, DialogTitle } from '$lib/components/ui/dialog';
   
   interface Props {
@@ -91,6 +91,14 @@
         { value: '2010s', label: '2010s', emoji: '📱' },
         { value: '2020s', label: '2020s', emoji: '🎬' },
         { value: '2030s', label: '2030s', emoji: '🚀' }
+      ] as const
+    },
+    length: {
+      label: 'Length',
+      options: [
+        { value: 'short-form', label: 'Short Form', emoji: '⚡' },
+        { value: 'medium-form', label: 'Medium Form', emoji: '⏱️' },
+        { value: 'long-form', label: 'Long Form', emoji: '🎞️' }
       ] as const
     }
   } as const;

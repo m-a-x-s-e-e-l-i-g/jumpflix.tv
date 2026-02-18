@@ -552,7 +552,7 @@
       {#if !isMobile}
         <div class="catalog-toolbar" aria-label="Catalog view controls">
           <label class="catalog-zoom">
-            <span>Zoom</span>
+            <span>{m.tv_zoom()}</span>
             <input
               type="range"
               min="0.8"

@@ -716,14 +716,14 @@
 				{#if isStatsRoute || isAdminRoute || isAboutRoute || isDetailRoute}
 					<a
 						href="/"
-						aria-label={isDetailRoute ? 'Back to catalog' : 'Catalog'}
+						aria-label={isDetailRoute ? m.tv_backToCatalog() : 'Catalog'}
 						class={isDetailRoute
 							? 'relative inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border bg-background/90 px-3 text-sm font-medium text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
 							: 'relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'}
 					>
 						{#if isDetailRoute}
 							<ArrowLeftIcon class="size-4" />
-							<span>Back to catalog</span>
+							<span>{m.tv_backToCatalog()}</span>
 						{:else}
 							<HomeIcon class="size-5" />
 							<span class="sr-only">Catalog</span>

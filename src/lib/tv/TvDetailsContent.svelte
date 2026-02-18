@@ -654,7 +654,7 @@
 								{m.tv_watchOn()}
 								{selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
 							{:else}
-								Play series
+								{m.tv_playSeries()}
 							{/if}
 						{:else if isInlinePlayable(selected)}
 							{m.tv_playNow()}
@@ -673,7 +673,9 @@
 			</div>
 
 			<div class="detail-meta">
-				<span class="detail-pill">{selected.type === 'movie' ? 'Movie' : 'Series'}</span>
+				<span class="detail-pill">
+					{selected.type === 'movie' ? m.tv_pillFilm() : m.tv_pillSeries()}
+				</span>
 				{#if selected.paid}
 					<span class="detail-pill detail-pill--paid">Paid</span>
 				{/if}
@@ -684,7 +686,14 @@
 					<span>{(selected as any).duration}</span>
 				{/if}
 				{#if selected.type === 'series'}
-					<span>{(selected as any).episodeCount || '?'} episodes</span>
+					<span>
+						{m.tv_episodeCount({
+							count:
+								typeof (selected as any).episodeCount === 'number'
+									? String((selected as any).episodeCount)
+									: '?'
+						})}
+					</span>
 				{/if}
 				<div class="detail-meta-actions">
 					{#if (selected as any).trakt}
@@ -773,7 +782,7 @@
 										{m.tv_watchOn()}
 										{selected?.provider || ((selected as any)?.trakt ? 'Trakt' : 'External')}
 									{:else}
-										Play series
+										{m.tv_playSeries()}
 									{/if}
 								{:else if isInlinePlayable(selected)}
 									{m.tv_playNow()}

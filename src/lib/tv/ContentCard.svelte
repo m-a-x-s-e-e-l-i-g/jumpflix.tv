@@ -235,10 +235,10 @@
 
 		<!-- Progress bar at bottom -->
 		{#if hasProgress}
-			<div class="card-progress" aria-label={`Continue watching at ${progressDisplayPercent}%`}>
+			<div class="card-progress" aria-label={`${m.tv_continueWatchingAt()} ${progressDisplayPercent}%`}>
 				<div class="card-progress-inner">
 					<div class="card-progress-label">
-						<span>CONTINUE</span>
+						<span>{m.tv_continue()}</span>
 						<span>{progressDisplayPercent}%</span>
 					</div>
 					<div class="card-progress-track">

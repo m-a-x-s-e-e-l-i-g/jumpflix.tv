@@ -2,7 +2,6 @@
   import type { Writable } from 'svelte/store';
   import Switch from '$lib/components/ui/Switch.svelte';
   import * as m from '$lib/paraglide/messages';
-  import { sortLabels } from '$lib/tv/utils';
   import type { SortBy, SelectedFacets } from '$lib/tv/types';
   import { user } from '$lib/stores/authStore';
   import FacetFilterPanel from './FacetFilterPanel.svelte';
@@ -35,6 +34,18 @@
   const labelClass = 'tv-search-toggle';
   const selectClass = 'tv-search-select';
   const isLoggedIn = $derived(Boolean($user));
+
+  const sortOptions: Array<{ value: SortBy; label: () => string }> = [
+    { value: 'default', label: () => m.tv_sort_random() },
+    { value: 'added-desc', label: () => m.tv_sort_addedDesc() },
+    { value: 'title-asc', label: () => m.tv_sort_titleAsc() },
+    { value: 'year-desc', label: () => m.tv_sort_yearDesc() },
+    { value: 'year-asc', label: () => m.tv_sort_yearAsc() },
+    { value: 'duration-asc', label: () => m.tv_sort_durationAsc() },
+    { value: 'duration-desc', label: () => m.tv_sort_durationDesc() },
+    { value: 'rating-desc', label: () => m.tv_sort_ratingDesc() },
+    { value: 'rating-asc', label: () => m.tv_sort_ratingAsc() }
+  ];
 </script>
 
 <div id="search" class="search-wrap">
@@ -89,8 +100,8 @@
 
         <div class="search-select">
           <select value={$sortBy} onchange={handleSortChange} class={selectClass}>
-            {#each Object.entries(sortLabels) as [value, label]}
-              <option value={value}>{label}</option>
+            {#each sortOptions as option (option.value)}
+              <option value={option.value}>{option.label()}</option>
             {/each}
           </select>
           <span class="search-caret" aria-hidden="true">▾</span>

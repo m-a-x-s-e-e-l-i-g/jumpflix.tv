@@ -115,14 +115,14 @@
 	function toggleFacet(category: keyof SelectedFacets, value: string) {
 		selectedFacets.update((current) => {
 			const updated = { ...current };
-			const currentValues = updated[category] || [];
+			const currentValues = (updated[category] || []) as unknown[];
 
-			if (currentValues.includes(value as any)) {
+			if (currentValues.includes(value)) {
 				// Remove the value
-				updated[category] = currentValues.filter((v) => v !== value) as any;
+				updated[category] = (currentValues.filter((v) => v !== value) as unknown) as any;
 			} else {
 				// Add the value
-				updated[category] = [...currentValues, value] as any;
+				updated[category] = ([...currentValues, value] as unknown) as any;
 			}
 
 			return updated;
@@ -130,8 +130,8 @@
 	}
 
 	function isFacetSelected(category: keyof SelectedFacets, value: string): boolean {
-		const values = $selectedFacets[category];
-		return Array.isArray(values) && values.includes(value as any);
+		const values = $selectedFacets[category] as unknown;
+		return Array.isArray(values) && (values as unknown[]).includes(value);
 	}
 
 	function clearAllFilters() {
@@ -170,7 +170,7 @@
 	<DialogContent class="max-h-[85vh] max-w-3xl overflow-y-auto">
 		<div class="dialog-header-with-action">
 			<DialogHeader>
-				<DialogTitle>Filter by Facets</DialogTitle>
+				<DialogTitle>{m.facet_filterByFacets()}</DialogTitle>
 			</DialogHeader>
 			{#if hasAnyFilters}
 				<button class="clear-button" onclick={clearAllFilters}>

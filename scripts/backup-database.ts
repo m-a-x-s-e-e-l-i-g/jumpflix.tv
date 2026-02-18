@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../src/lib/supabase/types';
 import * as prompts from '@inquirer/prompts';
 import * as dotenv from 'dotenv';
+import { createHash } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -31,6 +32,7 @@ interface BackupOptions {
 	includeData: boolean;
 	includeMigrations: boolean;
 	includeUsers: boolean;
+	anonymizeUserEmails?: boolean;
 	tables?: string[];
 }
 
@@ -43,16 +45,76 @@ interface TableInfo {
  * Get list of all user tables in the database
  */
 async function getUserTables(): Promise<TableInfo[]> {
-	// Return known tables - these are all the tables we want to back up
-	// This is more reliable than querying information_schema through Supabase client
-	return [
-		{ table_name: 'media_items', table_schema: 'public' },
-		{ table_name: 'series_seasons', table_schema: 'public' },
-		{ table_name: 'series_episodes', table_schema: 'public' },
-		{ table_name: 'watch_history', table_schema: 'public' },
-		{ table_name: 'user_preferences', table_schema: 'public' },
-		{ table_name: 'ratings', table_schema: 'public' }
-	];
+	// Discover all relations exposed by PostgREST (Supabase REST API) via its OpenAPI schema.
+	// This automatically stays up-to-date when new tables are added.
+	try {
+		const openApiResponse = await fetch(`${supabaseUrl}/rest/v1/`, {
+			headers: {
+				apikey: supabaseKey!,
+				Authorization: `Bearer ${supabaseKey}`,
+				Accept: 'application/openapi+json'
+			}
+		});
+
+		if (!openApiResponse.ok) {
+			throw new Error(
+				`OpenAPI fetch failed: ${openApiResponse.status} ${openApiResponse.statusText}`
+			);
+		}
+
+		const openApi = (await openApiResponse.json()) as {
+			paths?: Record<string, Record<string, unknown>>;
+		};
+
+		const paths = openApi.paths ?? {};
+		const discoveredNames = new Set<string>();
+
+		for (const [rawPath, operations] of Object.entries(paths)) {
+			if (!rawPath.startsWith('/')) continue;
+			const p = rawPath.slice(1);
+			if (!p) continue;
+			if (p.includes('{')) continue;
+			if (p.startsWith('rpc/')) continue;
+
+			const ops = operations as Record<string, unknown>;
+			const hasGet = Boolean(ops.get);
+			// Include anything that supports GET; export will gracefully record failures.
+			if (!hasGet) continue;
+
+			discoveredNames.add(p);
+		}
+
+		const discovered = Array.from(discoveredNames)
+			.sort()
+			.map((name) => {
+				if (name.includes('.')) {
+					const [schema, table] = name.split('.', 2);
+					return { table_name: table, table_schema: schema };
+				}
+				return { table_name: name, table_schema: 'public' };
+			});
+
+		if (discovered.length === 0) {
+			throw new Error('No tables discovered from REST OpenAPI schema');
+		}
+
+		console.log(`  📚 Discovered ${discovered.length} tables via REST schema`);
+		return discovered;
+	} catch (err) {
+		console.warn(
+			`  ⚠️  Could not auto-discover tables (falling back to known list): ${
+				err instanceof Error ? err.message : String(err)
+			}`
+		);
+		return [
+			{ table_name: 'media_items', table_schema: 'public' },
+			{ table_name: 'series_seasons', table_schema: 'public' },
+			{ table_name: 'series_episodes', table_schema: 'public' },
+			{ table_name: 'watch_history', table_schema: 'public' },
+			{ table_name: 'user_preferences', table_schema: 'public' },
+			{ table_name: 'ratings', table_schema: 'public' }
+		];
+	}
 }
 
 /**
@@ -198,26 +260,55 @@ async function exportTableData(tableName: string, schema: string = 'public'): Pr
 	console.log(`  💾 Exporting data from ${schema}.${tableName}`);
 
 	try {
-		// Use REST API directly - works for all tables regardless of TypeScript types
-		const response = await fetch(`${supabaseUrl}/rest/v1/${tableName}?select=*`, {
-			headers: {
-				apikey: supabaseKey!,
-				Authorization: `Bearer ${supabaseKey}`
-			}
-		});
+		// Use REST API directly - works for all tables regardless of TypeScript types.
+		// IMPORTANT: Supabase REST has a default row limit, so we must paginate.
+		const pageSize = 1000;
+		let offset = 0;
+		let totalRows = 0;
+		let sql = '';
+		let wroteHeader = false;
 
-		if (!response.ok) {
-			console.warn(`  ⚠️  Could not export ${tableName}: ${response.statusText}`);
-			return `-- Failed to export ${tableName}: ${response.statusText}\n\n`;
+		while (true) {
+			const response = await fetch(
+				`${supabaseUrl}/rest/v1/${tableName}?select=*&limit=${pageSize}&offset=${offset}`,
+				{
+					headers: {
+						apikey: supabaseKey!,
+						Authorization: `Bearer ${supabaseKey}`
+					}
+				}
+			);
+
+			if (!response.ok) {
+				console.warn(`  ⚠️  Could not export ${tableName}: ${response.statusText}`);
+				return `-- Failed to export ${tableName}: ${response.statusText}\n\n`;
+			}
+
+			const pageData = (await response.json()) as any[];
+			if (!pageData || pageData.length === 0) {
+				break;
+			}
+
+			totalRows += pageData.length;
+			sql += formatDataAsSQL(pageData, tableName, schema, !wroteHeader);
+			wroteHeader = true;
+			offset += pageData.length;
+
+			if (pageData.length < pageSize) {
+				break;
+			}
 		}
 
-		const data = await response.json();
-
-		if (!data || data.length === 0) {
+		if (totalRows === 0) {
 			return `-- No data in ${tableName}\n\n`;
 		}
 
-		return formatDataAsSQL(data, tableName, schema);
+		// Patch the header with the real total row count if we wrote one.
+		// (formatDataAsSQL writes a header per chunk when includeHeader=true; we only do it once.)
+		return sql.replace(
+			new RegExp(`^-- Data for ${schema.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.${tableName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\((\\d+) rows\\)`, 'm'),
+			`-- Data for ${schema}.${tableName} (${totalRows} rows)`
+		);
 	} catch (err) {
 		console.warn(
 			`  ⚠️  Could not export ${tableName}: ${err instanceof Error ? err.message : String(err)}`
@@ -229,8 +320,11 @@ async function exportTableData(tableName: string, schema: string = 'public'): Pr
 /**
  * Format data rows as SQL INSERT statements
  */
-function formatDataAsSQL(data: any[], tableName: string, schema: string): string {
-	let sql = `-- Data for ${schema}.${tableName} (${data.length} rows)\n`;
+function formatDataAsSQL(data: any[], tableName: string, schema: string, includeHeader: boolean = true): string {
+	let sql = '';
+	if (includeHeader) {
+		sql += `-- Data for ${schema}.${tableName} (${data.length} rows)\n`;
+	}
 
 	for (const row of data) {
 		const columns = Object.keys(row);
@@ -317,7 +411,7 @@ async function copyMigrations(outputDir: string): Promise<void> {
 /**
  * Export users from Supabase Auth
  */
-async function exportUsers(): Promise<string> {
+async function exportUsers(anonymizeUserEmails: boolean = false): Promise<string> {
 	console.log('👥 Exporting users from Supabase Auth...');
 
 	try {
@@ -335,9 +429,16 @@ async function exportUsers(): Promise<string> {
 
 		console.log(`  👥 Found ${data.users.length} users`);
 
+		const usersForExport = anonymizeUserEmails
+			? data.users.map((user) => anonymizeUserEmailFields(user))
+			: data.users;
+
 		let sql = `-- Auth Users Data Backup\n`;
 		sql += `-- Generated: ${new Date().toISOString()}\n`;
 		sql += `-- Total users: ${data.users.length}\n\n`;
+		if (anonymizeUserEmails) {
+			sql += `-- NOTE: Emails have been anonymized (SHA-256).\n\n`;
+		}
 		sql += `-- NOTE: This is a JSON export of user data.\n`;
 		sql += `-- To restore, you'll need to use Supabase Auth Admin API or import via dashboard.\n`;
 		sql += `-- Password hashes and some metadata may need special handling.\n\n`;
@@ -345,7 +446,7 @@ async function exportUsers(): Promise<string> {
 		// Export as JSON for easier restoration through Auth API
 		sql += `-- Users JSON Export:\n`;
 		sql += `/*\n`;
-		sql += JSON.stringify(data.users, null, 2);
+		sql += JSON.stringify(usersForExport, null, 2);
 		sql += `\n*/\n\n`;
 
 		// Also create SQL INSERT statements for reference (though these won't work directly)
@@ -353,7 +454,7 @@ async function exportUsers(): Promise<string> {
 		sql += `-- WARNING: Direct insertion into auth.users may not work due to triggers and constraints\n`;
 		sql += `-- Use Supabase Auth Admin API instead\n\n`;
 
-		for (const user of data.users) {
+		for (const user of usersForExport) {
 			sql += `-- User: ${user.email || user.phone || user.id}\n`;
 			sql += `-- ID: ${user.id}\n`;
 			sql += `-- Created: ${user.created_at}\n`;
@@ -374,6 +475,28 @@ async function exportUsers(): Promise<string> {
 		);
 		return `-- Failed to export users: ${err instanceof Error ? err.message : String(err)}\n\n`;
 	}
+}
+
+function sha256Hex(input: string): string {
+	return createHash('sha256').update(input).digest('hex');
+}
+
+function anonymizeEmail(email: unknown): unknown {
+	if (typeof email !== 'string') return email;
+	const trimmed = email.trim();
+	if (!trimmed) return email;
+	return sha256Hex(trimmed.toLowerCase());
+}
+
+function anonymizeUserEmailFields<T extends { email?: unknown; user_metadata?: any }>(user: T): T {
+	// Keep this targeted: only anonymize email fields, preserve all other data.
+	const cloned: any = { ...user };
+	cloned.email = anonymizeEmail(cloned.email);
+	if (cloned.user_metadata && typeof cloned.user_metadata === 'object') {
+		cloned.user_metadata = { ...cloned.user_metadata };
+		cloned.user_metadata.email = anonymizeEmail(cloned.user_metadata.email);
+	}
+	return cloned as T;
 }
 
 /**
@@ -448,7 +571,7 @@ Run migrations in order from the migrations/ directory.
 
 	// Export users
 	if (options.includeUsers) {
-		const users = await exportUsers();
+		const users = await exportUsers(Boolean(options.anonymizeUserEmails));
 		fs.writeFileSync(path.join(backupDir, 'users.sql'), users);
 		console.log('✅ Users exported');
 	}
@@ -467,6 +590,7 @@ Run migrations in order from the migrations/ directory.
 		includeData: options.includeData,
 		includeUsers: options.includeUsers,
 		includeMigrations: options.includeMigrations,
+		anonymizeUserEmails: Boolean(options.anonymizeUserEmails),
 		tables: (await getUserTables()).map((t) => `${t.table_schema}.${t.table_name}`)
 	};
 	fs.writeFileSync(path.join(backupDir, 'backup-info.json'), JSON.stringify(backupInfo, null, 2));
@@ -528,6 +652,7 @@ async function main() {
 			options.includeData = true;
 			options.includeUsers = true;
 			options.includeMigrations = true;
+			options.anonymizeUserEmails = true;
 			break;
 		case 'schema':
 			options.includeSchema = true;

@@ -96,6 +96,25 @@
 
 	const formatNumber = (value: number) => new Intl.NumberFormat().format(value);
 
+	const formatMediaTypeLabel = (mediaType: string) => {
+		switch (mediaType) {
+			case 'movie':
+				return m.tv_pillFilm();
+			case 'series':
+				return m.tv_pillSeries();
+			case 'episode':
+				return m.tv_episode();
+			default:
+				return mediaType;
+		}
+	};
+
+	const getFacetValueLabel = (prefix: string, key: string) => {
+		const messageKey = `${prefix}_${key}`;
+		const fn = (m as unknown as Record<string, (() => string) | undefined>)[messageKey];
+		return fn ? fn() : key;
+	};
+
 	type ActivityPoint = { x: string; y: number };
 
 	const activityPoints: ActivityPoint[] = $derived(
@@ -155,7 +174,7 @@
 </script>
 
 <svelte:head>
-	<title>Stats</title>
+	<title>{m.stats_title()}</title>
 </svelte:head>
 
 <div class="mx-auto w-full max-w-6xl p-4 md:p-8">
@@ -167,14 +186,14 @@
 			<span aria-hidden="true">←</span>
 			<span>{m.stats_backToCatalog()}</span>
 		</a>
-		<h1 class="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">Stats</h1>
+		<h1 class="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">{m.stats_title()}</h1>
 		<p class="mt-2 max-w-2xl text-sm text-muted-foreground md:text-base">
-			A public, aggregated overview of Jumpflix activity and catalog data.
+			{m.stats_publicDescription()}
 		</p>
 		<div class="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
-			<span class="rounded-full border bg-background/60 px-3 py-1">No personal data</span>
-			<span class="rounded-full border bg-background/60 px-3 py-1">Aggregated metrics only</span>
-			<span class="rounded-full border bg-background/60 px-3 py-1">Updated continuously</span>
+			<span class="rounded-full border bg-background/60 px-3 py-1">{m.stats_badge_noPersonalData()}</span>
+			<span class="rounded-full border bg-background/60 px-3 py-1">{m.stats_badge_aggregatedMetricsOnly()}</span>
+			<span class="rounded-full border bg-background/60 px-3 py-1">{m.stats_badge_updatedContinuously()}</span>
 		</div>
 	</div>
 
@@ -193,67 +212,70 @@
 			<div class="mt-1 text-xs text-muted-foreground">{m.stats_acrossFilmsAndSeries()}</div>
 		</div>
 		<div class="jf-surface-soft rounded-2xl p-4">
-			<div class="text-xs text-muted-foreground">Tracks</div>
+			<div class="text-xs text-muted-foreground">{m.stats_tracks()}</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.music.tracks ?? 0)}</div>
 			<div class="mt-1 text-xs text-muted-foreground">
-				{formatNumber(data.music.trackLinks ?? 0)} video track links
+				{m.stats_videoTrackLinksCount({ count: formatNumber(data.music.trackLinks ?? 0) })}
 			</div>
 		</div>
 		<div class="jf-surface-soft rounded-2xl p-4">
-			<div class="text-xs text-muted-foreground">Total registered users</div>
+			<div class="text-xs text-muted-foreground">{m.stats_totalRegisteredUsers()}</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.overview.total_users ?? 0)}</div>
 		</div>
 		<div class="jf-surface-soft rounded-2xl p-4">
-			<div class="text-xs text-muted-foreground">Average rating</div>
+			<div class="text-xs text-muted-foreground">{m.stats_averageRating()}</div>
 			<div class="mt-1 text-2xl font-semibold">
 				{(data.overview.average_rating ?? 0).toFixed(2)}
 			</div>
 			<div class="mt-1 text-xs text-muted-foreground">
-				{formatNumber(data.overview.ratings_count ?? 0)} ratings
+				{m.stats_ratingsCount({ count: formatNumber(data.overview.ratings_count ?? 0) })}
 			</div>
 		</div>
 		<div class="jf-surface-soft rounded-2xl p-4">
-			<div class="text-xs text-muted-foreground">Reviews posted</div>
+			<div class="text-xs text-muted-foreground">{m.stats_reviewsPosted()}</div>
 			<div class="mt-1 text-2xl font-semibold">
 				{formatNumber(data.overview.reviews_count ?? 0)}
 			</div>
-			<div class="mt-1 text-xs text-muted-foreground">Across films + series</div>
+			<div class="mt-1 text-xs text-muted-foreground">{m.stats_acrossFilmsAndSeries()}</div>
 		</div>
 		<div class="jf-surface-soft rounded-2xl p-4">
-			<div class="text-xs text-muted-foreground">Creators</div>
+			<div class="text-xs text-muted-foreground">{m.stats_creators()}</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.peopleStats.creators ?? 0)}</div>
-			<div class="mt-1 text-xs text-muted-foreground">Unique names in credits</div>
+			<div class="mt-1 text-xs text-muted-foreground">{m.stats_uniqueNamesInCredits()}</div>
 		</div>
 		<div class="rounded-xl border p-4">
-			<div class="text-xs text-muted-foreground">Athletes</div>
+			<div class="text-xs text-muted-foreground">{m.stats_athletes()}</div>
 			<div class="mt-1 text-2xl font-semibold">{formatNumber(data.peopleStats.athletes ?? 0)}</div>
-			<div class="mt-1 text-xs text-muted-foreground">Unique names in starring</div>
+			<div class="mt-1 text-xs text-muted-foreground">{m.stats_uniqueNamesInStarring()}</div>
 		</div>
 		<div class="rounded-xl border p-4">
-			<div class="text-xs text-muted-foreground">Years covered</div>
+			<div class="text-xs text-muted-foreground">{m.stats_yearsCovered()}</div>
 			<div class="mt-1 text-2xl font-semibold">{yearsCoveredLabel}</div>
-			<div class="mt-1 text-xs text-muted-foreground">Based on catalog year metadata</div>
+			<div class="mt-1 text-xs text-muted-foreground">{m.stats_basedOnCatalogYearMetadata()}</div>
 		</div>
 	</div>
 
 	<div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
 		<div class="rounded-xl border p-4">
 			<div class="flex items-baseline justify-between gap-3">
-				<h2 class="text-base font-semibold">Watch activity (30d)</h2>
+				<h2 class="text-base font-semibold">{m.stats_watchActivity30d()}</h2>
 				<div class="text-xs text-muted-foreground">
 					{#if activityStartLabel && activityEndLabel}
 						{activityStartLabel} → {activityEndLabel}
 					{:else}
-						Daily active watchers
+						{m.stats_dailyActiveWatchers()}
 					{/if}
 				</div>
 			</div>
 			<div class="mt-1 text-xs text-muted-foreground">
-				Peak {formatNumber(activityPeak)} · Avg/day {formatNumber(Math.round(activityAvg))}
+				{m.stats_watchActivitySummary({
+					peak: formatNumber(activityPeak),
+					avgPerDay: formatNumber(Math.round(activityAvg))
+				})}
 			</div>
 
 			{#if activityPoints.length === 0}
-				<p class="mt-4 text-sm text-muted-foreground">No activity yet.</p>
+				<p class="mt-4 text-sm text-muted-foreground">{m.stats_noActivityYet()}</p>
 			{:else}
 				<svg viewBox="0 0 600 220" class="mt-4 h-56 w-full">
 					<rect x="0" y="0" width="600" height="220" rx="16" class="fill-muted/20" />
@@ -299,7 +321,7 @@
 
 		<div class="rounded-xl border p-4">
 			<div class="flex items-baseline justify-between gap-3">
-				<h2 class="text-base font-semibold">Ratings distribution</h2>
+				<h2 class="text-base font-semibold">{m.stats_ratingsDistribution()}</h2>
 				<div class="text-xs text-muted-foreground">1–10</div>
 			</div>
 
@@ -325,19 +347,19 @@
 	<div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
 		<div class="rounded-xl border p-4">
 			<div class="flex items-baseline justify-between gap-3">
-				<h2 class="text-base font-semibold">Facets</h2>
-				<div class="text-xs text-muted-foreground">Top tags across the catalog</div>
+				<h2 class="text-base font-semibold">{m.tv_facets()}</h2>
+				<div class="text-xs text-muted-foreground">{m.stats_topTagsAcrossCatalog()}</div>
 			</div>
 			<div class="mt-4 grid gap-4">
 				<div>
-					<div class="mb-2 text-xs text-muted-foreground">Type</div>
+					<div class="mb-2 text-xs text-muted-foreground">{m.facet_type()}</div>
 					{#if (data.facetStats.facetType ?? []).length === 0}
-						<div class="text-sm text-muted-foreground">No facet data.</div>
+						<div class="text-sm text-muted-foreground">{m.stats_noFacetData()}</div>
 					{:else}
 						<div class="grid gap-2">
 							{#each data.facetStats.facetType as row (row.key)}
 								<div class="grid grid-cols-[1fr_4rem] items-center gap-3">
-									<div class="text-sm capitalize">{row.key}</div>
+									<div class="text-sm">{getFacetValueLabel('facet_type', row.key)}</div>
 									<div class="text-right text-sm text-muted-foreground tabular-nums">
 										{formatNumber(row.count)}
 									</div>
@@ -348,11 +370,11 @@
 				</div>
 
 				<div>
-					<div class="mb-2 text-xs text-muted-foreground">Environment</div>
+					<div class="mb-2 text-xs text-muted-foreground">{m.facet_environment()}</div>
 					<div class="grid gap-2">
 						{#each data.facetStats.environment as row (row.key)}
 							<div class="grid grid-cols-[1fr_4rem] items-center gap-3">
-								<div class="text-sm capitalize">{row.key}</div>
+								<div class="text-sm">{getFacetValueLabel('facet_environment', row.key)}</div>
 								<div class="text-right text-sm text-muted-foreground tabular-nums">
 									{formatNumber(row.count)}
 								</div>
@@ -365,16 +387,16 @@
 
 		<div class="rounded-xl border p-4">
 			<div class="flex items-baseline justify-between gap-3">
-				<h2 class="text-base font-semibold">More facets</h2>
-				<div class="text-xs text-muted-foreground">Style · Theme · Mood</div>
+				<h2 class="text-base font-semibold">{m.stats_moreFacets()}</h2>
+				<div class="text-xs text-muted-foreground">{m.stats_styleThemeMood()}</div>
 			</div>
 			<div class="mt-4 grid gap-4">
 				<div>
-					<div class="mb-2 text-xs text-muted-foreground">Film style</div>
+					<div class="mb-2 text-xs text-muted-foreground">{m.facet_filmStyle()}</div>
 					<div class="grid gap-2">
 						{#each data.facetStats.filmStyle as row (row.key)}
 							<div class="grid grid-cols-[1fr_4rem] items-center gap-3">
-								<div class="text-sm capitalize">{row.key}</div>
+								<div class="text-sm">{getFacetValueLabel('facet_filmStyle', row.key)}</div>
 								<div class="text-right text-sm text-muted-foreground tabular-nums">
 									{formatNumber(row.count)}
 								</div>
@@ -383,11 +405,11 @@
 					</div>
 				</div>
 				<div>
-					<div class="mb-2 text-xs text-muted-foreground">Theme</div>
+					<div class="mb-2 text-xs text-muted-foreground">{m.facet_theme()}</div>
 					<div class="grid gap-2">
 						{#each data.facetStats.theme as row (row.key)}
 							<div class="grid grid-cols-[1fr_4rem] items-center gap-3">
-								<div class="text-sm capitalize">{row.key}</div>
+								<div class="text-sm">{getFacetValueLabel('facet_theme', row.key)}</div>
 								<div class="text-right text-sm text-muted-foreground tabular-nums">
 									{formatNumber(row.count)}
 								</div>
@@ -396,11 +418,11 @@
 					</div>
 				</div>
 				<div>
-					<div class="mb-2 text-xs text-muted-foreground">Mood</div>
+					<div class="mb-2 text-xs text-muted-foreground">{m.facet_mood()}</div>
 					<div class="grid gap-2">
 						{#each data.facetStats.mood as row (row.key)}
 							<div class="grid grid-cols-[1fr_4rem] items-center gap-3">
-								<div class="text-sm capitalize">{row.key}</div>
+								<div class="text-sm">{getFacetValueLabel('facet_mood', row.key)}</div>
 								<div class="text-right text-sm text-muted-foreground tabular-nums">
 									{formatNumber(row.count)}
 								</div>
@@ -414,18 +436,18 @@
 
 	<div class="mt-8 rounded-xl border p-4">
 		<div class="flex items-baseline justify-between gap-3">
-			<h2 class="text-base font-semibold">Top watched</h2>
-			<div class="text-xs text-muted-foreground">By unique watchers</div>
+			<h2 class="text-base font-semibold">{m.stats_topWatched()}</h2>
+			<div class="text-xs text-muted-foreground">{m.stats_byUniqueWatchers()}</div>
 		</div>
 
 		<div class="mt-4 overflow-x-auto">
 			<table class="w-full text-sm">
 				<thead class="text-left text-xs text-muted-foreground">
 					<tr>
-						<th class="py-2 pr-4">Title</th>
-						<th class="py-2 pr-4">Type</th>
-						<th class="py-2 pr-4">Watchers</th>
-						<th class="py-2 pr-4">Avg %</th>
+						<th class="py-2 pr-4">{m.stats_tableTitle()}</th>
+						<th class="py-2 pr-4">{m.stats_tableType()}</th>
+						<th class="py-2 pr-4">{m.stats_tableWatchers()}</th>
+						<th class="py-2 pr-4">{m.stats_tableAvgPercent()}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -441,7 +463,7 @@
 									<div class="text-xs text-muted-foreground">{row.subtitle}</div>
 								{/if}
 							</td>
-							<td class="py-2 pr-4 capitalize">{row.media_type}</td>
+							<td class="py-2 pr-4">{formatMediaTypeLabel(row.media_type)}</td>
 							<td class="py-2 pr-4 tabular-nums">{formatNumber(row.watchers ?? 0)}</td>
 							<td class="py-2 pr-4 tabular-nums">{(row.avg_percent ?? 0).toFixed(1)}%</td>
 						</tr>

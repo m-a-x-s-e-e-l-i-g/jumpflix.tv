@@ -1,7 +1,7 @@
 <script lang="ts">
 	// TvPage is rendered in layout; we only set head tags here
 	import { env } from '$env/dynamic/public';
-	import { getEpisodeUrl, getUrlForItem } from '$lib/tv/slug';
+	import { getEpisodeUrl } from '$lib/tv/slug';
 	import { decode } from 'html-entities';
 	export let data: { item: any; initialEpisodeNumber: number; initialSeasonNumber: number | null };
 	const item = data?.item;

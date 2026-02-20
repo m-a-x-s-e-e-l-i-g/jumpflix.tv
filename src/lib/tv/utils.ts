@@ -150,6 +150,12 @@ export function matchesFacets(
 	selectedFacets?: TvState['selectedFacets']
 ): boolean {
 	if (!selectedFacets) return true;
+
+	const hasActiveSelection = Object.values(selectedFacets).some(
+		(v) => Array.isArray(v) && v.length > 0
+	);
+	if (!hasActiveSelection) return true;
+
 	const facets = item.facets;
 	if (!facets) return false;
 

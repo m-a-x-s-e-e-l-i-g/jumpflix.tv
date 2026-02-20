@@ -3,7 +3,6 @@
   import Switch from '$lib/components/ui/Switch.svelte';
   import * as m from '$lib/paraglide/messages';
   import type { SortBy, SelectedFacets } from '$lib/tv/types';
-  import { user } from '$lib/stores/authStore';
   import FacetFilterPanel from './FacetFilterPanel.svelte';
 
 	interface Props {
@@ -33,8 +32,6 @@
   const containerClass = 'tv-search-surface';
   const labelClass = 'tv-search-toggle';
   const selectClass = 'tv-search-select';
-  const isLoggedIn = $derived(Boolean($user));
-
   const sortOptions: Array<{ value: SortBy; label: () => string }> = [
     { value: 'default', label: () => m.tv_sort_random() },
     { value: 'added-desc', label: () => m.tv_sort_addedDesc() },
@@ -99,6 +96,11 @@
 				<label class={labelClass}>
 					<span>{m.tv_showPaid()}</span>
 					<Switch bind:checked={$showPaid} ariaLabel={m.tv_showPaid()} />
+				</label>
+
+				<label class={labelClass}>
+					<span>{m.tv_showWatched()}</span>
+					<Switch bind:checked={$showWatched} ariaLabel={m.tv_showWatched()} />
 				</label>
 
         <div class="search-select">

@@ -1856,6 +1856,47 @@
 		position: relative;
 	}
 
+	:global(media-player.vidstack-player[data-view-type='video']) {
+		aspect-ratio: auto;
+	}
+
+	:global(media-player.vidstack-player [data-media-provider] video) {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
+	:global(media-player.vidstack-player [data-media-provider] iframe) {
+		width: 100%;
+		height: 100%;
+		display: block;
+	}
+
+	:global(media-player.vidstack-player:fullscreen),
+	:global(media-player.vidstack-player:-webkit-full-screen),
+	:global(media-player.vidstack-player[data-fullscreen]),
+	:global(.vidstack-player[data-fullscreen]) {
+		aspect-ratio: auto;
+		inline-size: 100%;
+		block-size: 100%;
+		max-inline-size: 100%;
+		max-block-size: 100%;
+	}
+
+	:global(media-player.vidstack-player:fullscreen video),
+	:global(media-player.vidstack-player:-webkit-full-screen video) {
+		object-fit: contain;
+	}
+
+	:global(.vidstack-player video:fullscreen),
+	:global(.vidstack-player video:-webkit-full-screen) {
+		object-fit: contain;
+		inline-size: 100%;
+		block-size: 100%;
+		max-inline-size: 100%;
+		max-block-size: 100%;
+	}
+
 	.youtube-fallback {
 		inline-size: 100%;
 		block-size: 100%;
@@ -2387,13 +2428,28 @@
 	}
 
 	/* Prevent user from interacting with youtube/vimeo through iframe */
-	:global(div.vds-blocker) {
-		height: 100vh;
+	:global(media-player.vidstack-player .vds-blocker) {
+		height: 100% !important;
+		width: 100% !important;
+		aspect-ratio: auto !important;
 		pointer-events: auto !important;
 	}
 
 	:global(iframe.vds-vimeo) {
 		height: initial;
+	}
+
+	:global(media-player.vidstack-player iframe.vds-youtube[data-no-controls]) {
+		height: 100% !important;
+		width: 100% !important;
+		max-height: 100% !important;
+		max-width: 100% !important;
+	}
+
+	:global(media-player.vidstack-player[data-fullscreen] iframe.vds-vimeo),
+	:global(media-player.vidstack-player:fullscreen iframe.vds-vimeo),
+	:global(media-player.vidstack-player:-webkit-full-screen iframe.vds-vimeo) {
+		height: 100%;
 	}
 
 	:global(media-volume-slider.volume-slider .vds-slider-preview) {
@@ -2427,7 +2483,7 @@
 
 	@media (max-width: 640px) {
 		.vidstack-player {
-			aspect-ratio: 16 / 9;
+			aspect-ratio: auto;
 		}
 
 		.player-controls {

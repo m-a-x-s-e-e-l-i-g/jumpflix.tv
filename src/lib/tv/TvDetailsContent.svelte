@@ -84,6 +84,12 @@
 	let spotChaptersLoading = false;
 	let spotChaptersError: string | null = null;
 	let spotChaptersMediaId: number | null = null;
+	let spotChaptersPlaybackKey: string | null = null;
+	let spotChaptersMediaType: 'movie' | 'series' | null = null;
+
+	function buildSeriesEpisodePlaybackKey(seriesId: number, episodeId: string): string {
+		return `series:${seriesId}:ep:${episodeId}`;
+	}
 
 	function formatSecondsToTimecode(totalSeconds: number): string {
 		const s = Math.max(0, Math.floor(totalSeconds || 0));
@@ -118,6 +124,39 @@
 			const url = new URL('/api/spot-chapters', window.location.origin);
 			url.searchParams.set('mediaId', String(mediaId));
 			url.searchParams.set('mediaType', 'movie');
+			const res = await fetch(url.toString(), { cache: 'no-store' });
+			const data = await res.json().catch(() => null);
+			if (token !== spotChaptersRequestToken) return;
+			if (!res.ok) {
+				const message = (data as any)?.error;
+				throw new Error(message || `Failed to load spot chapters (HTTP ${res.status})`);
+			}
+			const chapters = Array.isArray(data?.chapters) ? (data.chapters as SpotChapter[]) : [];
+			spotChapters = [...chapters].sort(
+				(a, b) =>
+					Number(a?.startSeconds ?? 0) - Number(b?.startSeconds ?? 0) ||
+					Number(a?.endSeconds ?? 0) - Number(b?.endSeconds ?? 0)
+			);
+		} catch (err: any) {
+			if (token !== spotChaptersRequestToken) return;
+			spotChapters = [];
+			spotChaptersError = err?.message || 'Failed to load spot chapters';
+		} finally {
+			if (token !== spotChaptersRequestToken) return;
+			spotChaptersLoading = false;
+		}
+	}
+
+	async function loadSpotChaptersForSeriesEpisode(mediaId: number, playbackKey: string) {
+		if (!browser) return;
+		const token = ++spotChaptersRequestToken;
+		spotChaptersLoading = true;
+		spotChaptersError = null;
+		try {
+			const url = new URL('/api/spot-chapters', window.location.origin);
+			url.searchParams.set('mediaId', String(mediaId));
+			url.searchParams.set('mediaType', 'series');
+			url.searchParams.set('playbackKey', playbackKey);
 			const res = await fetch(url.toString(), { cache: 'no-store' });
 			const data = await res.json().catch(() => null);
 			if (token !== spotChaptersRequestToken) return;
@@ -384,13 +423,41 @@
 		spotChaptersLoading = false;
 		spotChaptersError = null;
 		spotChaptersMediaId = null;
+		spotChaptersPlaybackKey = null;
+		spotChaptersMediaType = null;
 	}
 
 	$: if (browser && selected?.type === 'movie' && selected?.id) {
 		const mediaId = Number(selected.id);
-		if (Number.isFinite(mediaId) && spotChaptersMediaId !== mediaId) {
+		if (
+			Number.isFinite(mediaId) &&
+			(spotChaptersMediaId !== mediaId || spotChaptersMediaType !== 'movie')
+		) {
 			spotChaptersMediaId = mediaId;
+			spotChaptersMediaType = 'movie';
+			spotChaptersPlaybackKey = null;
 			void loadSpotChaptersForMovie(mediaId);
+		}
+	}
+
+	$: if (browser && selected?.type === 'series' && selected?.id && selectedEpisode?.id) {
+		const mediaId = Number(selected.id);
+		const episodeId = String(selectedEpisode.id ?? '').trim();
+		const isPlaceholder = episodeId.startsWith('pos:');
+		if (!Number.isFinite(mediaId) || !episodeId || isPlaceholder) {
+			// keep previous state; selection will resolve to a real episode id shortly
+		} else {
+			const playbackKey = buildSeriesEpisodePlaybackKey(mediaId, episodeId);
+			if (
+				spotChaptersMediaType !== 'series' ||
+				spotChaptersMediaId !== mediaId ||
+				spotChaptersPlaybackKey !== playbackKey
+			) {
+				spotChaptersMediaId = mediaId;
+				spotChaptersMediaType = 'series';
+				spotChaptersPlaybackKey = playbackKey;
+				void loadSpotChaptersForSeriesEpisode(mediaId, playbackKey);
+			}
 		}
 	}
 
@@ -980,6 +1047,8 @@
 								<p class="detail-muted">Loading…</p>
 							{:else if spotChaptersError}
 								<p class="detail-muted">{spotChaptersError}</p>
+							{:else if !spotChapters.length}
+								<p class="detail-muted">No spots yet.</p>
 							{:else}
 								<div class="space-y-2">
 									<ul class="space-y-2">
@@ -1115,6 +1184,61 @@
 									{/each}
 								</ul>
 							{/if}
+
+							<div class="mt-6">
+								<h3 class="text-sm font-medium text-white/80">Spots</h3>
+								{#if !selectedEpisode}
+									<p class="detail-muted">Select an episode to see spots.</p>
+								{:else}
+									{@const selectedEpisodeId = selectedEpisode?.id ? String(selectedEpisode.id) : ''}
+									{@const isEpisodeResolved = Boolean(selectedEpisodeId) && !selectedEpisodeId.startsWith('pos:')}
+									{#if !isEpisodeResolved}
+										<p class="detail-muted">Loading episode…</p>
+									{:else if spotChaptersLoading}
+										<p class="detail-muted">Loading…</p>
+									{:else if spotChaptersError}
+										<p class="detail-muted">{spotChaptersError}</p>
+									{:else if !spotChapters.length}
+										<p class="detail-muted">No spots yet.</p>
+									{:else}
+										<div class="space-y-2">
+											<ul class="space-y-2">
+												{#each spotChapters as c (c.suggestionId)}
+													{@const startLabel = getTimeLabel(c.startTimecode, c.startSeconds)}
+													{@const endLabel = getTimeLabel(c.endTimecode, c.endSeconds)}
+													<li
+														class="flex items-center justify-between gap-3 rounded-lg border border-l-2 border-gray-700/50 border-l-[#8ecff2]/50 bg-gray-900/30 px-3 py-2"
+													>
+														<div class="min-w-0 flex-1">
+															<div class="font-mono text-xs text-gray-400">{startLabel}–{endLabel}</div>
+															<div class="truncate text-sm text-gray-100">
+																{c.spot?.name ?? c.spotId}
+															</div>
+														</div>
+														<div class="flex shrink-0 items-center gap-2">
+															<a
+																href={spotUrl(c.spotId)}
+																target="_blank"
+																rel="noreferrer"
+																class={openSpotButtonClass}
+																title="Open on parkour.spot"
+															>
+																<img
+																	src="/icons/brand-parkour-dot-spot.svg"
+																	alt=""
+																	class="size-4 invert"
+																	aria-hidden="true"
+																/>
+																<span>Open</span>
+														</a>
+													</div>
+												</li>
+											{/each}
+										</ul>
+									</div>
+									{/if}
+								{/if}
+							</div>
 						</section>
 					{/if}
 				</div>

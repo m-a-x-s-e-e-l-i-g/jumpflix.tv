@@ -1,10 +1,15 @@
 <script lang="ts">
+	import { createEventDispatcher } from 'svelte';
 	import XIcon from '@lucide/svelte/icons/x';
 	import MapPinIcon from '@lucide/svelte/icons/map-pin';
 	import { Dialog } from 'bits-ui';
 	import { toast } from 'svelte-sonner';
 	import ParkourSpotPicker from '$lib/components/ParkourSpotPicker.svelte';
 	import { normalizeParkourSpotId } from '$lib/utils';
+
+	const dispatch = createEventDispatcher<{
+		submitted: { id: number | null; status: string | null };
+	}>();
 
 	let {
 		mediaId = null,
@@ -129,6 +134,11 @@
 			if (!res.ok) {
 				throw new Error(data?.error || 'Failed to submit suggestion');
 			}
+
+			dispatch('submitted', {
+				id: typeof data?.id === 'number' ? data.id : Number(data?.id) || null,
+				status: typeof data?.status === 'string' ? data.status : null
+			});
 
 			toast.message(isChangeMode ? 'Thanks! Spot change submitted.' : 'Thanks! Spot suggestion submitted.');
 			open = false;

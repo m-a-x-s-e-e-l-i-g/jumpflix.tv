@@ -42,6 +42,7 @@
 	let playerEl: MediaPlayerElement | null = null;
 	let playbackKey: string | null = null;
 	let spotChaptersTrackSrc: string | null = null;
+	let spotChaptersRefreshToken = 0;
 	let nowPlayingTrackLabel: string | null = null;
 	let nowPlayingSpotLabel: string | null = null;
 	let nowPlayingTrackHref: string | null = null;
@@ -54,7 +55,7 @@
 	$: spotChaptersTrackSrc =
 		mediaId && mediaType && (mediaType === 'movie' || !!playbackKey)
 			?
-				`/api/spot-chapters/vtt?mediaId=${encodeURIComponent(String(mediaId))}&mediaType=${encodeURIComponent(mediaType)}${playbackKey ? `&playbackKey=${encodeURIComponent(playbackKey)}` : ''}`
+				`/api/spot-chapters/vtt?mediaId=${encodeURIComponent(String(mediaId))}&mediaType=${encodeURIComponent(mediaType)}${playbackKey ? `&playbackKey=${encodeURIComponent(playbackKey)}` : ''}&r=${encodeURIComponent(String(spotChaptersRefreshToken))}`
 			: null;
 
 	function getTrackStartSeconds(track: VideoTrack): number | null {
@@ -1829,6 +1830,9 @@
 									triggerClass="control-button"
 									triggerAriaLabel={spotSuggestionTriggerAriaLabel}
 									triggerTitle={spotSuggestionTriggerTitle}
+									on:submitted={() => {
+										spotChaptersRefreshToken += 1;
+									}}
 								/>
 
 								<media-fullscreen-button class="control-button" aria-label="Toggle fullscreen">

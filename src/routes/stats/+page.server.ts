@@ -92,12 +92,27 @@ export const load = async ({ parent, setHeaders }) => {
 		supabase.from('video_songs').select('id', { count: 'exact', head: true })
 	]);
 
+	const spotChaptersCountRes = await (supabase as any)
+		.from('spot_chapters')
+		.select('id', { count: 'exact', head: true });
+
+	let spotChaptersCountError = spotChaptersCountRes.error;
+	let spotChaptersCount = spotChaptersCountRes.count ?? 0;
+	if (spotChaptersCountError) {
+		const msg = String(spotChaptersCountError.message ?? '').toLowerCase();
+		if (msg.includes('spot_chapters') && (msg.includes('does not exist') || msg.includes('relation'))) {
+			spotChaptersCountError = null;
+			spotChaptersCount = 0;
+		}
+	}
+
 	const countErrors = [
 		moviesCountRes.error,
 		seriesCountRes.error,
 		episodesCountRes.error,
 		tracksCountRes.error,
-		trackLinksCountRes.error
+		trackLinksCountRes.error,
+		spotChaptersCountError
 	].filter((e): e is NonNullable<typeof e> => Boolean(e));
 	if (countErrors.length > 0) {
 		throw error(500, countErrors.map((e) => e.message).join(' | '));
@@ -112,6 +127,10 @@ export const load = async ({ parent, setHeaders }) => {
 	const music = {
 		tracks: tracksCountRes.count ?? 0,
 		trackLinks: trackLinksCountRes.count ?? 0
+	};
+
+	const spots = {
+		approvedSpotChapters: spotChaptersCount
 	};
 
 	type FacetCountRow = { key: string; count: number };
@@ -361,6 +380,7 @@ export const load = async ({ parent, setHeaders }) => {
 		overview: overviewRes.data as any,
 		catalog,
 		music,
+		spots,
 		peopleStats,
 		yearsCovered,
 		facetStats,

@@ -186,6 +186,7 @@ PUBLIC_SUPABASE_ANON_KEY="public-anon-key"
 SUPABASE_SERVICE_ROLE_KEY="service-role-key" # server-only
 ADMIN_EMAILS="you@example.com" # server-only (comma-separated)
 ADMIN_USER_IDS="" # server-only (comma-separated)
+PARKOUR_SPOT_API_KEY="" # server-only (used by /api/parkour-spot/* proxy)
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` must never ship to the browser—it's reserved for privileged server-side operations.

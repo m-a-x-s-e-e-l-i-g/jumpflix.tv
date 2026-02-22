@@ -11,6 +11,19 @@ import {
 
 const INVALID_JSON = Symbol('invalid-json');
 
+function asTrimmedString(value: unknown): string | null {
+	if (typeof value !== 'string') return null;
+	const trimmed = value.trim();
+	return trimmed ? trimmed : null;
+}
+
+function asSafeInt(value: unknown): number | null {
+	if (value === null || value === undefined) return null;
+	const n = typeof value === 'number' ? value : Number(String(value));
+	if (!Number.isFinite(n)) return null;
+	return Math.max(0, Math.floor(n));
+}
+
 function safeParseJson(value: FormDataEntryValue | null): any | null {
 	if (value === null) return null;
 	const text = typeof value === 'string' ? value.trim() : '';
@@ -48,8 +61,6 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const id = Number(form.get('id'));
 		if (!Number.isFinite(id)) return fail(400, { message: 'Invalid id' });
-
-		const adminNote = String(form.get('admin_note') ?? '').trim() || null;
 		const parsed = safeParseJson(form.get('admin_payload'));
 		if (parsed === INVALID_JSON) {
 			return fail(400, { message: 'Invalid JSON in admin_payload' });
@@ -58,7 +69,7 @@ export const actions: Actions = {
 		const supabase = createSupabaseServiceClient();
 		const { error } = await (supabase as any)
 			.from('content_suggestions')
-			.update({ admin_note: adminNote, admin_payload: parsed })
+				.update({ admin_payload: parsed })
 			.eq('id', id);
 
 		if (error) return fail(400, { message: error.message });
@@ -72,8 +83,6 @@ export const actions: Actions = {
 		const form = await request.formData();
 		const id = Number(form.get('id'));
 		if (!Number.isFinite(id)) return fail(400, { message: 'Invalid id' });
-
-		const adminNote = String(form.get('admin_note') ?? '').trim() || null;
 		const parsed = safeParseJson(form.get('admin_payload'));
 		if (parsed === INVALID_JSON) {
 			return fail(400, { message: 'Invalid JSON in admin_payload' });
@@ -99,7 +108,74 @@ export const actions: Actions = {
 
 		try {
 			const kind = String((suggestion as any).kind ?? '');
-			if (kind === 'new_season') {
+			if (kind === 'spot_chapter') {
+				const mediaType = String((suggestion as any).media_type ?? '').trim();
+				if (mediaType !== 'movie' && mediaType !== 'series') {
+					return fail(400, { message: 'Invalid media_type' });
+				}
+
+				const patchAny = effectivePatch as any;
+				const spotId = asTrimmedString(patchAny?.spotId ?? patchAny?.spot_id);
+				const startSeconds = asSafeInt(patchAny?.startSeconds ?? patchAny?.start_seconds);
+				const endSeconds = asSafeInt(patchAny?.endSeconds ?? patchAny?.end_seconds);
+				const playbackKey = asTrimmedString(patchAny?.playbackKey ?? patchAny?.playback_key);
+				const spotChapterId = asSafeInt(patchAny?.spotChapterId ?? patchAny?.spot_chapter_id);
+				if (!spotId || startSeconds === null || endSeconds === null) {
+					return fail(400, { message: 'Missing spotId/startSeconds/endSeconds' });
+				}
+				if (endSeconds <= startSeconds) {
+					return fail(400, { message: 'endSeconds must be greater than startSeconds' });
+				}
+				if (mediaType === 'series' && !playbackKey) {
+					return fail(400, { message: 'playbackKey is required for series spot chapters' });
+				}
+
+				if (spotChapterId) {
+					const { data: updated, error: updateSpotChapterError } = await (supabase as any)
+						.from('spot_chapters')
+						.update({
+							spot_id: spotId,
+							created_from_suggestion_id: id,
+							approved_by: user.id,
+							approved_at: new Date().toISOString()
+						})
+						.eq('id', spotChapterId)
+						.eq('media_id', mediaId)
+						.eq('media_type', mediaType)
+						.eq('playback_key', mediaType === 'series' ? playbackKey : '')
+						.select('id');
+
+					if (updateSpotChapterError) {
+						return fail(400, { message: updateSpotChapterError.message });
+					}
+					if (!Array.isArray(updated) || updated.length === 0) {
+						return fail(400, { message: 'Spot chapter not found for update' });
+					}
+				} else {
+					const { error: spotChapterError } = await (supabase as any)
+						.from('spot_chapters')
+						.upsert(
+							{
+								media_id: mediaId,
+								media_type: mediaType,
+								playback_key: mediaType === 'series' ? playbackKey : '',
+								spot_id: spotId,
+								start_seconds: startSeconds,
+								end_seconds: endSeconds,
+								created_from_suggestion_id: id,
+								approved_by: user.id,
+								approved_at: new Date().toISOString()
+							},
+							{
+								onConflict: 'created_from_suggestion_id'
+							}
+						);
+
+					if (spotChapterError) {
+						return fail(400, { message: spotChapterError.message });
+					}
+				}
+			} else if (kind === 'new_season') {
 				await applyNewSeason(supabase, mediaId, effectivePatch.season ?? effectivePatch);
 			} else if (kind === 'new_episode') {
 				await applyNewEpisode(supabase, mediaId, effectivePatch.episode ?? effectivePatch);
@@ -114,7 +190,6 @@ export const actions: Actions = {
 			.from('content_suggestions')
 			.update({
 				status: 'approved',
-				admin_note: adminNote,
 				admin_payload: parsed,
 				processed_at: new Date().toISOString(),
 				processed_by: user.id
@@ -133,14 +208,11 @@ export const actions: Actions = {
 		const id = Number(form.get('id'));
 		if (!Number.isFinite(id)) return fail(400, { message: 'Invalid id' });
 
-		const adminNote = String(form.get('admin_note') ?? '').trim() || null;
-
 		const supabase = createSupabaseServiceClient();
 		const { error } = await (supabase as any)
 			.from('content_suggestions')
 			.update({
 				status: 'declined',
-				admin_note: adminNote,
 				processed_at: new Date().toISOString(),
 				processed_by: user.id
 			})

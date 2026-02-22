@@ -49,6 +49,10 @@
 		trackLinks: number;
 	};
 
+	type SpotsStats = {
+		approvedSpotChapters: number;
+	};
+
 	type PeopleStats = {
 		creators: number;
 		athletes: number;
@@ -75,6 +79,7 @@
 			overview: Overview;
 			catalog: CatalogCounts;
 			music: MusicStats;
+			spots: SpotsStats;
 			peopleStats: PeopleStats;
 			yearsCovered: YearsCovered;
 			facetStats: FacetStats;
@@ -217,6 +222,13 @@
 			<div class="mt-1 text-xs text-muted-foreground">
 				{m.stats_videoTrackLinksCount({ count: formatNumber(data.music.trackLinks ?? 0) })}
 			</div>
+		</div>
+		<div class="jf-surface-soft rounded-2xl p-4">
+			<div class="text-xs text-muted-foreground">Spots</div>
+			<div class="mt-1 text-2xl font-semibold">
+				{formatNumber(data.spots.approvedSpotChapters ?? 0)}
+			</div>
+			<div class="mt-1 text-xs text-muted-foreground">Approved spot chapters</div>
 		</div>
 		<div class="jf-surface-soft rounded-2xl p-4">
 			<div class="text-xs text-muted-foreground">{m.stats_totalRegisteredUsers()}</div>

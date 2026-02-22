@@ -12,6 +12,8 @@
 	let currentPlaybackKey: string | null = null;
 	let playingContent: ContentItem | null = null;
 	let playingEpisode: Episode | null = null;
+	let playbackMediaId: number | null = null;
+	let playbackMediaType: 'movie' | 'series' | null = null;
 	const dispatch = createEventDispatcher<{
 		playbackCompleted: {
 			mediaId: string | null;
@@ -126,6 +128,13 @@
 		} satisfies PlayerView;
 	})();
 
+	$: {
+		const raw = selected?.id;
+		const n = typeof raw === 'number' ? raw : Number(String(raw ?? ''));
+		playbackMediaId = Number.isFinite(n) ? Math.floor(n) : null;
+		playbackMediaType = selected?.type ?? null;
+	}
+
 	// Track which piece of content actually started playback so completion events
 	// can reference the correct movie even if sidebar selection changes mid-stream.
 	$: {
@@ -170,6 +179,9 @@
 					title={playerView.title}
 					poster={playerView.poster ?? null}
 					keySeed={playerView.key}
+					mediaId={playbackMediaId}
+					mediaType={playbackMediaType}
+					tracks={selected?.type === 'movie' ? selected.tracks : undefined}
 					autoPlay={playerView.autoPlay}
 					onClose={close}
 					on:playbackCompleted={handlePlaybackCompleted}

@@ -67,6 +67,79 @@
 	let reviewTextareaEl: HTMLTextAreaElement | null = null;
 
 	let reviewsRequestToken = 0;
+	let spotChaptersRequestToken = 0;
+
+	type SpotInfo = { id: string; name: string; lat: number; lng: number };
+	type SpotChapter = {
+		suggestionId: number;
+		spotId: string;
+		startSeconds: number;
+		endSeconds: number;
+		startTimecode?: string | null;
+		endTimecode?: string | null;
+		spot?: SpotInfo | null;
+	};
+
+	let spotChapters: SpotChapter[] = [];
+	let spotChaptersLoading = false;
+	let spotChaptersError: string | null = null;
+	let spotChaptersMediaId: number | null = null;
+
+	function formatSecondsToTimecode(totalSeconds: number): string {
+		const s = Math.max(0, Math.floor(totalSeconds || 0));
+		const h = Math.floor(s / 3600);
+		const m = Math.floor((s % 3600) / 60);
+		const sec = s % 60;
+		if (h > 0)
+			return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+		return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+	}
+
+	function getTimeLabel(tc: unknown, seconds: unknown): string {
+		const trimmed = typeof tc === 'string' ? tc.trim() : '';
+		if (trimmed) return trimmed;
+		const n = typeof seconds === 'number' ? seconds : Number(String(seconds ?? ''));
+		return Number.isFinite(n) ? formatSecondsToTimecode(n) : '00:00';
+	}
+
+	function spotUrl(spotId: string): string {
+		return `https://parkour.spot/spots/${encodeURIComponent(String(spotId ?? '').trim())}`;
+	}
+
+	const openSpotButtonClass =
+		'inline-flex flex-shrink-0 items-center gap-1 rounded border border-[#8ecff2]/35 bg-[#8ecff2]/10 px-2 py-1 text-xs text-[#8ecff2] transition hover:bg-[#8ecff2]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8ecff2]/70';
+
+	async function loadSpotChaptersForMovie(mediaId: number) {
+		if (!browser) return;
+		const token = ++spotChaptersRequestToken;
+		spotChaptersLoading = true;
+		spotChaptersError = null;
+		try {
+			const url = new URL('/api/spot-chapters', window.location.origin);
+			url.searchParams.set('mediaId', String(mediaId));
+			url.searchParams.set('mediaType', 'movie');
+			const res = await fetch(url.toString(), { cache: 'no-store' });
+			const data = await res.json().catch(() => null);
+			if (token !== spotChaptersRequestToken) return;
+			if (!res.ok) {
+				const message = (data as any)?.error;
+				throw new Error(message || `Failed to load spot chapters (HTTP ${res.status})`);
+			}
+			const chapters = Array.isArray(data?.chapters) ? (data.chapters as SpotChapter[]) : [];
+			spotChapters = [...chapters].sort(
+				(a, b) =>
+					Number(a?.startSeconds ?? 0) - Number(b?.startSeconds ?? 0) ||
+					Number(a?.endSeconds ?? 0) - Number(b?.endSeconds ?? 0)
+			);
+		} catch (err: any) {
+			if (token !== spotChaptersRequestToken) return;
+			spotChapters = [];
+			spotChaptersError = err?.message || 'Failed to load spot chapters';
+		} finally {
+			if (token !== spotChaptersRequestToken) return;
+			spotChaptersLoading = false;
+		}
+	}
 
 	export let selected: ContentItem | null;
 	export let openContent: (c: ContentItem) => void;
@@ -306,6 +379,19 @@
 		myReviewId = null;
 		myReviewSaving = false;
 		myReviewError = null;
+
+		spotChapters = [];
+		spotChaptersLoading = false;
+		spotChaptersError = null;
+		spotChaptersMediaId = null;
+	}
+
+	$: if (browser && selected?.type === 'movie' && selected?.id) {
+		const mediaId = Number(selected.id);
+		if (Number.isFinite(mediaId) && spotChaptersMediaId !== mediaId) {
+			spotChaptersMediaId = mediaId;
+			void loadSpotChaptersForMovie(mediaId);
+		}
 	}
 
 	$: if (browser && selected?.id) {
@@ -884,6 +970,53 @@
 						<section class="detail-section">
 							<h2>{m.tv_tracklist()}</h2>
 							<Tracklist tracks={selected.tracks} />
+						</section>
+					{/if}
+
+					{#if selected.type === 'movie' && (spotChaptersLoading || spotChapters.length || spotChaptersError)}
+						<section class="detail-section">
+							<h2>Spots</h2>
+							{#if spotChaptersLoading}
+								<p class="detail-muted">Loading…</p>
+							{:else if spotChaptersError}
+								<p class="detail-muted">{spotChaptersError}</p>
+							{:else}
+								<div class="space-y-2">
+									<ul class="space-y-2">
+										{#each spotChapters as c (c.suggestionId)}
+											{@const startLabel = getTimeLabel(c.startTimecode, c.startSeconds)}
+											{@const endLabel = getTimeLabel(c.endTimecode, c.endSeconds)}
+											<li
+												class="flex items-center justify-between gap-3 rounded-lg border border-l-2 border-gray-700/50 border-l-[#8ecff2]/50 bg-gray-900/30 px-3 py-2"
+											>
+												<div class="min-w-0 flex-1">
+													<div class="font-mono text-xs text-gray-400">{startLabel}–{endLabel}</div>
+													<div class="truncate text-sm text-gray-100">
+														{c.spot?.name ?? c.spotId}
+													</div>
+												</div>
+												<div class="flex shrink-0 items-center gap-2">
+													<a
+														href={spotUrl(c.spotId)}
+														target="_blank"
+														rel="noreferrer"
+														class={openSpotButtonClass}
+														title="Open on parkour.spot"
+													>
+														<img
+															src="/icons/brand-parkour-dot-spot.svg"
+															alt=""
+															class="size-4 invert"
+															aria-hidden="true"
+														/>
+														<span>Open</span>
+													</a>
+												</div>
+											</li>
+										{/each}
+									</ul>
+								</div>
+							{/if}
 						</section>
 					{/if}
 

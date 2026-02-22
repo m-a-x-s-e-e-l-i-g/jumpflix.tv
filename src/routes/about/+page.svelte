@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
+	import { withUtm } from '$lib/utils';
 </script>
 
 <svelte:head>
@@ -152,7 +153,7 @@
 				<li>
 					Spot markers on the playback scrubber, so you can see every location used in a video (in
 					collab with <a
-						href="https://parkour.spot"
+						href={withUtm('https://parkour.spot', { campaign: 'parkour.spot' })}
 						target="_blank"
 						rel="noopener noreferrer"
 						class="text-foreground underline decoration-muted-foreground/60 underline-offset-4 transition hover:decoration-foreground"

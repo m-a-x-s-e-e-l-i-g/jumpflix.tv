@@ -4,6 +4,7 @@
 	import { Dialog } from 'bits-ui';
 	import { toast } from 'svelte-sonner';
 	import ParkourSpotPicker from '$lib/components/ParkourSpotPicker.svelte';
+	import { normalizeParkourSpotId } from '$lib/utils';
 
 	let {
 		mediaId = null,
@@ -85,7 +86,7 @@
 
 		const start = clampInt(startSeconds);
 		const end = clampInt(endSeconds);
-		const id = spotId.trim();
+		const id = normalizeParkourSpotId(spotId) ?? spotId.trim();
 
 		if (!id) {
 			toast.error('Pick a spot first.');

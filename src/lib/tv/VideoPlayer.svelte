@@ -17,6 +17,7 @@
 	import SpotChapterSuggestionDialog from '$lib/tv/SpotChapterSuggestionDialog.svelte';
 	import type { VideoTrack } from '$lib/tv/types';
 	import { parseTimecodeToSeconds } from '$lib/utils/timecode';
+	import { getParkourSpotUrl } from '$lib/utils';
 	import {
 		updateWatchProgress,
 		getResumePosition,
@@ -128,7 +129,7 @@
 	let spotSuggestionTriggerAriaLabel = 'Suggest a parkour spot (chapter)';
 
 	function parkourSpotUrl(spotId: string): string {
-		return `https://parkour.spot/spots/${encodeURIComponent(String(spotId ?? '').trim())}`;
+		return getParkourSpotUrl(spotId);
 	}
 
 	function getActiveSpot(player: MediaPlayerElement): ActiveSpot | null {

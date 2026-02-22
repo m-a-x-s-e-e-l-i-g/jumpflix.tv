@@ -8,6 +8,7 @@ import {
 	applyNewSeason,
 	type MediaPatch
 } from '$lib/server/content-suggestions';
+import { normalizeParkourSpotId } from '$lib/utils';
 
 const INVALID_JSON = Symbol('invalid-json');
 
@@ -115,7 +116,8 @@ export const actions: Actions = {
 				}
 
 				const patchAny = effectivePatch as any;
-				const spotId = asTrimmedString(patchAny?.spotId ?? patchAny?.spot_id);
+				const spotIdRaw = asTrimmedString(patchAny?.spotId ?? patchAny?.spot_id);
+				const spotId = spotIdRaw ? normalizeParkourSpotId(spotIdRaw) : null;
 				const startSeconds = asSafeInt(patchAny?.startSeconds ?? patchAny?.start_seconds);
 				const endSeconds = asSafeInt(patchAny?.endSeconds ?? patchAny?.end_seconds);
 				const playbackKey = asTrimmedString(patchAny?.playbackKey ?? patchAny?.playback_key);

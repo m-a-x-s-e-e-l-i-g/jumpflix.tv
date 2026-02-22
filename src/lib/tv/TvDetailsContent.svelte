@@ -16,7 +16,7 @@
 	import { showPlayer, selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
 	import Tracklist from '$lib/tv/Tracklist.svelte';
 	import { getProviderLink, type ProviderLink } from '$lib/tv/provider-links';
-	import { withUtm } from '$lib/utils';
+	import { getParkourSpotUrl, withUtm } from '$lib/utils';
 	import { setWatchedStatus, PROGRESS_CHANGE_EVENT } from '$lib/tv/watchHistory';
 	import { flushWatchHistoryNow } from '$lib/tv/watchHistory';
 	import type { WatchProgress } from '$lib/tv/watchHistory';
@@ -103,7 +103,7 @@
 	}
 
 	function spotUrl(spotId: string): string {
-		return `https://parkour.spot/spots/${encodeURIComponent(String(spotId ?? '').trim())}`;
+		return getParkourSpotUrl(spotId);
 	}
 
 	const openSpotButtonClass =

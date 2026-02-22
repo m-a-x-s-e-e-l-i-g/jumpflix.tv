@@ -1,5 +1,6 @@
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { fetchSpotById } from '$lib/server/parkourSpot';
+import { normalizeParkourSpotId } from '$lib/utils';
 
 export type SpotInfo = {
 	id: string;
@@ -55,7 +56,8 @@ function normalizeChapterFromSpotChapterRow(row: any): ApprovedSpotChapter | nul
 	const id = Number(row?.id);
 	if (!Number.isFinite(id)) return null;
 
-	const spotId = asTrimmedString(row?.spot_id ?? row?.spotId);
+	const spotIdRaw = asTrimmedString(row?.spot_id ?? row?.spotId);
+	const spotId = spotIdRaw ? normalizeParkourSpotId(spotIdRaw) : null;
 	const startSeconds = asSafeInt(row?.start_seconds ?? row?.startSeconds);
 	const endSeconds = asSafeInt(row?.end_seconds ?? row?.endSeconds);
 	if (!spotId || startSeconds === null || endSeconds === null) return null;

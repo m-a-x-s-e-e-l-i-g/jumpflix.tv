@@ -3,6 +3,7 @@
 	import XIcon from 'lucide-svelte/icons/x';
 	import { Dialog } from 'bits-ui';
 	import { toast } from 'svelte-sonner';
+	import { getParkourSpotUrl } from '$lib/utils';
 
 	type SpotInfo = { id: string; name: string; lat: number; lng: number };
 	type Chapter = {
@@ -49,7 +50,7 @@
 	}
 
 	function spotUrl(spotId: string): string {
-		return `https://parkour.spot/spots/${encodeURIComponent(String(spotId ?? '').trim())}`;
+		return getParkourSpotUrl(spotId);
 	}
 
 	async function load() {

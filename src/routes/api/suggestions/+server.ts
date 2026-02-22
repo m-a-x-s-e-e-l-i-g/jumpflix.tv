@@ -9,6 +9,7 @@ import {
 	type MediaPatch
 } from '$lib/server/content-suggestions';
 import { trySendTelegramMessage } from '$lib/server/telegram';
+import { normalizeParkourSpotId } from '$lib/utils';
 
 function asTrimmedString(value: unknown): string | null {
 	if (typeof value !== 'string') return null;
@@ -117,7 +118,8 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 			if (payload) {
 				if (kind === 'spot_chapter') {
 					const patchAny = payload as any;
-					const spotId = asTrimmedString(patchAny?.spotId ?? patchAny?.spot_id);
+						const spotIdRaw = asTrimmedString(patchAny?.spotId ?? patchAny?.spot_id);
+						const spotId = spotIdRaw ? normalizeParkourSpotId(spotIdRaw) : null;
 					const startSeconds = asSafeInt(patchAny?.startSeconds ?? patchAny?.start_seconds);
 					const endSeconds = asSafeInt(patchAny?.endSeconds ?? patchAny?.end_seconds);
 					const playbackKey = asTrimmedString(patchAny?.playbackKey ?? patchAny?.playback_key);

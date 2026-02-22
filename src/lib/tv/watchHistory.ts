@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import type { User } from '@supabase/supabase-js';
-import { get } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import { supabase } from '$lib/supabaseClient';
 import { user as userStore } from '$lib/stores/authStore';
 import type { Database } from '$lib/supabase/types';
@@ -22,6 +22,10 @@ const FLUSH_DEBOUNCE_MS = 2500;
 const BACKGROUND_FLUSH_INTERVAL_MS = 15000;
 
 export const PROGRESS_CHANGE_EVENT = 'jumpflix-progress-change';
+
+// Monotonic-ish counter to allow components to react to watch-history cache updates
+// even if they missed the window event during initial load.
+export const watchHistoryVersion = writable(0);
 
 export type WatchProgressEventOrigin = 'local' | 'remote';
 
@@ -99,6 +103,10 @@ function dispatchWatchProgressEvent(detail: WatchProgressEventDetail) {
 	window.dispatchEvent(new CustomEvent(PROGRESS_CHANGE_EVENT, { detail }));
 }
 
+function bumpWatchHistoryVersion() {
+	watchHistoryVersion.update((v) => v + 1);
+}
+
 function isTrackingEnabled(): boolean {
 	return browser && Boolean(currentUserId);
 }
@@ -123,6 +131,7 @@ export function initWatchHistory(): () => void {
 		progressCache.clear();
 		pending.clear();
 		pendingClearAll = false;
+		bumpWatchHistoryVersion();
 		clearFlushTimer();
 		stopBackgroundFlushLoop();
 		clearVisibilityHandlers();
@@ -141,6 +150,7 @@ async function handleUserChange(userValue: User | null) {
 	pendingClearAll = false;
 	clearFlushTimer();
 	stopBackgroundFlushLoop();
+	bumpWatchHistoryVersion();
 	dispatchWatchProgressEvent({ kind: 'clear-all', origin: 'remote' });
 
 	if (!currentUserId) return;
@@ -163,6 +173,7 @@ async function handleUserChange(userValue: User | null) {
 		progressCache.set(progress.mediaId, progress);
 		dispatchWatchProgressEvent({ kind: 'update', progress, origin: 'remote' });
 	}
+	bumpWatchHistoryVersion();
 }
 
 function ensureInitialized() {
@@ -263,6 +274,7 @@ export function updateWatchProgress(
 	}
 
 	progressCache.set(mediaId, progress);
+	bumpWatchHistoryVersion();
 	dispatchWatchProgressEvent({ kind: 'update', progress, origin: 'local' });
 
 	if (!currentUserId) return progress;
@@ -295,6 +307,7 @@ export function setWatchedStatus(
 	}
 
 	progressCache.set(mediaId, progress);
+	bumpWatchHistoryVersion();
 	dispatchWatchProgressEvent({ kind: 'update', progress, origin: 'local' });
 
 	if (!currentUserId) return progress;
@@ -331,6 +344,7 @@ export function clearWatchProgress(
 	const origin = options?.origin ?? 'local';
 	const existing = progressCache.get(mediaId) ?? null;
 	progressCache.delete(mediaId);
+	bumpWatchHistoryVersion();
 	dispatchWatchProgressEvent({
 		kind: 'delete',
 		mediaId,
@@ -350,6 +364,7 @@ export function clearAllWatchProgress(origin: WatchProgressEventOrigin = 'local'
 	ensureInitialized();
 	if (!isTrackingEnabled()) return;
 	progressCache.clear();
+	bumpWatchHistoryVersion();
 	dispatchWatchProgressEvent({ kind: 'clear-all', origin });
 
 	if (!currentUserId) return;

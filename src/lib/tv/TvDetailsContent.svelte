@@ -17,8 +17,12 @@
 	import Tracklist from '$lib/tv/Tracklist.svelte';
 	import { getProviderLink, type ProviderLink } from '$lib/tv/provider-links';
 	import { getParkourSpotUrl, withUtm } from '$lib/utils';
-	import { setWatchedStatus, PROGRESS_CHANGE_EVENT } from '$lib/tv/watchHistory';
-	import { flushWatchHistoryNow } from '$lib/tv/watchHistory';
+	import {
+		flushWatchHistoryNow,
+		PROGRESS_CHANGE_EVENT,
+		setWatchedStatus,
+		watchHistoryVersion
+	} from '$lib/tv/watchHistory';
 	import type { WatchProgress } from '$lib/tv/watchHistory';
 	import { onMount, tick } from 'svelte';
 	import { user as authUser } from '$lib/stores/authStore';
@@ -219,6 +223,15 @@
 	let watchProgress: { percent: number; isWatched: boolean; position: number } | null = null;
 	let watchProgressMap: Map<string, WatchProgress> = new Map();
 
+	$: if (browser) {
+		// React to watch-history cache updates even if we missed the window event
+		// during initial load.
+		$watchHistoryVersion;
+		selected;
+		selectedEpisode;
+		getWatchProgressForSelected();
+	}
+
 	let playObserverEl: HTMLElement | null = null;
 	let playObserver: IntersectionObserver | null = null;
 	let showStickyPlay = false;
@@ -306,13 +319,14 @@
 	}
 
 	function getEpisodeWatchProgress(
-		episodeId: string
+		episodeId: string,
+		map: Map<string, WatchProgress> = watchProgressMap
 	): { isWatched: boolean; percent: number } | null {
 		return resolveEpisodeWatchProgress({
 			browser,
 			selected,
 			episodeId,
-			watchProgressMap
+			watchProgressMap: map
 		});
 	}
 
@@ -323,7 +337,7 @@
 		if (!baseId) return;
 
 		const fullId = `${baseId}:ep:${episodeId}`;
-		const currentProgress = getEpisodeWatchProgress(episodeId);
+		const currentProgress = getEpisodeWatchProgress(episodeId, watchProgressMap);
 		const newStatus = !currentProgress?.isWatched;
 
 		setWatchedStatus(fullId, 'episode', newStatus);
@@ -389,14 +403,6 @@
 			}
 		};
 	});
-
-	$: if (browser && selected) {
-		getWatchProgressForSelected();
-	}
-
-	$: if (browser && selectedEpisode) {
-		getWatchProgressForSelected();
-	}
 
 	$: isSeriesWithoutEpisode = selected?.type === 'series' && !selectedEpisode;
 
@@ -1129,7 +1135,7 @@
 							{:else}
 								<ul class="detail-episodes" bind:this={episodesListEl}>
 									{#each episodes as ep}
-										{@const epProgress = getEpisodeWatchProgress(ep.id)}
+										{@const epProgress = getEpisodeWatchProgress(ep.id, watchProgressMap)}
 										<li>
 											<button
 												type="button"

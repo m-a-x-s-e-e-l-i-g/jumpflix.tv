@@ -7,6 +7,7 @@
 	import ParkourSpotPicker from '$lib/components/ParkourSpotPicker.svelte';
 	import { normalizeParkourSpotId } from '$lib/utils';
 	import { user as authUser } from '$lib/stores/authStore';
+	import * as m from '$lib/paraglide/messages';
 
 	const dispatch = createEventDispatcher<{
 		submitted: { id: number | null; status: string | null };
@@ -87,7 +88,7 @@
 	async function submit() {
 		if (isSubmitting) return;
 		if (!isAuthenticated) {
-			toast.message('Please sign in to suggest spots.');
+			toast.message(m.tv_spotSuggestion_signInRequired());
 			return;
 		}
 		if (!mediaId || !mediaType) {
@@ -138,7 +139,7 @@
 
 			const data = await res.json().catch(() => ({}));
 			if (res.status === 401) {
-				toast.message('Please sign in to suggest spots.');
+				toast.message(m.tv_spotSuggestion_signInRequired());
 				return;
 			}
 			if (!res.ok) {
@@ -177,7 +178,7 @@
 				e?.preventDefault?.();
 				e?.stopPropagation?.();
 				open = false;
-				toast.message('Please sign in to suggest spots.');
+				toast.message(m.tv_spotSuggestion_signInRequired());
 			}}
 	>
 		<span class="icon" aria-hidden="true"><MapPinIcon /></span>

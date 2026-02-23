@@ -90,6 +90,7 @@
 	"help_close": "Close tips",
 	"help_tip_slowMotion": "Hold spacebar or longpress in the player for slow motion.",
 	"help_tip_login": "Sign in to track progress",
+	"tv_spotSuggestion_signInRequired": "Please sign in to suggest spots.",
 	"tv_tracklist": "Tracklist",
 	"tv_ratingsAndReviews": "Ratings & Reviews",
 	"tv_reviews": "Reviews",

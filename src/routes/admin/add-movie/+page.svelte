@@ -18,31 +18,66 @@
 	let year = $state('');
 	let duration = $state('');
 	let videoId = $state('');
-	let thumbnail = $state('');
+	let posterUrl = $state('');
+	let posterTouched = $state(false);
 	let blurhash = $state('');
 	let externalUrl = $state('');
 	let trakt = $state('');
 	let creators = $state('');
 	let starring = $state('');
 	let paid = $state(false);
-	let provider = $state('youtube');
+	let provider = $state('');
 
-	// Thumbnail options
-	let thumbnailOptions: Array<{ quality: string; url: string }> = $state([]);
-	let selectedThumbnailQuality = $state('maxresdefault');
+	// YouTube thumbnail preview (best-effort)
+	let youtubeThumbUrl = $state('');
+	let youtubeThumbCandidates: string[] = $state([]);
+	let youtubeThumbIndex = $state(0);
+	let youtubeThumbFailed = $state(false);
+	let lastThumbVideoId = $state('');
 
 	// Blurhash state
 	let generatingBlurhash = $state(false);
 	let blurhashError = $state('');
 
-	// Thumbnail image error state
-	let thumbImgError = $state(false);
 
-	// Copy state
-	let copied = $state(false);
+	function updatePosterUrlFromSlug() {
+		if (posterTouched) return;
+		const s = slug.trim();
+		posterUrl = s ? `/images/posters/${s}.webp` : '';
+	}
+
+	function updateYouTubeThumbFromVideoId(idRaw: string) {
+		const id = idRaw.trim();
+		if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
+			youtubeThumbUrl = '';
+			youtubeThumbCandidates = [];
+			youtubeThumbIndex = 0;
+			youtubeThumbFailed = false;
+			lastThumbVideoId = '';
+			return;
+		}
+		const qualities = ['maxresdefault', 'sddefault', 'hqdefault', 'mqdefault', 'default'];
+		youtubeThumbCandidates = qualities.map((q) => `https://img.youtube.com/vi/${id}/${q}.jpg`);
+		youtubeThumbIndex = 0;
+		youtubeThumbUrl = youtubeThumbCandidates[0] ?? '';
+		youtubeThumbFailed = false;
+		lastThumbVideoId = id;
+	}
+
+	function handleYouTubeThumbError() {
+		const next = youtubeThumbIndex + 1;
+		if (next >= youtubeThumbCandidates.length) {
+			youtubeThumbFailed = true;
+			return;
+		}
+		youtubeThumbIndex = next;
+		youtubeThumbUrl = youtubeThumbCandidates[next] ?? '';
+	}
 
 	$effect(() => {
-		if (thumbnail) thumbImgError = false;
+		const id = videoId.trim();
+		if (id === lastThumbVideoId) return;
+		updateYouTubeThumbFromVideoId(id);
 	});
 
 	function slugify(text: string): string {
@@ -61,6 +96,7 @@
 		if (!slugTouched) {
 			slug = year ? `${slugify(title)}-${year}` : slugify(title);
 		}
+		updatePosterUrlFromSlug();
 	}
 
 	function extractVideoId(url: string): string | null {
@@ -106,21 +142,14 @@
 			const data = await res.json();
 			title = data.title || '';
 			description = data.description || '';
+			year = data.year || '';
 			duration = data.duration || '';
 			creators = data.author || '';
 			videoId = data.videoId || vid;
-			externalUrl = data.externalUrl || '';
-			provider = 'youtube';
-			thumbnailOptions = data.thumbnails || [];
-			const best =
-				thumbnailOptions.find((t) => t.quality === 'maxresdefault') ?? thumbnailOptions[0];
-			if (best) {
-				thumbnail = best.url;
-				selectedThumbnailQuality = best.quality;
-			}
 			if (!slugTouched) {
 				slug = year ? `${slugify(title)}-${year}` : slugify(title);
 			}
+			updatePosterUrlFromSlug();
 			metaFetched = true;
 		} catch (err: unknown) {
 			metaError = err instanceof Error ? err.message : 'Failed to fetch metadata';
@@ -129,24 +158,18 @@
 		}
 	}
 
-	function selectThumbnail(quality: string) {
-		selectedThumbnailQuality = quality;
-		const opt = thumbnailOptions.find((t) => t.quality === quality);
-		if (opt) {
-			thumbnail = opt.url;
-			thumbImgError = false;
-		}
-	}
-
 	async function generateBlurhash() {
-		if (!thumbnail) {
-			blurhashError = 'Set a thumbnail URL first.';
+		if (!posterUrl) {
+			blurhashError = 'Set a poster URL first.';
 			return;
 		}
 		generatingBlurhash = true;
 		blurhashError = '';
 		try {
-			const res = await fetch(`/api/admin/blurhash?url=${encodeURIComponent(thumbnail)}`);
+			const url = posterUrl.startsWith('/')
+				? new URL(posterUrl, window.location.origin).toString()
+				: posterUrl;
+			const res = await fetch(`/api/admin/blurhash?url=${encodeURIComponent(url)}`);
 			if (!res.ok) {
 				const body: unknown = await res.json().catch(() => ({}));
 				const msg =
@@ -163,17 +186,6 @@
 				' — you can save without a blurhash or enter one manually.';
 		} finally {
 			generatingBlurhash = false;
-		}
-	}
-
-	async function copyThumbnailUrl() {
-		if (!thumbnail) return;
-		try {
-			await navigator.clipboard.writeText(thumbnail);
-			copied = true;
-			setTimeout(() => (copied = false), 2000);
-		} catch {
-			// clipboard not available; selection fallback handled by the visible input
 		}
 	}
 </script>
@@ -261,7 +273,10 @@
 							type="text"
 							name="slug"
 							bind:value={slug}
-							oninput={() => (slugTouched = true)}
+							oninput={() => {
+								slugTouched = true;
+								updatePosterUrlFromSlug();
+							}}
 							placeholder="auto-generated from title"
 							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
 						/>
@@ -346,99 +361,56 @@
 			</div>
 		</div>
 
-		<!-- Thumbnail -->
+		<!-- Poster -->
 		<div class="jf-surface-soft rounded-2xl p-5">
-			<div class="mb-4 text-sm font-medium text-white/80">Thumbnail</div>
-
-			{#if thumbnailOptions.length > 0}
-				<div class="mb-4 flex flex-wrap gap-2">
-					{#each thumbnailOptions as opt (opt.quality)}
-						<button
-							type="button"
-							onclick={() => selectThumbnail(opt.quality)}
-							class={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-								selectedThumbnailQuality === opt.quality
-									? 'border-[#e50914] bg-[#e50914]/20 text-white'
-									: 'border-white/20 bg-white/5 text-white/60 hover:bg-white/10'
-							}`}
-						>
-							{opt.quality}
-						</button>
-					{/each}
-				</div>
-			{/if}
+			<div class="mb-4 text-sm font-medium text-white/80">Poster</div>
 
 			<div class="space-y-3">
 				<label class="block space-y-1.5">
-					<span class="text-xs text-white/60">Thumbnail URL</span>
-					<div class="flex gap-2">
-						<input
-							type="url"
-							name="thumbnail"
-							bind:value={thumbnail}
-							placeholder="https://img.youtube.com/vi/.../maxresdefault.jpg"
-							class="min-w-0 flex-1 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+					<span class="text-xs text-white/60">Poster URL</span>
+					{#if youtubeThumbUrl && !youtubeThumbFailed}
+						<img
+							src={youtubeThumbUrl}
+							alt="YouTube thumbnail preview"
+							class="mb-3 aspect-video w-full max-w-md rounded-lg border border-white/10 object-cover"
+							onerror={handleYouTubeThumbError}
 						/>
-						<button
-							type="button"
-							onclick={copyThumbnailUrl}
-							disabled={!thumbnail}
-							class="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+					{:else if youtubeThumbCandidates.length && youtubeThumbFailed}
+						<div
+							class="mb-3 flex aspect-video w-full max-w-md items-center justify-center rounded-lg border border-white/10 bg-white/5 text-xs text-white/40"
 						>
-							{copied ? '✓ Copied' : 'Copy'}
-						</button>
-					</div>
+							Preview unavailable
+						</div>
+					{/if}
+					<input
+						type="text"
+						name="thumbnail"
+						bind:value={posterUrl}
+						oninput={() => (posterTouched = true)}
+						placeholder="/images/posters/your-slug.webp"
+						class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+					/>
 				</label>
 
-				{#if thumbnail}
-					<div class="flex gap-4">
-						{#if !thumbImgError}
-							<img
-								src={thumbnail}
-								alt="Thumbnail preview"
-								class="h-20 w-36 rounded-lg object-cover"
-								onerror={() => (thumbImgError = true)}
-							/>
-						{:else}
-							<div
-								class="flex h-20 w-36 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-xs text-white/40"
-							>
-								Preview unavailable
-							</div>
-						{/if}
-						<div class="flex flex-col justify-center gap-2">
-							<div class="flex items-center gap-2">
-								<input
-									type="text"
-									name="blurhash"
-									bind:value={blurhash}
-									placeholder="Blurhash string"
-									class="w-56 rounded-xl border border-white/20 bg-white/10 px-3 py-2 font-mono text-xs text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
-								/>
-								<button
-									type="button"
-									onclick={generateBlurhash}
-									disabled={generatingBlurhash || !thumbnail}
-									class="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-								>
-									{generatingBlurhash ? 'Generating…' : 'Generate Blurhash'}
-								</button>
-							</div>
-							{#if blurhashError}
-								<p class="text-xs text-yellow-300">{blurhashError}</p>
-							{/if}
-						</div>
-					</div>
-				{:else}
-					<div class="flex items-center gap-2">
-						<input
-							type="text"
-							name="blurhash"
-							bind:value={blurhash}
-							placeholder="Blurhash string (optional)"
-							class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 font-mono text-xs text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
-						/>
-					</div>
+				<div class="flex items-center gap-2">
+					<input
+						type="text"
+						name="blurhash"
+						bind:value={blurhash}
+						placeholder="Blurhash string (optional)"
+						class="min-w-0 flex-1 rounded-xl border border-white/20 bg-white/10 px-3 py-2 font-mono text-xs text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+					/>
+					<button
+						type="button"
+						onclick={generateBlurhash}
+						disabled={generatingBlurhash || !posterUrl}
+						class="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+					>
+						{generatingBlurhash ? 'Generating…' : 'Generate Blurhash'}
+					</button>
+				</div>
+				{#if blurhashError}
+					<p class="text-xs text-yellow-300">{blurhashError}</p>
 				{/if}
 			</div>
 		</div>

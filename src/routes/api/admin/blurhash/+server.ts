@@ -13,7 +13,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	let parsed: URL;
 	try {
-		parsed = new URL(imageUrl);
+		parsed = new URL(imageUrl, url.origin);
 	} catch {
 		throw error(400, 'Invalid URL');
 	}
@@ -22,7 +22,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	}
 
 	try {
-		const res = await fetch(imageUrl);
+		const res = await fetch(parsed.toString());
 		if (!res.ok) throw new Error(`Failed to fetch image: ${res.status}`);
 		const buffer = Buffer.from(await res.arrayBuffer());
 		const { data, info } = await sharp(buffer)

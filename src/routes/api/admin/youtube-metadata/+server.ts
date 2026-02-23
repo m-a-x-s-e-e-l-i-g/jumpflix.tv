@@ -49,15 +49,31 @@ function extractYouTubePlayerResponse(html: string): Record<string, unknown> | n
 	return result && typeof result === 'object' ? (result as Record<string, unknown>) : null;
 }
 
-function formatDuration(seconds: number): string {
-	if (seconds <= 0) return '';
-	const h = Math.floor(seconds / 3600);
-	const m = Math.floor((seconds % 3600) / 60);
-	const s = seconds % 60;
-	if (h > 0) {
-		return s > 0 ? `${h}h ${m}m ${s}s` : `${h}h ${m}m`;
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+	return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+}
+
+function pickFirstString(...values: unknown[]): string {
+	for (const v of values) {
+		if (typeof v === 'string' && v.trim()) return v.trim();
 	}
-	return s > 0 ? `${m}m ${s}s` : `${m}m`;
+	return '';
+}
+
+function inferYearFromIsoDate(isoDate: string): string {
+	const clean = isoDate.trim();
+	const m = clean.match(/^(\d{4})-(\d{2})-(\d{2})/);
+	return m?.[1] ?? '';
+}
+
+function formatDurationRoundedToMinutes(seconds: number): string {
+	if (seconds <= 0) return '';
+	const minutesTotal = Math.max(1, Math.round(seconds / 60));
+	const h = Math.floor(minutesTotal / 60);
+	const m = minutesTotal % 60;
+	if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+	return `${m}m`;
 }
 
 export const GET: RequestHandler = async ({ url, locals }) => {
@@ -88,19 +104,18 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const d = details as Record<string, unknown>;
 	const lengthSeconds = Number(d.lengthSeconds) || 0;
 
-	const thumbnailQualities = ['maxresdefault', 'hqdefault', 'mqdefault', 'sddefault', 'default'];
-	const thumbnails = thumbnailQualities.map((quality) => ({
-		quality,
-		url: `https://img.youtube.com/vi/${videoId}/${quality}.jpg`
-	}));
+	const microformat = toRecord((player as any)?.microformat)?.playerMicroformatRenderer;
+	const micro = toRecord(microformat);
+	const publishedAt = pickFirstString((micro as any)?.uploadDate, (micro as any)?.publishDate);
+	const year = publishedAt ? inferYearFromIsoDate(publishedAt) : '';
 
 	return json({
 		title: String(d.title || ''),
 		description: String(d.shortDescription || ''),
-		duration: formatDuration(lengthSeconds),
+		year,
+		duration: formatDurationRoundedToMinutes(lengthSeconds),
 		author: String(d.author || ''),
 		videoId: String(d.videoId || videoId),
-		externalUrl: `https://www.youtube.com/watch?v=${videoId}`,
-		thumbnails
+		publishedAt
 	});
 };

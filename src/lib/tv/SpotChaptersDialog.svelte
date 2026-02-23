@@ -4,6 +4,7 @@
 	import { Dialog } from 'bits-ui';
 	import { toast } from 'svelte-sonner';
 	import { getParkourSpotUrl } from '$lib/utils';
+	import * as m from '$lib/paraglide/messages';
 
 	type SpotInfo = { id: string; name: string; lat: number; lng: number };
 	type Chapter = {
@@ -25,7 +26,7 @@
 		seekToSeconds = null,
 		triggerClass = 'control-button',
 		triggerAriaLabel = 'Spot list (chapters)',
-		triggerTitle = 'Spots'
+		triggerTitle = m.tv_spots()
 	} = $props<{
 		mediaId?: number | null;
 		mediaType?: 'movie' | 'series' | null;
@@ -96,7 +97,7 @@
 		data-jumpflix-gesture-ignore="true"
 	>
 		<span class="icon" aria-hidden="true"><ListMusicIcon /></span>
-		<span class="sr-only">Spots</span>
+		<span class="sr-only">{m.tv_spots()}</span>
 	</Dialog.Trigger>
 
 	<Dialog.Portal>
@@ -109,14 +110,14 @@
 		>
 			<button type="button" class={closeButtonClass} onclick={() => (open = false)}>
 				<XIcon class="size-4" />
-				<span class="sr-only">Close</span>
+				<span class="sr-only">{m.tv_close()}</span>
 			</button>
 
 			<div class="max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain px-6 py-7">
 				<header class="space-y-2">
-					<Dialog.Title class="text-xl font-semibold text-foreground">Spots</Dialog.Title>
+					<Dialog.Title class="text-xl font-semibold text-foreground">{m.tv_spots()}</Dialog.Title>
 					<p id="spot-chapters-description" class="text-sm text-muted-foreground">
-						Approved spot chapters for this video.
+						{m.tv_approvedSpotChaptersForVideo()}
 					</p>
 				</header>
 
@@ -124,7 +125,7 @@
 					{#if isLoading}
 						<div class="text-sm text-white/60">Loading…</div>
 					{:else if !chapters.length}
-						<div class="text-sm text-white/60">No spots yet.</div>
+						<div class="text-sm text-white/60">{m.tv_noSpotsYet()}</div>
 					{:else}
 						<ul class="space-y-2">
 							{#each chapters as c (c.suggestionId)}
@@ -152,7 +153,7 @@
 											target="_blank"
 											rel="noreferrer"
 											class={openSpotButtonClass}
-											title="Open on parkour.spot"
+											title={m.tv_openOnParkourSpot()}
 											onclick={(e) => e.stopPropagation()}
 										>
 											<img
@@ -161,7 +162,7 @@
 												class="size-4 invert"
 												aria-hidden="true"
 											/>
-											<span>Open</span>
+											<span>{m.tv_open()}</span>
 										</a>
 									</div>
 								</li>

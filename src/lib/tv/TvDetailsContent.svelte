@@ -1048,13 +1048,13 @@
 
 					{#if selected.type === 'movie' && (spotChaptersLoading || spotChapters.length || spotChaptersError)}
 						<section class="detail-section">
-							<h2>Spots</h2>
+							<h2>{m.tv_spots()}</h2>
 							{#if spotChaptersLoading}
 								<p class="detail-muted">Loading…</p>
 							{:else if spotChaptersError}
 								<p class="detail-muted">{spotChaptersError}</p>
 							{:else if !spotChapters.length}
-								<p class="detail-muted">No spots yet.</p>
+								<p class="detail-muted">{m.tv_noSpotsYet()}</p>
 							{:else}
 								<div class="space-y-2">
 									<ul class="space-y-2">
@@ -1076,7 +1076,7 @@
 														target="_blank"
 														rel="noreferrer"
 														class={openSpotButtonClass}
-														title="Open on parkour.spot"
+														title={m.tv_openOnParkourSpot()}
 													>
 														<img
 															src="/icons/brand-parkour-dot-spot.svg"
@@ -1084,7 +1084,7 @@
 															class="size-4 invert"
 															aria-hidden="true"
 														/>
-														<span>Open</span>
+														<span>{m.tv_open()}</span>
 													</a>
 												</div>
 											</li>
@@ -1192,9 +1192,9 @@
 							{/if}
 
 							<div class="mt-6">
-								<h3 class="text-sm font-medium text-white/80">Spots</h3>
+								<h3 class="text-sm font-medium text-white/80">{m.tv_spots()}</h3>
 								{#if !selectedEpisode}
-									<p class="detail-muted">Select an episode to see spots.</p>
+									<p class="detail-muted">{m.tv_selectEpisodeToSeeSpots()}</p>
 								{:else}
 									{@const selectedEpisodeId = selectedEpisode?.id ? String(selectedEpisode.id) : ''}
 									{@const isEpisodeResolved = Boolean(selectedEpisodeId) && !selectedEpisodeId.startsWith('pos:')}
@@ -1205,7 +1205,7 @@
 									{:else if spotChaptersError}
 										<p class="detail-muted">{spotChaptersError}</p>
 									{:else if !spotChapters.length}
-										<p class="detail-muted">No spots yet.</p>
+										<p class="detail-muted">{m.tv_noSpotsYet()}</p>
 									{:else}
 										<div class="space-y-2">
 											<ul class="space-y-2">
@@ -1227,7 +1227,7 @@
 																target="_blank"
 																rel="noreferrer"
 																class={openSpotButtonClass}
-																title="Open on parkour.spot"
+																title={m.tv_openOnParkourSpot()}
 															>
 																<img
 																	src="/icons/brand-parkour-dot-spot.svg"
@@ -1235,7 +1235,7 @@
 																	class="size-4 invert"
 																	aria-hidden="true"
 																/>
-																<span>Open</span>
+																<span>{m.tv_open()}</span>
 														</a>
 													</div>
 												</li>

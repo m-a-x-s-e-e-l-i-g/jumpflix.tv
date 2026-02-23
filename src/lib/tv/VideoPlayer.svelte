@@ -18,6 +18,7 @@
 	import type { VideoTrack } from '$lib/tv/types';
 	import { parseTimecodeToSeconds } from '$lib/utils/timecode';
 	import { getParkourSpotUrl } from '$lib/utils';
+	import * as m from '$lib/paraglide/messages';
 	import {
 		updateWatchProgress,
 		getResumePosition,
@@ -136,10 +137,11 @@
 	function getActiveSpot(player: MediaPlayerElement): ActiveSpot | null {
 		const list = (player as any)?.textTracks as TextTrackList | undefined;
 		if (!list || typeof list.length !== 'number') return null;
+		const expectedLabel = m.tv_spots();
 		let chaptersTrack: TextTrack | null = null;
 		for (let i = 0; i < list.length; i++) {
 			const t = list[i];
-			if (t && t.kind === 'chapters' && t.label === 'Spots') {
+			if (t && t.kind === 'chapters' && (t.label === expectedLabel || t.label === 'Spots')) {
 				chaptersTrack = t;
 				break;
 			}
@@ -1656,7 +1658,7 @@
 				<media-provider data-no-controls>
 					{#if spotChaptersTrackSrc}
 						{#key spotChaptersTrackSrc}
-							<track kind="chapters" label="Spots" src={spotChaptersTrackSrc} default />
+							<track kind="chapters" label={m.tv_spots()} src={spotChaptersTrackSrc} default />
 						{/key}
 					{/if}
 				</media-provider>
@@ -1689,8 +1691,8 @@
 								href={nowPlayingSpotHref || '#'}
 								target={nowPlayingSpotHref ? '_blank' : undefined}
 								rel={nowPlayingSpotHref ? 'noopener noreferrer' : undefined}
-								aria-label={`Open on parkour.spot: ${nowPlayingSpotLabel}`}
-								title="Open on parkour.spot"
+								aria-label={m.tv_openOnParkourSpotAria({ label: nowPlayingSpotLabel })}
+								title={m.tv_openOnParkourSpot()}
 								data-disabled={nowPlayingSpotHref ? undefined : 'true'}
 								onclick={(e) => {
 									if (!nowPlayingSpotHref) e.preventDefault();

@@ -6,6 +6,7 @@
 	import { toast } from 'svelte-sonner';
 	import ParkourSpotPicker from '$lib/components/ParkourSpotPicker.svelte';
 	import { normalizeParkourSpotId } from '$lib/utils';
+	import { user as authUser } from '$lib/stores/authStore';
 
 	const dispatch = createEventDispatcher<{
 		submitted: { id: number | null; status: string | null };
@@ -41,6 +42,7 @@
 	let open = $state(false);
 	let isSubmitting = $state(false);
 	let isChangeMode = $derived(Boolean(spotChapterId) && Boolean(lockTimeRange));
+	let isAuthenticated = $derived(Boolean($authUser));
 
 	let startSeconds = $state<number | ''>('');
 	let endSeconds = $state<number | ''>('');
@@ -84,6 +86,10 @@
 
 	async function submit() {
 		if (isSubmitting) return;
+		if (!isAuthenticated) {
+			toast.message('Please sign in to suggest spots.');
+			return;
+		}
 		if (!mediaId || !mediaType) {
 			toast.error('Missing media context for this video.');
 			return;
@@ -131,6 +137,10 @@
 			});
 
 			const data = await res.json().catch(() => ({}));
+			if (res.status === 401) {
+				toast.message('Please sign in to suggest spots.');
+				return;
+			}
 			if (!res.ok) {
 				throw new Error(data?.error || 'Failed to submit suggestion');
 			}
@@ -162,6 +172,13 @@
 		aria-label={triggerAriaLabel}
 		title={triggerTitle}
 		data-jumpflix-gesture-ignore="true"
+			onclick={(e) => {
+				if (isAuthenticated) return;
+				e?.preventDefault?.();
+				e?.stopPropagation?.();
+				open = false;
+				toast.message('Please sign in to suggest spots.');
+			}}
 	>
 		<span class="icon" aria-hidden="true"><MapPinIcon /></span>
 		<span class="sr-only">{triggerTitle}</span>

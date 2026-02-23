@@ -4,6 +4,7 @@ import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { requireAdmin } from '$lib/server/admin';
 import { slugify } from '$lib/tv/slug';
 import { importSpotifyTracklistFromYouTube } from '$lib/server/tracklist-import.server';
+import { invalidateContentCache } from '$lib/server/content-service';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const { user } = await locals.safeGetSession();
@@ -16,6 +17,9 @@ function parseArrayInput(input: string): string[] {
 	return input
 		.split(',')
 		.map((s) => s.trim())
+
+		// Ensure the new movie is visible immediately after redirect.
+		await invalidateContentCache();
 		.filter((s) => s.length > 0);
 }
 

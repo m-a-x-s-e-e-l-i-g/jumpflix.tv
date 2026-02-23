@@ -29,7 +29,6 @@ export type Database = {
 					created_from_suggestion_id?: number | null;
 					approved_by?: string | null;
 					approved_at?: string;
-					created_at?: string;
 					updated_at?: string;
 				};
 				Update: {
@@ -159,7 +158,6 @@ export type Database = {
 						| 'creative'
 						| 'entertainment'
 						| null;
-					on_tv: boolean;
 					created_at: string;
 					updated_at: string;
 				};
@@ -196,7 +194,6 @@ export type Database = {
 						| 'creative'
 						| 'entertainment'
 						| null;
-					on_tv?: boolean;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -233,7 +230,6 @@ export type Database = {
 						| 'creative'
 						| 'entertainment'
 						| null;
-					on_tv?: boolean;
 					created_at?: string;
 					updated_at?: string;
 				};

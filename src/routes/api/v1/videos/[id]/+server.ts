@@ -23,7 +23,6 @@ import { createSupabaseClient } from '$lib/server/supabaseClient';
  *   duration?: string,
  *   creators?: string[],
  *   starring?: string[],
- *   onTv: boolean,
  *   facets?: object,
  *   url: string,
  *   spots: Array<{ spotId: string; startSeconds: number; endSeconds: number; playbackKey?: string }>
@@ -48,7 +47,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 		const { data: mediaItem, error: mediaError } = await supabase
 			.from('media_items')
 			.select(
-				'id, slug, type, title, description, thumbnail, year, duration, creators, starring, on_tv, facet_type, facet_mood, facet_movement, facet_environment, facet_film_style, facet_theme'
+				'id, slug, type, title, description, thumbnail, year, duration, creators, starring, facet_type, facet_mood, facet_movement, facet_environment, facet_film_style, facet_theme'
 			)
 			.eq('id', mediaId)
 			.maybeSingle();
@@ -114,18 +113,25 @@ export const GET: RequestHandler = async ({ params, request }) => {
 				? `https://www.jumpflix.tv/series/${mediaItem.slug}`
 				: `https://www.jumpflix.tv/movie/${mediaItem.slug}`;
 
+		const thumbnailUrl = (() => {
+			const raw = String(mediaItem.thumbnail ?? '').trim();
+			if (!raw) return null;
+			if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+			if (raw.startsWith('/')) return `https://www.jumpflix.tv${raw}`;
+			return raw;
+		})();
+
 		const response: Record<string, unknown> = {
 			id: mediaItem.id,
 			slug: mediaItem.slug,
 			type: mediaItem.type,
 			title: mediaItem.title,
-			onTv: mediaItem.on_tv ?? false,
 			url: videoUrl,
 			spots: spotChapters
 		};
 
 		if (mediaItem.description) response.description = mediaItem.description;
-		if (mediaItem.thumbnail) response.thumbnail = mediaItem.thumbnail;
+		if (thumbnailUrl) response.thumbnail = thumbnailUrl;
 		if (mediaItem.year) response.year = mediaItem.year;
 		if (mediaItem.duration) response.duration = mediaItem.duration;
 		if (mediaItem.creators?.length) response.creators = mediaItem.creators;

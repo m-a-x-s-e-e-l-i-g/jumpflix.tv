@@ -10,7 +10,7 @@ import { createSupabaseClient } from '$lib/server/supabaseClient';
  *
  * Query parameters:
  *   - spotId  (optional) – filter to videos that feature this spot ID
- *   - onTv    (optional, "true") – filter to videos that have been broadcast on TV
+ *   - type    (optional, "movie" | "series") – filter to only films (movie) or series
  *
  * Response: { videos: Array<{ jumpflixId: number; spotIds: string[] }> }
  *
@@ -22,17 +22,25 @@ export const GET: RequestHandler = async ({ url, request }) => {
 	}
 
 	const spotIdFilter = url.searchParams.get('spotId')?.trim() || null;
-	const onTvFilter = url.searchParams.get('onTv') === 'true';
+	const typeParam = url.searchParams.get('type')?.trim().toLowerCase() || null;
+	const typeFilter =
+		typeParam === 'movie' || typeParam === 'film' ? 'movie' : typeParam === 'series' ? 'series' : null;
+	if (typeParam && !typeFilter) {
+		return json({ error: 'Invalid type: must be "movie" or "series"' }, { status: 400 });
+	}
 
 	try {
 		const supabase = createSupabaseClient();
 
 		// Build spot_chapters query.
 		// The spot_chapters table only contains admin-approved chapters, so no approval filter is needed.
-		let chaptersQuery = supabase.from('spot_chapters').select('media_id, spot_id');
+		let chaptersQuery = supabase.from('spot_chapters').select('media_id, spot_id, media_type');
 
 		if (spotIdFilter) {
 			chaptersQuery = chaptersQuery.eq('spot_id', spotIdFilter);
+		}
+		if (typeFilter) {
+			chaptersQuery = chaptersQuery.eq('media_type', typeFilter);
 		}
 
 		const { data: chapters, error: chaptersError } = await chaptersQuery;
@@ -55,7 +63,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 		}
 
 		const rows = Array.isArray(chapters)
-			? (chapters as { media_id: number; spot_id: string }[])
+			? (chapters as { media_id: number; spot_id: string; media_type: 'movie' | 'series' }[])
 			: [];
 
 		// Group spot IDs by media ID
@@ -75,25 +83,7 @@ export const GET: RequestHandler = async ({ url, request }) => {
 			);
 		}
 
-		// Apply onTv filter: fetch media_items for the matched IDs and check on_tv flag
-		const mediaIds = Array.from(spotsByMediaId.keys());
-		let filteredMediaIds = mediaIds;
-
-		if (onTvFilter) {
-			const { data: mediaRows, error: mediaError } = await supabase
-				.from('media_items')
-				.select('id')
-				.in('id', mediaIds)
-				.eq('on_tv', true);
-
-			if (mediaError) {
-				return json({ error: mediaError.message || 'Failed to load media items' }, { status: 500 });
-			}
-
-			filteredMediaIds = (mediaRows ?? []).map((r) => Number(r.id));
-		}
-
-		const videos = filteredMediaIds
+		const videos = Array.from(spotsByMediaId.keys())
 			.filter((id) => spotsByMediaId.has(id))
 			.map((id) => ({
 				jumpflixId: id,

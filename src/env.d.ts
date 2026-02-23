@@ -8,6 +8,7 @@ declare module '$env/static/private' {
 	export const ADMIN_EMAILS: string;
 	export const ADMIN_USER_IDS: string;
 	export const PARKOUR_SPOT_API_KEY: string;
+	export const PARKOUR_SPOT_BEARER_TOKEN: string;
 }
 
 declare module '$env/static/public' {

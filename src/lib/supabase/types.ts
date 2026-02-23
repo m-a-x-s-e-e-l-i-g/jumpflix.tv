@@ -3,6 +3,58 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
 	public: {
 		Tables: {
+			spot_chapters: {
+				Row: {
+					id: number;
+					media_id: number;
+					media_type: 'movie' | 'series';
+					playback_key: string;
+					spot_id: string;
+					start_seconds: number;
+					end_seconds: number;
+					created_from_suggestion_id: number | null;
+					approved_by: string | null;
+					approved_at: string;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: number;
+					media_id: number;
+					media_type: 'movie' | 'series';
+					playback_key?: string;
+					spot_id: string;
+					start_seconds: number;
+					end_seconds: number;
+					created_from_suggestion_id?: number | null;
+					approved_by?: string | null;
+					approved_at?: string;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: number;
+					media_id?: number;
+					media_type?: 'movie' | 'series';
+					playback_key?: string;
+					spot_id?: string;
+					start_seconds?: number;
+					end_seconds?: number;
+					created_from_suggestion_id?: number | null;
+					approved_by?: string | null;
+					approved_at?: string;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'spot_chapters_media_id_fkey';
+						columns: ['media_id'];
+						referencedRelation: 'media_items';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			user_preferences: {
 				Row: {
 					user_id: string;
@@ -107,6 +159,7 @@ export type Database = {
 						| 'creative'
 						| 'entertainment'
 						| null;
+					on_tv: boolean;
 					created_at: string;
 					updated_at: string;
 				};
@@ -143,6 +196,7 @@ export type Database = {
 						| 'creative'
 						| 'entertainment'
 						| null;
+					on_tv?: boolean;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -179,6 +233,7 @@ export type Database = {
 						| 'creative'
 						| 'entertainment'
 						| null;
+					on_tv?: boolean;
 					created_at?: string;
 					updated_at?: string;
 				};

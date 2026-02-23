@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { requireAdmin } from '$lib/server/admin';
 import { slugify } from '$lib/tv/slug';
+import { importSpotifyTracklistFromYouTube } from '$lib/server/tracklist-import.server';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const { user } = await locals.safeGetSession();
@@ -59,6 +60,21 @@ export const actions: Actions = {
 
 		if (error) {
 			return fail(400, { message: error.message });
+		}
+
+		// Best-effort: auto-import Spotify-backed tracklist from YouTube metadata.
+		// Never block saving the movie on this step.
+		try {
+			const ytId = String((data as any)?.video_id ?? '').trim();
+			if (ytId) {
+				await importSpotifyTracklistFromYouTube({
+					supabase,
+					movieId: Number((data as any).id),
+					youtubeVideoId: ytId
+				});
+			}
+		} catch {
+			// best-effort only
 		}
 
 		redirect(302, `/movie/${data.slug}`);

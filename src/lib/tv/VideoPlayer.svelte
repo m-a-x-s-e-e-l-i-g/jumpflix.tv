@@ -1876,8 +1876,16 @@
 
 	:global(media-player.vidstack-player [data-media-provider] iframe) {
 		width: 100%;
-		height: 100%;
 		display: block;
+	}
+
+	/*
+	 * Important: don't override Vidstack's YouTube embed sizing hack.
+	 * Vidstack sets `iframe.vds-youtube[data-no-controls] { height: 1000%; }` to keep YouTube UI
+	 * elements (title/channel/end screen) out of view when we use custom controls.
+	 */
+	:global(media-player.vidstack-player [data-media-provider] iframe:not(.vds-youtube[data-no-controls])) {
+		height: 100%;
 	}
 
 	:global(media-player.vidstack-player:fullscreen),
@@ -2445,13 +2453,6 @@
 
 	:global(iframe.vds-vimeo) {
 		height: initial;
-	}
-
-	:global(media-player.vidstack-player iframe.vds-youtube[data-no-controls]) {
-		height: 100% !important;
-		width: 100% !important;
-		max-height: 100% !important;
-		max-width: 100% !important;
 	}
 
 	:global(media-player.vidstack-player[data-fullscreen] iframe.vds-vimeo),

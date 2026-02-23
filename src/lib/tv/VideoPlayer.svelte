@@ -50,6 +50,7 @@
 	let nowPlayingSpotHref: string | null = null;
 	type TrackStartEntry = { startSeconds: number; label: string; href: string };
 	let sortedTracks: TrackStartEntry[] = [];
+	let disableTrackPill = false;
 	let cleanupNowPlaying: (() => void) | null = null;
 
 	$: playbackKey = keySeed ? String(keySeed) : null;
@@ -99,6 +100,12 @@
 			})
 			.filter(isTrackStartEntry)
 			.sort((a, b) => a.startSeconds - b.startSeconds);
+	}
+
+	$: disableTrackPill = sortedTracks.filter((t) => Math.floor(t.startSeconds) === 0).length > 1;
+	$: if (disableTrackPill) {
+		nowPlayingTrackLabel = null;
+		nowPlayingTrackHref = null;
 	}
 
 	function getActiveTrackEntry(seconds: number): TrackStartEntry | null {
@@ -203,7 +210,7 @@
 			lastUpdate = now;
 			const t = Number(player.currentTime);
 			if (!Number.isFinite(t)) return;
-			const nextTrack = getActiveTrackEntry(t);
+			const nextTrack = disableTrackPill ? null : getActiveTrackEntry(t);
 			const nextTrackLabel = nextTrack?.label ?? null;
 			const nextTrackHref = nextTrack?.href ?? null;
 			if (nextTrackLabel !== nowPlayingTrackLabel) nowPlayingTrackLabel = nextTrackLabel;

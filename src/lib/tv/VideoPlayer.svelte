@@ -1655,7 +1655,9 @@
 			>
 				<media-provider data-no-controls>
 					{#if spotChaptersTrackSrc}
-						<track kind="chapters" label="Spots" src={spotChaptersTrackSrc} default />
+						{#key spotChaptersTrackSrc}
+							<track kind="chapters" label="Spots" src={spotChaptersTrackSrc} default />
+						{/key}
 					{/if}
 				</media-provider>
 

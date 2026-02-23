@@ -9,6 +9,7 @@ import {
 	type MediaPatch
 } from '$lib/server/content-suggestions';
 import { trySendTelegramMessage } from '$lib/server/telegram';
+import { normalizeParkourSpotId } from '$lib/utils';
 
 function asTrimmedString(value: unknown): string | null {
 	if (typeof value !== 'string') return null;
@@ -115,17 +116,89 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 		const supabase = createSupabaseServiceClient();
 		try {
 			if (payload) {
-				const effectivePatch: MediaPatch = payload as any;
-				if (kind === 'new_season') {
-					await applyNewSeason(supabase, mediaId, (effectivePatch as any).season ?? effectivePatch);
-				} else if (kind === 'new_episode') {
-					await applyNewEpisode(
-						supabase,
-						mediaId,
-						(effectivePatch as any).episode ?? effectivePatch
-					);
+				if (kind === 'spot_chapter') {
+					const patchAny = payload as any;
+						const spotIdRaw = asTrimmedString(patchAny?.spotId ?? patchAny?.spot_id);
+						const spotId = spotIdRaw ? normalizeParkourSpotId(spotIdRaw) : null;
+					const startSeconds = asSafeInt(patchAny?.startSeconds ?? patchAny?.start_seconds);
+					const endSeconds = asSafeInt(patchAny?.endSeconds ?? patchAny?.end_seconds);
+					const playbackKey = asTrimmedString(patchAny?.playbackKey ?? patchAny?.playback_key);
+					const spotChapterId = asSafeInt(patchAny?.spotChapterId ?? patchAny?.spot_chapter_id);
+					if (!spotId || startSeconds === null || endSeconds === null) {
+						return json(
+							{ error: 'Missing spotId/startSeconds/endSeconds' },
+							{ status: 400 }
+						);
+					}
+					if (endSeconds <= startSeconds) {
+						return json(
+							{ error: 'endSeconds must be greater than startSeconds' },
+							{ status: 400 }
+						);
+					}
+					if (mediaType === 'series' && !playbackKey) {
+						return json({ error: 'playbackKey is required for series spot chapters' }, { status: 400 });
+					}
+
+					if (spotChapterId) {
+						const { data: updated, error: updateSpotChapterError } = await (supabase as any)
+							.from('spot_chapters')
+							.update({
+								spot_id: spotId,
+								created_from_suggestion_id: suggestionId,
+								approved_by: user.id,
+								approved_at: new Date().toISOString()
+							})
+							.eq('id', spotChapterId)
+							.eq('media_id', mediaId)
+							.eq('media_type', mediaType)
+							.eq('playback_key', mediaType === 'series' ? playbackKey : '')
+							.select('id');
+
+						if (updateSpotChapterError) {
+							return json({ error: updateSpotChapterError.message }, { status: 400 });
+						}
+						if (!Array.isArray(updated) || updated.length === 0) {
+							return json({ error: 'Spot chapter not found for update' }, { status: 400 });
+						}
+					} else {
+						const { error: spotChapterError } = await (supabase as any)
+							.from('spot_chapters')
+							.upsert(
+								{
+									media_id: mediaId,
+									media_type: mediaType,
+									playback_key: mediaType === 'series' ? playbackKey : '',
+									spot_id: spotId,
+									start_seconds: startSeconds,
+									end_seconds: endSeconds,
+									created_from_suggestion_id: suggestionId,
+									approved_by: user.id,
+									approved_at: new Date().toISOString()
+								},
+								{ onConflict: 'created_from_suggestion_id' }
+							);
+						if (spotChapterError) {
+							return json({ error: spotChapterError.message }, { status: 400 });
+						}
+					}
 				} else {
-					await applyMediaPatch(supabase, mediaId, effectivePatch);
+					const effectivePatch: MediaPatch = payload as any;
+					if (kind === 'new_season') {
+						await applyNewSeason(
+							supabase,
+							mediaId,
+							(effectivePatch as any).season ?? effectivePatch
+						);
+					} else if (kind === 'new_episode') {
+						await applyNewEpisode(
+							supabase,
+							mediaId,
+							(effectivePatch as any).episode ?? effectivePatch
+						);
+					} else {
+						await applyMediaPatch(supabase, mediaId, effectivePatch);
+					}
 				}
 			}
 

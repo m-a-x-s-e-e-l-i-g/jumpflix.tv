@@ -27,6 +27,15 @@ export const GET: RequestHandler = async ({ params }) => {
 				episodes = [];
 			}
 
+			// If we got DB-backed episodes but they don't have stable playback ids (YouTube video ids),
+			// fall back to the YouTube API so watch-history keys like `series:<id>:ep:<videoId>` match.
+			// (Non-11-char ids here typically mean `video_id` wasn't populated in the DB.)
+			const looksLikeYouTubeVideoId = (value: unknown) => /^[A-Za-z0-9_-]{11}$/.test(String(value ?? ''));
+			const hasInvalidEpisodeIds = episodes.some((ep) => !looksLikeYouTubeVideoId((ep as any)?.id));
+			if (episodes.length && hasInvalidEpisodeIds) {
+				episodes = [];
+			}
+
 			// Fallback to YouTube API if no episodes found
 			if (!episodes.length) {
 				episodes = await fetchYouTubePlaylistEpisodes(id);

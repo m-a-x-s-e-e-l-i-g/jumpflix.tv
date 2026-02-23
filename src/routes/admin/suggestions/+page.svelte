@@ -47,7 +47,6 @@
 	$: adminPayloadText = selected
 		? jsonPretty(selected.admin_payload ?? selected.payload ?? {})
 		: '';
-	$: adminNoteText = selected?.admin_note ?? '';
 
 	function statusPillClass(status: unknown) {
 		const s = String(status ?? '').toLowerCase();
@@ -193,17 +192,6 @@
 
 					<form method="POST" use:enhance class="space-y-4">
 						<input type="hidden" name="id" value={selected.id} />
-
-						<label class="block space-y-2">
-							<span class="text-sm font-medium text-white/80">Admin note</span>
-							<textarea
-								name="admin_note"
-								rows="3"
-								class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-white shadow-inner placeholder:text-white/50 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
-								bind:value={adminNoteText}
-								placeholder="Optional internal note"
-							></textarea>
-						</label>
 
 						<label class="block space-y-2">
 							<span class="text-sm font-medium text-white/80">Admin payload (editable JSON)</span>

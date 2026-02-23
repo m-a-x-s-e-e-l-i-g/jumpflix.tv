@@ -45,6 +45,79 @@ export function withUtm(url: string, options: UtmOptions = {}): string {
 	}
 }
 
+export function normalizeParkourSpotId(value: unknown): string | null {
+	const raw = typeof value === 'string' ? value.trim() : '';
+	if (!raw) return null;
+
+	const extractFromPathname = (pathname: string): string | null => {
+		const parts = String(pathname ?? '')
+			.split('/')
+			.map((p) => p.trim())
+			.filter(Boolean);
+		const idx = parts.findIndex((p) => p === 'spot' || p === 'spots');
+		const candidate = idx >= 0 ? parts[idx + 1] : null;
+		if (!candidate) return null;
+		try {
+			return decodeURIComponent(candidate);
+		} catch {
+			return candidate;
+		}
+	};
+
+	// Full URL (or protocol-relative-ish) forms.
+	try {
+		const parsed = new URL(raw);
+		const fromPath = extractFromPathname(parsed.pathname);
+		if (fromPath) return fromPath;
+	} catch {
+		// ignore
+	}
+
+	// Common copy-paste form without scheme: parkour.spot/spot(s)/<id>
+	if (raw.includes('parkour.spot') && !raw.startsWith('http')) {
+		try {
+			const parsed = new URL(`https://${raw.replace(/^\/\/+/, '')}`);
+			const fromPath = extractFromPathname(parsed.pathname);
+			if (fromPath) return fromPath;
+		} catch {
+			// ignore
+		}
+	}
+
+	// Path-ish forms: /spot(s)/<id> or .../spot(s)/<id>
+	const m = raw.match(/(?:^|\/)(?:spot|spots)\/([^/?#]+)/i);
+	if (m?.[1]) {
+		try {
+			return decodeURIComponent(m[1]);
+		} catch {
+			return m[1];
+		}
+	}
+
+	// Assume it’s already an ID.
+	return raw;
+}
+
+export function getParkourSpotUrl(spotIdOrUrl: unknown, options: UtmOptions = {}): string {
+	const raw = typeof spotIdOrUrl === 'string' ? spotIdOrUrl.trim() : '';
+	if (!raw) return '';
+
+	const id = normalizeParkourSpotId(raw);
+	if (id) {
+		return withUtm(`https://parkour.spot/spot/${encodeURIComponent(id)}`,
+			{ campaign: 'parkour.spot', ...options }
+		);
+	}
+
+	// If we can’t extract an id but it’s a URL, return it with UTM.
+	try {
+		const parsed = new URL(raw);
+		return withUtm(parsed.toString(), { campaign: 'parkour.spot', ...options });
+	} catch {
+		return withUtm(raw, { campaign: 'parkour.spot', ...options });
+	}
+}
+
 export function getEmailLocalPart(value?: string | null): string | null {
 	const raw = String(value ?? '').trim();
 	if (!raw) return null;

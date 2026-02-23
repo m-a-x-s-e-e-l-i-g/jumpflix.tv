@@ -14,6 +14,11 @@
 	import XIcon from 'lucide-svelte/icons/x';
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
 	import CastIcon from 'lucide-svelte/icons/cast';
+	import SpotChapterSuggestionDialog from '$lib/tv/SpotChapterSuggestionDialog.svelte';
+	import type { VideoTrack } from '$lib/tv/types';
+	import { parseTimecodeToSeconds } from '$lib/utils/timecode';
+	import { getParkourSpotUrl } from '$lib/utils';
+	import * as m from '$lib/paraglide/messages';
 	import {
 		updateWatchProgress,
 		getResumePosition,
@@ -28,11 +33,218 @@
 	export let title: string | null = null;
 	export let poster: string | null = null;
 	export let keySeed: string | number = '';
+	export let mediaId: number | null = null;
+	export let mediaType: 'movie' | 'series' | null = null;
+	export let tracks: VideoTrack[] | null | undefined = undefined;
 	export let autoPlay = false;
 	export let onClose: (() => void) | null = null;
 
 	let mounted = false;
 	let playerEl: MediaPlayerElement | null = null;
+	let playbackKey: string | null = null;
+	let spotChaptersTrackSrc: string | null = null;
+	let spotChaptersRefreshToken = 0;
+	let nowPlayingTrackLabel: string | null = null;
+	let nowPlayingSpotLabel: string | null = null;
+	let nowPlayingTrackHref: string | null = null;
+	let nowPlayingSpotHref: string | null = null;
+	type TrackStartEntry = { startSeconds: number; label: string; href: string };
+	let sortedTracks: TrackStartEntry[] = [];
+	let cleanupNowPlaying: (() => void) | null = null;
+
+	$: playbackKey = keySeed ? String(keySeed) : null;
+	$: spotChaptersTrackSrc =
+		mediaId && mediaType && (mediaType === 'movie' || !!playbackKey)
+			?
+				`/api/spot-chapters/vtt?mediaId=${encodeURIComponent(String(mediaId))}&mediaType=${encodeURIComponent(mediaType)}${playbackKey ? `&playbackKey=${encodeURIComponent(playbackKey)}` : ''}&r=${encodeURIComponent(String(spotChaptersRefreshToken))}`
+			: null;
+
+	function getTrackStartSeconds(track: VideoTrack): number | null {
+		if (typeof track?.startAtSeconds === 'number' && Number.isFinite(track.startAtSeconds)) {
+			return Math.max(0, track.startAtSeconds);
+		}
+		const parsed = parseTimecodeToSeconds(track?.startTimecode ?? '');
+		if (typeof parsed === 'number' && Number.isFinite(parsed) && parsed >= 0) return parsed;
+		return null;
+	}
+
+	function isTrackStartEntry(value: TrackStartEntry | null): value is TrackStartEntry {
+		return Boolean(value);
+	}
+
+	function spotifySearchUrl(query: string): string {
+		return `https://open.spotify.com/search/${encodeURIComponent(query)}`;
+	}
+
+	function getTrackHref(track: VideoTrack, fallbackQuery: string): string {
+		const direct = String(track?.song?.spotifyUrl ?? '').trim();
+		if (direct) return direct;
+		const id = String(track?.song?.spotifyTrackId ?? '').trim();
+		if (id) return `https://open.spotify.com/track/${encodeURIComponent(id)}`;
+		return spotifySearchUrl(fallbackQuery);
+	}
+
+	$: {
+		const list = Array.isArray(tracks) ? tracks : [];
+		sortedTracks = list
+			.map((t) => {
+				const startSeconds = getTrackStartSeconds(t);
+				if (startSeconds === null) return null;
+				const artist = String(t?.song?.artist ?? '').trim();
+				const title = String(t?.song?.title ?? '').trim();
+				const label = [artist, title].filter(Boolean).join(' — ').trim();
+				if (!label) return null;
+				const href = getTrackHref(t, label);
+				return { startSeconds, label, href } satisfies TrackStartEntry;
+			})
+			.filter(isTrackStartEntry)
+			.sort((a, b) => a.startSeconds - b.startSeconds);
+	}
+
+	function getActiveTrackEntry(seconds: number): TrackStartEntry | null {
+		if (!sortedTracks.length) return null;
+		for (let i = 0; i < sortedTracks.length; i++) {
+			const t = sortedTracks[i];
+			const nextStart = sortedTracks[i + 1]?.startSeconds ?? Number.POSITIVE_INFINITY;
+			if (seconds >= t.startSeconds && seconds < nextStart) {
+				return t;
+			}
+		}
+		return null;
+	}
+
+	type ActiveSpot = {
+		label: string;
+		spotId: string | null;
+		href: string | null;
+		spotChapterId: number | null;
+		startSeconds: number;
+		endSeconds: number;
+	};
+
+	let activeSpotChapterId: number | null = null;
+	let activeSpotStartSeconds: number | null = null;
+	let activeSpotEndSeconds: number | null = null;
+	let activeSpotSpotId: string | null = null;
+	let isChangingSpot = false;
+	let spotSuggestionTriggerTitle = 'Suggest spot';
+	let spotSuggestionTriggerAriaLabel = 'Suggest a parkour spot (chapter)';
+
+	function parkourSpotUrl(spotId: string): string {
+		return getParkourSpotUrl(spotId);
+	}
+
+	function getActiveSpot(player: MediaPlayerElement): ActiveSpot | null {
+		const list = (player as any)?.textTracks as TextTrackList | undefined;
+		if (!list || typeof list.length !== 'number') return null;
+		const expectedLabel = m.tv_spots();
+		let chaptersTrack: TextTrack | null = null;
+		for (let i = 0; i < list.length; i++) {
+			const t = list[i];
+			if (t && t.kind === 'chapters' && (t.label === expectedLabel || t.label === 'Spots')) {
+				chaptersTrack = t;
+				break;
+			}
+		}
+		if (!chaptersTrack) {
+			for (let i = 0; i < list.length; i++) {
+				const t = list[i];
+				if (t && t.kind === 'chapters') {
+					chaptersTrack = t;
+					break;
+				}
+			}
+		}
+		if (!chaptersTrack) return null;
+		const cues = chaptersTrack.cues;
+		if (!cues || typeof cues.length !== 'number') return null;
+		const time = Number(player.currentTime);
+		if (!Number.isFinite(time)) return null;
+		for (let i = 0; i < cues.length; i++) {
+			const cue = cues[i] as any;
+			if (!cue) continue;
+			if (time >= cue.startTime && time < cue.endTime) {
+				const label = String(cue.text ?? '').replace(/[\r\n]+/g, ' ').trim();
+				const rawId = String(cue.id ?? '').trim();
+				// Format: chapter:<spotChapterId>:spot:<spotId>:<n>
+				let spotId: string | null = null;
+				let spotChapterId: number | null = null;
+				if (rawId.startsWith('chapter:')) {
+					const parts = rawId.split(':');
+					const chapterCandidate = Number(parts[1]);
+					if (Number.isFinite(chapterCandidate)) spotChapterId = chapterCandidate;
+					const spotIndex = parts.findIndex((p) => p === 'spot');
+					if (spotIndex >= 0) {
+						const idCandidate = parts[spotIndex + 1];
+						spotId = typeof idCandidate === 'string' ? idCandidate.trim() : null;
+					}
+				}
+				if (!spotId && rawId.startsWith('spot:')) {
+					spotId = rawId.slice(5).split(':')[0]?.trim?.() || null;
+				}
+				const href = spotId ? parkourSpotUrl(spotId) : null;
+				const startSeconds = Number.isFinite(cue.startTime) ? Math.max(0, Math.floor(cue.startTime)) : 0;
+				const rawEnd = Number.isFinite(cue.endTime) ? Math.max(0, Math.ceil(cue.endTime)) : startSeconds;
+				const endSeconds = Math.max(startSeconds + 1, rawEnd);
+				return label
+					? { label, spotId: spotId || null, href, spotChapterId, startSeconds, endSeconds }
+					: null;
+			}
+		}
+		return null;
+	}
+
+	function setupNowPlaying(player: MediaPlayerElement) {
+		if (!browser) return () => {};
+		let lastUpdate = 0;
+		const update = () => {
+			const now = performance.now();
+			if (now - lastUpdate < 200) return;
+			lastUpdate = now;
+			const t = Number(player.currentTime);
+			if (!Number.isFinite(t)) return;
+			const nextTrack = getActiveTrackEntry(t);
+			const nextTrackLabel = nextTrack?.label ?? null;
+			const nextTrackHref = nextTrack?.href ?? null;
+			if (nextTrackLabel !== nowPlayingTrackLabel) nowPlayingTrackLabel = nextTrackLabel;
+			if (nextTrackHref !== nowPlayingTrackHref) nowPlayingTrackHref = nextTrackHref;
+			const nextSpot = getActiveSpot(player);
+			const nextSpotLabel = nextSpot?.label ?? null;
+			const nextSpotHref = nextSpot?.href ?? null;
+			const nextSpotChapterId = nextSpot?.spotChapterId ?? null;
+			const nextSpotStartSeconds = nextSpot ? nextSpot.startSeconds : null;
+			const nextSpotEndSeconds = nextSpot ? nextSpot.endSeconds : null;
+			const nextSpotId = nextSpot?.spotId ?? null;
+			if (nextSpotLabel !== nowPlayingSpotLabel) nowPlayingSpotLabel = nextSpotLabel;
+			if (nextSpotHref !== nowPlayingSpotHref) nowPlayingSpotHref = nextSpotHref;
+			if (nextSpotChapterId !== activeSpotChapterId) activeSpotChapterId = nextSpotChapterId;
+			if (nextSpotStartSeconds !== activeSpotStartSeconds) activeSpotStartSeconds = nextSpotStartSeconds;
+			if (nextSpotEndSeconds !== activeSpotEndSeconds) activeSpotEndSeconds = nextSpotEndSeconds;
+			if (nextSpotId !== activeSpotSpotId) activeSpotSpotId = nextSpotId;
+		};
+		player.addEventListener('time-update', update);
+		player.addEventListener('seeked', update);
+		player.addEventListener('duration-change', update);
+		update();
+		return () => {
+			player.removeEventListener('time-update', update);
+			player.removeEventListener('seeked', update);
+			player.removeEventListener('duration-change', update);
+		};
+	}
+
+	$: isChangingSpot = Boolean(activeSpotChapterId);
+	$: spotSuggestionTriggerTitle = isChangingSpot ? 'Change spot' : 'Suggest spot';
+	$: spotSuggestionTriggerAriaLabel = isChangingSpot
+		? 'Change the current parkour spot (chapter)'
+		: 'Suggest a parkour spot (chapter)';
+
+	function seekToSeconds(seconds: number) {
+		if (!browser || !playerEl) return;
+		try {
+			playerEl.currentTime = Math.max(0, Number(seconds) || 0);
+		} catch {}
+	}
 	let vidstackLoadPromise: Promise<void> | null = null;
 
 	type RemoteControl = {
@@ -139,7 +351,21 @@
 		cleanupPlaybackComplete = null;
 	}
 
+	$: if (browser && playerEl) {
+		cleanupNowPlaying?.();
+		cleanupNowPlaying = setupNowPlaying(playerEl);
+	} else if (!browser || !playerEl) {
+		cleanupNowPlaying?.();
+		cleanupNowPlaying = null;
+		nowPlayingTrackLabel = null;
+		nowPlayingSpotLabel = null;
+		nowPlayingTrackHref = null;
+		nowPlayingSpotHref = null;
+	}
+
 	onDestroy(() => {
+		cleanupNowPlaying?.();
+		cleanupNowPlaying = null;
 		cleanupGestures?.();
 		cleanupGestures = null;
 		cleanupAutoHide?.();
@@ -148,6 +374,10 @@
 		cleanupProgressTracking = null;
 		cleanupPlaybackComplete?.();
 		cleanupPlaybackComplete = null;
+		nowPlayingTrackLabel = null;
+		nowPlayingSpotLabel = null;
+		nowPlayingTrackHref = null;
+		nowPlayingSpotHref = null;
 		cleanupMobileQuery?.();
 		cleanupMobileQuery = null;
 		mobileQuery = null;
@@ -1398,7 +1628,7 @@
 								type="button"
 								class="player-close-button"
 								aria-label="Close player"
-								on:click={onClose}
+								onclick={onClose}
 							>
 								<span class="icon" aria-hidden="true"><XIcon /></span>
 							</button>
@@ -1425,7 +1655,60 @@
 				crossOrigin="anonymous"
 				autoPlay
 			>
-				<media-provider data-no-controls></media-provider>
+				<media-provider data-no-controls>
+					{#if spotChaptersTrackSrc}
+						{#key spotChaptersTrackSrc}
+							<track kind="chapters" label={m.tv_spots()} src={spotChaptersTrackSrc} default />
+						{/key}
+					{/if}
+				</media-provider>
+
+				{#if nowPlayingTrackLabel || nowPlayingSpotLabel}
+					<div class="now-pills" aria-live="polite">
+						{#if nowPlayingTrackLabel}
+							<a
+								class="now-pill now-pill-track"
+								href={nowPlayingTrackHref || spotifySearchUrl(nowPlayingTrackLabel)}
+								target="_blank"
+								rel="noopener noreferrer"
+								aria-label={`Open on Spotify: ${nowPlayingTrackLabel}`}
+								title="Open on Spotify"
+							>
+								<span class="now-pill-icon" aria-hidden="true">
+									<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+										<path
+											fill="currentColor"
+											d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12S6.201 22.5 12 22.5 22.5 17.799 22.5 12 17.799 1.5 12 1.5Zm4.82 15.174a.75.75 0 0 1-1.033.247c-2.83-1.73-6.395-2.122-10.598-1.165a.75.75 0 1 1-.332-1.462c4.566-1.04 8.48-.595 11.714 1.382a.75.75 0 0 1 .249 1.0Zm1.476-3.02a.9.9 0 0 1-1.238.296c-3.24-1.99-8.18-2.566-12.01-1.404a.9.9 0 0 1-.522-1.722c4.36-1.322 9.776-.68 13.48 1.596a.9.9 0 0 1 .29 1.234Zm.127-3.153C14.64 8.21 8.38 8 4.79 9.09a1.05 1.05 0 0 1-.61-2.01c4.13-1.255 11.0-1.01 15.36 1.58a1.05 1.05 0 1 1-1.07 1.84Z"
+										/>
+									</svg>
+								</span>
+								<span class="now-pill-text">{nowPlayingTrackLabel}</span>
+							</a>
+						{/if}
+						{#if nowPlayingSpotLabel}
+							<a
+								class="now-pill now-pill-spot"
+								href={nowPlayingSpotHref || '#'}
+								target={nowPlayingSpotHref ? '_blank' : undefined}
+								rel={nowPlayingSpotHref ? 'noopener noreferrer' : undefined}
+								aria-label={m.tv_openOnParkourSpotAria({ label: nowPlayingSpotLabel })}
+								title={m.tv_openOnParkourSpot()}
+								data-disabled={nowPlayingSpotHref ? undefined : 'true'}
+								onclick={(e) => {
+									if (!nowPlayingSpotHref) e.preventDefault();
+								}}
+							>
+								<img
+									src="/icons/brand-parkour-dot-spot.svg"
+									alt=""
+									class="now-pill-icon now-pill-icon-parkour"
+									aria-hidden="true"
+								/>
+								<span class="now-pill-text">{nowPlayingSpotLabel}</span>
+							</a>
+						{/if}
+					</div>
+				{/if}
 
 				<media-controls
 					class="player-controls"
@@ -1441,7 +1724,7 @@
 									class="player-close-button"
 									aria-label="Close player"
 									data-jumpflix-gesture-ignore="true"
-									on:click={onClose}
+									onclick={onClose}
 								>
 									<span class="icon" aria-hidden="true"><XIcon /></span>
 								</button>
@@ -1451,15 +1734,21 @@
 					<div class="controls-surface">
 						<media-controls-group class="controls-group scrub">
 							<media-time-slider
-								class="time-slider"
+								class="time-slider vds-time-slider vds-slider"
 								aria-label={title ? `Scrub through ${title}` : 'Scrub through video'}
 							>
-								<div class="slider-track" aria-hidden="true">
-									<div class="slider-track-progress"></div>
-									<div class="slider-track-fill"></div>
-								</div>
+								<media-slider-chapters class="vds-slider-chapters slider-chapters" aria-hidden="true">
+									<template>
+										<div class="vds-slider-chapter slider-chapter">
+											<div class="vds-slider-track slider-track"></div>
+											<div class="vds-slider-track-fill vds-slider-track slider-track-fill"></div>
+											<div class="vds-slider-progress vds-slider-track slider-track-progress"></div>
+										</div>
+									</template>
+								</media-slider-chapters>
 								<div class="slider-thumb" aria-hidden="true"></div>
 								<media-slider-preview class="slider-preview">
+									<div class="slider-chapter-title" data-part="chapter-title"></div>
 									<media-slider-value class="slider-value"></media-slider-value>
 								</media-slider-preview>
 							</media-time-slider>
@@ -1533,6 +1822,23 @@
 									<span class="icon"><CastIcon /></span>
 								</media-google-cast-button>
 
+								<SpotChapterSuggestionDialog
+									{mediaId}
+									{mediaType}
+									{playbackKey}
+									getCurrentTimeSeconds={() => Number(playerEl?.currentTime ?? 0)}
+									spotChapterId={activeSpotChapterId}
+									initialStartSeconds={activeSpotStartSeconds}
+									initialEndSeconds={activeSpotEndSeconds}
+									lockTimeRange={isChangingSpot}
+									triggerClass="control-button"
+									triggerAriaLabel={spotSuggestionTriggerAriaLabel}
+									triggerTitle={spotSuggestionTriggerTitle}
+									on:submitted={() => {
+										spotChaptersRefreshToken += 1;
+									}}
+								/>
+
 								<media-fullscreen-button class="control-button" aria-label="Toggle fullscreen">
 									<span class="icon icon-enter"><Maximize2Icon /></span>
 									<span class="icon icon-exit"><Minimize2Icon /></span>
@@ -1556,6 +1862,47 @@
 		block-size: 100%;
 		background: #000;
 		position: relative;
+	}
+
+	:global(media-player.vidstack-player[data-view-type='video']) {
+		aspect-ratio: auto;
+	}
+
+	:global(media-player.vidstack-player [data-media-provider] video) {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+
+	:global(media-player.vidstack-player [data-media-provider] iframe) {
+		width: 100%;
+		height: 100%;
+		display: block;
+	}
+
+	:global(media-player.vidstack-player:fullscreen),
+	:global(media-player.vidstack-player:-webkit-full-screen),
+	:global(media-player.vidstack-player[data-fullscreen]),
+	:global(.vidstack-player[data-fullscreen]) {
+		aspect-ratio: auto;
+		inline-size: 100%;
+		block-size: 100%;
+		max-inline-size: 100%;
+		max-block-size: 100%;
+	}
+
+	:global(media-player.vidstack-player:fullscreen video),
+	:global(media-player.vidstack-player:-webkit-full-screen video) {
+		object-fit: contain;
+	}
+
+	:global(.vidstack-player video:fullscreen),
+	:global(.vidstack-player video:-webkit-full-screen) {
+		object-fit: contain;
+		inline-size: 100%;
+		block-size: 100%;
+		max-inline-size: 100%;
+		max-block-size: 100%;
 	}
 
 	.youtube-fallback {
@@ -1683,6 +2030,96 @@
 		gap: clamp(0.75rem, 2vw, 1.25rem);
 		width: 100%;
 		z-index: 1;
+	}
+
+	.now-pills {
+		position: absolute;
+		top: max(0.75rem, env(safe-area-inset-top, 0px));
+		left: max(0.75rem, env(safe-area-inset-left, 0px));
+		display: flex;
+		justify-content: flex-start;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		padding: 0;
+		pointer-events: none;
+		z-index: 5;
+	}
+
+	.now-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		max-width: min(100%, 42rem);
+		padding: 0.25rem 0.65rem;
+		border-radius: 999px;
+		border: 1px solid rgba(148, 163, 184, 0.25);
+		background: rgba(10, 16, 40, 0.55);
+		color: rgba(248, 250, 252, 0.9);
+		font-size: 0.75rem;
+		line-height: 1.1;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		box-shadow: 0 10px 30px rgba(10, 16, 40, 0.25);
+		text-decoration: none;
+		pointer-events: auto;
+		cursor: pointer;
+	}
+
+	.now-pill:hover {
+		background: rgba(10, 16, 40, 0.7);
+	}
+
+	.now-pill[data-disabled='true'] {
+		opacity: 0.6;
+		cursor: default;
+	}
+
+	.now-pill-track {
+		border-color: rgba(29, 185, 84, 0.35);
+		background: rgba(29, 185, 84, 0.12);
+		color: #1db954;
+	}
+
+	.now-pill-track:hover {
+		background: rgba(29, 185, 84, 0.18);
+	}
+
+	.now-pill-spot {
+		border-color: rgba(142, 207, 242, 0.35);
+		background: rgba(142, 207, 242, 0.12);
+		color: #8ecff2;
+	}
+
+	.now-pill-spot:hover {
+		background: rgba(142, 207, 242, 0.18);
+	}
+
+	.now-pill-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: 0 0 auto;
+		width: 14px;
+		height: 14px;
+	}
+
+	.now-pill-icon :global(svg) {
+		width: 14px;
+		height: 14px;
+	}
+
+	.now-pill-icon-parkour {
+		width: 14px;
+		height: 14px;
+		filter: invert(1);
+		opacity: 0.95;
+	}
+
+	.now-pill-text {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.controls-row {
@@ -1838,6 +2275,31 @@
 		position: relative;
 	}
 
+	.time-slider .slider-chapters {
+		position: absolute;
+		inset-inline: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		inline-size: 100%;
+		block-size: var(--media-slider-track-height, 6px);
+		border-radius: 999px;
+		overflow: hidden;
+		pointer-events: none;
+		z-index: 2;
+	}
+
+	.time-slider .slider-chapter {
+		position: relative;
+		block-size: 100%;
+		min-inline-size: 1px;
+		border-radius: 999px;
+		overflow: hidden;
+		/* Important: do NOT set flex/width here. Vidstack sets each chapter width inline. */
+	}
+
 	.time-slider .slider-track,
 	.volume-slider .slider-track {
 		position: relative;
@@ -1856,6 +2318,11 @@
 		inset-inline-start: 0;
 		inline-size: var(--slider-progress, 0%);
 		background: rgba(255, 255, 255, 0.28);
+		z-index: 1;
+	}
+
+	.time-slider .slider-chapter .slider-track-progress {
+		inline-size: var(--chapter-progress, 0%);
 	}
 
 	.time-slider .slider-track-fill,
@@ -1865,6 +2332,11 @@
 		inset-inline-start: 0;
 		inline-size: var(--slider-fill, 0%);
 		background: linear-gradient(90deg, #60a5fa 0%, #c084fc 100%);
+		z-index: 2;
+	}
+
+	.time-slider .slider-chapter .slider-track-fill {
+		inline-size: var(--chapter-fill, 0%);
 	}
 
 	.time-slider .slider-thumb,
@@ -1880,6 +2352,7 @@
 		inset-inline-start: var(--slider-fill, 0%);
 		inset-block-start: 50%;
 		pointer-events: none;
+		z-index: 3;
 		opacity: 0;
 		transition: opacity 200ms ease-in-out;
 	}
@@ -1919,8 +2392,21 @@
 		border: 1px solid rgba(148, 163, 184, 0.4);
 		padding: 0.25rem 0.6rem;
 		box-shadow: 0 12px 24px rgba(10, 16, 36, 0.35);
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
 		opacity: 0;
 		transition: opacity 200ms ease-in-out;
+	}
+
+	:global(media-slider-preview.slider-preview [data-part='chapter-title']) {
+		font-size: 0.75rem;
+		line-height: 1.1;
+		color: rgba(255, 255, 255, 0.9);
+		max-width: 18rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	:global(media-slider-preview.slider-preview[data-visible]) {
@@ -1950,13 +2436,28 @@
 	}
 
 	/* Prevent user from interacting with youtube/vimeo through iframe */
-	:global(div.vds-blocker) {
-		height: 100vh;
+	:global(media-player.vidstack-player .vds-blocker) {
+		height: 100% !important;
+		width: 100% !important;
+		aspect-ratio: auto !important;
 		pointer-events: auto !important;
 	}
 
 	:global(iframe.vds-vimeo) {
 		height: initial;
+	}
+
+	:global(media-player.vidstack-player iframe.vds-youtube[data-no-controls]) {
+		height: 100% !important;
+		width: 100% !important;
+		max-height: 100% !important;
+		max-width: 100% !important;
+	}
+
+	:global(media-player.vidstack-player[data-fullscreen] iframe.vds-vimeo),
+	:global(media-player.vidstack-player:fullscreen iframe.vds-vimeo),
+	:global(media-player.vidstack-player:-webkit-full-screen iframe.vds-vimeo) {
+		height: 100%;
 	}
 
 	:global(media-volume-slider.volume-slider .vds-slider-preview) {
@@ -1990,7 +2491,7 @@
 
 	@media (max-width: 640px) {
 		.vidstack-player {
-			aspect-ratio: 16 / 9;
+			aspect-ratio: auto;
 		}
 
 		.player-controls {

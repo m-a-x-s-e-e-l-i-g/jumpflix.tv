@@ -49,6 +49,15 @@
 			</div>
 
 			<a
+				href="/admin/add-movie"
+				onclick={() => (showAdminMenu = false)}
+				class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
+			>
+				<WrenchIcon class="size-4" />
+				<span>Add Movie</span>
+			</a>
+
+			<a
 				href="/admin/suggestions"
 				onclick={() => (showAdminMenu = false)}
 				class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"

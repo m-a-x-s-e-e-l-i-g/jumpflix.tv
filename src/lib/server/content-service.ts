@@ -271,6 +271,20 @@ const CONTENT_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 let contentCache: { items: ContentItem[]; fetchedAt: number } | null = null;
 let contentInFlight: Promise<ContentItem[]> | null = null;
 
+export async function invalidateContentCache(): Promise<void> {
+	contentCache = null;
+	contentInFlight = null;
+	if (!isPrerenderCacheEnabled()) return;
+	try {
+		const fs = await import('fs/promises');
+		const path = await import('path');
+		const cachePath = path.join(process.cwd(), PRERENDER_CACHE_DIR, CONTENT_CACHE_FILE);
+		await fs.unlink(cachePath);
+	} catch {
+		// best-effort
+	}
+}
+
 export async function fetchAllContent(): Promise<ContentItem[]> {
 	const now = Date.now();
 	if (contentCache && now - contentCache.fetchedAt < CONTENT_CACHE_TTL_MS) {

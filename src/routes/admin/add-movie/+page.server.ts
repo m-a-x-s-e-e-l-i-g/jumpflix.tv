@@ -17,9 +17,6 @@ function parseArrayInput(input: string): string[] {
 	return input
 		.split(',')
 		.map((s) => s.trim())
-
-		// Ensure the new movie is visible immediately after redirect.
-		await invalidateContentCache();
 		.filter((s) => s.length > 0);
 }
 
@@ -80,6 +77,9 @@ export const actions: Actions = {
 		} catch {
 			// best-effort only
 		}
+
+		// Ensure the new movie is visible immediately after redirect.
+		await invalidateContentCache();
 
 		redirect(302, `/movie/${data.slug}`);
 	}

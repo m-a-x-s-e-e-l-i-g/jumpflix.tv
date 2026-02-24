@@ -43,7 +43,10 @@
 	let playerEl: MediaPlayerElement | null = null;
 	let playbackKey: string | null = null;
 	let spotChaptersTrackSrc: string | null = null;
+	let spotChaptersTrackEl: HTMLTrackElement | null = null;
 	let spotChaptersRefreshToken = 0;
+	let spotChaptersRetryCount = 0;
+	let spotChaptersRetryKey: string | null = null;
 	let nowPlayingTrackLabel: string | null = null;
 	let nowPlayingSpotLabel: string | null = null;
 	let nowPlayingTrackHref: string | null = null;
@@ -59,6 +62,49 @@
 			?
 				`/api/spot-chapters/vtt?mediaId=${encodeURIComponent(String(mediaId))}&mediaType=${encodeURIComponent(mediaType)}${playbackKey ? `&playbackKey=${encodeURIComponent(playbackKey)}` : ''}&r=${encodeURIComponent(String(spotChaptersRefreshToken))}`
 			: null;
+
+	function enableSpotChaptersTrack(trackEl: HTMLTrackElement | null) {
+		if (!browser || !trackEl) return;
+		try {
+			// Some browsers keep chapter tracks disabled unless explicitly enabled.
+			// Vidstack reads cues from text tracks, so we force it to load.
+			const track = trackEl.track;
+			if (track && track.kind === 'chapters' && track.mode === 'disabled') {
+				track.mode = 'hidden';
+			}
+		} catch {
+			// no-op
+		}
+	}
+
+	function scheduleSpotChaptersRetry(reason: string) {
+		if (!browser) return;
+		const key = `${keySeed}:${spotChaptersTrackSrc ?? ''}`;
+		if (spotChaptersRetryKey !== key) {
+			spotChaptersRetryKey = key;
+			spotChaptersRetryCount = 0;
+		}
+		if (spotChaptersRetryCount >= 1) return;
+		spotChaptersRetryCount += 1;
+		setTimeout(() => {
+			// If the user has navigated away or the src changed, don't spam refreshes.
+			if (spotChaptersRetryKey !== key) return;
+			spotChaptersRefreshToken += 1;
+		}, reason === 'error' ? 500 : 1000);
+	}
+
+	$: if (browser && spotChaptersTrackEl) {
+		enableSpotChaptersTrack(spotChaptersTrackEl);
+	}
+
+	$: if (browser && spotChaptersTrackSrc) {
+		// Reset retry state when the track URL changes.
+		const key = `${keySeed}:${spotChaptersTrackSrc}`;
+		if (spotChaptersRetryKey !== key) {
+			spotChaptersRetryKey = key;
+			spotChaptersRetryCount = 0;
+		}
+	}
 
 	function getTrackStartSeconds(track: VideoTrack): number | null {
 		if (typeof track?.startAtSeconds === 'number' && Number.isFinite(track.startAtSeconds)) {
@@ -277,6 +323,7 @@
 	let cleanupAutoHide: (() => void) | null = null;
 	let cleanupProgressTracking: (() => void) | null = null;
 	let cleanupPlaybackComplete: (() => void) | null = null;
+	let cleanupSpotChaptersTrackEvents: (() => void) | null = null;
 	let controlsEl: HTMLElement | null = null;
 	let hideControlsTimer: ReturnType<typeof setTimeout> | null = null;
 	let controlsVisible = true;
@@ -370,7 +417,33 @@
 		nowPlayingSpotHref = null;
 	}
 
+	function setupSpotChaptersTrackEvents(trackEl: HTMLTrackElement) {
+		enableSpotChaptersTrack(trackEl);
+		const onLoad = () => {
+			enableSpotChaptersTrack(trackEl);
+		};
+		const onError = () => {
+			scheduleSpotChaptersRetry('error');
+		};
+		trackEl.addEventListener('load', onLoad);
+		trackEl.addEventListener('error', onError);
+		return () => {
+			trackEl.removeEventListener('load', onLoad);
+			trackEl.removeEventListener('error', onError);
+		};
+	}
+
+	$: if (browser && spotChaptersTrackEl && spotChaptersTrackSrc) {
+		cleanupSpotChaptersTrackEvents?.();
+		cleanupSpotChaptersTrackEvents = setupSpotChaptersTrackEvents(spotChaptersTrackEl);
+	} else if (!browser || !spotChaptersTrackEl || !spotChaptersTrackSrc) {
+		cleanupSpotChaptersTrackEvents?.();
+		cleanupSpotChaptersTrackEvents = null;
+	}
+
 	onDestroy(() => {
+		cleanupSpotChaptersTrackEvents?.();
+		cleanupSpotChaptersTrackEvents = null;
 		cleanupNowPlaying?.();
 		cleanupNowPlaying = null;
 		cleanupGestures?.();
@@ -1665,7 +1738,13 @@
 				<media-provider data-no-controls>
 					{#if spotChaptersTrackSrc}
 						{#key spotChaptersTrackSrc}
-							<track kind="chapters" label={m.tv_spots()} src={spotChaptersTrackSrc} default />
+							<track
+								bind:this={spotChaptersTrackEl}
+								kind="chapters"
+								label={m.tv_spots()}
+								src={spotChaptersTrackSrc}
+								default
+							/>
 						{/key}
 					{/if}
 				</media-provider>

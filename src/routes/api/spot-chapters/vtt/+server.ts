@@ -35,11 +35,15 @@ export const GET: RequestHandler = async ({ url }) => {
 			}
 		});
 	} catch {
+		// Important: do not cache an empty VTT when the backend temporarily fails.
+		// Otherwise CDNs/browsers can cache the "no chapters" response and chapters appear to
+		// randomly disappear for a while.
 		return new Response('WEBVTT\n\n', {
-			status: 200,
+			status: 503,
 			headers: {
 				'content-type': 'text/vtt; charset=utf-8',
-				'Cache-Control': 'public, max-age=60, s-maxage=300'
+				'Cache-Control': 'no-store',
+				'Retry-After': '5'
 			}
 		});
 	}

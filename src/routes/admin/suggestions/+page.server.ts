@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { requireAdmin } from '$lib/server/admin';
+import { invalidateContentCache } from '$lib/server/content-service';
 import {
 	applyMediaPatch,
 	applyNewEpisode,
@@ -107,6 +108,8 @@ export const actions: Actions = {
 			(suggestion as any).payload ??
 			{}) as any;
 
+		let didMutateContent = false;
+
 		try {
 			const kind = String((suggestion as any).kind ?? '');
 			if (kind === 'spot_chapter') {
@@ -153,6 +156,7 @@ export const actions: Actions = {
 					if (!Array.isArray(updated) || updated.length === 0) {
 						return fail(400, { message: 'Spot chapter not found for update' });
 					}
+					didMutateContent = true;
 				} else {
 					const { error: spotChapterError } = await (supabase as any)
 						.from('spot_chapters')
@@ -176,15 +180,22 @@ export const actions: Actions = {
 					if (spotChapterError) {
 						return fail(400, { message: spotChapterError.message });
 					}
+					didMutateContent = true;
 				}
 			} else if (kind === 'new_season') {
 				await applyNewSeason(supabase, mediaId, effectivePatch.season ?? effectivePatch);
+				didMutateContent = true;
 			} else if (kind === 'new_episode') {
 				await applyNewEpisode(supabase, mediaId, effectivePatch.episode ?? effectivePatch);
+				didMutateContent = true;
 			} else {
 				await applyMediaPatch(supabase, mediaId, effectivePatch);
+				didMutateContent = true;
 			}
 		} catch (err: any) {
+			if (didMutateContent) {
+				await invalidateContentCache();
+			}
 			return fail(400, { message: err?.message || 'Failed to apply suggestion' });
 		}
 
@@ -198,7 +209,16 @@ export const actions: Actions = {
 			})
 			.eq('id', id);
 
-		if (updateError) return fail(400, { message: updateError.message });
+		if (updateError) {
+			if (didMutateContent) {
+				await invalidateContentCache();
+			}
+			return fail(400, { message: updateError.message });
+		}
+
+		if (didMutateContent) {
+			await invalidateContentCache();
+		}
 		return { ok: true };
 	},
 

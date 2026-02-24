@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { isAdminUser } from '$lib/server/admin';
+import { invalidateContentCache } from '$lib/server/content-service';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import {
 	applyMediaPatch,
@@ -114,6 +115,7 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 	// Admin submissions: apply immediately and mark approved (skip the moderation queue).
 	if (isAdmin) {
 		const supabase = createSupabaseServiceClient();
+		let didMutateContent = false;
 		try {
 			if (payload) {
 				if (kind === 'spot_chapter') {
@@ -161,6 +163,7 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 						if (!Array.isArray(updated) || updated.length === 0) {
 							return json({ error: 'Spot chapter not found for update' }, { status: 400 });
 						}
+						didMutateContent = true;
 					} else {
 						const { error: spotChapterError } = await (supabase as any)
 							.from('spot_chapters')
@@ -181,6 +184,7 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 						if (spotChapterError) {
 							return json({ error: spotChapterError.message }, { status: 400 });
 						}
+						didMutateContent = true;
 					}
 				} else {
 					const effectivePatch: MediaPatch = payload as any;
@@ -190,14 +194,17 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 							mediaId,
 							(effectivePatch as any).season ?? effectivePatch
 						);
+						didMutateContent = true;
 					} else if (kind === 'new_episode') {
 						await applyNewEpisode(
 							supabase,
 							mediaId,
 							(effectivePatch as any).episode ?? effectivePatch
 						);
+						didMutateContent = true;
 					} else {
 						await applyMediaPatch(supabase, mediaId, effectivePatch);
+						didMutateContent = true;
 					}
 				}
 			}
@@ -211,9 +218,19 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 				})
 				.eq('id', suggestionId);
 			if (updateError) {
+				if (didMutateContent) {
+					await invalidateContentCache();
+				}
 				return json({ error: updateError.message }, { status: 400 });
 			}
+
+			if (didMutateContent) {
+				await invalidateContentCache();
+			}
 		} catch (err: any) {
+			if (didMutateContent) {
+				await invalidateContentCache();
+			}
 			return json({ error: err?.message || 'Failed to apply admin suggestion' }, { status: 400 });
 		}
 	}

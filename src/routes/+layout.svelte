@@ -876,6 +876,42 @@
 		{/if}
 	{/key}
 
+	{#if $page.url.pathname === '/' && !$page.error}
+		<footer class="border-t border-border/60 px-4 py-4 text-center text-[11px] text-muted-foreground/80">
+			<p class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+				<span>Made by</span>
+				<a
+					href={withUtm('https://instagram.com/the.maxest')}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="transition hover:text-foreground"
+				>
+					Max Seelig (@the.maxest)
+				</a>
+				<span aria-hidden="true">·</span>
+				<a
+					href={withUtm('https://maxmade.nl')}
+					target="_blank"
+					rel="noopener noreferrer"
+					title="MAXmade - Max Seelig"
+					class="inline-flex items-center opacity-90 transition hover:opacity-100"
+				>
+					<img src="/images/logo-MAXmade-dark.svg" alt="MAXmade" class="h-4 w-auto opacity-50 transition hover:opacity-100" />
+				</a>
+				<span aria-hidden="true">·</span>
+				<span>This site is powered by</span>
+				<a
+					href={withUtm('https://www.netlify.com/')}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="transition hover:text-foreground"
+				>
+					Netlify
+				</a>
+			</p>
+		</footer>
+	{/if}
+
 	{#if isNavigatingToStats}
 		<div class="pointer-events-none fixed inset-0 z-50 flex items-start justify-center pt-28">
 			<div

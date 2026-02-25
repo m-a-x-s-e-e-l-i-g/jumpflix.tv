@@ -1,5 +1,3 @@
-import { parseTimecodeToSeconds } from '$lib/utils/timecode';
-
 export type YouTubeTrackCandidate = {
 	startOffsetSeconds: number;
 	startTimecode?: string;
@@ -8,20 +6,6 @@ export type YouTubeTrackCandidate = {
 };
 
 export type YouTubeImportSource = 'youtube_chapters' | 'youtube_music' | 'mixed';
-
-function splitArtistTitle(raw: string): { artist?: string; title: string } {
-	const value = (raw || '').trim();
-	if (!value) return { title: '' };
-
-	const dash = value.split(/\s+[—–-]\s+/);
-	if (dash.length >= 2) {
-		const artist = dash[0].trim();
-		const title = dash.slice(1).join(' - ').trim();
-		return { artist: artist || undefined, title };
-	}
-
-	return { title: value };
-}
 
 function extractBalancedJson(html: string, marker: string): any | null {
 	const idx = html.indexOf(marker);
@@ -65,14 +49,6 @@ function extractBalancedJson(html: string, marker: string): any | null {
 	}
 
 	return null;
-}
-
-function extractYouTubePlayerResponse(html: string): any | null {
-	return (
-		extractBalancedJson(html, 'ytInitialPlayerResponse') ||
-		extractBalancedJson(html, 'var ytInitialPlayerResponse') ||
-		extractBalancedJson(html, 'window["ytInitialPlayerResponse"]')
-	);
 }
 
 function extractYouTubeInitialData(html: string): any | null {
@@ -236,37 +212,6 @@ function parseTrackCandidatesFromMusicInThisVideo(initialData: any): YouTubeTrac
 	return deduped;
 }
 
-function parseTrackCandidatesFromDescription(description: string): YouTubeTrackCandidate[] {
-	const lines = (description || '').split(/\r?\n/);
-	const candidates: YouTubeTrackCandidate[] = [];
-
-	for (const line of lines) {
-		const raw = line.trim();
-		if (!raw) continue;
-
-		const match = raw.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
-		if (!match) continue;
-
-		const timecode = match[1];
-		const rest = match[2];
-		const seconds = parseTimecodeToSeconds(timecode);
-		if (seconds === null) continue;
-
-		const { artist, title } = splitArtistTitle(rest);
-		if (!title) continue;
-
-		candidates.push({
-			startOffsetSeconds: seconds,
-			startTimecode: timecode,
-			title,
-			artist
-		});
-	}
-
-	candidates.sort((a, b) => a.startOffsetSeconds - b.startOffsetSeconds);
-	return candidates;
-}
-
 export async function fetchYouTubeTrackCandidates(videoId: string): Promise<{
 	candidates: YouTubeTrackCandidate[];
 	importSource: YouTubeImportSource | null;
@@ -285,39 +230,15 @@ export async function fetchYouTubeTrackCandidates(videoId: string): Promise<{
 	}
 	const html = await res.text();
 
-	const player = extractYouTubePlayerResponse(html);
-	const desc =
-		typeof player?.videoDetails?.shortDescription === 'string'
-			? player.videoDetails.shortDescription
-			: '';
-	const chapterCandidates = parseTrackCandidatesFromDescription(desc);
-
 	const initialData = extractYouTubeInitialData(html);
 	const musicCandidates = parseTrackCandidatesFromMusicInThisVideo(initialData);
 
-	const hasChapters = chapterCandidates.length > 0;
 	const hasMusic = musicCandidates.length > 0;
 
 	let importSource: YouTubeImportSource | null = null;
-	if (hasChapters && hasMusic) importSource = 'mixed';
-	else if (hasChapters) importSource = 'youtube_chapters';
-	else if (hasMusic) importSource = 'youtube_music';
+	if (hasMusic) importSource = 'youtube_music';
 
-	const combined: YouTubeTrackCandidate[] = [];
-	const seen = new Set<string>();
-	for (const cand of chapterCandidates) {
-		const key = `${normalizeKey(cand.artist || '')}|${normalizeKey(cand.title)}`;
-		seen.add(key);
-		combined.push(cand);
-	}
-	for (const cand of musicCandidates) {
-		const key = `${normalizeKey(cand.artist || '')}|${normalizeKey(cand.title)}`;
-		if (seen.has(key)) continue;
-		seen.add(key);
-		combined.push(cand);
-	}
-
-	combined.sort((a, b) => (a.startOffsetSeconds ?? 0) - (b.startOffsetSeconds ?? 0));
-
-	return { candidates: combined, importSource };
+	// Only use the "Music in this video" candidates for autodetection.
+	// (They are already de-duped inside `parseTrackCandidatesFromMusicInThisVideo`.)
+	return { candidates: musicCandidates, importSource };
 }

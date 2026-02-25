@@ -1,5 +1,6 @@
 import { parseTimecodeToSeconds } from '$lib/utils/timecode';
 import type { createSupabaseServiceClient } from '$lib/server/supabaseClient';
+import { bestEffortSearchSpotifyTrack, hasSpotifyCredentials } from '$lib/server/spotify.server';
 
 function uniqStrings(values: string[]): string[] {
 	const out: string[] = [];
@@ -140,13 +141,14 @@ export async function applyMediaPatch(
 		for (const t of tracks) {
 			const action = t?.action === 'remove' ? 'remove' : 'add';
 			const operation = String(t?.operation ?? t?.op ?? '').trim().toLowerCase();
-			const spotifyUrl = String(t?.spotifyUrl ?? t?.spotify_url ?? '').trim();
-			const spotifyTrackId = extractSpotifyTrackId(
+			let spotifyUrl = String(t?.spotifyUrl ?? t?.spotify_url ?? '').trim();
+			let spotifyTrackId = extractSpotifyTrackId(
 				String(t?.spotifyTrackId ?? t?.spotify_track_id ?? spotifyUrl)
 			);
-			if (!spotifyTrackId) throw new Error('Missing Spotify track id/url in track patch');
 
 			if (action === 'remove') {
+				if (!spotifyTrackId) throw new Error('Missing Spotify track id/url in track patch');
+
 				const startAtSecondsRaw =
 					t?.startAtSeconds ??
 					t?.start_at_seconds ??
@@ -188,6 +190,23 @@ export async function applyMediaPatch(
 				);
 			}
 
+			let resolvedSpotifyTrack:
+				| { id: string; url: string; title: string; artist: string; durationMs?: number }
+				| null = null;
+			if (!spotifyTrackId) {
+				if (!hasSpotifyCredentials()) {
+					throw new Error(
+						'Missing Spotify track id/url in track patch (and Spotify API credentials are not configured)'
+					);
+				}
+				resolvedSpotifyTrack = await bestEffortSearchSpotifyTrack({ title, artist });
+				if (!resolvedSpotifyTrack?.id) {
+					throw new Error('Could not resolve Spotify track from title/artist');
+				}
+				spotifyTrackId = resolvedSpotifyTrack.id;
+				spotifyUrl = spotifyUrl || resolvedSpotifyTrack.url;
+			}
+
 			const startAtSecondsRaw =
 				t?.startAtSeconds ??
 				t?.start_at_seconds ??
@@ -219,8 +238,9 @@ export async function applyMediaPatch(
 				{
 					spotify_track_id: spotifyTrackId,
 					spotify_url: spotifyUrl || `https://open.spotify.com/track/${spotifyTrackId}`,
-					title,
-					artist
+					title: resolvedSpotifyTrack?.title ?? title,
+					artist: resolvedSpotifyTrack?.artist ?? artist,
+					duration_ms: resolvedSpotifyTrack?.durationMs ?? null
 				} as any,
 				{ onConflict: 'spotify_track_id' }
 			);

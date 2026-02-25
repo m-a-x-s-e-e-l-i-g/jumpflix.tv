@@ -184,3 +184,74 @@ export async function bestEffortSearchSpotifyTrack(params: {
 
 	return null;
 }
+
+export async function searchSpotifyTracks(params: {
+	title: string;
+	artist?: string;
+	limit?: number;
+}): Promise<SpotifyTrack[]> {
+	const title = (params.title || '').trim();
+	const artist = (params.artist || '').trim();
+	const limitRaw = typeof params.limit === 'number' ? params.limit : Number(params.limit);
+	const limit = Number.isFinite(limitRaw) ? Math.min(10, Math.max(1, Math.floor(limitRaw))) : 10;
+	if (!title) return [];
+
+	const token = await getSpotifyAccessToken();
+
+	const runQuery = async (qParts: string[]): Promise<SpotifyTrack[]> => {
+		const url = new URL('https://api.spotify.com/v1/search');
+		url.searchParams.set('type', 'track');
+		url.searchParams.set('limit', String(limit));
+		url.searchParams.set('q', qParts.join(' '));
+
+		const res = await fetch(url.toString(), {
+			headers: { authorization: `Bearer ${token}` }
+		});
+
+		if (!res.ok) {
+			const text = await res.text();
+			throw new Error(`Spotify search failed: ${res.status} ${text}`);
+		}
+
+		const json: any = await res.json();
+		const items: any[] = json?.tracks?.items ?? [];
+		const out: SpotifyTrack[] = [];
+		for (const item of items) {
+			const id = String(item?.id ?? '').trim();
+			if (!id) continue;
+			const artists = Array.isArray(item?.artists)
+				? item.artists
+						.map((a: any) => a?.name)
+						.filter(Boolean)
+						.join(', ')
+				: '';
+			out.push({
+				id,
+				url: String(item?.external_urls?.spotify ?? `https://open.spotify.com/track/${id}`),
+				title: String(item?.name ?? '').trim(),
+				artist: artists,
+				durationMs: typeof item?.duration_ms === 'number' ? item.duration_ms : undefined
+			});
+		}
+		return out;
+	};
+
+	const qParts: string[] = [];
+	qParts.push(`track:${title}`);
+	if (artist) qParts.push(`artist:${artist}`);
+
+	let results = await runQuery(qParts);
+	if (!results.length && artist) {
+		results = await runQuery([`track:${title}`]);
+	}
+
+	const seen = new Set<string>();
+	const deduped: SpotifyTrack[] = [];
+	for (const t of results) {
+		const key = String(t?.id ?? '').trim();
+		if (!key || seen.has(key)) continue;
+		seen.add(key);
+		deduped.push(t);
+	}
+	return deduped;
+}

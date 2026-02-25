@@ -92,6 +92,18 @@
 	let trackStartTimecode = $state('');
 	let trackStartAtSeconds = $state<number | ''>('');
 
+	type SpotifySearchResult = {
+		id: string;
+		url: string;
+		title: string;
+		artist: string;
+		durationMs?: number;
+	};
+	let spotifySearchLoading = $state(false);
+	let spotifySearchError = $state('');
+	let spotifySearchResults = $state<SpotifySearchResult[]>([]);
+	let spotifySelectedTrackId = $state('');
+
 	const FACET_TYPE_OPTIONS: FacetType[] = [
 		'fiction',
 		'documentary',
@@ -333,6 +345,11 @@
 			trackStartTimecode = '';
 			trackStartAtSeconds = '';
 
+			spotifySearchLoading = false;
+			spotifySearchError = '';
+			spotifySearchResults = [];
+			spotifySelectedTrackId = '';
+
 			initial = {
 				posterUrl: normString(selected.thumbnail),
 				description: normString(selected.description),
@@ -422,6 +439,9 @@
 
 		const nextUrl = normString(selectedTrack?.song?.spotifyUrl);
 		trackSpotifyUrl = nextUrl;
+		spotifySelectedTrackId = '';
+		spotifySearchResults = [];
+		spotifySearchError = '';
 		trackTitle = normString(selectedTrack?.song?.title);
 		trackArtist = normString(selectedTrack?.song?.artist);
 		trackStartTimecode = normString(selectedTrack?.startTimecode);
@@ -440,6 +460,54 @@
 		if (typeof parsed === 'number' && Number.isFinite(parsed) && parsed >= 0) {
 			trackStartAtSeconds = parsed;
 		}
+	});
+
+	async function searchSpotifyForTrack() {
+		if (!browser) return;
+		spotifySearchError = '';
+		spotifySearchResults = [];
+		spotifySelectedTrackId = '';
+
+		const title = trackTitle.trim();
+		const artist = trackArtist.trim();
+		if (!title) {
+			spotifySearchError = 'Enter a title to search.';
+			return;
+		}
+
+		spotifySearchLoading = true;
+		try {
+			const res = await fetch('/api/spotify/search-track', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ title, artist: artist || undefined, limit: 10 })
+			});
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				throw new Error(data?.error || 'Spotify search failed');
+			}
+			spotifySearchResults = Array.isArray(data?.tracks) ? data.tracks : [];
+			if (!spotifySearchResults.length) {
+				spotifySearchError = 'No results found.';
+			}
+		} catch (err: any) {
+			spotifySearchError = err?.message || 'Spotify search failed';
+		} finally {
+			spotifySearchLoading = false;
+		}
+	}
+
+	$effect(() => {
+		if (!open) return;
+		if (kind !== 'tracks') return;
+		if (trackAction !== 'add') return;
+		if (!spotifySelectedTrackId) return;
+		const picked = spotifySearchResults.find((t) => String(t?.id) === spotifySelectedTrackId);
+		if (!picked) return;
+		trackSpotifyUrl = normString(picked.url);
+		// Keep the form aligned with the selected Spotify entry.
+		trackTitle = normString(picked.title) || trackTitle;
+		trackArtist = normString(picked.artist) || trackArtist;
 	});
 
 	let removeSelectedTrack: any = $derived(
@@ -1259,6 +1327,53 @@
 												class={editedInputClass(Boolean(trackTitle.trim()))}
 											/>
 										</label>
+										<div class="sm:col-span-2 flex flex-wrap items-center gap-2">
+											<button
+												type="button"
+												disabled={spotifySearchLoading || !trackTitle.trim()}
+												class="inline-flex cursor-pointer items-center justify-center rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-xs font-medium text-white/80 transition hover:bg-white/15 disabled:opacity-60"
+												onclick={searchSpotifyForTrack}
+											>
+												{spotifySearchLoading ? 'Searching…' : 'Search Spotify'}
+											</button>
+											{#if spotifySearchError}
+												<div class="text-xs text-white/60">{spotifySearchError}</div>
+											{/if}
+										</div>
+
+										{#if spotifySearchResults.length}
+											<div class="sm:col-span-2 space-y-2">
+												<div class="text-xs text-white/70">Select the correct Spotify track</div>
+												<div class="max-h-56 overflow-auto rounded-lg border border-white/10 bg-black/20">
+													{#each spotifySearchResults as r (r.id)}
+														<label class="flex items-start gap-3 border-b border-white/5 px-3 py-2 last:border-b-0 hover:bg-white/5">
+															<input
+																class="mt-1"
+																type="radio"
+																bind:group={spotifySelectedTrackId}
+																value={r.id}
+															/>
+															<div class="min-w-0">
+																<div class="truncate text-sm text-white">{r.artist} — {r.title}</div>
+																<div class="truncate text-xs text-white/50">
+																	<a
+																		href={r.url}
+																		target="_blank"
+																		rel="noreferrer"
+																		class="hover:underline"
+																	>
+																		{r.url}
+																	</a>
+																</div>
+															</div>
+														</label>
+													{/each}
+												</div>
+												<div class="text-[11px] text-white/50">
+													Selected track will fill the Spotify URL.
+												</div>
+											</div>
+										{/if}
 										<label class="space-y-1">
 											<span class="text-xs text-white/70">Start timecode (mm:ss)</span>
 											<input

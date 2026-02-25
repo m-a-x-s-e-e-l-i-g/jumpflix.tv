@@ -85,8 +85,8 @@
 	// Track suggestion (single-entry, MVP)
 	let trackAction: 'add' | 'remove' | 'edit' = $state('add');
 	let trackSpotifyUrl = $state('');
-	let trackRemoveSpotifyUrl = $state('');
-	let trackEditSpotifyUrl = $state('');
+	let trackRemoveChoice = $state('');
+	let trackEditChoice = $state('');
 	let trackTitle = $state('');
 	let trackArtist = $state('');
 	let trackStartTimecode = $state('');
@@ -163,6 +163,51 @@
 
 	function normString(value: unknown): string {
 		return String(value ?? '').trim();
+	}
+
+	type TrackChoice = {
+		spotifyUrl: string;
+		startAtSeconds: number | null;
+		startTimecode: string | null;
+	};
+
+	function trackChoiceFromTrack(t: any): TrackChoice {
+		const spotifyUrl = normString(t?.song?.spotifyUrl);
+		const startAtSecondsRaw =
+			typeof t?.startAtSeconds === 'number' && Number.isFinite(t.startAtSeconds)
+				? Math.max(0, Math.floor(t.startAtSeconds))
+				: null;
+		const startTimecode = normString(t?.startTimecode) || null;
+		return { spotifyUrl, startAtSeconds: startAtSecondsRaw, startTimecode };
+	}
+
+	function trackChoiceValue(t: any): string {
+		return JSON.stringify(trackChoiceFromTrack(t));
+	}
+
+	function safeParseTrackChoice(value: string): TrackChoice | null {
+		const raw = normString(value);
+		if (!raw) return null;
+		try {
+			const parsed = JSON.parse(raw);
+			const spotifyUrl = normString(parsed?.spotifyUrl);
+			if (!spotifyUrl) return null;
+			const sas = parsed?.startAtSeconds;
+			const startAtSeconds =
+				typeof sas === 'number' && Number.isFinite(sas) ? Math.max(0, Math.floor(sas)) : null;
+			const stc = normString(parsed?.startTimecode) || null;
+			return { spotifyUrl, startAtSeconds, startTimecode: stc };
+		} catch {
+			return null;
+		}
+	}
+
+	function trackTimeLabel(t: any): string {
+		const tc = normString(t?.startTimecode);
+		if (tc) return tc;
+		const s = t?.startAtSeconds;
+		if (typeof s === 'number' && Number.isFinite(s)) return `${Math.max(0, Math.floor(s))}s`;
+		return '—';
 	}
 
 	function normList(values: unknown): string[] {
@@ -281,8 +326,8 @@
 
 			trackAction = 'add';
 			trackSpotifyUrl = '';
-			trackRemoveSpotifyUrl = normString(selected.tracks?.[0]?.song?.spotifyUrl);
-			trackEditSpotifyUrl = normString(selected.tracks?.[0]?.song?.spotifyUrl);
+			trackRemoveChoice = selected.tracks?.length ? trackChoiceValue(selected.tracks?.[0]) : '';
+			trackEditChoice = selected.tracks?.length ? trackChoiceValue(selected.tracks?.[0]) : '';
 			trackTitle = '';
 			trackArtist = '';
 			trackStartTimecode = '';
@@ -366,16 +411,16 @@
 		const list = selected?.tracks ?? [];
 		if (!list.length) return;
 
-		const currentKey = normString(trackEditSpotifyUrl);
-		const selectedTrack =
-			list.find((t: any) => normString(t?.song?.spotifyUrl) === currentKey) ?? list[0];
+		const currentKey = normString(trackEditChoice);
+		const selectedTrack = list.find((t: any) => trackChoiceValue(t) === currentKey) ?? list[0];
 		if (!selectedTrack) return;
 
-		const nextUrl = normString(selectedTrack?.song?.spotifyUrl);
-		if (nextUrl && normString(trackEditSpotifyUrl) !== nextUrl) {
-			trackEditSpotifyUrl = nextUrl;
+		const nextChoice = trackChoiceValue(selectedTrack);
+		if (nextChoice && normString(trackEditChoice) !== nextChoice) {
+			trackEditChoice = nextChoice;
 		}
 
+		const nextUrl = normString(selectedTrack?.song?.spotifyUrl);
 		trackSpotifyUrl = nextUrl;
 		trackTitle = normString(selectedTrack?.song?.title);
 		trackArtist = normString(selectedTrack?.song?.artist);
@@ -396,6 +441,30 @@
 			trackStartAtSeconds = parsed;
 		}
 	});
+
+	let removeSelectedTrack: any = $derived(
+		String(kind) === 'tracks'
+			? (selected?.tracks ?? []).find(
+					(t: any) => trackChoiceValue(t) === normString(trackRemoveChoice)
+				) ?? null
+			: null
+	);
+	let editSelectedTrack: any = $derived(
+		String(kind) === 'tracks'
+			? (selected?.tracks ?? []).find((t: any) => trackChoiceValue(t) === normString(trackEditChoice)) ??
+				null
+			: null
+	);
+	let removeSelectedLabel: string = $derived(
+		removeSelectedTrack
+			? `${normString(removeSelectedTrack?.song?.artist)} — ${normString(removeSelectedTrack?.song?.title)} @ ${trackTimeLabel(removeSelectedTrack)}`
+			: '—'
+	);
+	let editSelectedLabel: string = $derived(
+		editSelectedTrack
+			? `${normString(editSelectedTrack?.song?.artist)} — ${normString(editSelectedTrack?.song?.title)} @ ${trackTimeLabel(editSelectedTrack)}`
+			: '—'
+	);
 
 	function buildPayload(): any {
 		const payload: any = {};
@@ -490,32 +559,66 @@
 		}
 
 		if (kind === 'tracks') {
+			const removeChoice = safeParseTrackChoice(trackRemoveChoice);
+			const editChoice = safeParseTrackChoice(trackEditChoice);
+			const choiceUrl =
+				trackAction === 'remove'
+					? normString(removeChoice?.spotifyUrl)
+					: trackAction === 'edit'
+						? normString(editChoice?.spotifyUrl)
+						: '';
 			const effectiveSpotifyUrl =
 				trackAction === 'remove'
-					? normString(trackRemoveSpotifyUrl) || normString(trackSpotifyUrl)
+					? choiceUrl || normString(trackSpotifyUrl)
 					: trackAction === 'edit'
-						? normString(trackEditSpotifyUrl) || normString(trackSpotifyUrl)
+						? choiceUrl || normString(trackSpotifyUrl)
 						: normString(trackSpotifyUrl);
 
 			const action = trackAction === 'remove' ? 'remove' : 'add';
 
 			let title = trackTitle.trim();
 			let artist = trackArtist.trim();
+			let prevStartAtSeconds: number | undefined = undefined;
+			let prevStartTimecode: string | undefined = undefined;
 			if (trackAction === 'edit') {
 				const t = (selected?.tracks ?? []).find(
-					(x: any) => normString(x?.song?.spotifyUrl) === normString(effectiveSpotifyUrl)
+					(x: any) => trackChoiceValue(x) === normString(trackEditChoice)
 				);
 				title = title || normString(t?.song?.title);
 				artist = artist || normString(t?.song?.artist);
+				prevStartAtSeconds =
+					typeof t?.startAtSeconds === 'number' && Number.isFinite(t.startAtSeconds)
+						? t.startAtSeconds
+						: undefined;
+				prevStartTimecode = normString(t?.startTimecode) || undefined;
+			}
+
+			let startTimecodeForPayload = trackStartTimecode.trim() || undefined;
+			let startAtSecondsForPayload =
+				typeof trackStartAtSeconds === 'number' ? trackStartAtSeconds : undefined;
+			if (trackAction === 'remove') {
+				const tr = (selected?.tracks ?? []).find(
+					(x: any) => trackChoiceValue(x) === normString(trackRemoveChoice)
+				);
+				startTimecodeForPayload = normString(tr?.startTimecode) || undefined;
+				startAtSecondsForPayload =
+					typeof tr?.startAtSeconds === 'number' && Number.isFinite(tr.startAtSeconds)
+						? tr.startAtSeconds
+						: undefined;
 			}
 
 			const t: any = {
 				action,
+				operation: trackAction === 'edit' ? 'edit' : undefined,
 				spotifyUrl: effectiveSpotifyUrl || undefined,
 				title: title || undefined,
 				artist: artist || undefined,
-				startTimecode: trackStartTimecode.trim() || undefined,
-				startAtSeconds: typeof trackStartAtSeconds === 'number' ? trackStartAtSeconds : undefined
+				startTimecode: startTimecodeForPayload,
+				startAtSeconds: startAtSecondsForPayload,
+				previousStartAtSeconds:
+					trackAction === 'edit' ? (prevStartAtSeconds ?? undefined) : undefined,
+				previousStartTimecode:
+					trackAction === 'edit' ? (prevStartTimecode ?? undefined) : undefined
 			};
 			payload.track = t;
 		}
@@ -1047,32 +1150,29 @@
 											<div
 												class="max-h-56 overflow-auto rounded-lg border border-white/10 bg-black/20"
 											>
-												{#each selected.tracks as t (t.song.spotifyTrackId)}
+												{#each selected.tracks as t (trackChoiceValue(t))}
 													<label
 														class="flex items-start gap-3 border-b border-white/5 px-3 py-2 last:border-b-0 hover:bg-white/5"
 													>
 														<input
 															class="mt-1"
 															type="radio"
-															bind:group={trackRemoveSpotifyUrl}
-															value={t.song.spotifyUrl}
+															bind:group={trackRemoveChoice}
+															value={trackChoiceValue(t)}
 														/>
 														<div class="min-w-0">
 															<div class="truncate text-sm text-white">
 																{t.song.artist} — {t.song.title}
 															</div>
 															<div class="text-xs text-white/50">
-																{t.startTimecode ??
-																	(typeof t.startAtSeconds === 'number'
-																		? `${t.startAtSeconds}s`
-																		: '—')}
+																{trackTimeLabel(t)}
 															</div>
 														</div>
 													</label>
 												{/each}
 											</div>
 											<div class="text-xs text-white/60">
-												Selected: <span class="text-white/80">{trackRemoveSpotifyUrl || '—'}</span>
+												Selected: <span class="text-white/80">{removeSelectedLabel}</span>
 											</div>
 										</div>
 									{:else}
@@ -1095,32 +1195,29 @@
 											<div
 												class="max-h-56 overflow-auto rounded-lg border border-white/10 bg-black/20"
 											>
-												{#each selected.tracks as t (t.song.spotifyTrackId)}
+												{#each selected.tracks as t (trackChoiceValue(t))}
 													<label
 														class="flex items-start gap-3 border-b border-white/5 px-3 py-2 last:border-b-0 hover:bg-white/5"
 													>
 														<input
 															class="mt-1"
 															type="radio"
-															bind:group={trackEditSpotifyUrl}
-															value={t.song.spotifyUrl}
+															bind:group={trackEditChoice}
+															value={trackChoiceValue(t)}
 														/>
 														<div class="min-w-0">
 															<div class="truncate text-sm text-white">
 																{t.song.artist} — {t.song.title}
 															</div>
 															<div class="text-xs text-white/50">
-																{t.startTimecode ??
-																	(typeof t.startAtSeconds === 'number'
-																		? `${t.startAtSeconds}s`
-																		: '—')}
+																{trackTimeLabel(t)}
 															</div>
 														</div>
 													</label>
 												{/each}
 											</div>
 											<div class="text-xs text-white/60">
-												Selected: <span class="text-white/80">{trackEditSpotifyUrl || '—'}</span>
+												Selected: <span class="text-white/80">{editSelectedLabel}</span>
 											</div>
 										</div>
 

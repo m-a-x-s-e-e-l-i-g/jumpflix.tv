@@ -139,6 +139,7 @@ export async function applyMediaPatch(
 	if (tracks.length && (media as any).type === 'movie') {
 		for (const t of tracks) {
 			const action = t?.action === 'remove' ? 'remove' : 'add';
+			const operation = String(t?.operation ?? t?.op ?? '').trim().toLowerCase();
 			const spotifyUrl = String(t?.spotifyUrl ?? t?.spotify_url ?? '').trim();
 			const spotifyTrackId = extractSpotifyTrackId(
 				String(t?.spotifyTrackId ?? t?.spotify_track_id ?? spotifyUrl)
@@ -146,6 +147,18 @@ export async function applyMediaPatch(
 			if (!spotifyTrackId) throw new Error('Missing Spotify track id/url in track patch');
 
 			if (action === 'remove') {
+				const startAtSecondsRaw =
+					t?.startAtSeconds ??
+					t?.start_at_seconds ??
+					t?.startOffsetSeconds ??
+					t?.start_offset_seconds;
+				const startAtSeconds = Number.isFinite(Number(startAtSecondsRaw))
+					? Math.max(0, Math.floor(Number(startAtSecondsRaw)))
+					: null;
+				const startTimecode = String(t?.startTimecode ?? t?.start_timecode ?? '').trim() || null;
+				const parsedFromTc = startTimecode ? parseTimecodeToSeconds(startTimecode) : null;
+				const effectiveOffset = startAtSeconds ?? parsedFromTc;
+
 				const { data: song, error: songErr } = await supabase
 					.from('songs')
 					.select('id')
@@ -153,11 +166,15 @@ export async function applyMediaPatch(
 					.maybeSingle();
 				if (songErr) throw new Error(songErr.message);
 				if (song?.id) {
-					const { error: delErr } = await supabase
+					let del = supabase
 						.from('video_songs')
 						.delete()
 						.eq('video_id', mediaId)
 						.eq('song_id', song.id);
+					if (typeof effectiveOffset === 'number' && Number.isFinite(effectiveOffset)) {
+						del = del.eq('start_offset_seconds', effectiveOffset);
+					}
+					const { error: delErr } = await del;
 					if (delErr) throw new Error(delErr.message);
 				}
 				continue;
@@ -185,6 +202,19 @@ export async function applyMediaPatch(
 			if (effectiveOffset === null)
 				throw new Error('Track add requires start offset seconds or a valid timecode');
 
+			const prevStartAtSecondsRaw =
+				t?.previousStartAtSeconds ??
+				t?.previous_start_at_seconds ??
+				t?.previousStartOffsetSeconds ??
+				t?.previous_start_offset_seconds;
+			const prevStartAtSeconds = Number.isFinite(Number(prevStartAtSecondsRaw))
+				? Math.max(0, Math.floor(Number(prevStartAtSecondsRaw)))
+				: null;
+			const prevStartTimecode =
+				String(t?.previousStartTimecode ?? t?.previous_start_timecode ?? '').trim() || null;
+			const prevParsedFromTc = prevStartTimecode ? parseTimecodeToSeconds(prevStartTimecode) : null;
+			const prevEffectiveOffset = prevStartAtSeconds ?? prevParsedFromTc;
+
 			const { error: upsertSongErr } = await supabase.from('songs').upsert(
 				{
 					spotify_track_id: spotifyTrackId,
@@ -203,6 +233,55 @@ export async function applyMediaPatch(
 				.maybeSingle();
 			if (songErr) throw new Error(songErr.message);
 			if (!song?.id) throw new Error('Failed to resolve song id');
+
+			// If this is an edit (timestamp change), update the existing row instead of inserting a new one.
+			// With duplicates enabled, upserting on (video_id,song_id,start_offset_seconds) would otherwise
+			// create a second entry when the timestamp changes.
+			if (operation === 'edit') {
+				if (typeof prevEffectiveOffset === 'number' && Number.isFinite(prevEffectiveOffset)) {
+					const { data: updated, error: updateErr } = await supabase
+						.from('video_songs')
+						.update({
+							start_offset_seconds: effectiveOffset,
+							start_timecode: startTimecode,
+							source: 'manual'
+						} as any)
+						.eq('video_id', mediaId)
+						.eq('song_id', song.id)
+						.eq('start_offset_seconds', prevEffectiveOffset)
+						.select('id');
+					if (updateErr) throw new Error(updateErr.message);
+					if (Array.isArray(updated) && updated.length > 0) {
+						continue;
+					}
+				} else {
+					const { data: rows, error: fetchRowsErr } = await supabase
+						.from('video_songs')
+						.select('id')
+						.eq('video_id', mediaId)
+						.eq('song_id', song.id)
+						.limit(2);
+					if (fetchRowsErr) throw new Error(fetchRowsErr.message);
+					if (Array.isArray(rows) && rows.length === 1) {
+						const { error: updateByIdErr } = await supabase
+							.from('video_songs')
+							.update({
+								start_offset_seconds: effectiveOffset,
+								start_timecode: startTimecode,
+								source: 'manual'
+							} as any)
+							.eq('id', (rows[0] as any).id);
+						if (updateByIdErr) throw new Error(updateByIdErr.message);
+						continue;
+					}
+					if (Array.isArray(rows) && rows.length > 1) {
+						throw new Error(
+							'Track edit is ambiguous (multiple matching track entries). Include previousStartAtSeconds/previousStartTimecode in the payload.'
+						);
+					}
+				}
+				// If we couldn't find a row to update, fall back to add behavior.
+			}
 
 			const { error: upsertVideoSongErr } = await supabase.from('video_songs').upsert(
 				{

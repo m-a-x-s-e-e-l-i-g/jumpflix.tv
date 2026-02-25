@@ -61,7 +61,7 @@
 {#if Array.isArray(sortedTracks) && sortedTracks.length}
 	<div class={`space-y-2 ${className}`.trim()}>
 		<ul class="space-y-2">
-			{#each sortedTracks as t (t.song.spotifyTrackId)}
+			{#each sortedTracks as t (`${String(t?.song?.spotifyTrackId ?? '')}|${String(t?.startAtSeconds ?? '')}`)}
 				{@const startLabel = getTrackStartLabel(t)}
 				<li
 					class="flex items-center justify-between gap-3 rounded-lg border border-l-2 border-gray-700/50 border-l-[#1DB954]/50 bg-gray-900/30 px-3 py-2"

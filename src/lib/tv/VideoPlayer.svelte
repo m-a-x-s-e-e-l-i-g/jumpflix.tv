@@ -2376,7 +2376,7 @@
 		transform: translateY(-50%);
 		display: flex;
 		align-items: center;
-		gap: 2px;
+		gap: 0;
 		inline-size: 100%;
 		block-size: var(--media-slider-track-height, 6px);
 		border-radius: 999px;

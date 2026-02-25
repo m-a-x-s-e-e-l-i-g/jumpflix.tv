@@ -246,14 +246,8 @@
 			<div class="space-y-3">
 				<div class="overflow-hidden rounded-2xl border border-border bg-background/40">
 					<div class="aspect-video">
-						<video
-							src="/images/parkour.mp4"
-							autoplay
-							muted
-							loop
-							playsinline
-							class="h-full w-full object-cover"
-						>
+						<video autoplay muted loop playsinline preload="metadata" class="h-full w-full object-cover">
+							<source src="/images/parkour.mp4" type="video/mp4" />
 						</video>
 					</div>
 				</div>

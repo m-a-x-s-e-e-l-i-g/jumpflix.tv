@@ -16,6 +16,9 @@
 /images/*
   Cache-Control: public, max-age=31536000, immutable
 
+/images/*.mp4
+  Content-Type: video/mp4
+
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
 

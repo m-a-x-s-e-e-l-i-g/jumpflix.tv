@@ -48,7 +48,7 @@ export async function upsertVideoSong(
 			source: params.source,
 			import_source: params.importSource ?? null
 		},
-		{ onConflict: 'video_id,song_id' }
+			{ onConflict: 'video_id,song_id,start_offset_seconds' }
 	);
 
 	if (error) throw new Error(`Failed to upsert video song: ${error.message}`);

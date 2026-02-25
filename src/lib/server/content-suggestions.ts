@@ -212,7 +212,7 @@ export async function applyMediaPatch(
 					start_timecode: startTimecode,
 					source: 'manual'
 				} as any,
-				{ onConflict: 'video_id,song_id' }
+				{ onConflict: 'video_id,song_id,start_offset_seconds' }
 			);
 			if (upsertVideoSongErr) throw new Error(upsertVideoSongErr.message);
 		}

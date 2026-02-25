@@ -60,7 +60,7 @@ export async function importSpotifyTracklistFromYouTube(params: {
 					source: 'automation',
 					import_source: importSource
 				},
-				{ onConflict: 'video_id,song_id' }
+				{ onConflict: 'video_id,song_id,start_offset_seconds' }
 			);
 			if (videoSongErr) throw new Error(videoSongErr.message);
 

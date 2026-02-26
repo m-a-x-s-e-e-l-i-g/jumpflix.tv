@@ -18,6 +18,7 @@
 		DialogTitle
 	} from '$lib/components/ui/dialog';
 	import * as m from '$lib/paraglide/messages';
+	import { browser } from '$app/environment';
 
 	interface Props {
 		selectedFacets: Writable<SelectedFacets>;
@@ -123,6 +124,25 @@
 	});
 
 	let isOpen = $state(false);
+	let renderFilters = $state(false);
+
+	$effect(() => {
+		if (!isOpen) {
+			renderFilters = false;
+			return;
+		}
+
+		if (!browser) {
+			renderFilters = true;
+			return;
+		}
+
+		renderFilters = false;
+		const raf = requestAnimationFrame(() => {
+			renderFilters = true;
+		});
+		return () => cancelAnimationFrame(raf);
+	});
 
 	function toggleFacet(category: keyof SelectedFacets, value: string) {
 		selectedFacets.update((current) => {
@@ -191,30 +211,32 @@
 			{/if}
 		</div>
 
-		<div class="filter-categories">
-			{#each Object.entries(facetCategories) as [categoryKey, category]}
-				<div class="filter-category">
-					<h4 class="category-label">{category.label}</h4>
-					<div class="facet-chips">
-						{#each category.options as option}
-							{@const isSelected = isFacetSelected(
-								categoryKey as keyof SelectedFacets,
-								option.value
-							)}
-							<button
-								class="facet-chip"
-								class:selected={isSelected}
-								onclick={() => toggleFacet(categoryKey as keyof SelectedFacets, option.value)}
-								aria-pressed={isSelected}
-							>
-								<span class="chip-emoji">{option.emoji}</span>
-								<span class="chip-label">{option.label}</span>
-							</button>
-						{/each}
+		{#if renderFilters}
+			<div class="filter-categories">
+				{#each Object.entries(facetCategories) as [categoryKey, category]}
+					<div class="filter-category">
+						<h4 class="category-label">{category.label}</h4>
+						<div class="facet-chips">
+							{#each category.options as option}
+								{@const isSelected = isFacetSelected(
+									categoryKey as keyof SelectedFacets,
+									option.value
+								)}
+								<button
+									class="facet-chip"
+									class:selected={isSelected}
+									onclick={() => toggleFacet(categoryKey as keyof SelectedFacets, option.value)}
+									aria-pressed={isSelected}
+								>
+									<span class="chip-emoji">{option.emoji}</span>
+									<span class="chip-label">{option.label}</span>
+								</button>
+							{/each}
+						</div>
 					</div>
-				</div>
-			{/each}
-		</div>
+				{/each}
+			</div>
+		{/if}
 	</DialogContent>
 </DialogRoot>
 

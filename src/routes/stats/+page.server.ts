@@ -54,28 +54,28 @@ export const load = async ({ parent, setHeaders }) => {
 		return null;
 	}
 
-	const [overviewRes, activityRes, ratingsDistRes, topMediaRes] = await Promise.all([
+	const [overviewRes, activityRes, ratingsDistRes, topMediaRes, topContributorsRes] =
+		await Promise.all([
 		supabase.rpc('admin_stats_overview'),
 		supabase.rpc('admin_watch_activity', { days: 30 }),
 		supabase.rpc('admin_ratings_distribution'),
-		supabase.rpc('admin_top_watched_media', { limit_n: 10 })
+		supabase.rpc('admin_top_watched_media', { limit_n: 10 }),
+		(supabase as any).rpc('admin_top_contributors', { limit_n: 10 })
 	]);
 
 	const rpcErrors = [
 		overviewRes.error,
 		activityRes.error,
 		ratingsDistRes.error,
-		topMediaRes.error
+		topMediaRes.error,
+		topContributorsRes.error
 	].filter((e): e is NonNullable<typeof e> => Boolean(e));
 	if (rpcErrors.length > 0) {
 		const message = rpcErrors.map((e) => e.message).join(' | ');
-		if (
-			message.includes('Could not find the function') ||
-			message.includes('admin_stats_overview')
-		) {
+		if (message.includes('Could not find the function')) {
 			throw error(
 				500,
-				'Missing stats SQL functions in Supabase. Apply the migration supabase/migrations/20260128000000_add_admin_stats_functions.sql to your Supabase project.'
+				'Missing stats SQL functions in Supabase. Apply these migrations to your Supabase project: supabase/migrations/20260128000000_add_admin_stats_functions.sql, supabase/migrations/20260213000001_add_review_stats.sql, supabase/migrations/20260226000000_add_admin_top_contributors.sql, supabase/migrations/20260226000001_update_admin_top_contributors_include_suggestions.sql.'
 			);
 		}
 		throw error(500, message);
@@ -376,6 +376,28 @@ export const load = async ({ parent, setHeaders }) => {
 		};
 	});
 
+	type TopContributorRpcRow = {
+		user_id: string;
+		username: string;
+		ratings_count: number;
+		reviews_count: number;
+		approved_suggestions_count: number;
+		approved_spot_suggestions_count: number;
+		score: number;
+	};
+
+	const topContributors = (
+		((topContributorsRes.data as any[]) ?? []) as TopContributorRpcRow[]
+	).map((row) => ({
+		user_id: String(row.user_id ?? ''),
+		username: String(row.username ?? 'User'),
+		ratings_count: Number(row.ratings_count) || 0,
+		reviews_count: Number(row.reviews_count) || 0,
+		approved_suggestions_count: Number(row.approved_suggestions_count) || 0,
+		approved_spot_suggestions_count: Number(row.approved_spot_suggestions_count) || 0,
+		score: Number(row.score) || 0
+	}));
+
 	return {
 		overview: overviewRes.data as any,
 		catalog,
@@ -386,6 +408,7 @@ export const load = async ({ parent, setHeaders }) => {
 		facetStats,
 		watchActivity: (activityRes.data as any[]) ?? [],
 		ratingsDistribution: (ratingsDistRes.data as any[]) ?? [],
-		topWatchedMedia
+		topWatchedMedia,
+		topContributors
 	};
 };

@@ -38,6 +38,16 @@
 		subtitle: string | null;
 	};
 
+	type TopContributorRow = {
+		user_id: string;
+		username: string;
+		ratings_count: number;
+		reviews_count: number;
+		approved_suggestions_count: number;
+		approved_spot_suggestions_count: number;
+		score: number;
+	};
+
 	type CatalogCounts = {
 		movies: number;
 		series: number;
@@ -86,6 +96,7 @@
 			watchActivity: WatchActivityRow[];
 			ratingsDistribution: RatingsDistRow[];
 			topWatchedMedia: TopWatchedRow[];
+			topContributors: TopContributorRow[];
 		};
 	}>();
 
@@ -483,5 +494,51 @@
 				</tbody>
 			</table>
 		</div>
+	</div>
+
+	<div class="mt-8 rounded-xl border p-4">
+		<div class="flex items-baseline justify-between gap-3">
+			<h2 class="text-base font-semibold">{m.stats_topContributors()}</h2>
+			<div class="text-xs text-muted-foreground">{m.stats_byRatingsAndReviews()}</div>
+		</div>
+
+		{#if (data.topContributors ?? []).length === 0}
+			<p class="mt-4 text-sm text-muted-foreground">{m.stats_noContributorsYet()}</p>
+		{:else}
+			<div class="mt-4 overflow-x-auto">
+				<table class="w-full text-sm">
+					<thead class="text-left text-xs text-muted-foreground">
+						<tr>
+							<th class="py-2 pr-4">{m.stats_tableUser()}</th>
+							<th class="py-2 pr-4">{m.stats_tableRatings()}</th>
+							<th class="py-2 pr-4">{m.stats_tableReviews()}</th>
+							<th class="py-2 pr-4">{m.stats_suggestionsSubmitted()}</th>
+							<th class="py-2 pr-4">{m.tv_approvedSpotChapters()}</th>
+							<th class="py-2 pr-4">{m.stats_tableTotal()}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.topContributors as row (row.user_id)}
+							<tr class="border-t">
+								<td class="py-2 pr-4">
+									<a href={`/stats/${row.user_id}`} class="font-medium hover:underline">
+										{row.username}
+									</a>
+								</td>
+								<td class="py-2 pr-4 tabular-nums">{formatNumber(row.ratings_count ?? 0)}</td>
+								<td class="py-2 pr-4 tabular-nums">{formatNumber(row.reviews_count ?? 0)}</td>
+								<td class="py-2 pr-4 tabular-nums">
+									{formatNumber(row.approved_suggestions_count ?? 0)}
+								</td>
+								<td class="py-2 pr-4 tabular-nums">
+									{formatNumber(row.approved_spot_suggestions_count ?? 0)}
+								</td>
+								<td class="py-2 pr-4 tabular-nums">{formatNumber(row.score ?? 0)}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		{/if}
 	</div>
 </div>

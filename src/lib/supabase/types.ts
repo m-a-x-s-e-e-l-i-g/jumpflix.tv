@@ -143,7 +143,15 @@ export type Database = {
 					trakt: string | null;
 					creators: string[] | null;
 					starring: string[] | null;
-					facet_type: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
+					facet_type:
+						| 'fiction'
+						| 'documentary'
+						| 'session'
+						| 'event'
+						| 'tutorial'
+						| 'music-video'
+						| 'talk'
+						| null;
 					facet_mood: string[] | null;
 					facet_movement: string[] | null;
 					facet_environment: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
@@ -179,7 +187,15 @@ export type Database = {
 					trakt?: string | null;
 					creators?: string[] | null;
 					starring?: string[] | null;
-					facet_type?: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
+					facet_type?:
+						| 'fiction'
+						| 'documentary'
+						| 'session'
+						| 'event'
+						| 'tutorial'
+						| 'music-video'
+						| 'talk'
+						| null;
 					facet_mood?: string[] | null;
 					facet_movement?: string[] | null;
 					facet_environment?: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
@@ -215,7 +231,15 @@ export type Database = {
 					trakt?: string | null;
 					creators?: string[] | null;
 					starring?: string[] | null;
-					facet_type?: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
+					facet_type?:
+						| 'fiction'
+						| 'documentary'
+						| 'session'
+						| 'event'
+						| 'tutorial'
+						| 'music-video'
+						| 'talk'
+						| null;
 					facet_mood?: string[] | null;
 					facet_movement?: string[] | null;
 					facet_environment?: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
@@ -459,7 +483,15 @@ export type Database = {
 					slug: string;
 					title: string;
 					type: 'movie' | 'series';
-					facet_type: 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial' | null;
+					facet_type:
+						| 'fiction'
+						| 'documentary'
+						| 'session'
+						| 'event'
+						| 'tutorial'
+						| 'music-video'
+						| 'talk'
+						| null;
 					facet_mood: string[] | null;
 					facet_movement: string[] | null;
 					facet_environment: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;

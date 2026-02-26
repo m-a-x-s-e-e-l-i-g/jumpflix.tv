@@ -1,12 +1,20 @@
 // Central content type definitions for the TV page
 
 // Facet type definitions
-export type FacetType = 'fiction' | 'documentary' | 'session' | 'event' | 'tutorial';
+export type FacetType =
+	| 'fiction'
+	| 'documentary'
+	| 'session'
+	| 'event'
+	| 'tutorial'
+	| 'music-video'
+	| 'talk';
 export type FacetMood = 'energetic' | 'chill' | 'gritty' | 'wholesome' | 'artistic';
 export type FacetMovement =
 	| 'flow'
 	| 'big-sends'
 	| 'style'
+	| 'descents'
 	| 'technical'
 	| 'speed'
 	| 'oldskool'

@@ -22,6 +22,8 @@ Defines the fundamental content format of the video.
 | `session`     | Session / Edit / Team Film - Classic parkour videos showing training    |
 | `event`       | Event / Jam / Competition - Coverage of gatherings and competitions     |
 | `tutorial`    | Tutorial / Educational - Instructional content and technique breakdowns |
+| `music-video` | Music Video - Music-driven edit with a track-focused structure          |
+| `talk`        | Talk - Talk/presentation format (ideas, interviews, lectures)           |
 
 ---
 
@@ -55,6 +57,7 @@ Describes the parkour movement characteristics featured in the video.
 | `flow`         | Smooth, continuous movement with rhythm                                    |
 | `big-sends`    | Large, impressive jumps and drops                                          |
 | `style`        | Flips, twists, creative variations (formerly "tricking")                   |
+| `descents`     | Drops, downclimbs, descending lines and controlled landings                |
 | `technical`    | Precise, difficult movements requiring high skill                          |
 | `speed`        | Fast-paced movement, chase sequences                                       |
 | `oldskool`     | Traditional parkour style, foundational techniques                         |

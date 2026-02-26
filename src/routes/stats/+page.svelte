@@ -125,10 +125,24 @@
 		}
 	};
 
+	const toCamelFacetKey = (key: string) =>
+		key
+			.split('-')
+			.map((part, idx) => (idx === 0 ? part : part.charAt(0).toUpperCase() + part.slice(1)))
+			.join('');
+
 	const getFacetValueLabel = (prefix: string, key: string) => {
-		const messageKey = `${prefix}_${key}`;
-		const fn = (m as unknown as Record<string, (() => string) | undefined>)[messageKey];
-		return fn ? fn() : key;
+		const directKey = `${prefix}_${key}`;
+		const directFn = (m as unknown as Record<string, (() => string) | undefined>)[directKey];
+		if (directFn) return directFn();
+
+		if (key.includes('-')) {
+			const camelKey = `${prefix}_${toCamelFacetKey(key)}`;
+			const camelFn = (m as unknown as Record<string, (() => string) | undefined>)[camelKey];
+			if (camelFn) return camelFn();
+		}
+
+		return key;
 	};
 
 	type ActivityPoint = { x: string; y: number };

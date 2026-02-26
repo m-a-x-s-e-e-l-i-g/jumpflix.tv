@@ -12,6 +12,8 @@
     session: '🎥',
     event: '🏆',
     tutorial: '📚',
+    'music-video': '🎵',
+    talk: '🎤',
 
     // Mood
     energetic: '⚡',
@@ -24,6 +26,7 @@
     flow: '🌊',
     'big-sends': '🚀',
     style: '🤸',
+    descents: '⬇️',
     technical: '⚙️',
     speed: '🏎️',
     oldskool: '📼',
@@ -75,6 +78,8 @@
     session: m.facet_type_session,
     event: m.facet_type_event,
     tutorial: m.facet_type_tutorial,
+    'music-video': m.facet_type_musicVideo,
+    talk: m.facet_type_talk,
 
     // Mood
     energetic: m.facet_mood_energetic,
@@ -87,6 +92,7 @@
     flow: m.facet_movement_flow,
     'big-sends': m.facet_movement_bigSends,
     style: m.facet_movement_style,
+    descents: m.facet_movement_descents,
     technical: m.facet_movement_technical,
     speed: m.facet_movement_speed,
     oldskool: m.facet_movement_oldskool,
@@ -138,6 +144,8 @@
     session: m.facet_type_session_desc,
     event: m.facet_type_event_desc,
     tutorial: m.facet_type_tutorial_desc,
+    'music-video': m.facet_type_musicVideo_desc,
+    talk: m.facet_type_talk_desc,
 
     // Mood
     energetic: m.facet_mood_energetic_desc,
@@ -150,6 +158,7 @@
     flow: m.facet_movement_flow_desc,
     'big-sends': m.facet_movement_bigSends_desc,
     style: m.facet_movement_style_desc,
+    descents: m.facet_movement_descents_desc,
     technical: m.facet_movement_technical_desc,
     speed: m.facet_movement_speed_desc,
     oldskool: m.facet_movement_oldskool_desc,

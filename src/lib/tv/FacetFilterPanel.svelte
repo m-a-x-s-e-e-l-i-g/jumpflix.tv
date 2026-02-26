@@ -33,7 +33,9 @@
 				{ value: 'documentary', label: m.facet_type_documentary(), emoji: '📹' },
 				{ value: 'session', label: m.facet_type_session(), emoji: '🎥' },
 				{ value: 'event', label: m.facet_type_event(), emoji: '🏆' },
-				{ value: 'tutorial', label: m.facet_type_tutorial(), emoji: '📚' }
+				{ value: 'tutorial', label: m.facet_type_tutorial(), emoji: '📚' },
+				{ value: 'music-video', label: m.facet_type_musicVideo(), emoji: '🎵' },
+				{ value: 'talk', label: m.facet_type_talk(), emoji: '🎤' }
 			] as const
 		},
 		mood: {
@@ -52,6 +54,7 @@
 				{ value: 'flow', label: m.facet_movement_flow(), emoji: '🌊' },
 				{ value: 'big-sends', label: m.facet_movement_bigSends(), emoji: '🚀' },
 				{ value: 'style', label: m.facet_movement_style(), emoji: '🤸' },
+				{ value: 'descents', label: m.facet_movement_descents(), emoji: '⬇️' },
 				{ value: 'technical', label: m.facet_movement_technical(), emoji: '⚙️' },
 				{ value: 'speed', label: m.facet_movement_speed(), emoji: '🏎️' },
 				{ value: 'oldskool', label: m.facet_movement_oldskool(), emoji: '📼' },

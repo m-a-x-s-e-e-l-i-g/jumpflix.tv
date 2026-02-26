@@ -1748,7 +1748,9 @@ async function editFacets() {
 			{ name: 'Documentary', value: 'documentary' },
 			{ name: 'Session / Edit / Team Film', value: 'session' },
 			{ name: 'Event / Jam / Competition', value: 'event' },
-			{ name: 'Tutorial / Educational', value: 'tutorial' }
+			{ name: 'Tutorial / Educational', value: 'tutorial' },
+			{ name: 'Music Video', value: 'music-video' },
+			{ name: 'Talk', value: 'talk' }
 		],
 		default: item.facet_type || null
 	});
@@ -1803,6 +1805,11 @@ async function editFacets() {
 				name: 'Style (heavy acrobatic lines)',
 				value: 'style',
 				checked: item.facet_movement?.includes('style')
+			},
+			{
+				name: 'Descents (drops, downclimbs)',
+				value: 'descents',
+				checked: item.facet_movement?.includes('descents')
 			},
 			{
 				name: 'Technical (precise, quirky)',

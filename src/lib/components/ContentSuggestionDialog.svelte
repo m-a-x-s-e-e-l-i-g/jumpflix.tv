@@ -109,13 +109,16 @@
 		'documentary',
 		'session',
 		'event',
-		'tutorial'
+		'tutorial',
+		'music-video',
+		'talk'
 	];
 	const FACET_MOOD_OPTIONS: FacetMood[] = ['energetic', 'chill', 'gritty', 'wholesome', 'artistic'];
 	const FACET_MOVEMENT_OPTIONS: FacetMovement[] = [
 		'flow',
 		'big-sends',
 		'style',
+		'descents',
 		'technical',
 		'speed',
 		'oldskool',

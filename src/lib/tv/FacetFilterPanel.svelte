@@ -40,6 +40,24 @@
 				{ value: 'talk', label: m.facet_type_talk(), emoji: '🎤' }
 			] as const
 		},
+		era: {
+			label: m.facet_era(),
+			options: [
+				{ value: 'pre-2000', label: m.facet_era_pre2000(), emoji: '📹' },
+				{ value: '2000s', label: m.facet_era_2000s(), emoji: '📀' },
+				{ value: '2010s', label: m.facet_era_2010s(), emoji: '📱' },
+				{ value: '2020s', label: m.facet_era_2020s(), emoji: '🎬' },
+				{ value: '2030s', label: m.facet_era_2030s(), emoji: '🚀' }
+			] as const
+		},
+		length: {
+			label: m.facet_length(),
+			options: [
+				{ value: 'short-form', label: m.facet_length_shortForm(), emoji: '⚡' },
+				{ value: 'medium-form', label: m.facet_length_mediumForm(), emoji: '⏱️' },
+				{ value: 'long-form', label: m.facet_length_longForm(), emoji: '🎞️' }
+			] as const
+		},
 		mood: {
 			label: m.facet_mood(),
 			options: [
@@ -101,24 +119,6 @@
 				{ value: 'travel', label: m.facet_theme_travel(), emoji: '✈️' },
 				{ value: 'creative', label: m.facet_theme_creative(), emoji: '✨' },
 				{ value: 'entertainment', label: m.facet_theme_entertainment(), emoji: '🎪' }
-			] as const
-		},
-		era: {
-			label: m.facet_era(),
-			options: [
-				{ value: 'pre-2000', label: m.facet_era_pre2000(), emoji: '📹' },
-				{ value: '2000s', label: m.facet_era_2000s(), emoji: '📀' },
-				{ value: '2010s', label: m.facet_era_2010s(), emoji: '📱' },
-				{ value: '2020s', label: m.facet_era_2020s(), emoji: '🎬' },
-				{ value: '2030s', label: m.facet_era_2030s(), emoji: '🚀' }
-			] as const
-		},
-		length: {
-			label: m.facet_length(),
-			options: [
-				{ value: 'short-form', label: m.facet_length_shortForm(), emoji: '⚡' },
-				{ value: 'medium-form', label: m.facet_length_mediumForm(), emoji: '⏱️' },
-				{ value: 'long-form', label: m.facet_length_longForm(), emoji: '🎞️' }
 			] as const
 		}
 	});

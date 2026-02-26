@@ -68,7 +68,12 @@
     '2000s': '📀',
     '2010s': '📱',
     '2020s': '🎬',
-    '2030s': '🚀'
+    '2030s': '🚀',
+
+    // Length
+    'short-form': '⚡',
+    'medium-form': '⏱️',
+    'long-form': '🎞️'
   };
 
   const facetLabelMessages: Record<string, () => string> = {
@@ -134,7 +139,12 @@
     '2000s': m.facet_era_2000s,
     '2010s': m.facet_era_2010s,
     '2020s': m.facet_era_2020s,
-    '2030s': m.facet_era_2030s
+    '2030s': m.facet_era_2030s,
+
+    // Length
+    'short-form': m.facet_length_shortForm,
+    'medium-form': m.facet_length_mediumForm,
+    'long-form': m.facet_length_longForm
   };
 
   const facetDescriptionMessages: Record<string, () => string> = {
@@ -200,7 +210,12 @@
     '2000s': m.facet_era_2000s_desc,
     '2010s': m.facet_era_2010s_desc,
     '2020s': m.facet_era_2020s_desc,
-    '2030s': m.facet_era_2030s_desc
+    '2030s': m.facet_era_2030s_desc,
+
+    // Length
+    'short-form': m.facet_length_shortForm_desc,
+    'medium-form': m.facet_length_mediumForm_desc,
+    'long-form': m.facet_length_longForm_desc
   };
 
   const getFacetLabel = (key: string, fallback: string): string => {
@@ -223,7 +238,7 @@
   };
   
   // Build ordered list of chips to display
-  // Order: Type · Mood · Movement · Environment · Film Style · Theme · Era
+  // Order: Type · Mood · Movement · Environment · Film Style · Theme · Era · Length
   $: chips = (() => {
     if (!facets) return [];
     
@@ -237,6 +252,7 @@
     if (facets.filmStyle) addFacet(result, facets.filmStyle);
     if (facets.theme) addFacet(result, facets.theme);
     if (facets.era) addFacet(result, facets.era);
+    if (facets.length) addFacet(result, facets.length);
     
     return result;
   })();

@@ -506,7 +506,7 @@ export type Database = {
 						| 'creative'
 						| 'entertainment'
 						| null;
-					facet_length: 'short' | 'medium' | 'feature' | 'long-feature' | null;
+					facet_length: 'short-form' | 'medium-form' | 'long-form' | null;
 					facet_era: '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000' | null;
 				};
 				Relationships: [];

@@ -150,6 +150,23 @@ Automatically determined from the video's release year.
 
 ---
 
+### 8. Length (`facet_length`)
+
+**Selection Mode:** Auto-calculated  
+**Field Type:** Computed from `duration` field
+
+Automatically determined from the content duration.
+
+| Value         | Duration Range |
+| ------------ | -------------- |
+| `short-form`  | Under 15 minutes |
+| `medium-form` | 15–45 minutes |
+| `long-form`   | 45+ minutes |
+
+**Note:** This facet is computed in the `media_facets_view` view, not stored directly in the database.
+
+---
+
 ## Database Implementation
 
 ### Tables & Columns
@@ -165,7 +182,7 @@ Facets are stored in the `public.media_items` table:
 
 ### Views
 
-**`public.media_facets_view`** - Provides access to all facets including the auto-calculated `facet_era` field.
+**`public.media_facets_view`** - Provides access to all facets including auto-calculated fields like `facet_era` and `facet_length`.
 
 ### Indexes
 
@@ -190,6 +207,7 @@ GIN indexes are used for array columns to support efficient queries using array 
 4. **20251108000000_remove_length_facet.sql** - Removed buggy auto-calculated length facet
 5. **20251109000000_expand_film_styles.sql** - Expanded film style options from 5 to 13 values
 6. **20251109000002_replace_tricking_with_style.sql** - Renamed "tricking" → "style" in movement facets, "dance" → "contemporary"
+7. **20260218000001_add_length_facet.sql** - Re-added length facet with improved `short-form`/`medium-form`/`long-form` categorization
 
 ---
 

@@ -8,7 +8,8 @@
 		FacetEnvironment,
 		FacetFilmStyle,
 		FacetTheme,
-		FacetEra
+		FacetEra,
+		FacetLength
 	} from './types';
 	import {
 		Dialog as DialogRoot,
@@ -109,6 +110,14 @@
 				{ value: '2010s', label: m.facet_era_2010s(), emoji: '📱' },
 				{ value: '2020s', label: m.facet_era_2020s(), emoji: '🎬' },
 				{ value: '2030s', label: m.facet_era_2030s(), emoji: '🚀' }
+			] as const
+		},
+		length: {
+			label: m.facet_length(),
+			options: [
+				{ value: 'short-form', label: m.facet_length_shortForm(), emoji: '⚡' },
+				{ value: 'medium-form', label: m.facet_length_mediumForm(), emoji: '⏱️' },
+				{ value: 'long-form', label: m.facet_length_longForm(), emoji: '🎞️' }
 			] as const
 		}
 	});

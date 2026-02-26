@@ -19,6 +19,7 @@
 		playbackKey = null,
 		getCurrentTimeSeconds = null,
 		spotChapterId = null,
+		initialSpotId = null,
 		initialStartSeconds = null,
 		initialEndSeconds = null,
 		lockTimeRange = false,
@@ -32,6 +33,7 @@
 		playbackKey?: string | null;
 		getCurrentTimeSeconds?: (() => number) | null;
 		spotChapterId?: number | null;
+		initialSpotId?: string | null;
 		initialStartSeconds?: number | null;
 		initialEndSeconds?: number | null;
 		lockTimeRange?: boolean;
@@ -42,23 +44,31 @@
 
 	let open = $state(false);
 	let isSubmitting = $state(false);
-	let isChangeMode = $derived(Boolean(spotChapterId) && Boolean(lockTimeRange));
+	let isChangeMode = $derived(Boolean(spotChapterId));
 	let isAuthenticated = $derived(Boolean($authUser));
 
 	let startSeconds = $state<number | ''>('');
 	let endSeconds = $state<number | ''>('');
 	let spotId = $state('');
+	let didPrefillFromProps = $state(false);
 
 	$effect(() => {
-		if (!open) return;
-		if (lockTimeRange) {
-			if (typeof initialStartSeconds === 'number' && Number.isFinite(initialStartSeconds)) {
-				startSeconds = Math.floor(Math.max(0, initialStartSeconds));
-			}
-			if (typeof initialEndSeconds === 'number' && Number.isFinite(initialEndSeconds)) {
-				endSeconds = Math.floor(Math.max(0, initialEndSeconds));
-			}
+		if (!open) {
+			didPrefillFromProps = false;
+			return;
 		}
+		if (didPrefillFromProps) return;
+		if (!spotId) {
+			const candidate = typeof initialSpotId === 'string' ? initialSpotId.trim() : '';
+			if (candidate) spotId = candidate;
+		}
+		if (typeof initialStartSeconds === 'number' && Number.isFinite(initialStartSeconds)) {
+			startSeconds = Math.floor(Math.max(0, initialStartSeconds));
+		}
+		if (typeof initialEndSeconds === 'number' && Number.isFinite(initialEndSeconds)) {
+			endSeconds = Math.floor(Math.max(0, initialEndSeconds));
+		}
+		didPrefillFromProps = true;
 	});
 
 	function safeNowSeconds(): number {
@@ -206,7 +216,7 @@
 						</Dialog.Title>
 						<p id="spot-suggestion-description" class="text-sm text-muted-foreground">
 							{isChangeMode
-								? 'Pick a new Parkour·Spot for the currently active chapter range.'
+								? 'Pick a new Parkour·Spot and adjust the chapter timestamps.'
 								: 'Mark a time range in this video and attach a Parkour·Spot id.'}
 						</p>
 					</header>
@@ -221,7 +231,7 @@
 									<input
 										type="number"
 										min="0"
-										disabled={lockTimeRange}
+										disabled={lockTimeRange && !isChangeMode}
 										bind:value={startSeconds}
 										class="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/30"
 									/>
@@ -235,7 +245,7 @@
 									<input
 										type="number"
 										min="0"
-										disabled={lockTimeRange}
+										disabled={lockTimeRange && !isChangeMode}
 										bind:value={endSeconds}
 										class="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/30"
 									/>
@@ -245,7 +255,7 @@
 								</label>
 							</div>
 
-							{#if !lockTimeRange}
+							{#if !lockTimeRange || isChangeMode}
 								<div class="flex flex-wrap gap-2">
 									<button
 										type="button"

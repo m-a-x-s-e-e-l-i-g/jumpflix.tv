@@ -1914,6 +1914,7 @@
 									{playbackKey}
 									getCurrentTimeSeconds={() => Number(playerEl?.currentTime ?? 0)}
 									spotChapterId={activeSpotChapterId}
+									initialSpotId={activeSpotSpotId}
 									initialStartSeconds={activeSpotStartSeconds}
 									initialEndSeconds={activeSpotEndSeconds}
 									lockTimeRange={isChangingSpot}

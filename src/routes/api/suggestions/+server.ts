@@ -147,6 +147,8 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 							.from('spot_chapters')
 							.update({
 								spot_id: spotId,
+									start_seconds: startSeconds,
+									end_seconds: endSeconds,
 								created_from_suggestion_id: suggestionId,
 								approved_by: user.id,
 								approved_at: new Date().toISOString()

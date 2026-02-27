@@ -1495,9 +1495,8 @@
 	const VIMEO_DOMAIN = /^(?:https?:\/\/)?(?:www\.|player\.)?vimeo\.com/i;
 	const HAS_PROTOCOL = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
 
-	let isIOSDevice = false;
-	let youtubeEmbedUrl: string | null = null;
-	let useYouTubeEmbedFallback = false;
+	let isIOSDevice = detectIOSDevice();
+	let effectiveAutoPlay = false;
 
 	function detectIOSDevice() {
 		if (!browser) return false;
@@ -1514,47 +1513,7 @@
 		}
 	}
 
-	function isYouTubeUrl(value: string) {
-		return YOUTUBE_DOMAIN.test(value);
-	}
-
-	function extractYouTubeVideoId(value: string): string | null {
-		const trimmed = value.trim();
-		if (!trimmed) return null;
-		try {
-			const url = new URL(trimmed);
-			const host = url.hostname.toLowerCase();
-			if (host === 'youtu.be') {
-				const id = url.pathname.replace(/^\/+/, '').split('/')[0];
-				return id || null;
-			}
-			if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
-				const path = url.pathname;
-				if (path === '/watch') {
-					const id = url.searchParams.get('v');
-					return id || null;
-				}
-				const embedMatch = path.match(/^\/(?:embed|shorts)\/([^/?#]+)/i);
-				if (embedMatch) return embedMatch[1] || null;
-			}
-		} catch {
-			// ignore
-		}
-		return null;
-	}
-
-	function buildYouTubeEmbedUrl(value: string, shouldAutoplay: boolean): string | null {
-		if (!isYouTubeUrl(value)) return null;
-		const videoId = extractYouTubeVideoId(value);
-		if (!videoId) return null;
-		const params = new URLSearchParams();
-		params.set('playsinline', '1');
-		params.set('rel', '0');
-		params.set('modestbranding', '1');
-		params.set('iv_load_policy', '3');
-		if (shouldAutoplay) params.set('autoplay', '1');
-		return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${params.toString()}`;
-	}
+	$: effectiveAutoPlay = !!autoPlay && !isIOSDevice;
 
 	onMount(() => {
 		mounted = true;
@@ -1602,16 +1561,7 @@
 		};
 	});
 
-	$: youtubeEmbedUrl = resolvedSrc ? buildYouTubeEmbedUrl(resolvedSrc, autoPlay) : null;
-	$: useYouTubeEmbedFallback = !!(
-		mounted &&
-		browser &&
-		isIOSDevice &&
-		resolvedSrc &&
-		youtubeEmbedUrl
-	);
-
-	$: if (mounted && browser && !useYouTubeEmbedFallback) {
+	$: if (mounted && browser) {
 		void ensureVidstackLoaded();
 	}
 
@@ -1699,32 +1649,6 @@
 
 {#if shouldRender}
 	{#key `${keySeed}:${resolvedSrc}`}
-		{#if useYouTubeEmbedFallback}
-			<div class="youtube-fallback" data-youtube-fallback>
-				{#if typeof onClose === 'function'}
-					<div class="controls-top">
-						<div class="controls-group top">
-							<button
-								type="button"
-								class="player-close-button"
-								aria-label="Close player"
-								onclick={onClose}
-							>
-								<span class="icon" aria-hidden="true"><XIcon /></span>
-							</button>
-						</div>
-					</div>
-				{/if}
-				<iframe
-					class="youtube-iframe"
-					src={youtubeEmbedUrl ?? undefined}
-					title={playerTitle ?? 'YouTube player'}
-					allow="autoplay; encrypted-media; picture-in-picture"
-					allowfullscreen
-					referrerpolicy="strict-origin-when-cross-origin"
-				></iframe>
-			</div>
-		{:else}
 			<media-player
 				bind:this={playerEl}
 				class="vidstack-player"
@@ -1733,7 +1657,7 @@
 				poster={resolvedPoster}
 				playsInline
 				crossOrigin="anonymous"
-				autoPlay
+				autoplay={effectiveAutoPlay}
 			>
 				<media-provider data-no-controls>
 					{#if spotChaptersTrackSrc}
@@ -1748,6 +1672,12 @@
 						{/key}
 					{/if}
 				</media-provider>
+
+				{#if isIOSDevice && autoPlay && !effectiveAutoPlay && isPaused}
+					<div class="ios-tap-to-play" aria-live="polite">
+						<span class="ios-tap-to-play-pill">Tap to play</span>
+					</div>
+				{/if}
 
 				{#if nowPlayingTrackLabel || nowPlayingSpotLabel}
 					<div class="now-pills" aria-live="polite">
@@ -1935,7 +1865,6 @@
 					</div>
 				</media-controls>
 			</media-player>
-		{/if}
 	{/key}
 {:else}
 	<div class="player-loader" role="status" aria-live="polite">
@@ -2000,22 +1929,6 @@
 		max-block-size: 100%;
 	}
 
-	.youtube-fallback {
-		inline-size: 100%;
-		block-size: 100%;
-		background: #000;
-		position: relative;
-	}
-
-	.youtube-iframe {
-		position: absolute;
-		inset: 0;
-		inline-size: 100%;
-		block-size: 100%;
-		border: 0;
-		display: block;
-	}
-
 	.player-loader {
 		inline-size: 100%;
 		block-size: 100%;
@@ -2026,6 +1939,30 @@
 		color: #cbd5f5;
 		font-size: 0.95rem;
 		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.ios-tap-to-play {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	.ios-tap-to-play-pill {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem 0.85rem;
+		border-radius: 9999px;
+		background: rgba(2, 6, 23, 0.72);
+		border: 1px solid rgba(203, 213, 245, 0.25);
+		color: #cbd5f5;
+		font-size: 0.95rem;
+		letter-spacing: 0.02em;
 		text-transform: uppercase;
 	}
 	.player-controls {

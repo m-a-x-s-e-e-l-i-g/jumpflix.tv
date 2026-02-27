@@ -1677,7 +1677,10 @@
 
 				{#if isIOSDevice && autoPlay && !effectiveAutoPlay && isPaused}
 					<div class="ios-tap-to-play" aria-live="polite">
-						<span class="ios-tap-to-play-pill">Tap to play</span>
+						<span class="ios-tap-to-play-pill">
+							<PlayIcon aria-hidden="true" />
+							<span>{m.tv_tapToPlay()}</span>
+						</span>
 					</div>
 				{/if}
 
@@ -1950,6 +1953,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		transform: translateY(-3px);
 		pointer-events: none;
 		z-index: 1;
 	}
@@ -1958,14 +1962,20 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 0.5rem 0.85rem;
+		gap: 0.45rem;
+		padding: 0.65rem 1.05rem;
 		border-radius: 9999px;
-		background: rgba(2, 6, 23, 0.72);
+		background: #020617;
 		border: 1px solid rgba(203, 213, 245, 0.25);
 		color: #cbd5f5;
-		font-size: 0.95rem;
+		font-size: 1rem;
 		letter-spacing: 0.02em;
 		text-transform: uppercase;
+	}
+
+	.ios-tap-to-play-pill :global(svg) {
+		inline-size: 1.1rem;
+		block-size: 1.1rem;
 	}
 	.player-controls {
 		position: absolute;

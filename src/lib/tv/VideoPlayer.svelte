@@ -299,6 +299,7 @@
 		} catch {}
 	}
 	let vidstackLoadPromise: Promise<void> | null = null;
+	let vidstackReady = false;
 
 	type RemoteControl = {
 		setTarget?: (target: EventTarget | null) => void;
@@ -371,6 +372,7 @@
 			]).then(() => undefined);
 		}
 		await vidstackLoadPromise;
+		vidstackReady = true;
 	}
 
 	$: if (browser && playerEl) {
@@ -1636,7 +1638,7 @@
 	$: resolvedSrc = normalizeSource(src);
 	$: resolvedPoster = poster ?? undefined;
 	$: playerTitle = title ?? undefined;
-	$: shouldRender = mounted && browser && !!resolvedSrc;
+	$: shouldRender = mounted && browser && !!resolvedSrc && vidstackReady;
 
 	// Reset resume state when content changes
 	$: if (keySeed) {

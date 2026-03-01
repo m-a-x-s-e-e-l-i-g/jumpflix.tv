@@ -299,6 +299,7 @@
 		} catch {}
 	}
 	let vidstackLoadPromise: Promise<void> | null = null;
+	let vidstackReady = false;
 
 	type RemoteControl = {
 		setTarget?: (target: EventTarget | null) => void;
@@ -371,6 +372,7 @@
 			]).then(() => undefined);
 		}
 		await vidstackLoadPromise;
+		vidstackReady = true;
 	}
 
 	$: if (browser && playerEl) {
@@ -1495,9 +1497,8 @@
 	const VIMEO_DOMAIN = /^(?:https?:\/\/)?(?:www\.|player\.)?vimeo\.com/i;
 	const HAS_PROTOCOL = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
 
-	let isIOSDevice = false;
-	let youtubeEmbedUrl: string | null = null;
-	let useYouTubeEmbedFallback = false;
+	let isIOSDevice = detectIOSDevice();
+	let effectiveAutoPlay = false;
 
 	function detectIOSDevice() {
 		if (!browser) return false;
@@ -1514,47 +1515,7 @@
 		}
 	}
 
-	function isYouTubeUrl(value: string) {
-		return YOUTUBE_DOMAIN.test(value);
-	}
-
-	function extractYouTubeVideoId(value: string): string | null {
-		const trimmed = value.trim();
-		if (!trimmed) return null;
-		try {
-			const url = new URL(trimmed);
-			const host = url.hostname.toLowerCase();
-			if (host === 'youtu.be') {
-				const id = url.pathname.replace(/^\/+/, '').split('/')[0];
-				return id || null;
-			}
-			if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
-				const path = url.pathname;
-				if (path === '/watch') {
-					const id = url.searchParams.get('v');
-					return id || null;
-				}
-				const embedMatch = path.match(/^\/(?:embed|shorts)\/([^/?#]+)/i);
-				if (embedMatch) return embedMatch[1] || null;
-			}
-		} catch {
-			// ignore
-		}
-		return null;
-	}
-
-	function buildYouTubeEmbedUrl(value: string, shouldAutoplay: boolean): string | null {
-		if (!isYouTubeUrl(value)) return null;
-		const videoId = extractYouTubeVideoId(value);
-		if (!videoId) return null;
-		const params = new URLSearchParams();
-		params.set('playsinline', '1');
-		params.set('rel', '0');
-		params.set('modestbranding', '1');
-		params.set('iv_load_policy', '3');
-		if (shouldAutoplay) params.set('autoplay', '1');
-		return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${params.toString()}`;
-	}
+	$: effectiveAutoPlay = !!autoPlay && !isIOSDevice;
 
 	onMount(() => {
 		mounted = true;
@@ -1602,16 +1563,7 @@
 		};
 	});
 
-	$: youtubeEmbedUrl = resolvedSrc ? buildYouTubeEmbedUrl(resolvedSrc, autoPlay) : null;
-	$: useYouTubeEmbedFallback = !!(
-		mounted &&
-		browser &&
-		isIOSDevice &&
-		resolvedSrc &&
-		youtubeEmbedUrl
-	);
-
-	$: if (mounted && browser && !useYouTubeEmbedFallback) {
+	$: if (mounted && browser) {
 		void ensureVidstackLoaded();
 	}
 
@@ -1686,7 +1638,7 @@
 	$: resolvedSrc = normalizeSource(src);
 	$: resolvedPoster = poster ?? undefined;
 	$: playerTitle = title ?? undefined;
-	$: shouldRender = mounted && browser && !!resolvedSrc;
+	$: shouldRender = mounted && browser && !!resolvedSrc && vidstackReady;
 
 	// Reset resume state when content changes
 	$: if (keySeed) {
@@ -1699,32 +1651,6 @@
 
 {#if shouldRender}
 	{#key `${keySeed}:${resolvedSrc}`}
-		{#if useYouTubeEmbedFallback}
-			<div class="youtube-fallback" data-youtube-fallback>
-				{#if typeof onClose === 'function'}
-					<div class="controls-top">
-						<div class="controls-group top">
-							<button
-								type="button"
-								class="player-close-button"
-								aria-label="Close player"
-								onclick={onClose}
-							>
-								<span class="icon" aria-hidden="true"><XIcon /></span>
-							</button>
-						</div>
-					</div>
-				{/if}
-				<iframe
-					class="youtube-iframe"
-					src={youtubeEmbedUrl ?? undefined}
-					title={playerTitle ?? 'YouTube player'}
-					allow="autoplay; encrypted-media; picture-in-picture"
-					allowfullscreen
-					referrerpolicy="strict-origin-when-cross-origin"
-				></iframe>
-			</div>
-		{:else}
 			<media-player
 				bind:this={playerEl}
 				class="vidstack-player"
@@ -1733,7 +1659,7 @@
 				poster={resolvedPoster}
 				playsInline
 				crossOrigin="anonymous"
-				autoPlay
+				autoplay={effectiveAutoPlay}
 			>
 				<media-provider data-no-controls>
 					{#if spotChaptersTrackSrc}
@@ -1748,6 +1674,15 @@
 						{/key}
 					{/if}
 				</media-provider>
+
+				{#if isIOSDevice && autoPlay && !effectiveAutoPlay && isPaused}
+					<div class="ios-tap-to-play" aria-live="polite">
+						<span class="ios-tap-to-play-pill">
+							<PlayIcon aria-hidden="true" />
+							<span>{m.tv_tapToPlay()}</span>
+						</span>
+					</div>
+				{/if}
 
 				{#if nowPlayingTrackLabel || nowPlayingSpotLabel}
 					<div class="now-pills" aria-live="polite">
@@ -1935,7 +1870,6 @@
 					</div>
 				</media-controls>
 			</media-player>
-		{/if}
 	{/key}
 {:else}
 	<div class="player-loader" role="status" aria-live="polite">
@@ -1966,13 +1900,28 @@
 		display: block;
 	}
 
+	:global(media-player.vidstack-player [data-media-provider] iframe.vds-youtube) {
+		transition: height 100ms ease-in-out;
+	}
+
 	/*
-	 * Important: don't override Vidstack's YouTube embed sizing hack.
-	 * Vidstack sets `iframe.vds-youtube[data-no-controls] { height: 1000%; }` to keep YouTube UI
-	 * elements (title/channel/end screen) out of view when we use custom controls.
+	 * Vidstack's YouTube "no-controls" mode uses a large iframe height (e.g. 1000%) to push
+	 * YouTube UI out of view. That hides YouTube chrome, but it also vertically crops the actual
+	 * video ("zoomed in", chopped top/bottom).
+	 *
+	 * We keep Vidstack's crop while paused (so YouTube UI stays hidden) but undo it while playing
+	 * so the video isn't chopped.
 	 */
 	:global(media-player.vidstack-player [data-media-provider] iframe:not(.vds-youtube[data-no-controls])) {
 		height: 100%;
+	}
+
+	:global(
+			media-player.vidstack-player:not([data-paused])
+				[data-media-provider]
+				iframe.vds-youtube[data-no-controls]
+		) {
+		height: 100% !important;
 	}
 
 	:global(media-player.vidstack-player:fullscreen),
@@ -2000,22 +1949,6 @@
 		max-block-size: 100%;
 	}
 
-	.youtube-fallback {
-		inline-size: 100%;
-		block-size: 100%;
-		background: #000;
-		position: relative;
-	}
-
-	.youtube-iframe {
-		position: absolute;
-		inset: 0;
-		inline-size: 100%;
-		block-size: 100%;
-		border: 0;
-		display: block;
-	}
-
 	.player-loader {
 		inline-size: 100%;
 		block-size: 100%;
@@ -2027,6 +1960,37 @@
 		font-size: 0.95rem;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
+	}
+
+	.ios-tap-to-play {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transform: translateY(-3px);
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	.ios-tap-to-play-pill {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.45rem;
+		padding: 0.65rem 1.05rem;
+		border-radius: 9999px;
+		background: #020617;
+		border: 1px solid rgba(203, 213, 245, 0.25);
+		color: #cbd5f5;
+		font-size: 1rem;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+	}
+
+	.ios-tap-to-play-pill :global(svg) {
+		inline-size: 1.1rem;
+		block-size: 1.1rem;
 	}
 	.player-controls {
 		position: absolute;
@@ -2041,22 +2005,12 @@
 	}
 
 	.player-controls::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(180deg, rgba(7, 15, 35, 0.05) 0%, rgba(7, 15, 35, 0.85) 100%);
-		opacity: 0.85;
-		transition: opacity 180ms ease-in-out;
-		pointer-events: none;
+		content: none;
 	}
 
 	.player-controls[data-hidden] {
 		opacity: 0;
 		pointer-events: none;
-	}
-
-	.player-controls[data-hidden]::before {
-		opacity: 0;
 	}
 
 	.controls-top {
@@ -2219,7 +2173,7 @@
 
 	.controls-row {
 		display: flex;
-		justify-content: space-between;
+		justify-content: flex-start;
 		align-items: center;
 		width: 100%;
 		gap: clamp(0.75rem, 2vw, 1.5rem);
@@ -2247,6 +2201,7 @@
 	.controls-group.right {
 		justify-content: flex-end;
 		flex: 0 0 auto;
+		margin-inline-start: auto;
 	}
 
 	.control-button {
@@ -2367,6 +2322,8 @@
 		width: 100%;
 		display: block;
 		--media-slider-track-height: 6px;
+		--media-slider-track-fill-height: var(--media-slider-track-height);
+		--media-slider-track-progress-height: var(--media-slider-track-height);
 		position: relative;
 	}
 
@@ -2378,6 +2335,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0;
+		column-gap: 0;
 		inline-size: 100%;
 		block-size: var(--media-slider-track-height, 6px);
 		border-radius: 999px;
@@ -2389,10 +2347,58 @@
 	.time-slider .slider-chapter {
 		position: relative;
 		block-size: 100%;
-		min-inline-size: 1px;
-		border-radius: 999px;
+		min-inline-size: 0;
+		border-radius: 0;
+		margin: 0;
 		overflow: hidden;
 		/* Important: do NOT set flex/width here. Vidstack sets each chapter width inline. */
+	}
+
+	/* Visible chapter separators without consuming width (no layout impact). */
+	.time-slider .slider-chapter:not(:first-child)::before {
+		content: '';
+		position: absolute;
+		inset-block: 0;
+		inset-inline-start: 0;
+		width: 1px;
+		background: rgba(0, 0, 0, 0.75);
+		z-index: 4;
+		pointer-events: none;
+	}
+
+	/*
+		Avoid cumulative “whitespace” when there are many chapters:
+		- Don’t force a minimum chapter width (min-inline-size: 0)
+		- Don’t round every tiny chapter segment (only the outer edges)
+	*/
+	.time-slider .slider-chapter .slider-track,
+	.time-slider .slider-chapter .slider-track-fill,
+	.time-slider .slider-chapter .slider-track-progress {
+		border-radius: 0;
+	}
+
+	.time-slider .slider-chapter:first-child {
+		border-top-left-radius: 999px;
+		border-bottom-left-radius: 999px;
+	}
+
+	.time-slider .slider-chapter:last-child {
+		border-top-right-radius: 999px;
+		border-bottom-right-radius: 999px;
+	}
+
+	.time-slider .slider-chapter:first-child .slider-track,
+	.time-slider .slider-chapter:first-child .slider-track-fill,
+	.time-slider .slider-chapter:first-child .slider-track-progress {
+		border-top-left-radius: 999px;
+		border-bottom-left-radius: 999px;
+	}
+
+	.time-slider .slider-chapter:last-child .slider-track,
+	.time-slider .slider-chapter:last-child .slider-track-fill,
+	.time-slider .slider-chapter:last-child .slider-track-progress {
+		border-top-right-radius: 999px;
+		border-bottom-right-radius: 999px;
 	}
 
 	.time-slider .slider-track,
@@ -2404,6 +2410,9 @@
 		border-radius: 999px;
 		overflow: hidden;
 		pointer-events: none;
+		top: 0;
+		left: 0;
+		transform: none;
 	}
 
 	.time-slider .slider-track-progress,
@@ -2411,6 +2420,11 @@
 		position: absolute;
 		inset-block: 0;
 		inset-inline-start: 0;
+		block-size: 100%;
+		height: 100%;
+		top: 0;
+		left: 0;
+		transform: none !important;
 		inline-size: var(--slider-progress, 0%);
 		background: rgba(255, 255, 255, 0.28);
 		z-index: 1;
@@ -2425,9 +2439,24 @@
 		position: absolute;
 		inset-block: 0;
 		inset-inline-start: 0;
+		block-size: 100%;
+		height: 100%;
+		top: 0;
+		left: 0;
+		transform: none !important;
 		inline-size: var(--slider-fill, 0%);
 		background: linear-gradient(90deg, #60a5fa 0%, #c084fc 100%);
 		z-index: 2;
+	}
+
+	/* Vidstack sometimes sets reduced heights on fill/progress layers; force full-height. */
+	.time-slider :global(.vds-slider-track-fill),
+	.time-slider :global(.vds-slider-progress),
+	.volume-slider :global(.vds-slider-track-fill),
+	.volume-slider :global(.vds-slider-progress) {
+		height: 100% !important;
+		block-size: 100% !important;
+		inset-block: 0 !important;
 	}
 
 	.time-slider .slider-chapter .slider-track-fill {
@@ -2460,10 +2489,20 @@
 
 	:global(media-time-slider.time-slider [part='track-fill']) {
 		background: linear-gradient(90deg, #60a5fa 0%, #c084fc 100%);
+		inset: 0 !important;
+		top: 0 !important;
+		bottom: 0 !important;
+		height: 100% !important;
+		block-size: 100% !important;
 	}
 
 	:global(media-time-slider.time-slider [part='track-progress']) {
 		background: rgba(255, 255, 255, 0.28);
+		inset: 0 !important;
+		top: 0 !important;
+		bottom: 0 !important;
+		height: 100% !important;
+		block-size: 100% !important;
 	}
 
 	:global(media-time-slider.time-slider [part='thumb']) {
@@ -2511,6 +2550,8 @@
 	:global(media-volume-slider.volume-slider) {
 		--media-slider-height: 48px;
 		--media-slider-track-height: 5px;
+		--media-slider-track-fill-height: var(--media-slider-track-height);
+		--media-slider-track-progress-height: var(--media-slider-track-height);
 		--media-slider-thumb-size: 14px;
 		--media-slider-track-bg: rgba(148, 163, 215, 0.3);
 		--media-slider-track-fill-bg: linear-gradient(90deg, #facc15 0%, #f97316 100%);
@@ -2563,13 +2604,16 @@
 
 	@media (max-width: 840px) {
 		.controls-row {
-			align-items: flex-start;
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			overflow-y: hidden;
+			align-items: center;
 		}
 
 		.controls-group.right {
-			flex: 1 1 100%;
-			justify-content: flex-start;
-			gap: clamp(0.5rem, 2vw, 0.9rem);
+			flex: 0 0 auto;
+			justify-content: flex-end;
+			gap: clamp(0.45rem, 2vw, 0.9rem);
 		}
 
 		:global(media-volume-slider.volume-slider) {

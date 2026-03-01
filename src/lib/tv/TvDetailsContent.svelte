@@ -915,6 +915,13 @@
 					{/if}
 				</div>
 
+				<section class="detail-section detail-overview detail-overview--aside">
+					<div class="detail-overview-copy">
+						<h2>{m.tv_overview()}</h2>
+						<p>{selected.description || m.tv_noDescription()}</p>
+					</div>
+				</section>
+
 				<div class="detail-actions">
 					<div class="detail-play-observer" bind:this={playObserverEl}>
 						{#if !$showPlayer}
@@ -1500,6 +1507,8 @@
 		background: rgba(8, 12, 24, 0.6);
 		box-shadow: 0 20px 45px -30px rgba(2, 6, 23, 0.8);
 		aspect-ratio: 2 / 3;
+		width: clamp(220px, 30vw, 300px);
+		max-width: 100%;
 	}
 
 	.detail-poster img {
@@ -1635,6 +1644,10 @@
 
 	.detail-section.detail-overview {
 		margin-bottom: -0.4rem;
+	}
+
+	.detail-overview--aside {
+		display: none;
 	}
 
 	.detail-review-sidebar {
@@ -2110,6 +2123,40 @@
 
 		.detail-episodes {
 			max-height: 340px;
+		}
+	}
+
+	@media (orientation: landscape) and (max-height: 500px) {
+		.detail-aside {
+			grid-template-columns: auto minmax(0, 1fr);
+			align-items: start;
+			justify-items: stretch;
+			gap: 1rem;
+		}
+
+		.detail-poster {
+			width: clamp(160px, 46vh, 240px);
+			justify-self: start;
+			grid-column: 1;
+			grid-row: 1 / span 2;
+		}
+
+		.detail-overview--aside {
+			display: block;
+			grid-column: 2;
+			grid-row: 1;
+		}
+
+		.detail-main .detail-section.detail-overview {
+			display: none;
+		}
+
+		.detail-actions {
+			max-width: none;
+			margin: 0;
+			align-self: start;
+			grid-column: 2;
+			grid-row: 2;
 		}
 	}
 

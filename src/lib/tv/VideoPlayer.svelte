@@ -1900,13 +1900,28 @@
 		display: block;
 	}
 
+	:global(media-player.vidstack-player [data-media-provider] iframe.vds-youtube) {
+		transition: height 180ms ease-in-out;
+	}
+
 	/*
-	 * Important: don't override Vidstack's YouTube embed sizing hack.
-	 * Vidstack sets `iframe.vds-youtube[data-no-controls] { height: 1000%; }` to keep YouTube UI
-	 * elements (title/channel/end screen) out of view when we use custom controls.
+	 * Vidstack's YouTube "no-controls" mode uses a large iframe height (e.g. 1000%) to push
+	 * YouTube UI out of view. That hides YouTube chrome, but it also vertically crops the actual
+	 * video ("zoomed in", chopped top/bottom).
+	 *
+	 * We keep Vidstack's crop while paused (so YouTube UI stays hidden) but undo it while playing
+	 * so the video isn't chopped.
 	 */
 	:global(media-player.vidstack-player [data-media-provider] iframe:not(.vds-youtube[data-no-controls])) {
 		height: 100%;
+	}
+
+	:global(
+			media-player.vidstack-player:not([data-paused])
+				[data-media-provider]
+				iframe.vds-youtube[data-no-controls]
+		) {
+		height: 100% !important;
 	}
 
 	:global(media-player.vidstack-player:fullscreen),

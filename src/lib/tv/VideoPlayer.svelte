@@ -1901,7 +1901,7 @@
 	}
 
 	:global(media-player.vidstack-player [data-media-provider] iframe.vds-youtube) {
-		transition: height 180ms ease-in-out;
+		transition: height 100ms ease-in-out;
 	}
 
 	/*

@@ -2168,7 +2168,7 @@
 
 	.controls-row {
 		display: flex;
-		justify-content: space-between;
+		justify-content: flex-start;
 		align-items: center;
 		width: 100%;
 		gap: clamp(0.75rem, 2vw, 1.5rem);
@@ -2196,6 +2196,7 @@
 	.controls-group.right {
 		justify-content: flex-end;
 		flex: 0 0 auto;
+		margin-inline-start: auto;
 	}
 
 	.control-button {
@@ -2512,13 +2513,16 @@
 
 	@media (max-width: 840px) {
 		.controls-row {
-			align-items: flex-start;
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			overflow-y: hidden;
+			align-items: center;
 		}
 
 		.controls-group.right {
-			flex: 1 1 100%;
-			justify-content: flex-start;
-			gap: clamp(0.5rem, 2vw, 0.9rem);
+			flex: 0 0 auto;
+			justify-content: flex-end;
+			gap: clamp(0.45rem, 2vw, 0.9rem);
 		}
 
 		:global(media-volume-slider.volume-slider) {

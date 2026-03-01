@@ -2332,6 +2332,8 @@
 		width: 100%;
 		display: block;
 		--media-slider-track-height: 6px;
+		--media-slider-track-fill-height: var(--media-slider-track-height);
+		--media-slider-track-progress-height: var(--media-slider-track-height);
 		position: relative;
 	}
 
@@ -2369,6 +2371,9 @@
 		border-radius: 999px;
 		overflow: hidden;
 		pointer-events: none;
+		top: 0;
+		left: 0;
+		transform: none;
 	}
 
 	.time-slider .slider-track-progress,
@@ -2376,6 +2381,11 @@
 		position: absolute;
 		inset-block: 0;
 		inset-inline-start: 0;
+		block-size: 100%;
+		height: 100%;
+		top: 0;
+		left: 0;
+		transform: none !important;
 		inline-size: var(--slider-progress, 0%);
 		background: rgba(255, 255, 255, 0.28);
 		z-index: 1;
@@ -2390,9 +2400,24 @@
 		position: absolute;
 		inset-block: 0;
 		inset-inline-start: 0;
+		block-size: 100%;
+		height: 100%;
+		top: 0;
+		left: 0;
+		transform: none !important;
 		inline-size: var(--slider-fill, 0%);
 		background: linear-gradient(90deg, #60a5fa 0%, #c084fc 100%);
 		z-index: 2;
+	}
+
+	/* Vidstack sometimes sets reduced heights on fill/progress layers; force full-height. */
+	.time-slider :global(.vds-slider-track-fill),
+	.time-slider :global(.vds-slider-progress),
+	.volume-slider :global(.vds-slider-track-fill),
+	.volume-slider :global(.vds-slider-progress) {
+		height: 100% !important;
+		block-size: 100% !important;
+		inset-block: 0 !important;
 	}
 
 	.time-slider .slider-chapter .slider-track-fill {
@@ -2425,10 +2450,20 @@
 
 	:global(media-time-slider.time-slider [part='track-fill']) {
 		background: linear-gradient(90deg, #60a5fa 0%, #c084fc 100%);
+		inset: 0 !important;
+		top: 0 !important;
+		bottom: 0 !important;
+		height: 100% !important;
+		block-size: 100% !important;
 	}
 
 	:global(media-time-slider.time-slider [part='track-progress']) {
 		background: rgba(255, 255, 255, 0.28);
+		inset: 0 !important;
+		top: 0 !important;
+		bottom: 0 !important;
+		height: 100% !important;
+		block-size: 100% !important;
 	}
 
 	:global(media-time-slider.time-slider [part='thumb']) {
@@ -2476,6 +2511,8 @@
 	:global(media-volume-slider.volume-slider) {
 		--media-slider-height: 48px;
 		--media-slider-track-height: 5px;
+		--media-slider-track-fill-height: var(--media-slider-track-height);
+		--media-slider-track-progress-height: var(--media-slider-track-height);
 		--media-slider-thumb-size: 14px;
 		--media-slider-track-bg: rgba(148, 163, 215, 0.3);
 		--media-slider-track-fill-bg: linear-gradient(90deg, #facc15 0%, #f97316 100%);

@@ -2005,22 +2005,12 @@
 	}
 
 	.player-controls::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(180deg, rgba(7, 15, 35, 0.05) 0%, rgba(7, 15, 35, 0.85) 100%);
-		opacity: 0.85;
-		transition: opacity 180ms ease-in-out;
-		pointer-events: none;
+		content: none;
 	}
 
 	.player-controls[data-hidden] {
 		opacity: 0;
 		pointer-events: none;
-	}
-
-	.player-controls[data-hidden]::before {
-		opacity: 0;
 	}
 
 	.controls-top {

@@ -2345,6 +2345,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0;
+		column-gap: 0;
 		inline-size: 100%;
 		block-size: var(--media-slider-track-height, 6px);
 		border-radius: 999px;
@@ -2356,10 +2357,58 @@
 	.time-slider .slider-chapter {
 		position: relative;
 		block-size: 100%;
-		min-inline-size: 1px;
-		border-radius: 999px;
+		min-inline-size: 0;
+		border-radius: 0;
+		margin: 0;
 		overflow: hidden;
 		/* Important: do NOT set flex/width here. Vidstack sets each chapter width inline. */
+	}
+
+	/* Visible chapter separators without consuming width (no layout impact). */
+	.time-slider .slider-chapter:not(:first-child)::before {
+		content: '';
+		position: absolute;
+		inset-block: 0;
+		inset-inline-start: 0;
+		width: 1px;
+		background: rgba(0, 0, 0, 0.75);
+		z-index: 4;
+		pointer-events: none;
+	}
+
+	/*
+		Avoid cumulative “whitespace” when there are many chapters:
+		- Don’t force a minimum chapter width (min-inline-size: 0)
+		- Don’t round every tiny chapter segment (only the outer edges)
+	*/
+	.time-slider .slider-chapter .slider-track,
+	.time-slider .slider-chapter .slider-track-fill,
+	.time-slider .slider-chapter .slider-track-progress {
+		border-radius: 0;
+	}
+
+	.time-slider .slider-chapter:first-child {
+		border-top-left-radius: 999px;
+		border-bottom-left-radius: 999px;
+	}
+
+	.time-slider .slider-chapter:last-child {
+		border-top-right-radius: 999px;
+		border-bottom-right-radius: 999px;
+	}
+
+	.time-slider .slider-chapter:first-child .slider-track,
+	.time-slider .slider-chapter:first-child .slider-track-fill,
+	.time-slider .slider-chapter:first-child .slider-track-progress {
+		border-top-left-radius: 999px;
+		border-bottom-left-radius: 999px;
+	}
+
+	.time-slider .slider-chapter:last-child .slider-track,
+	.time-slider .slider-chapter:last-child .slider-track-fill,
+	.time-slider .slider-chapter:last-child .slider-track-progress {
+		border-top-right-radius: 999px;
+		border-bottom-right-radius: 999px;
 	}
 
 	.time-slider .slider-track,

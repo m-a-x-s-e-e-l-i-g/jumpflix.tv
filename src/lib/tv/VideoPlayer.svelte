@@ -2581,6 +2581,7 @@
 
 	:global(iframe.vds-vimeo) {
 		height: initial;
+		background: #000;
 	}
 
 	:global(media-player.vidstack-player[data-fullscreen] iframe.vds-vimeo),

@@ -761,32 +761,23 @@
 		const provider = player.querySelector('media-provider');
 		if (!provider) return () => {};
 
-		const patchIframe = (iframe: HTMLIFrameElement) => {
-			const origSetAttribute = iframe.setAttribute.bind(iframe);
-			iframe.setAttribute = (name: string, value: string) => {
-				if (name === 'src' && value.includes('player.vimeo.com')) {
-					try {
-						const url = new URL(value);
-						url.searchParams.set('transparent', '0');
-						value = url.toString();
-					} catch {
-						// fall back to original value if URL parsing fails
-					}
-				}
-				origSetAttribute(name, value);
-			};
+		// Allow the Vimeo player's transparent body (transparent=1) to composite
+		// against the iframe element's CSS background (#000) instead of the
+		// browser's default opaque-white iframe viewport.
+		const applyTransparency = (iframe: HTMLIFrameElement) => {
+			iframe.setAttribute('allowtransparency', 'true');
 		};
 
-		// Patch any already-present Vimeo iframe
+		// Apply to any already-present Vimeo iframe
 		const existing = provider.querySelector('iframe.vds-vimeo') as HTMLIFrameElement | null;
-		if (existing) patchIframe(existing);
+		if (existing) applyTransparency(existing);
 
 		// Watch for Vimeo iframes added in the future
 		const observer = new MutationObserver((mutations) => {
 			for (const mutation of mutations) {
 				for (const node of mutation.addedNodes) {
 					if (node instanceof HTMLIFrameElement && node.classList.contains('vds-vimeo')) {
-						patchIframe(node);
+						applyTransparency(node);
 					}
 				}
 			}

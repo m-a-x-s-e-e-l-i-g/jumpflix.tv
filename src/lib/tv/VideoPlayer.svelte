@@ -325,6 +325,7 @@
 	let cleanupProgressTracking: (() => void) | null = null;
 	let cleanupPlaybackComplete: (() => void) | null = null;
 	let cleanupSpotChaptersTrackEvents: (() => void) | null = null;
+	let cleanupVimeoBackground: (() => void) | null = null;
 	let controlsEl: HTMLElement | null = null;
 	let hideControlsTimer: ReturnType<typeof setTimeout> | null = null;
 	let controlsVisible = true;
@@ -381,6 +382,14 @@
 	} else if (!browser || !playerEl) {
 		cleanupGestures?.();
 		cleanupGestures = null;
+	}
+
+	$: if (browser && playerEl) {
+		cleanupVimeoBackground?.();
+		cleanupVimeoBackground = setupVimeoBackground(playerEl);
+	} else if (!browser || !playerEl) {
+		cleanupVimeoBackground?.();
+		cleanupVimeoBackground = null;
 	}
 
 	$: if (browser && playerEl && controlsEl) {
@@ -745,6 +754,46 @@
 		return () => {
 			player.removeEventListener('ended', handleEnded);
 		};
+	}
+
+	function setupVimeoBackground(player: MediaPlayerElement): () => void {
+		if (!browser) return () => {};
+		const provider = player.querySelector('media-provider');
+		if (!provider) return () => {};
+
+		const patchIframe = (iframe: HTMLIFrameElement) => {
+			const origSetAttribute = iframe.setAttribute.bind(iframe);
+			iframe.setAttribute = (name: string, value: string) => {
+				if (name === 'src' && value.includes('player.vimeo.com')) {
+					try {
+						const url = new URL(value);
+						url.searchParams.set('transparent', '0');
+						value = url.toString();
+					} catch {
+						// fall back to original value if URL parsing fails
+					}
+				}
+				origSetAttribute(name, value);
+			};
+		};
+
+		// Patch any already-present Vimeo iframe
+		const existing = provider.querySelector('iframe.vds-vimeo') as HTMLIFrameElement | null;
+		if (existing) patchIframe(existing);
+
+		// Watch for Vimeo iframes added in the future
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				for (const node of mutation.addedNodes) {
+					if (node instanceof HTMLIFrameElement && node.classList.contains('vds-vimeo')) {
+						patchIframe(node);
+					}
+				}
+			}
+		});
+		observer.observe(provider, { childList: true, subtree: true });
+
+		return () => observer.disconnect();
 	}
 
 	function setupGestureHandlers(player: MediaPlayerElement) {

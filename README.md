@@ -143,6 +143,34 @@ The app requires Supabase for content management. Here's how to set it up:
 
 1. **Create a Supabase project** at [supabase.com](https://supabase.com)
 2. **Apply the schema**: Run the SQL migrations in `supabase/migrations/` in order (starting with `202510310001_initial_schema.sql`) in your Supabase SQL editor
+
+<details>
+    <summary>Alternative method using the Supabase CLI</summary>
+
+  1. Get the latest stable release via [Github](https://github.com/supabase/cli)
+  2. Unpack and install the CLI, on Linux for example:  
+  `sudo dpkg -i supabase_2.75.0_linux_amd64.deb`
+  3. Obtain an Access Token via the [Dashboard](https://supabase.com/dashboard/account/tokens)
+  4. Authenticate the CLI with your Supabase account:  
+  `supabase login --no-browser --token $TOKEN`
+  5. Link the CLI to the remote project:  
+  `supabase link --project-ref $REF -p $PASSWORD`  
+  (In this case `$REF` is the randomized project slug and `$PASSWORD` is the pgsql password created on account setup)
+  6. `supabase migration list` should show the following:
+  ```
+   Local          | Remote | Time (UTC)          
+  ----------------|--------|---------------------
+   202510310001   |        | 202510310001        
+   20251103120000 |        | 2025-11-03 12:00:00 
+   20251103121500 |        | 2025-11-03 12:15:00 
+   ...
+  ```
+  > Notice the `Remote` column is empty, this means that the local migrations in the folder aren't synced up to your remote dashboard yet.  
+  7. Finally, sync local migrations to your remote instance:  
+  `supabase db push --linked`
+
+</details>
+
 3. **Get your credentials** from Project Settings → API:
    - `PUBLIC_SUPABASE_URL`
    - `PUBLIC_SUPABASE_ANON_KEY`

@@ -56,6 +56,6 @@ alter table public.media_items enable row level security;
 alter table public.series_seasons enable row level security;
 alter table public.series_episodes enable row level security;
 
-create policy if not exists "Media items are readable" on public.media_items for select using (true);
-create policy if not exists "Series seasons are readable" on public.series_seasons for select using (true);
-create policy if not exists "Series episodes are readable" on public.series_episodes for select using (true);
+create policy exists "Media items are readable" on public.media_items for select using (true);
+create policy exists "Series seasons are readable" on public.series_seasons for select using (true);
+create policy exists "Series episodes are readable" on public.series_episodes for select using (true);

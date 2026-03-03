@@ -761,30 +761,61 @@
 		const provider = player.querySelector('media-provider');
 		if (!provider) return () => {};
 
-		// Allow the Vimeo player's transparent body (transparent=1) to composite
-		// against the iframe element's CSS background (#000) instead of the
-		// browser's default opaque-white iframe viewport.
-		const applyTransparency = (iframe: HTMLIFrameElement) => {
-			iframe.setAttribute('allowtransparency', 'true');
+		// Intercept iframe.setAttribute('src', ...) before Vimeo's player URL is
+		// set. We rewrite the embed URL to:
+		//   transparent=0  → Vimeo renders its own opaque black background for
+		//                    letterbox areas instead of a transparent (white) one
+		//   title=0, byline=0, portrait=0  → suppress Vimeo's native overlay UI
+		//                    so it cannot capture pointer events or appear on top
+		//                    of Vidstack's custom controls
+		const patched = new Set<HTMLIFrameElement>();
+		const patchIframe = (iframe: HTMLIFrameElement) => {
+			if (patched.has(iframe)) return;
+			const origSetAttribute = iframe.setAttribute.bind(iframe);
+			iframe.setAttribute = (name: string, value: string) => {
+				if (name === 'src' && value.includes('player.vimeo.com')) {
+					try {
+						const url = new URL(value);
+						url.searchParams.set('transparent', '0');
+						url.searchParams.set('title', '0');
+						url.searchParams.set('byline', '0');
+						url.searchParams.set('portrait', '0');
+						value = url.toString();
+					} catch {
+						// URL parsing failure is non-fatal; the original src value
+						// is passed through unchanged so playback is unaffected.
+					}
+				}
+				origSetAttribute(name, value);
+			};
+			patched.add(iframe);
 		};
 
-		// Apply to any already-present Vimeo iframe
+		// Patch any already-present Vimeo iframe
 		const existing = provider.querySelector('iframe.vds-vimeo') as HTMLIFrameElement | null;
-		if (existing) applyTransparency(existing);
+		if (existing) patchIframe(existing);
 
 		// Watch for Vimeo iframes added in the future
 		const observer = new MutationObserver((mutations) => {
 			for (const mutation of mutations) {
 				for (const node of mutation.addedNodes) {
 					if (node instanceof HTMLIFrameElement && node.classList.contains('vds-vimeo')) {
-						applyTransparency(node);
+						patchIframe(node);
 					}
 				}
 			}
 		});
 		observer.observe(provider, { childList: true, subtree: true });
 
-		return () => observer.disconnect();
+		return () => {
+			observer.disconnect();
+			// Restore the original setAttribute on any iframes we patched so that
+			// the instance-level override does not linger after cleanup.
+			for (const iframe of patched) {
+				delete (iframe as unknown as Record<string, unknown>).setAttribute;
+			}
+			patched.clear();
+		};
 	}
 
 	function setupGestureHandlers(player: MediaPlayerElement) {

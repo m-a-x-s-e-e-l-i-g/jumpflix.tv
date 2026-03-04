@@ -31,7 +31,12 @@
 		sortedAllContent,
 		selectedFacets
 	} from '$lib/tv/store';
-	import { getLatestWatchProgressByBaseId } from '$lib/tv/watchHistory';
+	import { slugify } from '$lib/tv/slug';
+	import {
+		getLatestWatchProgressByBaseId,
+		getSeriesProgressSummary,
+		watchHistoryVersion
+	} from '$lib/tv/watchHistory';
 	import type { ContentItem, Episode, Movie } from '$lib/tv/types';
 	import { browser } from '$app/environment';
 	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
@@ -58,7 +63,7 @@
 
 	$effect(() => {
 		const pageContent = ($page?.data as any)?.content;
-		const items = Array.isArray(pageContent) && pageContent.length ? pageContent : content;
+		const items = Array.isArray(pageContent) ? pageContent : content;
 		setContent(items ?? []);
 	});
 
@@ -83,8 +88,224 @@
 		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
 	);
 
+	type ProfileContext = {
+		name: string;
+		slug: string;
+		kinds: Array<'creator' | 'athlete'>;
+	} | null;
+
+	function computeProfileContext(pathname: string, pageData: any): ProfileContext {
+		const match = pathname.match(/^\/people\/([^/]+)\/?$/);
+		if (!match) return null;
+		const dataName = pageData?.name;
+		const dataSlug = pageData?.slug;
+		const roles = pageData?.roles as
+			| { creator?: boolean; athlete?: boolean }
+			| null
+			| undefined;
+		const raw = match[1] ?? '';
+		let fallback = raw;
+		try {
+			fallback = decodeURIComponent(raw);
+		} catch {
+			// ignore
+		}
+		const name = typeof dataName === 'string' && dataName.trim() ? dataName : fallback;
+		const slug = typeof dataSlug === 'string' && dataSlug.trim() ? dataSlug : raw;
+		const kinds: Array<'creator' | 'athlete'> = [];
+		if (roles?.creator) kinds.push('creator');
+		if (roles?.athlete) kinds.push('athlete');
+		return { name, slug, kinds };
+	}
+
+	type ProfileCreditStats = {
+		creatorCount: number;
+		athleteCount: number;
+		movieCount: number;
+		seriesCount: number;
+		total: number;
+	};
+
+	function itemMatchesPersonRole(item: any, personSlug: string): { creator: boolean; athlete: boolean } {
+		const creators = item?.creators;
+		const starring = item?.starring;
+		const creatorNames = Array.isArray(creators) ? (creators as unknown[]) : [];
+		const athleteNames = Array.isArray(starring) ? (starring as unknown[]) : [];
+		let creator = false;
+		let athlete = false;
+		for (const c of creatorNames) {
+			if (typeof c !== 'string') continue;
+			if (slugify(c) === personSlug) {
+				creator = true;
+				break;
+			}
+		}
+		for (const s of athleteNames) {
+			if (typeof s !== 'string') continue;
+			if (slugify(s) === personSlug) {
+				athlete = true;
+				break;
+			}
+		}
+		return { creator, athlete };
+	}
+
+	function computeProfileCreditStats(itemsRaw: unknown, personSlug: string): ProfileCreditStats {
+		const items = Array.isArray(itemsRaw) ? (itemsRaw as any[]) : [];
+		let creatorCount = 0;
+		let athleteCount = 0;
+		let movieCount = 0;
+		let seriesCount = 0;
+
+		for (const item of items) {
+			const type = item?.type;
+			if (type === 'movie') movieCount += 1;
+			else if (type === 'series') seriesCount += 1;
+			const roles = itemMatchesPersonRole(item, personSlug);
+			if (roles.creator) creatorCount += 1;
+			if (roles.athlete) athleteCount += 1;
+		}
+
+		return {
+			creatorCount,
+			athleteCount,
+			movieCount,
+			seriesCount,
+			total: items.length
+		};
+	}
+
+	type ProfileWatchSummary = { percent: number };
+
+	function computeProfileWatchSummary(
+		itemsRaw: unknown,
+		_watchVersion: number
+	): ProfileWatchSummary | null {
+		if (!browser) return null;
+		const items = Array.isArray(itemsRaw) ? (itemsRaw as any[]) : [];
+		if (!items.length) return { percent: 0 };
+
+		let sumPercent = 0;
+		for (const item of items) {
+			const type = item?.type;
+			const id = item?.id;
+			if ((type !== 'movie' && type !== 'series') || id === null || id === undefined) {
+				continue;
+			}
+			const baseId = `${type}:${String(id)}`;
+			let percent = 0;
+
+			if (type === 'movie') {
+				const progress = getLatestWatchProgressByBaseId(baseId);
+				if (progress) {
+					percent = progress.isWatched
+						? 100
+						: typeof progress.percent === 'number' && Number.isFinite(progress.percent)
+							? progress.percent
+							: 0;
+				}
+			} else {
+				const totalEpisodesRaw = Number(item?.episodeCount);
+				const totalEpisodes =
+					Number.isFinite(totalEpisodesRaw) && totalEpisodesRaw > 0
+						? Math.floor(totalEpisodesRaw)
+						: null;
+				const summary = getSeriesProgressSummary(baseId, { totalEpisodes });
+				if (summary) {
+					percent = summary.isWatched
+						? 100
+						: typeof summary.percent === 'number' && Number.isFinite(summary.percent)
+							? summary.percent
+							: 0;
+				}
+			}
+
+			sumPercent += Math.min(100, Math.max(0, percent));
+		}
+
+		return { percent: Math.min(100, Math.max(0, Math.round(sumPercent / items.length))) };
+	}
+
+	function computeProfileStats(itemsRaw: unknown) {
+		const items = Array.isArray(itemsRaw) ? (itemsRaw as any[]) : [];
+		const movieCount = items.filter((it) => it?.type === 'movie').length;
+		const seriesCount = items.filter((it) => it?.type === 'series').length;
+		return { total: items.length, movies: movieCount, series: seriesCount };
+	}
+
+	function computeProfileBlurb(ctx: Exclude<ProfileContext, null>): string {
+		const name = ctx.name;
+		const kinds = ctx.kinds;
+		if (kinds.includes('creator') && kinds.includes('athlete')) {
+			return `All films and series featuring or created by ${name}.`;
+		}
+		if (kinds.includes('creator')) return `All films and series created by ${name}.`;
+		return `All films and series featuring ${name}.`;
+	}
+
+	const profileContext = $derived(computeProfileContext($page.url.pathname, $page.data));
+
 	const isDetailPathname = (pathname: string) =>
 		pathname.startsWith('/movie/') || pathname.startsWith('/series/');
+
+	const profileStats = $derived(profileContext ? computeProfileStats(($page.data as any)?.content) : null);
+	const profileCreditStats = $derived(
+		profileContext
+			? computeProfileCreditStats(($page.data as any)?.content, profileContext.slug)
+			: null
+	);
+	const profileWatchSummary = $derived(
+		profileContext ? computeProfileWatchSummary(($page.data as any)?.content, $watchHistoryVersion) : null
+	);
+
+	const profileBlurb = $derived(profileContext ? computeProfileBlurb(profileContext) : null);
+
+	const isProfileRoute = $derived(Boolean(profileContext));
+
+	let profileShowCreator = $state(true);
+	let profileShowAthlete = $state(true);
+	let lastProfileSlug = $state<string | null>(null);
+
+	$effect(() => {
+		const slug = profileContext?.slug ?? null;
+		if (!slug) return;
+		if (slug === lastProfileSlug) return;
+		lastProfileSlug = slug;
+		const roles = ($page.data as any)?.roles as { creator?: boolean; athlete?: boolean } | null | undefined;
+		profileShowCreator = Boolean(roles?.creator);
+		profileShowAthlete = Boolean(roles?.athlete);
+		if (!roles?.creator && !roles?.athlete) {
+			profileShowCreator = true;
+			profileShowAthlete = true;
+		}
+	});
+
+	function filterProfileContentByRole(
+		itemsRaw: unknown,
+		personSlug: string,
+		showCreator: boolean,
+		showAthlete: boolean
+	) {
+		const items = Array.isArray(itemsRaw) ? (itemsRaw as any[]) : [];
+		if (!personSlug) return items;
+		if (showCreator && showAthlete) return items;
+		if (!showCreator && !showAthlete) return [];
+		return items.filter((item) => {
+			const roles = itemMatchesPersonRole(item, personSlug);
+			return (showCreator && roles.creator) || (showAthlete && roles.athlete);
+		});
+	}
+
+	const gridContent = $derived(
+		profileContext
+			? filterProfileContentByRole(
+					$visibleContent,
+					profileContext.slug,
+					profileShowCreator,
+					profileShowAthlete
+				)
+			: $visibleContent
+	);
 
 	async function scrollAfterNav(target: number) {
 		if (!browser) return;
@@ -518,7 +739,7 @@
 	});
 
 	$effect(() => {
-		if (!browser || !$selectedContent || currentPath === '/') return;
+		if (!browser || !$selectedContent || !isDetailPathname(currentPath)) return;
 		const fromPath = extractSeasonEpisodeFromPath(currentPath);
 		const hasEpisodeInPath = typeof fromPath.episode === 'number';
 		const episodeHint = hasEpisodeInPath ? fromPath.episode : undefined;
@@ -542,7 +763,7 @@
 
 	const priorityKeys = $derived(
 		new Set(
-			($visibleContent || []).slice(0, Math.max(columns * 2, 8)).map((it) => `${it.type}:${it.id}`)
+			(gridContent || []).slice(0, Math.max(columns * 2, 8)).map((it) => `${it.type}:${it.id}`)
 		)
 	);
 </script>
@@ -570,11 +791,101 @@
 		<section class="relative isolate overflow-hidden pt-24 sm:pt-32">
 			<div class="hero-overlay" aria-hidden="true"></div>
 
-			<TvHeroSection {logoTilt} />
+			{#if profileContext}
+				<div class="mx-auto w-full max-w-6xl px-6">
+					<div class="mt-6 min-w-0">
+							<h1 class="truncate text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+								{profileContext.name}
+							</h1>
 
-			<TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} {selectedFacets} />
+							{#if profileCreditStats}
+								<div class="mt-5 grid gap-3 sm:grid-cols-3">
+									<div class="rounded-xl border border-border/60 bg-background/60 p-4">
+										<div class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+											Athlete in
+										</div>
+										<div class="mt-2 text-4xl font-semibold tracking-tight text-foreground">
+											{profileCreditStats.athleteCount}
+										</div>
+										<div class="mt-1 text-xs text-muted-foreground">videos</div>
+									</div>
 
-      {#if !isMobile}
+									<div class="rounded-xl border border-border/60 bg-background/60 p-4">
+										<div class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+											Creator of
+										</div>
+										<div class="mt-2 text-4xl font-semibold tracking-tight text-foreground">
+											{profileCreditStats.creatorCount}
+										</div>
+										<div class="mt-1 text-xs text-muted-foreground">videos</div>
+									</div>
+
+									<div class="rounded-xl border border-border/60 bg-background/60 p-4">
+										<div class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+											You watched
+										</div>
+										<div class="mt-2 text-4xl font-semibold tracking-tight text-foreground">
+											{#if profileWatchSummary}
+												{profileWatchSummary.percent}%
+											{:else}
+												—
+											{/if}
+										</div>
+										<div class="mt-1 text-xs text-muted-foreground">of this person</div>
+									</div>
+								</div>
+
+								<div class="mt-4 flex flex-wrap items-center gap-2">
+									<button
+										type="button"
+										disabled={!profileContext.kinds.includes('athlete')}
+										onclick={() => {
+											profileShowAthlete = !profileShowAthlete;
+										}}
+										class={
+											`cursor-pointer rounded-full border border-border/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wider transition disabled:cursor-not-allowed ${
+												profileShowAthlete
+													? 'bg-background/60 text-foreground'
+													: 'bg-background/30 text-muted-foreground'
+											} disabled:opacity-50`
+										}
+									>
+										Athlete
+									</button>
+									<button
+										type="button"
+										disabled={!profileContext.kinds.includes('creator')}
+										onclick={() => {
+											profileShowCreator = !profileShowCreator;
+										}}
+										class={
+											`cursor-pointer rounded-full border border-border/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wider transition disabled:cursor-not-allowed ${
+												profileShowCreator
+													? 'bg-background/60 text-foreground'
+													: 'bg-background/30 text-muted-foreground'
+											} disabled:opacity-50`
+										}
+									>
+										Creator
+									</button>
+								</div>
+							{/if}
+							{#if profileBlurb}
+								<p class="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+									{profileBlurb}
+								</p>
+							{/if}
+						</div>
+				</div>
+			{:else}
+				<TvHeroSection {logoTilt} />
+			{/if}
+
+			{#if !isProfileRoute}
+				<TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} {selectedFacets} />
+			{/if}
+
+			{#if !isProfileRoute && !isMobile}
         <div class="catalog-toolbar" aria-label="Catalog view controls">
           <label class="catalog-zoom">
             <span>{m.tv_zoom()}</span>
@@ -593,7 +904,7 @@
     <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
       <TvCatalogGrid
         bind:gridElement={gridEl}
-        visibleContent={$visibleContent}
+			visibleContent={gridContent}
         selectedContent={$selectedContent}
         {isMobile}
         priorityKeys={priorityKeys}

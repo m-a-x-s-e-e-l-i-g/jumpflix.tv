@@ -100,6 +100,7 @@
 	const isDetailRoute = $derived(
 		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
 	);
+	const isPeopleRoute = $derived($page.url.pathname.startsWith('/people/'));
 	const isNavigatingToStats = $derived(
 		(() => {
 			const toPath = $navigating?.to?.url?.pathname;
@@ -701,7 +702,7 @@
 			aria-label="Site actions"
 		>
 			<div class="flex items-center gap-2">
-				{#if !isDetailRoute}
+				{#if !isDetailRoute && !isPeopleRoute}
 					<SheetTrigger
 						aria-label={m.settings_open()}
 						class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
@@ -713,15 +714,15 @@
 					<HelpTipsButton />
 				{/if}
 
-				{#if isStatsRoute || isAdminRoute || isAboutRoute || isDetailRoute}
+				{#if isStatsRoute || isAdminRoute || isAboutRoute || isDetailRoute || isPeopleRoute}
 					<a
 						href="/"
-						aria-label={isDetailRoute ? m.tv_backToCatalog() : 'Catalog'}
-						class={isDetailRoute
+						aria-label={isDetailRoute || isPeopleRoute ? m.tv_backToCatalog() : 'Catalog'}
+						class={isDetailRoute || isPeopleRoute
 							? 'relative inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border bg-background/90 px-3 text-sm font-medium text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
 							: 'relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'}
 					>
-						{#if isDetailRoute}
+						{#if isDetailRoute || isPeopleRoute}
 							<ArrowLeftIcon class="size-4" />
 							<span>{m.tv_backToCatalog()}</span>
 						{:else}
@@ -731,7 +732,7 @@
 					</a>
 				{/if}
 
-				{#if !isDetailRoute && !isStatsRoute}
+				{#if !isDetailRoute && !isPeopleRoute && !isStatsRoute}
 					<a
 						href="/stats"
 						aria-label="Stats"
@@ -742,7 +743,7 @@
 					</a>
 				{/if}
 
-				{#if !isDetailRoute}
+				{#if !isDetailRoute && !isPeopleRoute}
 					{#if data?.isAdmin && $user}
 						<AdminMenuButton />
 					{/if}

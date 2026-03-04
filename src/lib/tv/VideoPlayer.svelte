@@ -1784,7 +1784,7 @@
 								aria-label={m.tv_openOnParkourSpotAria({ label: nowPlayingSpotLabel })}
 								title={m.tv_openOnParkourSpot()}
 								data-disabled={nowPlayingSpotHref ? undefined : 'true'}
-								onclick={(e) => {
+								on:click={(e) => {
 									if (!nowPlayingSpotHref) e.preventDefault();
 								}}
 							>
@@ -1814,7 +1814,7 @@
 									class="player-close-button"
 									aria-label="Close player"
 									data-jumpflix-gesture-ignore="true"
-									onclick={onClose}
+									on:click={onClose}
 								>
 									<span class="icon" aria-hidden="true"><XIcon /></span>
 								</button>

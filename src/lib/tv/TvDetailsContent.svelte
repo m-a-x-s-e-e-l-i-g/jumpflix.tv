@@ -42,6 +42,7 @@
 	} from '$lib/tv/details-helpers';
 	import AuthDialog from '$lib/components/AuthDialog.svelte';
 	import { getPublicUserName, getPublicUserNameOrFallback } from '$lib/utils';
+	import { slugify } from '$lib/tv/slug';
 	import FacetChips from '$lib/components/FacetChips.svelte';
 	import {
 		dispatchRatingUpdated,
@@ -1009,7 +1010,7 @@
 							<h2>{m.tv_creators()}</h2>
 							<div class="detail-tags">
 								{#each showAllCreators ? (selected as any).creators : (selected as any).creators.slice(0, MAX_NAMES) as c}
-									<span>{c}</span>
+									<a href={`/people/${slugify(String(c))}`}>{c}</a>
 								{/each}
 								{#if (selected as any).creators.length > MAX_NAMES}
 									<button
@@ -1030,7 +1031,7 @@
 							<h2>{m.tv_athletes()}</h2>
 							<div class="detail-tags">
 								{#each showAllStarring ? (selected as any).starring : (selected as any).starring.slice(0, MAX_NAMES) as s}
-									<span>{s}</span>
+									<a href={`/people/${slugify(String(s))}`}>{s}</a>
 								{/each}
 								{#if (selected as any).starring.length > MAX_NAMES}
 									<button
@@ -1846,6 +1847,7 @@
 	}
 
 	.detail-tags span,
+	.detail-tags a,
 	.detail-tags-more {
 		padding: 0.3rem 0.6rem;
 		border-radius: 999px;
@@ -1855,6 +1857,21 @@
 		text-transform: uppercase;
 		color: rgba(226, 232, 240, 0.75);
 		background: rgba(8, 12, 24, 0.6);
+	}
+
+	.detail-tags a {
+		text-decoration: none;
+		transition: color 150ms ease, border-color 150ms ease;
+	}
+
+	.detail-tags a:hover {
+		color: rgba(248, 250, 252, 0.92);
+		border-color: rgba(248, 250, 252, 0.28);
+	}
+
+	.detail-tags a:focus-visible {
+		outline: 2px solid rgba(248, 250, 252, 0.22);
+		outline-offset: 2px;
 	}
 
 	.detail-tags-more {

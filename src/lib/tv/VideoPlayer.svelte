@@ -324,6 +324,7 @@
 	let cleanupAutoHide: (() => void) | null = null;
 	let cleanupProgressTracking: (() => void) | null = null;
 	let cleanupPlaybackComplete: (() => void) | null = null;
+	let cleanupProviderParams: (() => void) | null = null;
 	let cleanupSpotChaptersTrackEvents: (() => void) | null = null;
 	let controlsEl: HTMLElement | null = null;
 	let hideControlsTimer: ReturnType<typeof setTimeout> | null = null;
@@ -375,6 +376,55 @@
 		vidstackReady = true;
 	}
 
+	const VIMEO_PROVIDER_PATCHED = Symbol('jumpflix:vimeo-provider-patched');
+
+	function patchVimeoProviderBackground(provider: unknown) {
+		const vimeoProvider = provider as {
+			type?: unknown;
+			buildParams?: (() => Record<string, unknown>) | undefined;
+			iframe?: HTMLIFrameElement | undefined;
+			[VIMEO_PROVIDER_PATCHED]?: boolean;
+		};
+
+		if (!vimeoProvider || vimeoProvider[VIMEO_PROVIDER_PATCHED]) return;
+		if (vimeoProvider.type !== 'vimeo') return;
+		if (typeof vimeoProvider.buildParams !== 'function') return;
+
+		const originalBuildParams = vimeoProvider.buildParams.bind(vimeoProvider);
+		vimeoProvider.buildParams = () => {
+			const params = originalBuildParams();
+			return { ...params, transparent: 0 };
+		};
+
+		try {
+			const iframeSrc = vimeoProvider.iframe?.getAttribute('src') ?? '';
+			if (iframeSrc) {
+				const url = new URL(iframeSrc);
+				url.searchParams.set('transparent', '0');
+				vimeoProvider.iframe?.setAttribute('src', url.toString());
+			}
+		} catch {
+			// no-op
+		}
+		vimeoProvider[VIMEO_PROVIDER_PATCHED] = true;
+	}
+
+	function setupProviderParams(player: MediaPlayerElement) {
+		if (!browser) return () => {};
+
+		const onProviderChange = (event: Event) => {
+			const detail = (event as CustomEvent).detail as unknown;
+			patchVimeoProviderBackground(detail);
+		};
+
+		player.addEventListener('provider-change', onProviderChange as EventListener);
+		patchVimeoProviderBackground((player as unknown as { state?: { provider?: unknown } })?.state?.provider);
+
+		return () => {
+			player.removeEventListener('provider-change', onProviderChange as EventListener);
+		};
+	}
+
 	$: if (browser && playerEl) {
 		cleanupGestures?.();
 		cleanupGestures = setupGestureHandlers(playerEl);
@@ -405,6 +455,14 @@
 	} else if (!browser || !playerEl) {
 		cleanupPlaybackComplete?.();
 		cleanupPlaybackComplete = null;
+	}
+
+	$: if (browser && playerEl) {
+		cleanupProviderParams?.();
+		cleanupProviderParams = setupProviderParams(playerEl);
+	} else if (!browser || !playerEl) {
+		cleanupProviderParams?.();
+		cleanupProviderParams = null;
 	}
 
 	$: if (browser && playerEl) {
@@ -448,6 +506,8 @@
 		cleanupSpotChaptersTrackEvents = null;
 		cleanupNowPlaying?.();
 		cleanupNowPlaying = null;
+		cleanupProviderParams?.();
+		cleanupProviderParams = null;
 		cleanupGestures?.();
 		cleanupGestures = null;
 		cleanupAutoHide?.();
@@ -1599,13 +1659,22 @@
 		const trimmed = value.trim();
 		if (!trimmed) return undefined;
 		if (VIMEO_DOMAIN.test(trimmed) || HAS_PROTOCOL.test(trimmed) || trimmed.startsWith('//')) {
-			return ensureProtocol(trimmed);
+			try {
+				return new URL(ensureProtocol(trimmed)).toString();
+			} catch {
+				return ensureProtocol(trimmed);
+			}
 		}
 		const [idPart, queryPart] = trimmed.split('?');
 		const videoId = idPart.replace(/^\/+/u, '').trim();
 		if (!videoId) return undefined;
-		const suffix = queryPart ? `?${queryPart}` : '';
-		return `https://vimeo.com/${videoId}${suffix}`;
+		try {
+			const params = queryPart ? new URLSearchParams(queryPart) : null;
+			const query = params?.toString() ?? '';
+			return `https://player.vimeo.com/video/${encodeURIComponent(videoId)}${query ? `?${query}` : ''}`;
+		} catch {
+			return `https://player.vimeo.com/video/${encodeURIComponent(videoId)}`;
+		}
 	}
 
 	// Accept short-hand provider prefixes and return full URLs Vidstack can recognise.
@@ -1885,6 +1954,14 @@
 		position: relative;
 	}
 
+	:global(media-player.vidstack-player) {
+		background: #000 !important;
+	}
+
+	:global(media-player.vidstack-player [data-media-provider]) {
+		background: #000 !important;
+	}
+
 	:global(media-player.vidstack-player[data-view-type='video']) {
 		aspect-ratio: auto;
 	}
@@ -1898,6 +1975,10 @@
 	:global(media-player.vidstack-player [data-media-provider] iframe) {
 		width: 100%;
 		display: block;
+	}
+
+	:global(media-player.vidstack-player [data-media-provider] iframe.vds-vimeo) {
+		background: #000;
 	}
 
 	:global(media-player.vidstack-player [data-media-provider] iframe.vds-youtube) {
@@ -2577,6 +2658,7 @@
 		width: 100% !important;
 		aspect-ratio: auto !important;
 		pointer-events: auto !important;
+		background: transparent !important;
 	}
 
 	:global(iframe.vds-vimeo) {

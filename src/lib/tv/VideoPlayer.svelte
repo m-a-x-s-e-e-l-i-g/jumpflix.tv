@@ -366,6 +366,7 @@
 		if (!vidstackLoadPromise) {
 			vidstackLoadPromise = Promise.all([
 				import('vidstack/player'),
+				import('vidstack/player/ui'),
 				import('vidstack/player/layouts/default'),
 				import('vidstack/icons'),
 				import('vidstack/player/styles/default/theme.css'),
@@ -418,7 +419,15 @@
 		};
 
 		player.addEventListener('provider-change', onProviderChange as EventListener);
-		patchVimeoProviderBackground((player as unknown as { state?: { provider?: unknown } })?.state?.provider);
+
+		// Avoid touching `player.state.provider` (not a valid Vidstack state field) as it can
+		// crash the internal state proxy. We only patch when the provider is available.
+		try {
+			const initialProvider = (player as unknown as { provider?: unknown }).provider;
+			if (initialProvider) patchVimeoProviderBackground(initialProvider);
+		} catch {
+			// no-op
+		}
 
 		return () => {
 			player.removeEventListener('provider-change', onProviderChange as EventListener);
@@ -1550,6 +1559,15 @@
 	function isPrimaryClick(event: MouseEvent) {
 		return event.button === 0 || event.button === undefined;
 	}
+
+	function preventUnsupportedRemoteActivation(event: Event) {
+		const target = event.currentTarget as HTMLElement | null;
+		if (!target) return;
+		if (target.getAttribute('aria-hidden') !== 'true') return;
+		event.preventDefault();
+		event.stopPropagation();
+		event.stopImmediatePropagation();
+	}
 	const YOUTUBE_SHORT = /^youtube\/([^\s]+.*)$/i;
 	const VIMEO_SHORT = /^vimeo\/([^\s]+.*)$/i;
 	const YOUTUBE_DOMAIN =
@@ -1896,20 +1914,26 @@
 									</media-volume-slider>
 								{/if}
 
+								<!-- svelte-ignore a11y_no_static_element_interactions -->
 								<media-airplay-button
 									class="control-button"
 									aria-label="Stream via AirPlay"
 									data-jumpflix-gesture-ignore="true"
+									onclick={preventUnsupportedRemoteActivation}
+									onkeydown={preventUnsupportedRemoteActivation}
 								>
-									<span class="icon"><AirplayIcon /></span>
+									<span class="icon" slot="airplay-icon"><AirplayIcon /></span>
 								</media-airplay-button>
 
+								<!-- svelte-ignore a11y_no_static_element_interactions -->
 								<media-google-cast-button
 									class="control-button"
 									aria-label="Cast to device"
 									data-jumpflix-gesture-ignore="true"
+									onclick={preventUnsupportedRemoteActivation}
+									onkeydown={preventUnsupportedRemoteActivation}
 								>
-									<span class="icon"><CastIcon /></span>
+									<span class="icon" slot="google-cast-icon"><CastIcon /></span>
 								</media-google-cast-button>
 
 								<SpotChapterSuggestionDialog
@@ -2327,12 +2351,15 @@
 
 	:global(media-airplay-button.control-button .icon),
 	:global(media-google-cast-button.control-button .icon) {
-		display: inline-flex;
+		display: inline-flex !important;
 	}
 
 	:global(media-airplay-button.control-button[aria-hidden='true']),
 	:global(media-google-cast-button.control-button[aria-hidden='true']) {
-		display: none;
+		display: inline-flex !important;
+		opacity: 0.45;
+		cursor: not-allowed;
+		pointer-events: none;
 	}
 
 	:global(media-airplay-button.control-button[data-active]),

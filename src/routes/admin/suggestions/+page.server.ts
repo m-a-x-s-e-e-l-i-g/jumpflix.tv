@@ -9,22 +9,9 @@ import {
 	applyNewSeason,
 	type MediaPatch
 } from '$lib/server/content-suggestions';
-import { normalizeParkourSpotId } from '$lib/utils';
+import { asTrimmedString, asSafeInt, normalizeParkourSpotId } from '$lib/utils';
 
 const INVALID_JSON = Symbol('invalid-json');
-
-function asTrimmedString(value: unknown): string | null {
-	if (typeof value !== 'string') return null;
-	const trimmed = value.trim();
-	return trimmed ? trimmed : null;
-}
-
-function asSafeInt(value: unknown): number | null {
-	if (value === null || value === undefined) return null;
-	const n = typeof value === 'number' ? value : Number(String(value));
-	if (!Number.isFinite(n)) return null;
-	return Math.max(0, Math.floor(n));
-}
 
 function safeParseJson(value: FormDataEntryValue | null): any | null {
 	if (value === null) return null;

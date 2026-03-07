@@ -10,21 +10,7 @@ import {
 	type MediaPatch
 } from '$lib/server/content-suggestions';
 import { trySendTelegramMessage } from '$lib/server/telegram';
-import { normalizeParkourSpotId } from '$lib/utils';
-
-function asTrimmedString(value: unknown): string | null {
-	if (typeof value !== 'string') return null;
-	const trimmed = value.trim();
-	return trimmed ? trimmed : null;
-}
-
-function asSafeInt(value: unknown): number | null {
-	if (value === null || value === undefined) return null;
-	const n = typeof value === 'number' ? value : Number(String(value));
-	if (!Number.isFinite(n)) return null;
-	const i = Math.floor(n);
-	return i >= 0 ? i : null;
-}
+import { asTrimmedString, asSafeInt, normalizeParkourSpotId } from '$lib/utils';
 
 export const POST: RequestHandler = async ({ request, locals, url }) => {
 	const { user } = await locals.safeGetSession();

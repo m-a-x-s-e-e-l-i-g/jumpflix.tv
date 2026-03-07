@@ -149,6 +149,20 @@ export function getPublicUserNameOrFallback(
 	return getPublicUserName(params) ?? fallback;
 }
 
+export function asTrimmedString(value: unknown): string | null {
+	if (typeof value !== 'string') return null;
+	const trimmed = value.trim();
+	return trimmed ? trimmed : null;
+}
+
+export function asSafeInt(value: unknown): number | null {
+	if (value === null || value === undefined) return null;
+	const n = typeof value === 'number' ? value : Number(String(value));
+	if (!Number.isFinite(n)) return null;
+	const i = Math.floor(n);
+	return i >= 0 ? i : null;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

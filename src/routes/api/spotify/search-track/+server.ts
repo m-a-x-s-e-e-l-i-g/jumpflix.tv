@@ -1,12 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { hasSpotifyCredentials, searchSpotifyTracks } from '$lib/server/spotify.server';
-
-function asTrimmedString(value: unknown): string | null {
-	if (typeof value !== 'string') return null;
-	const trimmed = value.trim();
-	return trimmed ? trimmed : null;
-}
+import { asTrimmedString } from '$lib/utils';
 
 function asSafeLimit(value: unknown): number {
 	const n = typeof value === 'number' ? value : Number(String(value ?? ''));

@@ -181,19 +181,23 @@
 	}
 
 	type TrackChoice = {
-		spotifyUrl: string;
+		songId: number | null;
+		spotifyUrl: string | null;
 		startAtSeconds: number | null;
 		startTimecode: string | null;
 	};
 
 	function trackChoiceFromTrack(t: any): TrackChoice {
-		const spotifyUrl = normString(t?.song?.spotifyUrl);
+		const songIdRaw = t?.song?.id;
+		const songId =
+			typeof songIdRaw === 'number' && Number.isFinite(songIdRaw) ? Math.max(1, Math.floor(songIdRaw)) : null;
+		const spotifyUrl = normString(t?.song?.spotifyUrl) || null;
 		const startAtSecondsRaw =
 			typeof t?.startAtSeconds === 'number' && Number.isFinite(t.startAtSeconds)
 				? Math.max(0, Math.floor(t.startAtSeconds))
 				: null;
 		const startTimecode = normString(t?.startTimecode) || null;
-		return { spotifyUrl, startAtSeconds: startAtSecondsRaw, startTimecode };
+		return { songId, spotifyUrl, startAtSeconds: startAtSecondsRaw, startTimecode };
 	}
 
 	function trackChoiceValue(t: any): string {
@@ -205,13 +209,18 @@
 		if (!raw) return null;
 		try {
 			const parsed = JSON.parse(raw);
-			const spotifyUrl = normString(parsed?.spotifyUrl);
-			if (!spotifyUrl) return null;
+			const songIdRaw = parsed?.songId;
+			const songId =
+				typeof songIdRaw === 'number' && Number.isFinite(songIdRaw)
+					? Math.max(1, Math.floor(songIdRaw))
+					: null;
+			const spotifyUrl = normString(parsed?.spotifyUrl) || null;
+			if (!songId && !spotifyUrl) return null;
 			const sas = parsed?.startAtSeconds;
 			const startAtSeconds =
 				typeof sas === 'number' && Number.isFinite(sas) ? Math.max(0, Math.floor(sas)) : null;
 			const stc = normString(parsed?.startTimecode) || null;
-			return { spotifyUrl, startAtSeconds, startTimecode: stc };
+			return { songId, spotifyUrl, startAtSeconds, startTimecode: stc };
 		} catch {
 			return null;
 		}
@@ -632,6 +641,12 @@
 		if (kind === 'tracks') {
 			const removeChoice = safeParseTrackChoice(trackRemoveChoice);
 			const editChoice = safeParseTrackChoice(trackEditChoice);
+			const choiceSongId =
+				trackAction === 'remove'
+					? removeChoice?.songId
+					: trackAction === 'edit'
+						? editChoice?.songId
+						: null;
 			const choiceUrl =
 				trackAction === 'remove'
 					? normString(removeChoice?.spotifyUrl)
@@ -681,6 +696,7 @@
 			const t: any = {
 				action,
 				operation: trackAction === 'edit' ? 'edit' : undefined,
+				songId: typeof choiceSongId === 'number' ? choiceSongId : undefined,
 				spotifyUrl: effectiveSpotifyUrl || undefined,
 				title: title || undefined,
 				artist: artist || undefined,
@@ -1251,7 +1267,7 @@
 											No tracks found for this video. You can still paste a Spotify URL below.
 										</div>
 										<label class="space-y-1">
-											<span class="text-xs text-white/70">Spotify track URL</span>
+											<span class="text-xs text-white/70">Spotify track URL (optional)</span>
 											<input
 												bind:value={trackSpotifyUrl}
 												placeholder="https://open.spotify.com/track/..."
@@ -1306,12 +1322,13 @@
 									{/if}
 								{:else}
 									<label class="space-y-1">
-										<span class="text-xs text-white/70">Spotify track URL</span>
+										<span class="text-xs text-white/70">Spotify track URL (optional)</span>
 										<input
 											bind:value={trackSpotifyUrl}
 											placeholder="https://open.spotify.com/track/..."
 											class={editedInputClass(Boolean(trackSpotifyUrl.trim()))}
 										/>
+										<div class="text-[11px] text-white/50">Leave blank if the song isn't on Spotify.</div>
 									</label>
 								{/if}
 								{#if trackAction === 'add'}

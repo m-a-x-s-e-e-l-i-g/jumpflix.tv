@@ -348,8 +348,8 @@ export type Database = {
 			songs: {
 				Row: {
 					id: number;
-					spotify_track_id: string;
-					spotify_url: string;
+					spotify_track_id: string | null;
+					spotify_url: string | null;
 					title: string;
 					artist: string;
 					duration_ms: number | null;
@@ -358,8 +358,8 @@ export type Database = {
 				};
 				Insert: {
 					id?: number;
-					spotify_track_id: string;
-					spotify_url: string;
+					spotify_track_id?: string | null;
+					spotify_url?: string | null;
 					title: string;
 					artist: string;
 					duration_ms?: number | null;
@@ -368,8 +368,8 @@ export type Database = {
 				};
 				Update: {
 					id?: number;
-					spotify_track_id?: string;
-					spotify_url?: string;
+					spotify_track_id?: string | null;
+					spotify_url?: string | null;
 					title?: string;
 					artist?: string;
 					duration_ms?: number | null;

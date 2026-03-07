@@ -99,8 +99,9 @@ export interface Series extends BaseContent {
 export type ContentItem = Movie | Series;
 
 export interface Song {
-	spotifyTrackId: string;
-	spotifyUrl: string;
+	id: number;
+	spotifyTrackId?: string;
+	spotifyUrl?: string;
 	title: string;
 	artist: string;
 	durationMs?: number;

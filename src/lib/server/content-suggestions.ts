@@ -1,6 +1,5 @@
 import { parseTimecodeToSeconds } from '$lib/utils/timecode';
 import type { createSupabaseServiceClient } from '$lib/server/supabaseClient';
-import { bestEffortSearchSpotifyTrack, hasSpotifyCredentials } from '$lib/server/spotify.server';
 
 function uniqStrings(values: string[]): string[] {
 	const out: string[] = [];
@@ -41,6 +40,7 @@ export type MediaPatch = {
 	remove?: Record<string, any>;
 	track?: {
 		action?: 'add' | 'remove';
+		songId?: number;
 		spotifyUrl?: string;
 		spotifyTrackId?: string;
 		title?: string;
@@ -54,6 +54,15 @@ export type MediaPatch = {
 	season?: any;
 	episode?: any;
 };
+
+function parseSongId(value: unknown): number | null {
+	if (typeof value === 'number' && Number.isFinite(value) && value > 0) return Math.floor(value);
+	const raw = String(value ?? '').trim();
+	if (!raw) return null;
+	const n = Number(raw);
+	if (!Number.isFinite(n) || n <= 0) return null;
+	return Math.floor(n);
+}
 
 export async function applyMediaPatch(
 	supabase: ReturnType<typeof createSupabaseServiceClient>,
@@ -141,13 +150,26 @@ export async function applyMediaPatch(
 		for (const t of tracks) {
 			const action = t?.action === 'remove' ? 'remove' : 'add';
 			const operation = String(t?.operation ?? t?.op ?? '').trim().toLowerCase();
+			const songId = parseSongId(t?.songId ?? t?.song_id);
 			let spotifyUrl = String(t?.spotifyUrl ?? t?.spotify_url ?? '').trim();
 			let spotifyTrackId = extractSpotifyTrackId(
 				String(t?.spotifyTrackId ?? t?.spotify_track_id ?? spotifyUrl)
 			);
 
 			if (action === 'remove') {
-				if (!spotifyTrackId) throw new Error('Missing Spotify track id/url in track patch');
+				let targetSongId = songId;
+				if (!targetSongId) {
+					if (!spotifyTrackId) {
+						throw new Error('Missing song id or Spotify track id/url in track patch');
+					}
+					const { data: song, error: songErr } = await supabase
+						.from('songs')
+						.select('id')
+						.eq('spotify_track_id', spotifyTrackId)
+						.maybeSingle();
+					if (songErr) throw new Error(songErr.message);
+					targetSongId = song?.id ?? null;
+				}
 
 				const startAtSecondsRaw =
 					t?.startAtSeconds ??
@@ -161,18 +183,12 @@ export async function applyMediaPatch(
 				const parsedFromTc = startTimecode ? parseTimecodeToSeconds(startTimecode) : null;
 				const effectiveOffset = startAtSeconds ?? parsedFromTc;
 
-				const { data: song, error: songErr } = await supabase
-					.from('songs')
-					.select('id')
-					.eq('spotify_track_id', spotifyTrackId)
-					.maybeSingle();
-				if (songErr) throw new Error(songErr.message);
-				if (song?.id) {
+				if (targetSongId) {
 					let del = supabase
 						.from('video_songs')
 						.delete()
 						.eq('video_id', mediaId)
-						.eq('song_id', song.id);
+						.eq('song_id', targetSongId);
 					if (typeof effectiveOffset === 'number' && Number.isFinite(effectiveOffset)) {
 						del = del.eq('start_offset_seconds', effectiveOffset);
 					}
@@ -188,23 +204,6 @@ export async function applyMediaPatch(
 				throw new Error(
 					'Track add requires title and artist (edit admin payload before approving)'
 				);
-			}
-
-			let resolvedSpotifyTrack:
-				| { id: string; url: string; title: string; artist: string; durationMs?: number }
-				| null = null;
-			if (!spotifyTrackId) {
-				if (!hasSpotifyCredentials()) {
-					throw new Error(
-						'Missing Spotify track id/url in track patch (and Spotify API credentials are not configured)'
-					);
-				}
-				resolvedSpotifyTrack = await bestEffortSearchSpotifyTrack({ title, artist });
-				if (!resolvedSpotifyTrack?.id) {
-					throw new Error('Could not resolve Spotify track from title/artist');
-				}
-				spotifyTrackId = resolvedSpotifyTrack.id;
-				spotifyUrl = spotifyUrl || resolvedSpotifyTrack.url;
 			}
 
 			const startAtSecondsRaw =
@@ -234,25 +233,50 @@ export async function applyMediaPatch(
 			const prevParsedFromTc = prevStartTimecode ? parseTimecodeToSeconds(prevStartTimecode) : null;
 			const prevEffectiveOffset = prevStartAtSeconds ?? prevParsedFromTc;
 
-			const { error: upsertSongErr } = await supabase.from('songs').upsert(
-				{
-					spotify_track_id: spotifyTrackId,
-					spotify_url: spotifyUrl || `https://open.spotify.com/track/${spotifyTrackId}`,
-					title: resolvedSpotifyTrack?.title ?? title,
-					artist: resolvedSpotifyTrack?.artist ?? artist,
-					duration_ms: resolvedSpotifyTrack?.durationMs ?? null
-				} as any,
-				{ onConflict: 'spotify_track_id' }
-			);
-			if (upsertSongErr) throw new Error(upsertSongErr.message);
+			let targetSongId = songId;
+			if (!targetSongId) {
+				if (spotifyTrackId) {
+					// Spotify-backed: upsert by track id.
+					// NOTE: we intentionally avoid best-effort Spotify searching here; if the user
+					// didn't provide a URL/ID, we treat it as a manual (no-link) track.
+					const { error: upsertSongErr } = await supabase.from('songs').upsert(
+						{
+							spotify_track_id: spotifyTrackId,
+							spotify_url: spotifyUrl || `https://open.spotify.com/track/${spotifyTrackId}`,
+							title,
+							artist,
+							duration_ms: null
+						} as any,
+						{ onConflict: 'spotify_track_id' }
+					);
+					if (upsertSongErr) throw new Error(upsertSongErr.message);
 
-			const { data: song, error: songErr } = await supabase
-				.from('songs')
-				.select('id')
-				.eq('spotify_track_id', spotifyTrackId)
-				.maybeSingle();
-			if (songErr) throw new Error(songErr.message);
-			if (!song?.id) throw new Error('Failed to resolve song id');
+					const { data: song, error: songErr } = await supabase
+						.from('songs')
+						.select('id')
+						.eq('spotify_track_id', spotifyTrackId)
+						.maybeSingle();
+					if (songErr) throw new Error(songErr.message);
+					if (!song?.id) throw new Error('Failed to resolve song id');
+					targetSongId = song.id;
+				} else {
+					// Manual: store title+artist only (no Spotify link).
+					const { data: inserted, error: insertErr } = await supabase
+						.from('songs')
+						.insert({
+							spotify_track_id: null,
+							spotify_url: null,
+							title,
+							artist,
+							duration_ms: null
+						} as any)
+						.select('id')
+						.single();
+					if (insertErr) throw new Error(insertErr.message);
+					if (!inserted?.id) throw new Error('Failed to insert song');
+					targetSongId = inserted.id;
+				}
+			}
 
 			// If this is an edit (timestamp change), update the existing row instead of inserting a new one.
 			// With duplicates enabled, upserting on (video_id,song_id,start_offset_seconds) would otherwise
@@ -267,7 +291,7 @@ export async function applyMediaPatch(
 							source: 'manual'
 						} as any)
 						.eq('video_id', mediaId)
-						.eq('song_id', song.id)
+						.eq('song_id', targetSongId)
 						.eq('start_offset_seconds', prevEffectiveOffset)
 						.select('id');
 					if (updateErr) throw new Error(updateErr.message);
@@ -279,7 +303,7 @@ export async function applyMediaPatch(
 						.from('video_songs')
 						.select('id')
 						.eq('video_id', mediaId)
-						.eq('song_id', song.id)
+						.eq('song_id', targetSongId)
 						.limit(2);
 					if (fetchRowsErr) throw new Error(fetchRowsErr.message);
 					if (Array.isArray(rows) && rows.length === 1) {
@@ -306,7 +330,7 @@ export async function applyMediaPatch(
 			const { error: upsertVideoSongErr } = await supabase.from('video_songs').upsert(
 				{
 					video_id: mediaId,
-					song_id: song.id,
+					song_id: targetSongId,
 					start_offset_seconds: effectiveOffset,
 					start_timecode: startTimecode,
 					source: 'manual'

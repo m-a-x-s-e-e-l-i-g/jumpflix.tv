@@ -51,7 +51,7 @@
 	let nowPlayingSpotLabel: string | null = null;
 	let nowPlayingTrackHref: string | null = null;
 	let nowPlayingSpotHref: string | null = null;
-	type TrackStartEntry = { startSeconds: number; label: string; href: string };
+	type TrackStartEntry = { startSeconds: number; label: string; href: string | null };
 	let sortedTracks: TrackStartEntry[] = [];
 	let disableTrackPill = false;
 	let cleanupNowPlaying: (() => void) | null = null;
@@ -119,16 +119,12 @@
 		return Boolean(value);
 	}
 
-	function spotifySearchUrl(query: string): string {
-		return `https://open.spotify.com/search/${encodeURIComponent(query)}`;
-	}
-
-	function getTrackHref(track: VideoTrack, fallbackQuery: string): string {
+	function getTrackHref(track: VideoTrack): string | null {
 		const direct = String(track?.song?.spotifyUrl ?? '').trim();
 		if (direct) return direct;
 		const id = String(track?.song?.spotifyTrackId ?? '').trim();
 		if (id) return `https://open.spotify.com/track/${encodeURIComponent(id)}`;
-		return spotifySearchUrl(fallbackQuery);
+		return null;
 	}
 
 	$: {
@@ -141,7 +137,7 @@
 				const title = String(t?.song?.title ?? '').trim();
 				const label = [artist, title].filter(Boolean).join(' — ').trim();
 				if (!label) return null;
-				const href = getTrackHref(t, label);
+				const href = getTrackHref(t);
 				return { startSeconds, label, href } satisfies TrackStartEntry;
 			})
 			.filter(isTrackStartEntry)
@@ -1756,24 +1752,34 @@
 				{#if nowPlayingTrackLabel || nowPlayingSpotLabel}
 					<div class="now-pills" aria-live="polite">
 						{#if nowPlayingTrackLabel}
-							<a
-								class="now-pill now-pill-track"
-								href={nowPlayingTrackHref || spotifySearchUrl(nowPlayingTrackLabel)}
-								target="_blank"
-								rel="noopener noreferrer"
-								aria-label={`Open on Spotify: ${nowPlayingTrackLabel}`}
-								title="Open on Spotify"
-							>
-								<span class="now-pill-icon" aria-hidden="true">
-									<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-										<path
-											fill="currentColor"
-											d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12S6.201 22.5 12 22.5 22.5 17.799 22.5 12 17.799 1.5 12 1.5Zm4.82 15.174a.75.75 0 0 1-1.033.247c-2.83-1.73-6.395-2.122-10.598-1.165a.75.75 0 1 1-.332-1.462c4.566-1.04 8.48-.595 11.714 1.382a.75.75 0 0 1 .249 1.0Zm1.476-3.02a.9.9 0 0 1-1.238.296c-3.24-1.99-8.18-2.566-12.01-1.404a.9.9 0 0 1-.522-1.722c4.36-1.322 9.776-.68 13.48 1.596a.9.9 0 0 1 .29 1.234Zm.127-3.153C14.64 8.21 8.38 8 4.79 9.09a1.05 1.05 0 0 1-.61-2.01c4.13-1.255 11.0-1.01 15.36 1.58a1.05 1.05 0 1 1-1.07 1.84Z"
-										/>
-									</svg>
-								</span>
-								<span class="now-pill-text">{nowPlayingTrackLabel}</span>
-							</a>
+								{#if nowPlayingTrackHref}
+									<a
+										class="now-pill now-pill-track"
+										href={nowPlayingTrackHref}
+										target="_blank"
+										rel="noopener noreferrer"
+										aria-label={`Open on Spotify: ${nowPlayingTrackLabel}`}
+										title="Open on Spotify"
+									>
+										<span class="now-pill-icon" aria-hidden="true">
+											<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+												<path
+													fill="currentColor"
+													d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12S6.201 22.5 12 22.5 22.5 17.799 22.5 12 17.799 1.5 12 1.5Zm4.82 15.174a.75.75 0 0 1-1.033.247c-2.83-1.73-6.395-2.122-10.598-1.165a.75.75 0 1 1-.332-1.462c4.566-1.04 8.48-.595 11.714 1.382a.75.75 0 0 1 .249 1.0Zm1.476-3.02a.9.9 0 0 1-1.238.296c-3.24-1.99-8.18-2.566-12.01-1.404a.9.9 0 0 1-.522-1.722c4.36-1.322 9.776-.68 13.48 1.596a.9.9 0 0 1 .29 1.234Zm.127-3.153C14.64 8.21 8.38 8 4.79 9.09a1.05 1.05 0 0 1-.61-2.01c4.13-1.255 11.0-1.01 15.36 1.58a1.05 1.05 0 1 1-1.07 1.84Z"
+												/>
+											</svg>
+										</span>
+										<span class="now-pill-text">{nowPlayingTrackLabel}</span>
+									</a>
+								{:else}
+									<div
+										class="now-pill now-pill-track-unlinked"
+										aria-label={`Track: ${nowPlayingTrackLabel}`}
+										title="Track (no Spotify link)"
+									>
+										<span class="now-pill-text">{nowPlayingTrackLabel}</span>
+									</div>
+								{/if}
 						{/if}
 						{#if nowPlayingSpotLabel}
 							<a
@@ -2213,6 +2219,14 @@
 
 	.now-pill-track:hover {
 		background: rgba(29, 185, 84, 0.18);
+	}
+
+	.now-pill-track-unlinked {
+		border-color: rgba(29, 185, 84, 0.2);
+		background: rgba(29, 185, 84, 0.06);
+		color: rgba(29, 185, 84, 0.55);
+		cursor: default;
+		pointer-events: none;
 	}
 
 	.now-pill-spot {

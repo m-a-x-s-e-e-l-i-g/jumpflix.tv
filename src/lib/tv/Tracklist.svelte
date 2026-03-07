@@ -19,8 +19,8 @@
 						? b.startAtSeconds
 						: 0;
 				if (aStart !== bStart) return aStart - bStart;
-				const aKey = String(a?.song?.spotifyTrackId ?? '');
-				const bKey = String(b?.song?.spotifyTrackId ?? '');
+				const aKey = String(a?.song?.spotifyTrackId ?? a?.song?.id ?? '');
+				const bKey = String(b?.song?.spotifyTrackId ?? b?.song?.id ?? '');
 				return aKey.localeCompare(bKey);
 			})
 		: [];
@@ -56,15 +56,24 @@
 
 		return null;
 	}
+
+	function getSpotifyTrackHref(track: VideoTrack): string | null {
+		const direct = String(track?.song?.spotifyUrl ?? '').trim();
+		if (direct) return direct;
+		const id = String(track?.song?.spotifyTrackId ?? '').trim();
+		if (id) return `https://open.spotify.com/track/${encodeURIComponent(id)}`;
+		return null;
+	}
 </script>
 
 {#if Array.isArray(sortedTracks) && sortedTracks.length}
 	<div class={`space-y-2 ${className}`.trim()}>
 		<ul class="space-y-2">
-			{#each sortedTracks as t (`${String(t?.song?.spotifyTrackId ?? '')}|${String(t?.startAtSeconds ?? '')}`)}
+			{#each sortedTracks as t (`${String(t?.song?.spotifyTrackId ?? t?.song?.id ?? '')}|${String(t?.startAtSeconds ?? '')}`)}
 				{@const startLabel = getTrackStartLabel(t)}
+				{@const spotifyHref = getSpotifyTrackHref(t)}
 				<li
-					class="flex items-center justify-between gap-3 rounded-lg border border-l-2 border-gray-700/50 border-l-[#1DB954]/50 bg-gray-900/30 px-3 py-2"
+					class={`flex items-center justify-between gap-3 rounded-lg border border-l-2 border-gray-700/50 bg-gray-900/30 px-3 py-2 ${spotifyHref ? 'border-l-[#1DB954]/50' : 'border-l-[#1DB954]/20'}`}
 				>
 					<div class="min-w-0 flex-1">
 						{#if startLabel}
@@ -74,9 +83,9 @@
 							{t.song?.artist} — {t.song?.title}
 						</div>
 					</div>
-					{#if t.song?.spotifyUrl}
+					{#if spotifyHref}
 						<a
-							href={t.song.spotifyUrl}
+							href={spotifyHref}
 							target="_blank"
 							rel="noopener noreferrer"
 							class="inline-flex flex-shrink-0 items-center gap-1 rounded border border-[#1DB954]/35 bg-[#1DB954]/15 px-2 py-1 text-xs text-[#1DB954] transition hover:bg-[#1DB954]/25"

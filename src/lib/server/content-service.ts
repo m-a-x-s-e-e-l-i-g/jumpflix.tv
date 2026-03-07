@@ -180,8 +180,9 @@ function mapMovie(
 						source: (vs.source as 'automation' | 'manual') ?? 'manual',
 						importSource: (vs.import_source as any) ?? undefined,
 						song: removeUndefined({
-							spotifyTrackId: song.spotify_track_id,
-							spotifyUrl: song.spotify_url,
+							id: song.id,
+							spotifyTrackId: song.spotify_track_id ?? undefined,
+							spotifyUrl: song.spotify_url ?? undefined,
 							title: song.title,
 							artist: song.artist,
 							durationMs: song.duration_ms ?? undefined

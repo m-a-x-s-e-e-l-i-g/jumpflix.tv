@@ -1,13 +1,6 @@
 import type { RequestHandler } from './$types';
 import { asVtt, hydrateSpotInfo, loadApprovedSpotChapters } from '$lib/server/spotChapters';
-
-function asSafeInt(value: string | null): number | null {
-	if (!value) return null;
-	const n = Number(value);
-	if (!Number.isFinite(n)) return null;
-	const i = Math.floor(n);
-	return i > 0 ? i : null;
-}
+import { asSafeInt } from '$lib/utils';
 
 export const GET: RequestHandler = async ({ url }) => {
 	const mediaId = asSafeInt(url.searchParams.get('mediaId'));

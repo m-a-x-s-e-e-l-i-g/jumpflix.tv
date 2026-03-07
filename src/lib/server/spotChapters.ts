@@ -1,6 +1,6 @@
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { fetchSpotById } from '$lib/server/parkourSpot';
-import { normalizeParkourSpotId } from '$lib/utils';
+import { asTrimmedString, asSafeInt, normalizeParkourSpotId } from '$lib/utils';
 
 export type SpotInfo = {
 	id: string;
@@ -20,19 +20,6 @@ export type ApprovedSpotChapter = {
 	playbackKey?: string | null;
 	spot?: SpotInfo | null;
 };
-
-function asTrimmedString(value: unknown): string | null {
-	if (typeof value !== 'string') return null;
-	const trimmed = value.trim();
-	return trimmed ? trimmed : null;
-}
-
-function asSafeInt(value: unknown): number | null {
-	if (value === null || value === undefined) return null;
-	const n = typeof value === 'number' ? value : Number(String(value));
-	if (!Number.isFinite(n)) return null;
-	return Math.max(0, Math.floor(n));
-}
 
 function normalizeSpot(raw: any, spotIdFallback?: string): SpotInfo | null {
 	const id = asTrimmedString(raw?.id) ?? asTrimmedString(raw?.spotId) ?? spotIdFallback ?? null;

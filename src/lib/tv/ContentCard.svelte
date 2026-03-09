@@ -119,7 +119,7 @@
 		return Date.now() - ts <= ONE_WEEK_MS;
 	}
 
-	$: isRecentlyAdded = item.type === 'movie' && isWithinLastWeek((item as any).createdAt);
+	$: isRecentlyAdded = isWithinLastWeek(item.createdAt);
 
 	$: isWatched = watchProgress?.isWatched || false;
 	$: progressPercent = watchProgress?.percent || 0;

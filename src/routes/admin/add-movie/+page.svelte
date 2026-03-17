@@ -28,6 +28,19 @@
 	let paid = $state(false);
 	let provider = $state('');
 
+	// Autofill (creators / athletes)
+	let creatorsSuggestions = $state<string[]>([]);
+	let creatorsSuggestOpen = $state(false);
+	let creatorsSuggestLoading = $state(false);
+	let creatorsSuggestError = $state('');
+	let creatorsSuggestAbort: AbortController | null = null;
+
+	let starringSuggestions = $state<string[]>([]);
+	let starringSuggestOpen = $state(false);
+	let starringSuggestLoading = $state(false);
+	let starringSuggestError = $state('');
+	let starringSuggestAbort: AbortController | null = null;
+
 	// YouTube thumbnail preview (best-effort)
 	let youtubeThumbUrl = $state('');
 	let youtubeThumbCandidates: string[] = $state([]);
@@ -38,6 +51,61 @@
 	// Blurhash state
 	let generatingBlurhash = $state(false);
 	let blurhashError = $state('');
+
+	function splitCommaList(value: string): string[] {
+		return value
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean);
+	}
+
+	function activeToken(value: string): string {
+		const parts = value.split(',');
+		return (parts[parts.length - 1] ?? '').trim();
+	}
+
+	function replaceActiveToken(list: string, nextToken: string): string {
+		const parts = list.split(',');
+		parts[parts.length - 1] = ` ${nextToken}`;
+		return parts
+			.join(',')
+			.split(',')
+			.map((s) => s.trim())
+			.filter(Boolean)
+			.join(', ');
+	}
+
+	function uniqueList(values: string[]): string[] {
+		const seen = new Set<string>();
+		const out: string[] = [];
+		for (const v of values) {
+			const key = v.trim().toLowerCase();
+			if (!key) continue;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			out.push(v.trim());
+		}
+		return out;
+	}
+
+	async function fetchPeopleSuggestions(opts: {
+		role: 'creator' | 'athlete';
+		query: string;
+		signal: AbortSignal;
+	}): Promise<string[]> {
+		const res = await fetch(
+			`/api/admin/people-suggest?role=${encodeURIComponent(opts.role)}&q=${encodeURIComponent(opts.query)}`,
+			{ signal: opts.signal }
+		);
+		if (!res.ok) return [];
+		const body = (await res.json()) as { results?: Array<{ name?: unknown }> };
+		const names = Array.isArray(body?.results)
+			? body.results
+					.map((r) => (typeof r?.name === 'string' ? r.name : ''))
+					.filter(Boolean)
+			: [];
+		return uniqueList(names);
+	}
 
 
 	function updatePosterUrlFromSlug() {
@@ -187,6 +255,98 @@
 		} finally {
 			generatingBlurhash = false;
 		}
+	}
+
+	$effect(() => {
+		const q = activeToken(creators);
+		creatorsSuggestError = '';
+		if (!creatorsSuggestOpen || q.length < 2) {
+			creatorsSuggestions = [];
+			creatorsSuggestLoading = false;
+			creatorsSuggestAbort?.abort();
+			creatorsSuggestAbort = null;
+			return;
+		}
+
+		creatorsSuggestAbort?.abort();
+		const controller = new AbortController();
+		creatorsSuggestAbort = controller;
+		creatorsSuggestLoading = true;
+
+		const handle = setTimeout(async () => {
+			try {
+				const suggestions = await fetchPeopleSuggestions({
+					role: 'creator',
+					query: q,
+					signal: controller.signal
+				});
+				const existing = splitCommaList(creators).map((s) => s.toLowerCase());
+				creatorsSuggestions = suggestions.filter((s) => !existing.includes(s.toLowerCase()));
+			} catch (err: unknown) {
+				if (err instanceof DOMException && err.name === 'AbortError') return;
+				creatorsSuggestError = 'Failed to load suggestions.';
+				creatorsSuggestions = [];
+			} finally {
+				if (!controller.signal.aborted) creatorsSuggestLoading = false;
+			}
+		}, 160);
+
+		return () => {
+			clearTimeout(handle);
+			controller.abort();
+		};
+	});
+
+	$effect(() => {
+		const q = activeToken(starring);
+		starringSuggestError = '';
+		if (!starringSuggestOpen || q.length < 2) {
+			starringSuggestions = [];
+			starringSuggestLoading = false;
+			starringSuggestAbort?.abort();
+			starringSuggestAbort = null;
+			return;
+		}
+
+		starringSuggestAbort?.abort();
+		const controller = new AbortController();
+		starringSuggestAbort = controller;
+		starringSuggestLoading = true;
+
+		const handle = setTimeout(async () => {
+			try {
+				const suggestions = await fetchPeopleSuggestions({
+					role: 'athlete',
+					query: q,
+					signal: controller.signal
+				});
+				const existing = splitCommaList(starring).map((s) => s.toLowerCase());
+				starringSuggestions = suggestions.filter((s) => !existing.includes(s.toLowerCase()));
+			} catch (err: unknown) {
+				if (err instanceof DOMException && err.name === 'AbortError') return;
+				starringSuggestError = 'Failed to load suggestions.';
+				starringSuggestions = [];
+			} finally {
+				if (!controller.signal.aborted) starringSuggestLoading = false;
+			}
+		}, 160);
+
+		return () => {
+			clearTimeout(handle);
+			controller.abort();
+		};
+	});
+
+	function applyCreatorSuggestion(name: string) {
+		creators = replaceActiveToken(creators, name);
+		creatorsSuggestOpen = false;
+		creatorsSuggestions = [];
+	}
+
+	function applyStarringSuggestion(name: string) {
+		starring = replaceActiveToken(starring, name);
+		starringSuggestOpen = false;
+		starringSuggestions = [];
 	}
 </script>
 
@@ -421,24 +581,88 @@
 			<div class="space-y-4">
 				<label class="block space-y-1.5">
 					<span class="text-xs text-white/60">Creators (comma-separated)</span>
-					<input
-						type="text"
-						name="creators"
-						bind:value={creators}
-						placeholder="e.g. Channel Name, Director"
-						class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
-					/>
+					<div class="relative">
+						<input
+							type="text"
+							name="creators"
+							bind:value={creators}
+							placeholder="e.g. Channel Name, Director"
+							onfocus={() => (creatorsSuggestOpen = true)}
+							onblur={() => setTimeout(() => (creatorsSuggestOpen = false), 120)}
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						/>
+
+						{#if creatorsSuggestOpen && (creatorsSuggestLoading || creatorsSuggestions.length > 0)}
+							<div
+								class="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-black/20 backdrop-blur"
+							>
+								{#if creatorsSuggestLoading}
+									<div class="px-4 py-3 text-xs text-white/60">Searching…</div>
+								{:else}
+									<div class="max-h-56 overflow-auto">
+										{#each creatorsSuggestions as name (name)}
+											<button
+												type="button"
+												onmousedown={(e) => {
+													e.preventDefault();
+													applyCreatorSuggestion(name);
+												}}
+												class="block w-full px-4 py-2.5 text-left text-sm text-white/80 hover:bg-white/10"
+											>
+												{name}
+											</button>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
+					{#if creatorsSuggestError}
+						<p class="text-xs text-yellow-300">{creatorsSuggestError}</p>
+					{/if}
 				</label>
 
 				<label class="block space-y-1.5">
 					<span class="text-xs text-white/60">Starring / Athletes (comma-separated)</span>
-					<input
-						type="text"
-						name="starring"
-						bind:value={starring}
-						placeholder="e.g. Athlete One, Athlete Two"
-						class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
-					/>
+					<div class="relative">
+						<input
+							type="text"
+							name="starring"
+							bind:value={starring}
+							placeholder="e.g. Athlete One, Athlete Two"
+							onfocus={() => (starringSuggestOpen = true)}
+							onblur={() => setTimeout(() => (starringSuggestOpen = false), 120)}
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						/>
+
+						{#if starringSuggestOpen && (starringSuggestLoading || starringSuggestions.length > 0)}
+							<div
+								class="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-black/20 backdrop-blur"
+							>
+								{#if starringSuggestLoading}
+									<div class="px-4 py-3 text-xs text-white/60">Searching…</div>
+								{:else}
+									<div class="max-h-56 overflow-auto">
+										{#each starringSuggestions as name (name)}
+											<button
+												type="button"
+												onmousedown={(e) => {
+													e.preventDefault();
+													applyStarringSuggestion(name);
+												}}
+												class="block w-full px-4 py-2.5 text-left text-sm text-white/80 hover:bg-white/10"
+											>
+												{name}
+											</button>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
+					{#if starringSuggestError}
+						<p class="text-xs text-yellow-300">{starringSuggestError}</p>
+					{/if}
 				</label>
 
 				<label class="flex items-center gap-3">

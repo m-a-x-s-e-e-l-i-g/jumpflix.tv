@@ -14,11 +14,17 @@ export const load = async ({ params, locals, setHeaders }) => {
 
 	const supabase = locals.supabase;
 
-	const [overviewRes, distRes, ratedRes, watchedNotRatedRes] = await Promise.all([
+	const [overviewRes, distRes, ratedRes, watchedNotRatedRes, reviewsRes] = await Promise.all([
 		supabase.rpc('user_stats_overview', { target_user: userId }),
 		supabase.rpc('user_ratings_distribution', { target_user: userId }),
 		supabase.rpc('user_rated_media', { target_user: userId }),
-		supabase.rpc('user_watched_not_rated', { target_user: userId, limit_n: 50 })
+		supabase.rpc('user_watched_not_rated', { target_user: userId, limit_n: 50 }),
+		(supabase as any)
+			.from('reviews')
+			.select('id, media_id, body, created_at, updated_at')
+			.eq('user_id', userId)
+			.order('created_at', { ascending: false })
+			.limit(20)
 	]);
 
 	const rpcErrors = [
@@ -39,6 +45,10 @@ export const load = async ({ params, locals, setHeaders }) => {
 			);
 		}
 		throw error(500, message);
+	}
+
+	if (reviewsRes.error) {
+		throw error(500, reviewsRes.error.message);
 	}
 
 	const overview = (overviewRes.data ?? null) as any;
@@ -88,6 +98,42 @@ export const load = async ({ params, locals, setHeaders }) => {
 		href: `/${String(item.type ?? '')}/${String(item.slug ?? '')}`
 	}));
 
+	const reviewRows = ((reviewsRes.data ?? []) as any[]) ?? [];
+	const reviewMediaIds = Array.from(
+		new Set(reviewRows.map((r) => Number(r.media_id)).filter((id) => Number.isFinite(id)))
+	);
+
+	let mediaById = new Map<number, any>();
+	if (reviewMediaIds.length) {
+		const { data: mediaRows, error: mediaError } = await (supabase as any)
+			.from('media_items')
+			.select('id, title, slug, type')
+			.in('id', reviewMediaIds);
+		if (mediaError) throw error(500, mediaError.message);
+		for (const row of mediaRows ?? []) {
+			mediaById.set(Number(row.id), row);
+		}
+	}
+
+	const recentReviews = reviewRows.map((row) => {
+		const mediaId = Number(row.media_id) || 0;
+		const media = mediaById.get(mediaId) ?? null;
+		return {
+			id: Number(row.id) || 0,
+			body: String(row.body ?? ''),
+			created_at: String(row.created_at ?? ''),
+			updated_at: String(row.updated_at ?? ''),
+			media: media
+				? {
+					id: Number(media.id) || 0,
+					title: String(media.title ?? ''),
+					type: String(media.type ?? ''),
+					href: `/${String(media.type ?? '')}/${String(media.slug ?? '')}`
+				}
+				: null
+		};
+	});
+
 	let suggestionsCount: number | null = null;
 	if (viewer?.id && viewer.id === userId) {
 		const { count, error: suggestionsError } = await (supabase as any)
@@ -120,7 +166,8 @@ export const load = async ({ params, locals, setHeaders }) => {
 			avgPercentWatched: Number(overview.avg_percent_watched) || 0,
 			ratingDistribution,
 			ratedItems,
-			watchedButNotRated
+			watchedButNotRated,
+			recentReviews
 		}
 	};
 };

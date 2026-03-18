@@ -30,6 +30,13 @@
 				ratingDistribution: RatingDistRow[];
 				ratedItems: RatedItem[];
 				watchedButNotRated: { id: number; title: string; type: string; href: string }[];
+				recentReviews: {
+					id: number;
+					body: string;
+					created_at: string;
+					updated_at: string;
+					media: { id: number; title: string; type: string; href: string } | null;
+				}[];
 			};
 		};
 	}>();
@@ -65,6 +72,18 @@
 		const h = Math.floor(mins / 60);
 		const minutesRemainder = mins % 60;
 		return m.stats_durationHoursMinutes({ hours: String(h), minutes: String(minutesRemainder) });
+	};
+
+	const formatDate = (value: string) => {
+		try {
+			return new Date(value).toLocaleDateString(undefined, {
+				year: 'numeric',
+				month: 'short',
+				day: 'numeric'
+			});
+		} catch {
+			return value;
+		}
 	};
 
 	const ratingMax: number = $derived(
@@ -228,6 +247,43 @@
 				{/if}
 			{/if}
 		</div>
+	</div>
+
+	<div class="mt-8 rounded-xl border p-4">
+		<div class="flex items-baseline justify-between gap-3">
+			<h2 class="text-base font-semibold">{m.stats_reviewsPlaced()}</h2>
+			<div class="text-xs text-muted-foreground">
+				{m.stats_itemsCount({ count: formatNumber(data.stats.reviewsCount) })}
+			</div>
+		</div>
+		{#if data.stats.recentReviews.length === 0}
+			<p class="mt-3 text-sm text-muted-foreground">{m.tv_noReviews()}</p>
+		{:else}
+			<div class="mt-3 grid gap-3">
+				{#each data.stats.recentReviews as review (review.id)}
+					<div class="rounded-lg border bg-background/60 p-4">
+						<div class="flex flex-wrap items-baseline justify-between gap-2">
+							{#if review.media}
+								<a href={review.media.href} class="text-sm font-medium hover:underline">
+									{review.media.title}
+									<span class="text-xs text-muted-foreground">
+										· {formatMediaTypeLabel(review.media.type)}
+									</span>
+								</a>
+							{:else}
+								<div class="text-sm font-medium text-muted-foreground">Media</div>
+							{/if}
+							<div class="text-xs text-muted-foreground tabular-nums">
+								{formatDate(review.created_at)}
+							</div>
+						</div>
+						<div class="mt-2 whitespace-pre-wrap text-sm text-foreground/90">
+							{review.body}
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
 	</div>
 
 	<div class="mt-8 rounded-xl border p-4">

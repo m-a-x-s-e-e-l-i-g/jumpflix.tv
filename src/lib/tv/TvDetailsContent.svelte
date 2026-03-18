@@ -1325,9 +1325,15 @@
 					{:else}
 						<div class="detail-reviews-list">
 							{#each reviews as r (r.id)}
+								{@const authorName = (r.author_name ?? '').trim()}
+								{@const authorLabel = getPublicUserNameOrFallback({ name: authorName || null }, 'Anonymous')}
 								<article class="detail-review-item">
 									<div class="detail-review-meta">
-										<span>{getPublicUserNameOrFallback({ name: r.author_name }, 'Anonymous')}</span>
+										{#if authorName}
+											<a href={`/stats/${r.user_id}`} class="detail-review-author-link">{authorLabel}</a>
+										{:else}
+											<span>{authorLabel}</span>
+										{/if}
 										<span aria-hidden="true">·</span>
 										<span>{fmtReviewDate(r.created_at)}</span>
 									</div>
@@ -1815,6 +1821,17 @@
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
 		color: rgba(226, 232, 240, 0.55);
+	}
+
+	.detail-review-author-link {
+		color: inherit;
+		text-decoration: underline;
+		text-decoration-color: currentColor;
+		text-underline-offset: 0.25em;
+	}
+
+	.detail-review-author-link:hover {
+		text-decoration-thickness: 2px;
 	}
 
 	.detail-review-body {

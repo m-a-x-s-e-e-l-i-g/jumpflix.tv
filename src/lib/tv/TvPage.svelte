@@ -906,6 +906,7 @@
         bind:gridElement={gridEl}
 			visibleContent={gridContent}
         selectedContent={$selectedContent}
+		sortBy={$sortBy}
         {isMobile}
         priorityKeys={priorityKeys}
         gridScale={isMobile ? 1 : $gridScale}

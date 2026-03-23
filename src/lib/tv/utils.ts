@@ -259,12 +259,20 @@ export function filterAndSortContent(
 			break;
 		case 'rating-desc':
 			sorted.sort(
-				compareWithPriorities((a, b) => (b.averageRating ?? 5.5) - (a.averageRating ?? 5.5))
+				compareWithPriorities((a, b) => {
+					const ratingDiff = (b.averageRating ?? 5.5) - (a.averageRating ?? 5.5);
+					if (ratingDiff !== 0) return ratingDiff;
+					return (b.ratingCount ?? 0) - (a.ratingCount ?? 0);
+				})
 			);
 			break;
 		case 'rating-asc':
 			sorted.sort(
-				compareWithPriorities((a, b) => (a.averageRating ?? 5.5) - (b.averageRating ?? 5.5))
+				compareWithPriorities((a, b) => {
+					const ratingDiff = (a.averageRating ?? 5.5) - (b.averageRating ?? 5.5);
+					if (ratingDiff !== 0) return ratingDiff;
+					return (b.ratingCount ?? 0) - (a.ratingCount ?? 0);
+				})
 			);
 			break;
 		default:

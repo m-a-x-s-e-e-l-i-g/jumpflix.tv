@@ -2,7 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { browser } from '$app/environment';
 	import ContentCard from '$lib/tv/ContentCard.svelte';
-	import type { ContentItem } from '$lib/tv/types';
+	import type { ContentItem, SortBy } from '$lib/tv/types';
 	import * as m from '$lib/paraglide/messages';
 	import { computeColumns } from '$lib/tv/helpers/grid';
 
@@ -13,6 +13,7 @@
 	export let isMobile = false;
 	export let onSelect: (item: ContentItem) => void;
 	export let gridScale = 1;
+	export let sortBy: SortBy = 'default';
 
 	const keyFor = (item: ContentItem) => `${item.type}:${item.id}`;
 
@@ -153,6 +154,7 @@
 						{onSelect}
 						{isMobile}
 						priority={priorityKeys.has(keyFor(item))}
+						showRatingBadge={sortBy === 'rating-desc' || sortBy === 'rating-asc'}
 					/>
 				</div>
 			{/each}

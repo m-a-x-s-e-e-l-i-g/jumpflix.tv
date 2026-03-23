@@ -21,6 +21,8 @@
 	export let onSelect: (item: ContentItem) => void;
 	// Prioritize above-the-fold images for fastest first paint
 	export let priority = false;
+	// When sorting by rating, optionally show rating summary on the poster.
+	export let showRatingBadge = false;
 
 	let error = false;
 	$: blurhash = item.blurhash;
@@ -128,6 +130,11 @@
 		progressPercent <= 0 ? 0 : Math.min(99, Math.max(1, Math.round(progressPercent)));
 	$: progressBarWidth = Math.min(100, Math.max(progressPercent, 4));
 
+	$: ratingValue = typeof item.averageRating === 'number' ? item.averageRating : null;
+	$: ratingCount = typeof item.ratingCount === 'number' ? item.ratingCount : 0;
+	$: ratingLabel =
+		ratingValue !== null && ratingCount > 0 ? `${ratingValue.toFixed(1)} (${ratingCount})` : null;
+
 	// no loading lifecycle needed
 
 	function handleLoaded(e: Event) {
@@ -221,6 +228,12 @@
 				<span class="card-badge card-badge--watched">{m.tv_showWatched()}</span>
 			{/if}
 		</div>
+
+		{#if showRatingBadge && ratingLabel}
+			<div class="card-rating" aria-label={`Rating ${ratingLabel}`}>
+				★ {ratingLabel}
+			</div>
+		{/if}
 
 		{#if !hasProgress && !isWatched}
 			<!-- Bottom-right info: duration for movies, episode count for series -->
@@ -320,6 +333,21 @@
 		z-index: 20;
 		font-size: 0.6rem;
 		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		padding: 0.35rem 0.55rem;
+		border-radius: 999px;
+		background: rgba(6, 10, 20, 0.7);
+		border: 1px solid rgba(248, 250, 252, 0.12);
+		color: rgba(226, 232, 240, 0.85);
+	}
+
+	.card-rating {
+		position: absolute;
+		top: 0.75rem;
+		right: 0.75rem;
+		z-index: 20;
+		font-size: 0.6rem;
+		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		padding: 0.35rem 0.55rem;
 		border-radius: 999px;

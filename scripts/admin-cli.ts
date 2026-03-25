@@ -1115,6 +1115,7 @@ async function manageEpisodes() {
 		choices: [
 			{ name: '➕ Add Episode', value: 'add' },
 			{ name: '✏️  Edit Episode', value: 'edit' },
+			{ name: '🔢 Renumber Episodes (close gaps)', value: 'renumber' },
 			{ name: '🗑️  Delete Episode', value: 'delete' },
 			{ name: '← Back', value: 'back' }
 		]
@@ -1128,6 +1129,8 @@ async function manageEpisodes() {
 	} else if (action === 'edit') {
 		const selectedSeason = seasons.find((s) => s.id === seasonId);
 		await editEpisode(seriesId, seasonId, selectedSeason?.season_number || 1);
+	} else if (action === 'renumber') {
+		await renumberEpisodesInSeason(seasonId);
 	} else if (action === 'delete') {
 		await deleteEpisode(seasonId);
 	}
@@ -1436,6 +1439,120 @@ async function deleteEpisode(seasonId: number) {
 		console.error('❌ Error deleting:', deleteError.message);
 	} else {
 		console.log('✅ Deleted successfully!');
+		await renumberEpisodesInSeason(seasonId);
+	}
+}
+
+function escapeRegExp(text: string): string {
+	return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function renumberEpisodesInSeason(seasonId: number) {
+	// Fetch season + series slug (best-effort; renumbering works without slug)
+	const { data: season } = await supabase
+		.from('series_seasons')
+		.select('id, season_number, series_id')
+		.eq('id', seasonId)
+		.single();
+
+	let seriesSlug: string | null = null;
+	if (season?.series_id) {
+		const { data: series } = await supabase
+			.from('media_items')
+			.select('slug')
+			.eq('id', season.series_id)
+			.single();
+		seriesSlug = series?.slug ?? null;
+	}
+
+	const { data: episodes, error } = await supabase
+		.from('series_episodes')
+		.select('id, episode_number, thumbnail')
+		.eq('season_id', seasonId)
+		.order('episode_number');
+
+	if (error || !episodes || episodes.length === 0) {
+		return;
+	}
+
+	const seasonNumber = season?.season_number ?? null;
+	const seasonPad = seasonNumber != null ? String(seasonNumber).padStart(2, '0') : null;
+
+	const planned = episodes.map((ep, index) => {
+		const desiredEpisodeNumber = index + 1;
+		let desiredThumbnail: string | null | undefined = ep.thumbnail;
+
+		if (
+			seriesSlug &&
+			seasonPad &&
+			ep.thumbnail &&
+			typeof ep.episode_number === 'number' &&
+			ep.episode_number > 0
+		) {
+			const oldPad = String(ep.episode_number).padStart(2, '0');
+			const newPad = String(desiredEpisodeNumber).padStart(2, '0');
+			const thumbRe = new RegExp(
+				`^/images/thumbnails/${escapeRegExp(seriesSlug)}/s${seasonPad}e${oldPad}\\.(webp|png|jpe?g)$`,
+				'i'
+			);
+			if (thumbRe.test(ep.thumbnail)) {
+				desiredThumbnail = ep.thumbnail.replace(
+					new RegExp(`s${seasonPad}e${oldPad}(\\.(webp|png|jpe?g))$`, 'i'),
+					`s${seasonPad}e${newPad}$1`
+				);
+			}
+		}
+
+		return {
+			id: ep.id,
+			currentEpisodeNumber: ep.episode_number,
+			desiredEpisodeNumber,
+			currentThumbnail: ep.thumbnail,
+			desiredThumbnail
+		};
+	});
+
+	const needsRenumber = planned.some((p) => p.currentEpisodeNumber !== p.desiredEpisodeNumber);
+	const needsThumbnailFix = planned.some((p) => p.currentThumbnail !== p.desiredThumbnail);
+	if (!needsRenumber && !needsThumbnailFix) {
+		return;
+	}
+
+	// Avoid potential unique constraint collisions by staging updates into a safe temporary range first.
+	if (needsRenumber) {
+		for (let index = 0; index < planned.length; index++) {
+			const p = planned[index];
+			const tempEpisodeNumber = 1000 + index + 1;
+			const { error: tempError } = await supabase
+				.from('series_episodes')
+				.update({ episode_number: tempEpisodeNumber, updated_at: new Date().toISOString() })
+				.eq('id', p.id);
+			if (tempError) {
+				console.warn('⚠️  Failed staging episode renumber:', tempError.message);
+				return;
+			}
+		}
+	}
+
+	let changed = 0;
+	for (const p of planned) {
+		const update: any = { updated_at: new Date().toISOString() };
+		if (needsRenumber) update.episode_number = p.desiredEpisodeNumber;
+		if (p.currentThumbnail !== p.desiredThumbnail) update.thumbnail = p.desiredThumbnail;
+
+		// If only updated_at would change, skip.
+		if (Object.keys(update).length === 1) continue;
+
+		const { error: updateError } = await supabase.from('series_episodes').update(update).eq('id', p.id);
+		if (updateError) {
+			console.warn('⚠️  Failed updating episode after renumber:', updateError.message);
+			return;
+		}
+		changed++;
+	}
+
+	if (changed > 0) {
+		console.log(`🔢 Renumbered season episodes (${changed} update${changed === 1 ? '' : 's'})`);
 	}
 }
 

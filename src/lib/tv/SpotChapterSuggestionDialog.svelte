@@ -195,14 +195,13 @@
 		<span class="sr-only">{triggerTitle}</span>
 	</Dialog.Trigger>
 
-	<Dialog.Portal>
-		<Dialog.Overlay
-			class="fixed inset-0 z-[60] bg-black/78 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
-		/>
-		<Dialog.Content
-			class="fixed top-1/2 left-1/2 z-[70] max-h-[calc(100dvh-2rem)] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-white/10 bg-background p-0 text-foreground shadow-[0_40px_80px_-30px_rgba(0,0,0,0.75)] focus:outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
-			aria-describedby="spot-suggestion-description"
-		>
+	<Dialog.Overlay
+		class="fixed inset-0 z-[60] bg-black/78 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+	/>
+	<Dialog.Content
+		class="fixed top-1/2 left-1/2 z-[70] max-h-[calc(100dvh-2rem)] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-white/10 bg-background p-0 text-foreground shadow-[0_40px_80px_-30px_rgba(0,0,0,0.75)] focus:outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+		aria-describedby="spot-suggestion-description"
+	>
 			<button type="button" class={closeButtonClass} onclick={() => (open = false)}>
 				<XIcon class="size-4" />
 				<span class="sr-only">Close</span>
@@ -297,5 +296,4 @@
 				</div>
 			</div>
 		</Dialog.Content>
-	</Dialog.Portal>
 </Dialog.Root>

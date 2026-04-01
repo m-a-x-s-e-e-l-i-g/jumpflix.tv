@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { requireAdmin } from '$lib/server/admin';
-import { invalidateContentCache } from '$lib/server/content-service';
+import { fetchAllContent, invalidateContentCache } from '$lib/server/content-service';
 
 type MediaRow = {
 	id: number;
@@ -140,7 +140,46 @@ function buildPreview(opts: {
 export const load: PageServerLoad = async ({ locals }) => {
 	const { user } = await locals.safeGetSession();
 	requireAdmin(user);
-	return {};
+
+	const content = await fetchAllContent();
+
+	const contributorsByKey = new Map<string, string>();
+	const athletesByKey = new Map<string, string>();
+
+	function addName(target: Map<string, string>, value: unknown) {
+		if (typeof value !== 'string') return;
+		const trimmed = value.trim();
+		if (!trimmed) return;
+		const key = trimmed.toLowerCase();
+		if (target.has(key)) return;
+		target.set(key, trimmed);
+	}
+
+	for (const item of content) {
+		const creators = (item as any)?.creators;
+		const starring = (item as any)?.starring;
+
+		if (Array.isArray(creators)) {
+			for (const c of creators) addName(contributorsByKey, c);
+		}
+		if (Array.isArray(starring)) {
+			for (const s of starring) addName(athletesByKey, s);
+		}
+	}
+
+	const contributors = Array.from(contributorsByKey.values()).sort((a, b) =>
+		a.localeCompare(b, undefined, { sensitivity: 'base' })
+	);
+	const athletes = Array.from(athletesByKey.values()).sort((a, b) =>
+		a.localeCompare(b, undefined, { sensitivity: 'base' })
+	);
+
+	return {
+		people: {
+			contributors,
+			athletes
+		}
+	};
 };
 
 export const actions: Actions = {

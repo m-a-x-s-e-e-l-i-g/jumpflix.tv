@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { ActionData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { form, data }: { form: ActionData; data: PageData } = $props();
 
 	let from = $state('');
 	let to = $state('');
@@ -311,6 +311,41 @@
 			</div>
 		</form>
 	</div>
+
+	{#if data?.people}
+		<div class="jf-surface-soft mt-6 rounded-2xl p-5">
+			<div>
+				<div class="text-sm font-medium text-white/80">All people</div>
+				<div class="mt-1 text-xs text-white/60">
+					Contributors: {data.people.contributors.length} · Athletes: {data.people.athletes.length}
+				</div>
+			</div>
+
+			<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+				<div class="rounded-xl border border-white/10 bg-black/20 p-4">
+					<div class="text-xs text-white/60">Contributors</div>
+					<div class="mt-2 max-h-72 overflow-auto pr-2">
+						<ul class="space-y-1 text-sm text-white/80">
+							{#each data.people.contributors as name (name)}
+								<li class="truncate">{name}</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+
+				<div class="rounded-xl border border-white/10 bg-black/20 p-4">
+					<div class="text-xs text-white/60">Athletes</div>
+					<div class="mt-2 max-h-72 overflow-auto pr-2">
+						<ul class="space-y-1 text-sm text-white/80">
+							{#each data.people.athletes as name (name)}
+								<li class="truncate">{name}</li>
+							{/each}
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	{#if form?.preview}
 		<div class="jf-surface-soft mt-6 rounded-2xl p-5">

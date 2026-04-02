@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { getContext, onMount, tick } from 'svelte';
+	import LayoutGridIcon from '@lucide/svelte/icons/layout-grid';
+	import ListIcon from '@lucide/svelte/icons/list';
 	import { page } from '$app/stores';
 	import { get } from 'svelte/store';
 	import { toast } from 'svelte-sonner';
@@ -7,6 +9,7 @@
 	import TvHeroSection from '$lib/tv/TvHeroSection.svelte';
 	import TvSearchControls from '$lib/tv/TvSearchControls.svelte';
 	import TvCatalogGrid from '$lib/tv/TvCatalogGrid.svelte';
+	import TvCatalogList from '$lib/tv/TvCatalogList.svelte';
 	import TvPageBackdrop from '$lib/tv/TvPageBackdrop.svelte';
 	import TvDetailPanel from '$lib/tv/TvDetailPanel.svelte';
 	import RatingPromptDialog from '$lib/components/RatingPromptDialog.svelte';
@@ -18,6 +21,7 @@
 		showWatched,
 		sortBy,
 		gridScale,
+		catalogView,
 		selectedContent,
 		showPlayer,
 		selectedIndex,
@@ -306,6 +310,8 @@
 				)
 			: $visibleContent
 	);
+
+	const currentCatalogView = $derived($catalogView);
 
 	async function scrollAfterNav(target: number) {
 		if (!browser) return;
@@ -885,33 +891,66 @@
 				<TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} {selectedFacets} />
 			{/if}
 
-			{#if !isProfileRoute && !isMobile}
-        <div class="catalog-toolbar" aria-label="Catalog view controls">
-          <label class="catalog-zoom">
-            <span>{m.tv_zoom()}</span>
-            <input
-              type="range"
-              min="0.8"
-              max="1"
-              step="0.1"
-              value={$gridScale}
-              oninput={handleScaleChange}
-            />
-          </label>
-        </div>
-      {/if}
+			<div class="catalog-toolbar" aria-label="Catalog view controls">
+					<div class="catalog-view-switch" role="group" aria-label="Catalog view">
+						<button
+							type="button"
+							class:active={$catalogView === 'grid'}
+							class="catalog-view-button"
+							aria-pressed={$catalogView === 'grid'}
+							title="Grid view"
+							onclick={() => catalogView.set('grid')}
+						>
+							<LayoutGridIcon class="size-4" />
+							<span class="sr-only">Grid view</span>
+						</button>
+						<button
+							type="button"
+							class:active={$catalogView === 'list'}
+							class="catalog-view-button"
+							aria-pressed={$catalogView === 'list'}
+							title="List view"
+							onclick={() => catalogView.set('list')}
+						>
+							<ListIcon class="size-4" />
+							<span class="sr-only">List view</span>
+						</button>
+					</div>
+					{#if !isMobile}
+						<label class="catalog-zoom">
+							<span>{m.tv_zoom()}</span>
+							<input
+								type="range"
+								min="0.8"
+								max="1"
+								step="0.1"
+								value={$gridScale}
+								oninput={handleScaleChange}
+							/>
+						</label>
+					{/if}
+				</div>
     </section>
     <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
-      <TvCatalogGrid
-        bind:gridElement={gridEl}
-			visibleContent={gridContent}
-        selectedContent={$selectedContent}
-		sortBy={$sortBy}
-        {isMobile}
-        priorityKeys={priorityKeys}
-        gridScale={isMobile ? 1 : $gridScale}
-        onSelect={handleSelect}
-      />
+			{#if currentCatalogView === 'list'}
+				<TvCatalogList
+					bind:listElement={gridEl}
+					visibleContent={gridContent}
+					selectedContent={$selectedContent}
+					onSelect={handleSelect}
+				/>
+			{:else}
+				<TvCatalogGrid
+					bind:gridElement={gridEl}
+					visibleContent={gridContent}
+					selectedContent={$selectedContent}
+					sortBy={$sortBy}
+					{isMobile}
+					priorityKeys={priorityKeys}
+					gridScale={isMobile ? 1 : $gridScale}
+					onSelect={handleSelect}
+				/>
+			{/if}
     </div>
   {/if}
 </div>
@@ -1030,11 +1069,59 @@
 		}
 	}
 
+	@media (max-width: 767px) {
+		.catalog-toolbar {
+			margin-top: 1rem;
+			justify-content: flex-start;
+			padding: 0 1.25rem;
+		}
+	}
+
 	.catalog-toolbar {
 		margin-top: 1.25rem;
 		display: flex;
+		align-items: center;
+		gap: 0.75rem;
 		justify-content: flex-end;
 		padding: 0 clamp(1.5rem, 3vw, 3.75rem);
+	}
+
+	.catalog-view-switch {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.2rem;
+		border-radius: 999px;
+		border: 1px solid rgba(248, 250, 252, 0.2);
+		background: rgba(8, 12, 24, 0.65);
+		padding: 0.2rem;
+	}
+
+	.catalog-view-button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border: 0;
+		border-radius: 999px;
+		background: transparent;
+		padding: 0.55rem;
+		color: rgba(226, 232, 240, 0.72);
+		transition:
+			background 180ms ease,
+			color 180ms ease,
+			transform 180ms ease;
+	}
+
+	.catalog-view-button:hover,
+		.catalog-view-button:focus-visible {
+		background: rgba(255, 255, 255, 0.08);
+		color: rgba(248, 250, 252, 0.96);
+		outline: none;
+	}
+
+	.catalog-view-button.active {
+		background: rgba(229, 9, 20, 0.18);
+		color: rgba(255, 255, 255, 0.98);
+		box-shadow: inset 0 0 0 1px rgba(229, 9, 20, 0.3);
 	}
 
 	.catalog-zoom {

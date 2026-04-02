@@ -146,6 +146,8 @@ export type SortBy =
 	| 'rating-desc'
 	| 'rating-asc';
 
+export type CatalogView = 'grid' | 'list';
+
 // Selected facets for filtering content
 export interface SelectedFacets {
 	type?: FacetType[];

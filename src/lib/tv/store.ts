@@ -1,6 +1,6 @@
 import { writable, derived, type Readable, get } from 'svelte/store';
 import { browser } from '$app/environment';
-import type { ContentItem, Episode, SortBy, SelectedFacets } from './types';
+import type { CatalogView, ContentItem, Episode, SortBy, SelectedFacets } from './types';
 import { buildRankMap, filterAndSortContent, isInlinePlayable, keyFor } from './utils';
 import {
 	getAllWatchProgress,
@@ -15,6 +15,7 @@ const SHOW_PAID_STORAGE_KEY = 'jumpflix.tv:showPaid';
 const SHOW_WATCHED_STORAGE_KEY = 'jumpflix.tv:showWatched';
 const SEARCH_QUERY_STORAGE_KEY = 'jumpflix.tv:searchQuery';
 const GRID_SCALE_STORAGE_KEY = 'jumpflix.tv:gridScale';
+const CATALOG_VIEW_STORAGE_KEY = 'jumpflix.tv:catalogView';
 
 // Remember toggle preferences across sessions on the same device.
 function loadBooleanPreference(key: string, defaultValue = true): boolean {
@@ -55,6 +56,11 @@ function persistStringPreference(key: string, value: string) {
 	} catch {
 		/* noop */
 	}
+}
+
+function loadCatalogViewPreference(): CatalogView {
+	const raw = loadStringPreference(CATALOG_VIEW_STORAGE_KEY, 'grid');
+	return raw === 'list' ? 'list' : 'grid';
 }
 
 function loadNumberPreference(key: string, defaultValue: number): number {
@@ -117,6 +123,7 @@ export const selectedContent = writable<ContentItem | null>(null);
 export const showPlayer = writable(false);
 export const selectedIndex = writable(0);
 export const gridScale = writable(loadNumberPreference(GRID_SCALE_STORAGE_KEY, 1));
+export const catalogView = writable<CatalogView>(loadCatalogViewPreference());
 // When playing a single episode from a series, this holds the selected episode
 export const selectedEpisode = writable<Episode | null>(null);
 // Selected facets for filtering
@@ -225,6 +232,7 @@ if (browser) {
 	showWatched.subscribe((value) => persistBooleanPreference(SHOW_WATCHED_STORAGE_KEY, value));
 	searchQuery.subscribe((value) => persistStringPreference(SEARCH_QUERY_STORAGE_KEY, value));
 	gridScale.subscribe((value) => persistNumberPreference(GRID_SCALE_STORAGE_KEY, value));
+	catalogView.subscribe((value) => persistStringPreference(CATALOG_VIEW_STORAGE_KEY, value));
 }
 
 // Debounced search to avoid filtering on every keystroke

@@ -81,6 +81,7 @@ export interface Movie extends BaseContent {
 	duration?: string; // e.g. "1h 12m" or "40m"
 	videoId?: string; // YouTube
 	vimeoId?: string; // Vimeo
+	streamUrl?: string; // HLS or other direct stream URL
 	trakt?: string; // external metadata link
 	creators?: string[];
 	starring?: string[];

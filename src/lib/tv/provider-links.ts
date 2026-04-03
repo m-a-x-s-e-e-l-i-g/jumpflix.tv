@@ -1,5 +1,6 @@
 import { withUtm } from '$lib/utils';
 import type { ContentItem, Episode } from './types';
+import { getPublicProviderLinkSource, resolveMoviePlaybackSource } from './playback-source';
 
 export type ProviderLink = {
 	kind: 'youtube' | 'vimeo';
@@ -10,25 +11,20 @@ export type ProviderLink = {
 
 export function getProviderLink(item: ContentItem, episode: Episode | null): ProviderLink | null {
 	if (item.type === 'movie') {
-		const movie = item as any;
-
-		if (movie.videoId) {
-			const id = String(movie.videoId).trim();
-			if (!id) return null;
-			return {
-				kind: 'youtube',
-				url: withUtm(`https://www.youtube.com/watch?v=${encodeURIComponent(id)}`),
-				title: 'Open on YouTube',
-				ariaLabel: 'Open on YouTube'
-			};
-		}
-
-		if (movie.vimeoId) {
-			const id = String(movie.vimeoId).trim();
-			if (!id) return null;
+		const movie = item;
+		const publicSource = getPublicProviderLinkSource(resolveMoviePlaybackSource(movie));
+		if (publicSource) {
+			if (publicSource.kind === 'youtube') {
+				return {
+					kind: 'youtube',
+					url: withUtm(publicSource.url),
+					title: 'Open on YouTube',
+					ariaLabel: 'Open on YouTube'
+				};
+			}
 			return {
 				kind: 'vimeo',
-				url: withUtm(`https://vimeo.com/${encodeURIComponent(id)}`),
+				url: withUtm(publicSource.url),
 				title: 'Open on Vimeo',
 				ariaLabel: 'Open on Vimeo'
 			};

@@ -3,6 +3,7 @@
 	import { fade, scale } from 'svelte/transition';
 	import { browser } from '$app/environment';
 	import type { ContentItem, Episode } from './types';
+	import { resolveInlinePlaybackSource, resolveMoviePlaybackSource } from './playback-source';
 	import VideoPlayer from '$lib/tv/VideoPlayer.svelte';
 	export let show = false;
 	export let selected: ContentItem | null = null;
@@ -84,11 +85,14 @@
 			}
 			// Only try to play if there's a video ID (not just a database ID)
 			if (!episodeId.match(/^\d+$/)) {
-				return deriveVideoView(
-					`youtube/${episodeId}`,
-					selectedEpisode.title ?? selected.title,
-					`ep:${episodeId}`
-				);
+				const episodeSource = resolveInlinePlaybackSource(episodeId, { fallback: 'youtube' });
+				if (episodeSource) {
+					return deriveVideoView(
+						episodeSource.src,
+						selectedEpisode.title ?? selected.title,
+						`ep:${episodeSource.keySuffix}`
+					);
+				}
 			}
 			return {
 				kind: 'message',
@@ -97,19 +101,13 @@
 		}
 
 		if (selected.type === 'movie') {
-			const movie: any = selected;
-			if (movie.videoId) {
+			const movie = selected;
+			const playbackSource = resolveMoviePlaybackSource(movie);
+			if (playbackSource) {
 				return deriveVideoView(
-					`youtube/${movie.videoId}`,
+					playbackSource.src,
 					movie.title ?? selected.title,
-					`yt:${movie.videoId}`
-				);
-			}
-			if (movie.vimeoId) {
-				return deriveVideoView(
-					`vimeo/${movie.vimeoId}`,
-					movie.title ?? selected.title,
-					`vimeo:${movie.vimeoId}`
+					playbackSource.keySuffix
 				);
 			}
 			return {

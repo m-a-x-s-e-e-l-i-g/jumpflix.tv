@@ -285,10 +285,11 @@ export function filterAndSortContent(
 	return sorted;
 }
 
+import { resolveMoviePlaybackSource } from './playback-source';
+
 export function isInlinePlayable(content: ContentItem | null | undefined) {
 	if (!content) return false;
-	if (content.type === 'movie')
-		return Boolean((content as any).videoId || (content as any).vimeoId);
+	if (content.type === 'movie') return Boolean(resolveMoviePlaybackSource(content));
 	if (content.type === 'series') {
 		const series = content as any;
 		return Boolean(series.playlistId || series.seasons?.some((s: any) => s?.playlistId));

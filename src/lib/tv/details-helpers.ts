@@ -3,6 +3,7 @@ import { getAllWatchProgress } from './watchHistory';
 import type { WatchProgress } from './watchHistory';
 import { deleteRating, getMediaRatingSummary, getUserRating, saveRating } from '$lib/ratings';
 import type { RatingUpdatedDetail } from '$lib/rating-events';
+import { resolveMoviePlaybackSource } from '$lib/tv/playback-source';
 
 type RatingSummary = { averageRating: number; ratingCount: number } | null;
 export type WatchProgressSnapshot = {
@@ -58,9 +59,8 @@ export function getWatchProgressForSelection(options: {
 	const candidateIds: string[] = [];
 
 	if (selected.type === 'movie') {
-		const movie = selected as any;
-		if (movie.videoId) candidateIds.push(`${baseId}:yt:${movie.videoId}`);
-		if (movie.vimeoId) candidateIds.push(`${baseId}:vimeo:${movie.vimeoId}`);
+		const playbackSource = resolveMoviePlaybackSource(selected);
+		if (playbackSource) candidateIds.push(`${baseId}:${playbackSource.keySuffix}`);
 	}
 
 	if (selected.type === 'series' && selectedEpisode?.id) {
@@ -115,9 +115,8 @@ export function getPreferredMovieProgressId(selected: ContentItem | null): strin
 	if (!selected || selected.type !== 'movie') return null;
 	const baseId = buildBaseId(selected);
 	if (!baseId) return null;
-	const movie = selected as any;
-	if (movie.videoId) return `${baseId}:yt:${movie.videoId}`;
-	if (movie.vimeoId) return `${baseId}:vimeo:${movie.vimeoId}`;
+	const playbackSource = resolveMoviePlaybackSource(selected);
+	if (playbackSource) return `${baseId}:${playbackSource.keySuffix}`;
 	return baseId;
 }
 

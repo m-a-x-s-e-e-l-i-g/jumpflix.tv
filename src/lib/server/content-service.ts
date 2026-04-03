@@ -202,6 +202,7 @@ function mapMovie(
 		paid: row.paid ?? undefined,
 		provider: row.provider ?? undefined,
 		externalUrl: row.external_url ?? undefined,
+		streamUrl: row.stream_url ?? undefined,
 		year: row.year ?? undefined,
 		duration: row.duration ?? undefined,
 		videoId: row.video_id ?? undefined,
@@ -366,6 +367,42 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 	})();
 
 	return contentInFlight;
+}
+
+export async function fetchMovieBySlug(slug: string): Promise<Movie | null> {
+	const trimmedSlug = slug.trim();
+	if (!trimmedSlug) return null;
+
+	const supabase = createSupabaseClient();
+	const { data, error } = await supabase
+		.from('media_items')
+		.select(
+			`
+				*,
+				video_songs (
+					*,
+					song:songs!video_songs_song_id_fkey ( * )
+				)
+			`
+		)
+		.eq('type', 'movie')
+		.eq('slug', trimmedSlug)
+		.maybeSingle();
+
+	if (error) {
+		throw new Error(`Failed to load movie ${trimmedSlug}: ${error.message}`);
+	}
+
+	if (!data) return null;
+
+	const row = data as unknown as MediaItemWithSeasonsAndTracks;
+	const { data: ratingSummary } = await supabase
+		.from('media_ratings_summary')
+		.select('*')
+		.eq('media_id', row.id)
+		.maybeSingle<MediaRatingSummaryRow>();
+
+	return mapMovie(row, ratingSummary ?? null);
 }
 
 type SeriesEpisodeEntry = {

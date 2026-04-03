@@ -13,7 +13,6 @@
 	import SkipForwardIcon from 'lucide-svelte/icons/skip-forward';
 	import XIcon from 'lucide-svelte/icons/x';
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
-	import CastIcon from 'lucide-svelte/icons/cast';
 	import SpotChapterSuggestionDialog from '$lib/tv/SpotChapterSuggestionDialog.svelte';
 	import type { VideoTrack } from '$lib/tv/types';
 	import { parseTimecodeToSeconds } from '$lib/utils/timecode';
@@ -362,6 +361,7 @@
 		if (!vidstackLoadPromise) {
 			vidstackLoadPromise = Promise.all([
 				import('vidstack/player'),
+				import('vidstack/player/ui'),
 				import('vidstack/player/layouts/default'),
 				import('vidstack/icons'),
 				import('vidstack/player/styles/default/theme.css'),
@@ -373,6 +373,7 @@
 	}
 
 	const VIMEO_PROVIDER_PATCHED = Symbol('jumpflix:vimeo-provider-patched');
+	const HLS_PROVIDER_PATCHED = Symbol('jumpflix:hls-provider-patched');
 
 	function patchVimeoProviderBackground(provider: unknown) {
 		const vimeoProvider = provider as {
@@ -405,16 +406,33 @@
 		vimeoProvider[VIMEO_PROVIDER_PATCHED] = true;
 	}
 
+	function patchHlsProviderLibrary(provider: unknown) {
+		const hlsProvider = provider as {
+			type?: unknown;
+			library?: unknown;
+			[HLS_PROVIDER_PATCHED]?: boolean;
+		};
+
+		if (!hlsProvider || hlsProvider[HLS_PROVIDER_PATCHED]) return;
+		if (hlsProvider.type !== 'hls') return;
+
+		hlsProvider.library = () => import('hls.js');
+		hlsProvider[HLS_PROVIDER_PATCHED] = true;
+	}
+
 	function setupProviderParams(player: MediaPlayerElement) {
 		if (!browser) return () => {};
 
 		const onProviderChange = (event: Event) => {
 			const detail = (event as CustomEvent).detail as unknown;
 			patchVimeoProviderBackground(detail);
+			patchHlsProviderLibrary(detail);
 		};
 
 		player.addEventListener('provider-change', onProviderChange as EventListener);
-		patchVimeoProviderBackground((player as unknown as { state?: { provider?: unknown } })?.state?.provider);
+		const initialProvider = (player as unknown as { state?: { provider?: unknown } })?.state?.provider;
+		patchVimeoProviderBackground(initialProvider);
+		patchHlsProviderLibrary(initialProvider);
 
 		return () => {
 			player.removeEventListener('provider-change', onProviderChange as EventListener);
@@ -812,7 +830,7 @@
 		remote?.setPlayer?.(player);
 		remote?.setTarget?.(player);
 
-		// Add click handler to media-provider for YouTube/Vimeo video area
+		// Add click handler to the provider area so direct video/HLS sources behave like embeds.
 		const provider = player.querySelector('media-provider');
 		let providerClickHandler: ((event: Event) => void) | null = null;
 		if (provider) {
@@ -1548,10 +1566,12 @@
 	}
 	const YOUTUBE_SHORT = /^youtube\/([^\s]+.*)$/i;
 	const VIMEO_SHORT = /^vimeo\/([^\s]+.*)$/i;
+	const HLS_SHORT = /^hls\/([^\s]+.*)$/i;
 	const YOUTUBE_DOMAIN =
 		/^(?:https?:\/\/)?(?:(?:www|m)\.)?(?:youtube\.com|youtu\.be|youtube-nocookie\.com)/i;
 	const VIMEO_DOMAIN = /^(?:https?:\/\/)?(?:www\.|player\.)?vimeo\.com/i;
 	const HAS_PROTOCOL = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
+	const HLS_TYPE = 'application/x-mpegurl' as const;
 
 	let isIOSDevice = detectIOSDevice();
 	let effectiveAutoPlay = false;
@@ -1674,10 +1694,18 @@
 	}
 
 	// Accept short-hand provider prefixes and return full URLs Vidstack can recognise.
-	function normalizeSource(raw: string | null) {
+	type PlayerSource = string | { src: string; type: typeof HLS_TYPE };
+
+	function normalizeSource(raw: string | null): PlayerSource | undefined {
 		if (!raw) return undefined;
 		const trimmed = raw.trim();
 		if (!trimmed) return undefined;
+
+		const hlsMatch = trimmed.match(HLS_SHORT);
+		if (hlsMatch) {
+			const hlsSrc = hlsMatch[1]?.trim();
+			return hlsSrc ? { src: hlsSrc, type: HLS_TYPE } : undefined;
+		}
 
 		const ytMatch = trimmed.match(YOUTUBE_SHORT);
 		if (ytMatch) {
@@ -1697,10 +1725,16 @@
 			return ensureProtocol(trimmed);
 		}
 
+		if (/\.m3u8(?:$|[?#])/i.test(trimmed)) {
+			return { src: trimmed, type: HLS_TYPE };
+		}
+
 		return trimmed;
 	}
 
 	$: resolvedSrc = normalizeSource(src);
+	$: resolvedSrcKey =
+		typeof resolvedSrc === 'string' ? resolvedSrc : resolvedSrc?.src ? `${resolvedSrc.src}:${resolvedSrc.type}` : '';
 	$: resolvedPoster = poster ?? undefined;
 	$: playerTitle = title ?? undefined;
 	$: shouldRender = mounted && browser && !!resolvedSrc && vidstackReady;
@@ -1715,7 +1749,7 @@
 </script>
 
 {#if shouldRender}
-	{#key `${keySeed}:${resolvedSrc}`}
+	{#key `${keySeed}:${resolvedSrcKey}`}
 			<media-player
 				bind:this={playerEl}
 				class="vidstack-player"
@@ -1914,9 +1948,7 @@
 									class="control-button"
 									aria-label="Cast to device"
 									data-jumpflix-gesture-ignore="true"
-								>
-									<span class="icon"><CastIcon /></span>
-								</media-google-cast-button>
+								></media-google-cast-button>
 
 								<SpotChapterSuggestionDialog
 									{mediaId}
@@ -2342,6 +2374,16 @@
 	:global(media-airplay-button.control-button .icon),
 	:global(media-google-cast-button.control-button .icon) {
 		display: inline-flex;
+	}
+
+	:global(media-google-cast-button.control-button)::before {
+		content: '';
+		display: inline-flex;
+		inline-size: 1.35rem;
+		block-size: 1.35rem;
+		background-color: currentColor;
+		-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 19l.01 0'/%3E%3Cpath d='M7 19a4 4 0 0 0 -4 -4'/%3E%3Cpath d='M11 19a8 8 0 0 0 -8 -8'/%3E%3Cpath d='M15 19h3a3 3 0 0 0 3 -3v-8a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -2.8 2'/%3E%3C/svg%3E") center / contain no-repeat;
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 19l.01 0'/%3E%3Cpath d='M7 19a4 4 0 0 0 -4 -4'/%3E%3Cpath d='M11 19a8 8 0 0 0 -8 -8'/%3E%3Cpath d='M15 19h3a3 3 0 0 0 3 -3v-8a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -2.8 2'/%3E%3C/svg%3E") center / contain no-repeat;
 	}
 
 	:global(media-airplay-button.control-button[aria-hidden='true']),

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getUrlForItem } from '$lib/tv/slug';
+	import { YOUTUBE_ID_PATTERN, resolveMoviePlaybackSource } from '$lib/tv/playback-source';
 	import { env } from '$env/dynamic/public';
 	import { decode } from 'html-entities';
 	// TvPage is rendered in layout; we only set head tags here
@@ -82,8 +83,16 @@
 			})
 		: '';
 
+	$: moviePlaybackSource = item ? resolveMoviePlaybackSource(item) : null;
+	$: jsonLdEmbedUrl =
+		moviePlaybackSource?.kind === 'youtube' && YOUTUBE_ID_PATTERN.test(String(item?.videoId ?? '').trim())
+			? `https://www.youtube.com/embed/${String(item.videoId).trim()}`
+			: moviePlaybackSource?.kind === 'vimeo' && String(item?.vimeoId ?? '').trim()
+				? `https://player.vimeo.com/video/${encodeURIComponent(String(item.vimeoId).trim())}`
+				: undefined;
+
 	$: jsonLdVideo =
-		item && (item.videoId || item.vimeoId)
+		item && moviePlaybackSource
 			? jsonLd({
 					'@context': 'https://schema.org',
 					'@type': 'VideoObject',
@@ -91,11 +100,11 @@
 					description: desc,
 					thumbnailUrl: [image],
 					uploadDate: inferUploadDate(item.year),
-					embedUrl: item.videoId
-						? `https://www.youtube.com/embed/${item.videoId}`
-						: item.vimeoId
-							? `https://player.vimeo.com/video/${item.vimeoId}`
+					contentUrl:
+						moviePlaybackSource?.kind === 'hls' || moviePlaybackSource?.kind === 'direct'
+							? moviePlaybackSource.src
 							: undefined,
+					embedUrl: jsonLdEmbedUrl,
 					url
 				})
 			: '';

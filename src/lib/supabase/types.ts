@@ -136,6 +136,7 @@ export type Database = {
 					paid: boolean | null;
 					provider: string | null;
 					external_url: string | null;
+					stream_url: string | null;
 					year: string | null;
 					duration: string | null;
 					video_id: string | null;
@@ -180,6 +181,7 @@ export type Database = {
 					paid?: boolean | null;
 					provider?: string | null;
 					external_url?: string | null;
+					stream_url?: string | null;
 					year?: string | null;
 					duration?: string | null;
 					video_id?: string | null;
@@ -224,6 +226,7 @@ export type Database = {
 					paid?: boolean | null;
 					provider?: string | null;
 					external_url?: string | null;
+					stream_url?: string | null;
 					year?: string | null;
 					duration?: string | null;
 					video_id?: string | null;

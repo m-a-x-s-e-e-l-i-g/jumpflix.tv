@@ -69,6 +69,7 @@
 		"@unpic/svelte": "^1.0.0",
 		"clsx": "^2.1.1",
 		"dotenv": "^16.4.5",
+		"hls.js": "^1.6.15",
 		"html-entities": "^2.6.0",
 		"leaflet": "^1.9.4",
 		"lucide-svelte": "^0.544.0",

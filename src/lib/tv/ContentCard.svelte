@@ -14,6 +14,7 @@
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
+	import { resolveMoviePlaybackSource } from '$lib/tv/playback-source';
 
 	export let item: ContentItem;
 	export let isSelected = false;
@@ -67,13 +68,11 @@
 			};
 			return;
 		}
-
 		// For movies, use existing logic
 		const candidateIds: string[] = [];
 		if (item.type === 'movie') {
-			const movie = item as any;
-			if (movie.videoId) candidateIds.push(`${baseId}:yt:${movie.videoId}`);
-			if (movie.vimeoId) candidateIds.push(`${baseId}:vimeo:${movie.vimeoId}`);
+			const playbackSource = resolveMoviePlaybackSource(item);
+			if (playbackSource) candidateIds.push(`${baseId}:${playbackSource.keySuffix}`);
 		}
 
 		let progress: ReturnType<typeof getWatchProgress> | null = null;

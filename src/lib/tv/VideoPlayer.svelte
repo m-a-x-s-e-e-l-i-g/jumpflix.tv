@@ -11,6 +11,9 @@
 	import Minimize2Icon from 'lucide-svelte/icons/minimize-2';
 	import SkipBackIcon from 'lucide-svelte/icons/skip-back';
 	import SkipForwardIcon from 'lucide-svelte/icons/skip-forward';
+	import ChevronLeftIcon from 'lucide-svelte/icons/chevron-left';
+	import ChevronRightIcon from 'lucide-svelte/icons/chevron-right';
+	import SettingsIcon from 'lucide-svelte/icons/settings';
 	import XIcon from 'lucide-svelte/icons/x';
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
 	import SpotChapterSuggestionDialog from '$lib/tv/SpotChapterSuggestionDialog.svelte';
@@ -302,11 +305,23 @@
 		togglePaused?: (trigger?: Event) => void;
 		toggleFullscreen?: (target?: string, trigger?: Event) => void;
 		changePlaybackRate?: (rate: number, trigger?: Event) => void;
+		changeQuality?: (index: number, trigger?: Event) => void;
+		requestAutoQuality?: (trigger?: Event) => void;
 		play?: (trigger?: Event) => void;
 		pause?: (trigger?: Event) => void;
 		enterFullscreen?: (target?: string, trigger?: Event) => void;
 		exitFullscreen?: (target?: string, trigger?: Event) => void;
 	} & Record<string, unknown>;
+
+	type SettingsQualityOption = {
+		key: string;
+		index: number;
+		value: string;
+		label: string;
+		bitrateHint: string | null;
+		sortValue: number;
+		selected: boolean;
+	};
 
 	const DOUBLE_CLICK_DELAY = 220;
 	const LONG_PRESS_DELAY = 350;
@@ -320,6 +335,7 @@
 	let cleanupProgressTracking: (() => void) | null = null;
 	let cleanupPlaybackComplete: (() => void) | null = null;
 	let cleanupProviderParams: (() => void) | null = null;
+	let cleanupSettingsMenuState: (() => void) | null = null;
 	let cleanupSpotChaptersTrackEvents: (() => void) | null = null;
 	let controlsEl: HTMLElement | null = null;
 	let hideControlsTimer: ReturnType<typeof setTimeout> | null = null;
@@ -339,6 +355,16 @@
 	let controlsJustShown = false;
 	let isLongPressSlowMotionActive = false;
 	let speedRampAnimationId: number | null = null;
+	let settingsQualityOptions: SettingsQualityOption[] = [];
+	let settingsQualityHint = 'Auto';
+	let settingsAutoQuality = true;
+	let settingsCanSelectQuality = false;
+	let settingsShowAirPlay = false;
+	let settingsShowCast = false;
+	let settingsCastActive = false;
+	let settingsAirPlayActive = false;
+	let settingsYouTubeQualityLevels: string[] = [];
+	let settingsYouTubePlaybackQuality: string | null = null;
 
 	// Watch progress tracking
 	let lastProgressUpdate = 0;
@@ -374,6 +400,11 @@
 
 	const VIMEO_PROVIDER_PATCHED = Symbol('jumpflix:vimeo-provider-patched');
 	const HLS_PROVIDER_PATCHED = Symbol('jumpflix:hls-provider-patched');
+
+	type YouTubeMessageInfo = {
+		availableQualityLevels?: string[];
+		playbackQuality?: string;
+	};
 
 	function patchVimeoProviderBackground(provider: unknown) {
 		const vimeoProvider = provider as {
@@ -420,23 +451,400 @@
 		hlsProvider[HLS_PROVIDER_PATCHED] = true;
 	}
 
+	function resetYouTubeQualityState() {
+		settingsYouTubeQualityLevels = [];
+		settingsYouTubePlaybackQuality = null;
+	}
+
+	function updateYouTubeQualityState(info: YouTubeMessageInfo | undefined, player?: MediaPlayerElement) {
+		if (!info) return;
+
+		let shouldSync = false;
+
+		if (Array.isArray(info.availableQualityLevels)) {
+			const nextLevels = info.availableQualityLevels
+				.filter((level): level is string => typeof level === 'string' && level.trim().length > 0)
+				.filter((level, index, array) => array.indexOf(level) === index)
+				.filter((level) => level !== 'unknown');
+
+			if (nextLevels.join('|') !== settingsYouTubeQualityLevels.join('|')) {
+				settingsYouTubeQualityLevels = nextLevels;
+				shouldSync = true;
+			}
+		}
+
+		if (typeof info.playbackQuality === 'string' && info.playbackQuality !== 'unknown') {
+			if (info.playbackQuality !== settingsYouTubePlaybackQuality) {
+				settingsYouTubePlaybackQuality = info.playbackQuality;
+				shouldSync = true;
+			}
+		}
+
+		if (shouldSync && player) {
+			syncSettingsMenuState(player);
+		}
+	}
+
+	function patchYouTubeProviderQuality(provider: unknown, player: MediaPlayerElement) {
+		const youTubeProvider = provider as {
+			type?: unknown;
+			onMessage?: ((message: { info?: YouTubeMessageInfo }, event: MessageEvent) => void) | undefined;
+			postMessage?: ((message: Record<string, unknown>, target?: string) => void) | undefined;
+		};
+
+		if (!youTubeProvider || youTubeProvider.type !== 'youtube') {
+			resetYouTubeQualityState();
+			return () => {};
+		}
+
+		const originalOnMessage = youTubeProvider.onMessage?.bind(youTubeProvider);
+		if (originalOnMessage) {
+			youTubeProvider.onMessage = (message, event) => {
+				updateYouTubeQualityState(message?.info, player);
+				return originalOnMessage(message, event);
+			};
+		}
+
+		youTubeProvider.postMessage?.({ event: 'command', func: 'getAvailableQualityLevels' });
+		youTubeProvider.postMessage?.({ event: 'command', func: 'getPlaybackQuality' });
+
+		return () => {
+			if (originalOnMessage) {
+				youTubeProvider.onMessage = originalOnMessage;
+			}
+			resetYouTubeQualityState();
+		};
+	}
+
 	function setupProviderParams(player: MediaPlayerElement) {
 		if (!browser) return () => {};
 
+		let cleanupYouTubePatch: (() => void) | null = null;
+
+		const patchProvider = (provider: unknown) => {
+			patchVimeoProviderBackground(provider);
+			patchHlsProviderLibrary(provider);
+			cleanupYouTubePatch?.();
+			cleanupYouTubePatch = patchYouTubeProviderQuality(provider, player);
+		};
+
 		const onProviderChange = (event: Event) => {
 			const detail = (event as CustomEvent).detail as unknown;
-			patchVimeoProviderBackground(detail);
-			patchHlsProviderLibrary(detail);
+			patchProvider(detail);
 		};
 
 		player.addEventListener('provider-change', onProviderChange as EventListener);
-		const initialProvider = (player as unknown as { state?: { provider?: unknown } })?.state?.provider;
-		patchVimeoProviderBackground(initialProvider);
-		patchHlsProviderLibrary(initialProvider);
+		const initialProvider = (player as unknown as { provider?: unknown }).provider;
+		patchProvider(initialProvider);
 
 		return () => {
+			cleanupYouTubePatch?.();
 			player.removeEventListener('provider-change', onProviderChange as EventListener);
 		};
+	}
+
+	function getQualitySortValue(quality: { height?: number; width?: number; id?: string | null }) {
+		if (typeof quality.height === 'number' && Number.isFinite(quality.height) && quality.height > 0) {
+			return quality.height;
+		}
+
+		const normalizedId = typeof quality.id === 'string' ? quality.id.trim().toLowerCase() : '';
+		const presetMap: Record<string, number> = {
+			tiny: 144,
+			small: 240,
+			medium: 360,
+			large: 480,
+			hd720: 720,
+			hd1080: 1080,
+			highres: 1440,
+			max: 2160
+		};
+
+		if (normalizedId in presetMap) {
+			return presetMap[normalizedId] ?? 0;
+		}
+
+		const hdMatch = normalizedId.match(/^hd(\d+)$/);
+		if (hdMatch) {
+			return Number(hdMatch[1]) || 0;
+		}
+
+		if (typeof quality.width === 'number' && Number.isFinite(quality.width) && quality.width > 0) {
+			return quality.width;
+		}
+
+		return 0;
+	}
+
+	function formatQualityLabel(quality: { height?: number; width?: number; id?: string | null }) {
+		if (typeof quality.height === 'number' && Number.isFinite(quality.height) && quality.height > 0) {
+			return `${quality.height}p`;
+		}
+
+		const normalizedId = typeof quality.id === 'string' ? quality.id.trim().toLowerCase() : '';
+		const presetLabelMap: Record<string, string> = {
+			tiny: '144p',
+			small: '240p',
+			medium: '360p',
+			large: '480p',
+			hd720: '720p',
+			hd1080: '1080p',
+			highres: 'High Res',
+			max: 'Max'
+		};
+
+		if (normalizedId in presetLabelMap) {
+			return presetLabelMap[normalizedId] ?? 'Auto';
+		}
+
+		const hdMatch = normalizedId.match(/^hd(\d+)$/);
+		if (hdMatch) {
+			return `${hdMatch[1]}p`;
+		}
+
+		if (typeof quality.width === 'number' && Number.isFinite(quality.width) && quality.width > 0) {
+			return `${quality.width}w`;
+		}
+		if (normalizedId) {
+			return normalizedId.replace(/[-_]+/g, ' ');
+		}
+		return 'Auto';
+	}
+
+	function formatQualityBitrate(bitrate: number | null | undefined) {
+		if (typeof bitrate !== 'number' || !Number.isFinite(bitrate) || bitrate <= 0) return null;
+		const mbps = bitrate / 1_000_000;
+		if (mbps >= 1) {
+			return `${mbps >= 10 ? mbps.toFixed(0) : mbps.toFixed(1)} Mbps`;
+		}
+		return `${Math.round(bitrate / 1000)} kbps`;
+	}
+
+	function getSettingsQualityKey(parts: Array<string | number | null | undefined>) {
+		return parts
+			.map((part) => (part === null || part === undefined || part === '' ? '_' : String(part)))
+			.join(':');
+	}
+
+	function getYouTubeQualityOptions(levels: string[], playbackQuality: string | null) {
+		return levels
+			.map((level, index) => ({
+				key: getSettingsQualityKey(['youtube', level, index]),
+				index,
+				value: level,
+				label: formatQualityLabel({ id: level }),
+				bitrateHint: null,
+				sortValue: getQualitySortValue({ id: level }),
+				selected: level === playbackQuality
+			}))
+			.sort((left, right) => {
+				if (right.sortValue !== left.sortValue) {
+					return right.sortValue - left.sortValue;
+				}
+				return left.label.localeCompare(right.label);
+			});
+	}
+
+	function getHighestQualityIndex(player: MediaPlayerElement) {
+		let bestIndex = -1;
+		let bestSortValue = -1;
+
+		for (let index = 0; index < player.qualities.length; index += 1) {
+			const quality = player.qualities[index];
+			if (!quality) continue;
+
+			const sortValue = getQualitySortValue(quality);
+			if (sortValue > bestSortValue) {
+				bestSortValue = sortValue;
+				bestIndex = index;
+			}
+		}
+
+		return bestIndex;
+	}
+
+	function preferHighestQuality(player: MediaPlayerElement) {
+		const statefulPlayer = player as MediaPlayerElement & {
+			autoQuality?: boolean;
+			canSetQuality?: boolean;
+		};
+		const qualities = player.qualities;
+		const canSelectQualities = qualities.length > 0
+			? !qualities.readonly
+			: Boolean(statefulPlayer.canSetQuality);
+
+		if (!statefulPlayer.autoQuality || !canSelectQualities) return;
+		if (qualities.length <= 1) return;
+
+		const bestIndex = getHighestQualityIndex(player);
+		if (bestIndex < 0) return;
+
+		const bestQuality = qualities[bestIndex];
+		if (bestQuality?.selected) return;
+
+		const remote = getRemote(player);
+		remote?.changeQuality?.(bestIndex);
+	}
+
+	function syncSettingsMenuState(player: MediaPlayerElement) {
+		const statefulPlayer = player as MediaPlayerElement & {
+			canAirPlay?: boolean;
+			canGoogleCast?: boolean;
+			canSetQuality?: boolean;
+			isAirPlayConnected?: boolean;
+			isGoogleCastConnected?: boolean;
+			autoQuality?: boolean;
+		};
+
+		settingsAutoQuality = Boolean(statefulPlayer.autoQuality);
+		settingsShowAirPlay = Boolean(
+			statefulPlayer.canAirPlay || statefulPlayer.isAirPlayConnected
+		);
+		settingsShowCast = Boolean(
+			statefulPlayer.canGoogleCast || statefulPlayer.isGoogleCastConnected
+		);
+		settingsAirPlayActive = Boolean(statefulPlayer.isAirPlayConnected);
+		settingsCastActive = Boolean(statefulPlayer.isGoogleCastConnected);
+		settingsCanSelectQuality = player.qualities.length > 0
+			? !player.qualities.readonly
+			: Boolean(statefulPlayer.canSetQuality);
+
+		const qualities: SettingsQualityOption[] = [];
+		for (let index = 0; index < player.qualities.length; index += 1) {
+			const quality = player.qualities[index];
+			if (!quality) continue;
+			const fallbackValue = getSettingsQualityKey([
+				quality.id,
+				quality.height,
+				quality.bitrate,
+				index
+			]);
+			qualities.push({
+				key: getSettingsQualityKey([
+					'hls-or-native',
+					quality.id,
+					quality.height,
+					quality.bitrate,
+					index
+				]),
+				index,
+				value:
+					typeof quality.id === 'string' && quality.id.length > 0
+						? quality.id
+						: fallbackValue,
+				label: formatQualityLabel(quality),
+				bitrateHint: formatQualityBitrate(quality.bitrate),
+				sortValue: getQualitySortValue(quality),
+				selected: Boolean(quality.selected),
+			});
+		}
+
+		qualities
+			.sort((left, right) => {
+				if (right.sortValue !== left.sortValue) {
+					return right.sortValue - left.sortValue;
+				}
+				return left.label.localeCompare(right.label);
+			});
+
+		const fallbackYouTubeQualities = getYouTubeQualityOptions(
+			settingsYouTubeQualityLevels,
+			settingsYouTubePlaybackQuality
+		);
+		const resolvedQualities = qualities.length > 0 ? qualities : fallbackYouTubeQualities;
+		if (qualities.length === 0 && fallbackYouTubeQualities.length > 0) {
+			settingsCanSelectQuality = false;
+		}
+
+		settingsQualityOptions = resolvedQualities;
+		const selectedQuality = resolvedQualities.find((quality) => quality.selected) ?? null;
+		settingsQualityHint = qualities.length > 0 && settingsAutoQuality
+			? selectedQuality?.label
+				? `Auto (${selectedQuality.label})`
+				: 'Auto'
+			: selectedQuality?.label ?? 'Auto';
+	}
+
+	function setupSettingsMenuState(player: MediaPlayerElement) {
+		if (!browser) return () => {};
+
+		const sync = () => {
+			preferHighestQuality(player);
+			syncSettingsMenuState(player);
+		};
+
+		const qualities = player.qualities;
+		player.addEventListener('provider-change', sync);
+		player.addEventListener('can-play', sync);
+		player.addEventListener('qualities-change', sync);
+		player.addEventListener('quality-change', sync);
+		player.addEventListener('remote-playback-change', sync);
+		qualities.addEventListener('add', sync as EventListener);
+		qualities.addEventListener('remove', sync as EventListener);
+		qualities.addEventListener('change', sync as EventListener);
+		qualities.addEventListener('auto-change', sync as EventListener);
+		qualities.addEventListener('readonly-change', sync as EventListener);
+		sync();
+
+		return () => {
+			player.removeEventListener('provider-change', sync);
+			player.removeEventListener('can-play', sync);
+			player.removeEventListener('qualities-change', sync);
+			player.removeEventListener('quality-change', sync);
+			player.removeEventListener('remote-playback-change', sync);
+			qualities.removeEventListener('add', sync as EventListener);
+			qualities.removeEventListener('remove', sync as EventListener);
+			qualities.removeEventListener('change', sync as EventListener);
+			qualities.removeEventListener('auto-change', sync as EventListener);
+			qualities.removeEventListener('readonly-change', sync as EventListener);
+		};
+	}
+
+	async function requestAirPlay(event?: Event) {
+		if (!playerEl) return;
+		try {
+			await playerEl.requestAirPlay(event);
+		} catch {
+			// no-op
+		}
+	}
+
+	async function requestGoogleCast(event?: Event) {
+		if (!playerEl || !settingsShowCast) return;
+		try {
+			await playerEl.requestGoogleCast(event);
+		} catch {
+			// no-op
+		}
+	}
+
+	function selectQualityOption(index: number, event?: Event) {
+		if (!playerEl) return;
+		if (!settingsCanSelectQuality) return;
+		const provider = (playerEl as unknown as {
+			provider?: {
+				type?: string;
+				postMessage?: (message: Record<string, unknown>, target?: string) => void;
+			};
+		}).provider;
+
+		if (provider?.type === 'youtube' && playerEl.qualities.length === 0) {
+			const option = settingsQualityOptions.find((quality) => quality.index === index);
+			if (!option) return;
+
+			provider.postMessage?.({
+				event: 'command',
+				func: 'setPlaybackQuality',
+				args: [option.value]
+			});
+			settingsYouTubePlaybackQuality = option.value;
+			syncSettingsMenuState(playerEl);
+			return;
+		}
+
+		const remote = getRemote(playerEl);
+		remote?.changeQuality?.(index < 0 ? -1 : index, event);
+		syncSettingsMenuState(playerEl);
 	}
 
 	$: if (browser && playerEl) {
@@ -480,6 +888,23 @@
 	}
 
 	$: if (browser && playerEl) {
+		cleanupSettingsMenuState?.();
+		cleanupSettingsMenuState = setupSettingsMenuState(playerEl);
+	} else if (!browser || !playerEl) {
+		cleanupSettingsMenuState?.();
+		cleanupSettingsMenuState = null;
+		settingsQualityOptions = [];
+		settingsQualityHint = 'Auto';
+		settingsAutoQuality = true;
+		settingsCanSelectQuality = false;
+		settingsShowAirPlay = false;
+		settingsShowCast = false;
+		settingsCastActive = false;
+		settingsAirPlayActive = false;
+		resetYouTubeQualityState();
+	}
+
+	$: if (browser && playerEl) {
 		cleanupNowPlaying?.();
 		cleanupNowPlaying = setupNowPlaying(playerEl);
 	} else if (!browser || !playerEl) {
@@ -520,6 +945,8 @@
 		cleanupSpotChaptersTrackEvents = null;
 		cleanupNowPlaying?.();
 		cleanupNowPlaying = null;
+		cleanupSettingsMenuState?.();
+		cleanupSettingsMenuState = null;
 		cleanupProviderParams?.();
 		cleanupProviderParams = null;
 		cleanupGestures?.();
@@ -1406,6 +1833,12 @@
 			const tagName = node.tagName;
 			if (
 				tagName === 'MEDIA-CONTROLS-GROUP' ||
+				tagName === 'MEDIA-MENU' ||
+				tagName === 'MEDIA-MENU-BUTTON' ||
+				tagName === 'MEDIA-MENU-ITEMS' ||
+				tagName === 'MEDIA-MENU-ITEM' ||
+				tagName === 'MEDIA-QUALITY-RADIO-GROUP' ||
+				tagName === 'MEDIA-RADIO' ||
 				tagName === 'MEDIA-TIME-SLIDER' ||
 				tagName === 'MEDIA-VOLUME-SLIDER' ||
 				tagName === 'MEDIA-PLAY-BUTTON' ||
@@ -1756,6 +2189,7 @@
 				src={resolvedSrc}
 				title={playerTitle}
 				poster={resolvedPoster}
+				preferNativeHLS={false}
 				playsInline
 				crossOrigin="anonymous"
 				autoplay={effectiveAutoPlay}
@@ -1936,19 +2370,100 @@
 									</media-volume-slider>
 								{/if}
 
-								<media-airplay-button
-									class="control-button"
-									aria-label="Stream via AirPlay"
+								<media-menu
+									class="player-settings-menu vds-menu"
 									data-jumpflix-gesture-ignore="true"
 								>
-									<span class="icon"><AirplayIcon /></span>
-								</media-airplay-button>
+									<media-menu-button
+										class="control-button vds-menu-button"
+										aria-label="Player settings"
+										data-jumpflix-gesture-ignore="true"
+									>
+										<span class="icon"><SettingsIcon /></span>
+									</media-menu-button>
 
-								<media-google-cast-button
-									class="control-button"
-									aria-label="Cast to device"
-									data-jumpflix-gesture-ignore="true"
-								></media-google-cast-button>
+									<media-menu-items
+										class="vds-menu-items player-settings-menu-items"
+										placement="top end"
+										data-jumpflix-gesture-ignore="true"
+									>
+										{#if settingsQualityOptions.length > 0}
+											<media-menu class="vds-menu player-settings-submenu">
+												<media-menu-button
+													class="vds-menu-item player-settings-submenu-button"
+													aria-label="Video quality"
+													data-jumpflix-gesture-ignore="true"
+												>
+													<span class="vds-menu-item-label">Quality</span>
+													<span class="vds-menu-item-hint">{settingsQualityHint}</span>
+													<ChevronRightIcon class="vds-menu-open-icon" />
+													<ChevronLeftIcon class="vds-menu-close-icon" />
+												</media-menu-button>
+
+												<media-menu-items
+													class="vds-menu-items player-settings-submenu-items"
+													placement="left start"
+													data-jumpflix-gesture-ignore="true"
+												>
+														{#if !settingsCanSelectQuality}
+															<div
+																class="settings-quality-note"
+																data-jumpflix-gesture-ignore="true"
+															>
+																Managed by provider
+															</div>
+														{/if}
+													{#each settingsQualityOptions as option (option.key)}
+														<button
+															type="button"
+															class="vds-radio settings-quality-option"
+															data-checked={option.selected ? '' : undefined}
+															data-readonly={settingsCanSelectQuality ? undefined : ''}
+															aria-checked={option.selected}
+															role="menuitemradio"
+															disabled={!settingsCanSelectQuality}
+															data-jumpflix-gesture-ignore="true"
+															on:click={(event) => selectQualityOption(option.index, event)}
+														>
+															<span class="vds-radio-label">{option.label}</span>
+															{#if option.bitrateHint}
+																<span class="vds-radio-hint">{option.bitrateHint}</span>
+															{/if}
+														</button>
+													{/each}
+												</media-menu-items>
+											</media-menu>
+										{/if}
+
+										{#if settingsShowAirPlay}
+											<button
+												type="button"
+												class="vds-menu-item settings-action settings-action-airplay"
+												aria-label="Stream via AirPlay"
+												data-active={settingsAirPlayActive ? '' : undefined}
+												data-jumpflix-gesture-ignore="true"
+												on:click={requestAirPlay}
+											>
+												<span class="icon"><AirplayIcon /></span>
+												<span class="vds-menu-item-label">AirPlay</span>
+											</button>
+										{/if}
+
+										{#if settingsShowCast}
+											<button
+												type="button"
+												class="vds-menu-item settings-action settings-action-cast"
+												aria-label="Cast to device"
+												data-active={settingsCastActive ? '' : undefined}
+												data-jumpflix-gesture-ignore="true"
+												on:click={requestGoogleCast}
+											>
+												<span class="icon chromecast-icon" aria-hidden="true"></span>
+												<span class="vds-menu-item-label">Chromecast</span>
+											</button>
+										{/if}
+									</media-menu-items>
+								</media-menu>
 
 								<SpotChapterSuggestionDialog
 									{mediaId}
@@ -2372,7 +2887,9 @@
 	}
 
 	:global(media-airplay-button.control-button .icon),
-	:global(media-google-cast-button.control-button .icon) {
+	:global(media-google-cast-button.control-button .icon),
+	:global(.player-settings-menu .vds-menu-button.control-button .icon),
+	:global(.settings-action .icon) {
 		display: inline-flex;
 	}
 
@@ -2381,6 +2898,14 @@
 		display: inline-flex;
 		inline-size: 1.35rem;
 		block-size: 1.35rem;
+		background-color: currentColor;
+		-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 19l.01 0'/%3E%3Cpath d='M7 19a4 4 0 0 0 -4 -4'/%3E%3Cpath d='M11 19a8 8 0 0 0 -8 -8'/%3E%3Cpath d='M15 19h3a3 3 0 0 0 3 -3v-8a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -2.8 2'/%3E%3C/svg%3E") center / contain no-repeat;
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 19l.01 0'/%3E%3Cpath d='M7 19a4 4 0 0 0 -4 -4'/%3E%3Cpath d='M11 19a8 8 0 0 0 -8 -8'/%3E%3Cpath d='M15 19h3a3 3 0 0 0 3 -3v-8a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -2.8 2'/%3E%3C/svg%3E") center / contain no-repeat;
+	}
+
+	:global(.settings-action-cast .chromecast-icon) {
+		inline-size: 1.15rem;
+		block-size: 1.15rem;
 		background-color: currentColor;
 		-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 19l.01 0'/%3E%3Cpath d='M7 19a4 4 0 0 0 -4 -4'/%3E%3Cpath d='M11 19a8 8 0 0 0 -8 -8'/%3E%3Cpath d='M15 19h3a3 3 0 0 0 3 -3v-8a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -2.8 2'/%3E%3C/svg%3E") center / contain no-repeat;
 		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 19l.01 0'/%3E%3Cpath d='M7 19a4 4 0 0 0 -4 -4'/%3E%3Cpath d='M11 19a8 8 0 0 0 -8 -8'/%3E%3Cpath d='M15 19h3a3 3 0 0 0 3 -3v-8a3 3 0 0 0 -3 -3h-12a3 3 0 0 0 -2.8 2'/%3E%3C/svg%3E") center / contain no-repeat;
@@ -2395,6 +2920,135 @@
 	:global(media-google-cast-button.control-button[data-active]) {
 		background: rgba(46, 120, 255, 0.55);
 		border-color: rgba(180, 217, 255, 0.75);
+	}
+
+	:global(.player-settings-menu) {
+		position: relative;
+	}
+
+	:global(.player-settings-menu .vds-menu-button.control-button[aria-expanded='true']) {
+		background: rgba(46, 120, 255, 0.55);
+		border-color: rgba(180, 217, 255, 0.75);
+	}
+
+	:global(.player-settings-menu .player-settings-menu-items),
+	:global(.player-settings-menu .player-settings-submenu-items) {
+		--media-menu-bg: rgba(10, 16, 40, 0.92);
+		--media-menu-border: 1px solid rgba(126, 160, 255, 0.24);
+		--media-menu-border-radius: 1rem;
+		--media-menu-box-shadow: 0 18px 40px rgba(10, 16, 40, 0.45);
+		--media-menu-item-hover-bg: rgba(46, 120, 255, 0.22);
+		--media-menu-item-border-radius: 0.8rem;
+		--media-menu-item-padding: 0.8rem 0.9rem;
+		--media-menu-text-color: #f8fafc;
+		--media-menu-hint-color: rgba(216, 233, 255, 0.72);
+		--media-menu-divider: 1px solid rgba(126, 160, 255, 0.18);
+		--media-menu-scrollbar-thumb-bg: rgba(126, 160, 255, 0.24);
+		overflow-x: hidden;
+		backdrop-filter: blur(18px);
+	}
+
+	:global(.player-settings-menu .player-settings-submenu-items) {
+		padding-inline: 0.45rem;
+	}
+
+	:global(.player-settings-menu .player-settings-submenu-button) {
+		display: flex;
+		align-items: center;
+		inline-size: 100%;
+		gap: 0.7rem;
+		font: inherit;
+	}
+
+	:global(.player-settings-menu .player-settings-submenu-button .vds-menu-item-label) {
+		flex: 1 1 auto;
+		min-width: 0;
+		text-align: left;
+	}
+
+	:global(.player-settings-menu .player-settings-submenu-button .vds-menu-item-hint) {
+		margin-left: auto;
+		padding-inline-end: 0.2rem;
+	}
+
+	:global(.player-settings-menu .vds-menu-open-icon),
+	:global(.player-settings-menu .vds-menu-close-icon) {
+		flex: 0 0 auto;
+	}
+
+	:global(.player-settings-menu .settings-quality-option),
+	:global(.player-settings-menu .settings-action) {
+		appearance: none;
+		-webkit-appearance: none;
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		inline-size: 100%;
+		box-sizing: border-box;
+		padding: 0.8rem 1.15rem;
+		gap: 0.7rem;
+		font: inherit;
+		text-align: left;
+		background: transparent;
+		color: inherit;
+		border-radius: 0.85rem;
+	}
+
+	:global(.player-settings-menu .settings-quality-option) {
+		font: inherit;
+		margin: 0.1rem 0;
+	}
+
+	:global(.player-settings-menu .settings-quality-option[aria-checked='true']) {
+		padding-left: 1.15rem;
+	}
+
+	:global(.player-settings-menu .settings-quality-option:disabled) {
+		color: inherit;
+	}
+
+	:global(.player-settings-menu .settings-quality-note) {
+		padding: 0.35rem 1.15rem 0.55rem;
+		font-size: 0.76rem;
+		line-height: 1.35;
+		color: rgba(216, 233, 255, 0.62);
+		letter-spacing: 0.01em;
+	}
+
+	:global(.player-settings-menu .settings-quality-option .vds-radio-label),
+	:global(.player-settings-menu .settings-action .vds-menu-item-label) {
+		flex: 1 1 auto;
+		min-width: 0;
+		text-align: left;
+	}
+
+	:global(.player-settings-menu .settings-quality-option .vds-radio-hint) {
+		flex: 0 0 auto;
+		margin-left: auto;
+		text-align: right;
+	}
+
+	:global(.player-settings-menu .settings-quality-option[data-checked]),
+	:global(.player-settings-menu .settings-action-airplay[data-active]),
+	:global(.player-settings-menu .settings-action-cast[data-active]) {
+		background-color: rgba(46, 120, 255, 0.22);
+	}
+
+	:global(.player-settings-menu .settings-quality-option[data-readonly]) {
+		cursor: default;
+		opacity: 0.86;
+	}
+
+	:global(.player-settings-menu .settings-quality-option[data-readonly]:hover),
+	:global(.player-settings-menu .settings-quality-option[data-readonly]:focus-visible) {
+		background-color: transparent;
+		transform: none;
+	}
+
+	:global(.player-settings-menu .settings-action),
+	:global(.player-settings-menu .settings-quality-option) {
+		border: 0;
+		outline: none;
 	}
 
 	:global(.control-button svg) {
@@ -2742,16 +3396,27 @@
 
 	@media (max-width: 840px) {
 		.controls-row {
-			flex-wrap: nowrap;
-			overflow-x: auto;
-			overflow-y: hidden;
+			flex-wrap: wrap;
+			overflow: visible;
 			align-items: center;
+			gap: clamp(0.6rem, 1.8vw, 1rem);
+		}
+
+		.controls-group {
+			margin-inline: 0;
+			gap: clamp(0.5rem, 1.8vw, 0.9rem);
+		}
+
+		.controls-group.left {
+			flex: 1 1 auto;
+			min-width: 0;
 		}
 
 		.controls-group.right {
-			flex: 0 0 auto;
+			flex: 1 1 auto;
 			justify-content: flex-end;
 			gap: clamp(0.45rem, 2vw, 0.9rem);
+			min-width: 0;
 		}
 
 		:global(media-volume-slider.volume-slider) {

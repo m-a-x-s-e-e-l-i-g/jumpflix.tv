@@ -151,7 +151,7 @@
 			</h2>
 			<ul class="list-disc space-y-2 pl-5 text-muted-foreground">
 				<li>
-					Spot markers on the playback scrubber, so you can see every location used in a video (in
+					✅ Spot markers on the playback scrubber, so you can see every location used in a video (in
 					collab with <a
 						href={withUtm('https://parkour.spot', { campaign: 'parkour.spot' })}
 						target="_blank"
@@ -161,7 +161,7 @@
 					>)
 				</li>
 				<li>
-					<span aria-hidden="true">✓</span> Automatic song scraping so you can search videos by song
+					✅ Automatic song scraping so you can search videos by song
 					name
 				</li>
 			</ul>
@@ -169,11 +169,6 @@
 			<p>
 				All code is open source. I’ll publish database backups too, so the project won’t just vanish
 				if I ever get a life sentence for trespassing or breaking walls. I want it to be permanent.
-			</p>
-
-			<p>
-				Right now I’m focused on listing the projects that EVERYONE has to see — the stuff people
-				actually put sweat into. 10+ minutes, real edits, real effort.
 			</p>
 
 			<p>

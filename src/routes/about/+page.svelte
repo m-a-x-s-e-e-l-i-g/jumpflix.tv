@@ -201,6 +201,60 @@
 	</div>
 
 	<div class="jf-surface mt-6 rounded-3xl p-6 md:mt-8 md:p-8">
+		<div class="max-w-3xl space-y-6 text-sm leading-7 text-foreground md:text-base">
+			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">Want to contribute?</h2>
+			<p>
+				The best contributions are usually the nerdy catalog-improving ones: adding spots to videos,
+				assigning the right facets, correcting or completing artist and athlete info, and filling in the
+				missing details that make the archive actually useful.
+			</p>
+			<p>
+				If you&apos;re logged in, you can already do a lot of this directly with the edit tool — the pencil
+				icon around the site.
+			</p>
+			<p>
+				Submitting missing films is also super valuable. However this backlog is still huge, and I like to add stuff gradually.
+			</p>
+			<ul class="list-disc space-y-2 pl-5 text-muted-foreground">
+				<li>
+					For structure ideas, feature requests, new facets, tools, random thoughts, or questions:
+					<a
+						href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/discussions"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="font-medium text-foreground underline decoration-muted-foreground/60 underline-offset-4 transition hover:decoration-foreground"
+						>GitHub Discussions</a
+					>
+				</li>
+				<li>
+					For code contributions:
+					<a
+						href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="font-medium text-foreground underline decoration-muted-foreground/60 underline-offset-4 transition hover:decoration-foreground"
+						>the repository</a
+					>
+				</li>
+				<li>
+					For bugs or concrete issues:
+					<a
+						href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/issues"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="font-medium text-foreground underline decoration-muted-foreground/60 underline-offset-4 transition hover:decoration-foreground"
+						>GitHub Issues</a
+					>
+				</li>
+			</ul>
+			<p class="text-muted-foreground">
+				You can also contact me on Instagram, but I strongly prefer keeping things in the links above so
+				ideas, fixes, and context don&apos;t disappear into DMs.
+			</p>
+		</div>
+	</div>
+
+	<div class="jf-surface mt-6 rounded-3xl p-6 md:mt-8 md:p-8">
 		<div class="text-center">
 			<h2 class="text-2xl font-semibold tracking-tight md:text-4xl">About Me</h2>
 			<div class="mx-auto mt-3 h-1 w-24 rounded bg-foreground/90" aria-hidden="true"></div>

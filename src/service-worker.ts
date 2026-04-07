@@ -99,6 +99,10 @@ self.addEventListener('fetch', (event) => {
 	// Only handle GET
 	if (req.method !== 'GET') return;
 
+	// Media elements frequently request byte ranges. Let the browser/network handle those
+	// so we do not serve an incompatible cached 200 response for a 206 partial-content request.
+	if (req.headers.has('range')) return;
+
 	// Static precached assets -> cache-first
 	if (isStaticAsset(url)) {
 		event.respondWith(

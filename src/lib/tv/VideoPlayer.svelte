@@ -304,6 +304,7 @@
 		setPlayer?: (player: MediaPlayerElement | null) => void;
 		togglePaused?: (trigger?: Event) => void;
 		toggleFullscreen?: (target?: string, trigger?: Event) => void;
+		changeVolume?: (volume: number, trigger?: Event) => void;
 		changePlaybackRate?: (rate: number, trigger?: Event) => void;
 		changeQuality?: (index: number, trigger?: Event) => void;
 		requestAutoQuality?: (trigger?: Event) => void;
@@ -346,7 +347,10 @@
 	let autoHidePlayer: MediaPlayerElement | null = null;
 	let isPaused = true;
 	const MOBILE_VIEWPORT_QUERY = '(max-width: 640px)';
+	const MIN_VOLUME = 0;
 	const FULL_VOLUME = 1;
+	const WHEEL_VOLUME_DIVISOR = 1200;
+	const MAX_WHEEL_VOLUME_DELTA = 0.12;
 	const VOLUME_TOLERANCE = 1e-3;
 
 	let isMobileViewport = false;
@@ -1480,12 +1484,26 @@
 			}
 		};
 
+		const onWheel = (event: WheelEvent) => {
+			if (event.defaultPrevented || event.ctrlKey) return;
+
+			event.preventDefault();
+			showControls();
+
+			if (isEventFromControls(event)) {
+				return;
+			}
+
+			adjustVolumeFromWheel(player, resolveRemote(), event);
+		};
+
 		player.addEventListener('click', onClick);
 		player.addEventListener('dblclick', onDblClick);
 		player.addEventListener('pointerdown', onPointerDown);
 		player.addEventListener('pointerup', onPointerUp);
 		player.addEventListener('pointercancel', onPointerCancel);
 		player.addEventListener('pointerleave', onPointerLeave);
+		player.addEventListener('wheel', onWheel, { passive: false });
 		doc.addEventListener('keydown', onSpaceKeyDown, true);
 		doc.addEventListener('keyup', onSpaceKeyUp, true);
 
@@ -1507,6 +1525,7 @@
 			player.removeEventListener('pointerup', onPointerUp);
 			player.removeEventListener('pointercancel', onPointerCancel);
 			player.removeEventListener('pointerleave', onPointerLeave);
+			player.removeEventListener('wheel', onWheel);
 			if (provider && providerClickHandler) {
 				provider.removeEventListener('click', providerClickHandler);
 			}
@@ -1821,7 +1840,7 @@
 		}
 	}
 
-	function isEventFromControls(event: MouseEvent | PointerEvent) {
+	function isEventFromControls(event: MouseEvent | PointerEvent | WheelEvent) {
 		const path = event.composedPath();
 		for (const node of path) {
 			if (!(node instanceof HTMLElement)) continue;
@@ -1876,6 +1895,86 @@
 			}
 		}
 		return false;
+	}
+
+	function getVolumeState(player: MediaPlayerElement) {
+		const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+		const withState = player as unknown as {
+			state?: { volume?: number; muted?: boolean };
+			volume?: number;
+			muted?: boolean;
+		};
+
+		const stateVolume = withState.state?.volume;
+		if (typeof stateVolume === 'number' && !Number.isNaN(stateVolume)) {
+			return {
+				volume: Math.max(MIN_VOLUME, Math.min(FULL_VOLUME, stateVolume)),
+				muted: Boolean(withState.state?.muted ?? withState.muted ?? mediaEl?.muted)
+			};
+		}
+
+		const propVolume = withState.volume;
+		if (typeof propVolume === 'number' && !Number.isNaN(propVolume)) {
+			return {
+				volume: Math.max(MIN_VOLUME, Math.min(FULL_VOLUME, propVolume)),
+				muted: Boolean(withState.muted ?? mediaEl?.muted)
+			};
+		}
+
+		return {
+			volume: Math.max(MIN_VOLUME, Math.min(FULL_VOLUME, mediaEl?.volume ?? FULL_VOLUME)),
+			muted: Boolean(mediaEl?.muted)
+		};
+	}
+
+	function setVolume(player: MediaPlayerElement, remote: RemoteControl | null, volume: number, trigger?: Event) {
+		const nextVolume = Math.max(MIN_VOLUME, Math.min(FULL_VOLUME, volume));
+		const shouldMute = nextVolume <= VOLUME_TOLERANCE;
+		const withVolume = player as unknown as { volume?: number; muted?: boolean };
+
+		remote?.changeVolume?.(nextVolume, trigger);
+
+		if (typeof withVolume.volume === 'number') {
+			withVolume.volume = nextVolume;
+		}
+		if (typeof withVolume.muted === 'boolean') {
+			withVolume.muted = shouldMute;
+		}
+
+		const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+		if (mediaEl) {
+			mediaEl.volume = nextVolume;
+			mediaEl.muted = shouldMute;
+		}
+	}
+
+	function normalizeWheelDelta(event: WheelEvent) {
+		if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+			return event.deltaY * 16;
+		}
+		if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+			return event.deltaY * 160;
+		}
+		return event.deltaY;
+	}
+
+	function adjustVolumeFromWheel(
+		player: MediaPlayerElement,
+		remote: RemoteControl | null,
+		event: WheelEvent
+	) {
+		const delta = normalizeWheelDelta(event);
+		if (!Number.isFinite(delta) || Math.abs(delta) < 0.5) return;
+
+		const { volume, muted } = getVolumeState(player);
+		const baseVolume = muted && volume <= VOLUME_TOLERANCE ? MIN_VOLUME : volume;
+		const volumeDelta = Math.max(
+			-MAX_WHEEL_VOLUME_DELTA,
+			Math.min(MAX_WHEEL_VOLUME_DELTA, -delta / WHEEL_VOLUME_DIVISOR)
+		);
+		if (Math.abs(volumeDelta) < VOLUME_TOLERANCE) return;
+
+		setVolume(player, remote, baseVolume + volumeDelta, event);
 	}
 
 	function togglePlayback(player: MediaPlayerElement, remote: RemoteControl | null) {

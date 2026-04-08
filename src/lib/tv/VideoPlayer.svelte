@@ -9,8 +9,6 @@
 	import Volume2Icon from 'lucide-svelte/icons/volume-2';
 	import Maximize2Icon from 'lucide-svelte/icons/maximize-2';
 	import Minimize2Icon from 'lucide-svelte/icons/minimize-2';
-	import SkipBackIcon from 'lucide-svelte/icons/skip-back';
-	import SkipForwardIcon from 'lucide-svelte/icons/skip-forward';
 	import ChevronLeftIcon from 'lucide-svelte/icons/chevron-left';
 	import ChevronRightIcon from 'lucide-svelte/icons/chevron-right';
 	import SettingsIcon from 'lucide-svelte/icons/settings';
@@ -296,6 +294,40 @@
 			playerEl.currentTime = Math.max(0, Number(seconds) || 0);
 		} catch {}
 	}
+
+	function seekBySeconds(player: MediaPlayerElement, deltaSeconds: number) {
+		const currentTime = Number(player.currentTime);
+		if (!Number.isFinite(currentTime)) return;
+		const duration = Number(player.duration);
+		const nextTime = currentTime + deltaSeconds;
+		const clampedTime =
+			Number.isFinite(duration) && duration > 0
+				? Math.min(Math.max(0, nextTime), duration)
+				: Math.max(0, nextTime);
+		try {
+			player.currentTime = clampedTime;
+		} catch {}
+	}
+
+	function clearTouchSkipFeedback() {
+		if (touchSkipFeedbackTimer !== null) {
+			clearTimeout(touchSkipFeedbackTimer);
+			touchSkipFeedbackTimer = null;
+		}
+		touchSkipFeedbackVisible = false;
+	}
+
+	function showTouchSkipFeedback(deltaSeconds: number) {
+		clearTouchSkipFeedback();
+		touchSkipFeedbackDirection = deltaSeconds < 0 ? 'backward' : 'forward';
+		touchSkipFeedbackSeconds = Math.abs(deltaSeconds);
+		touchSkipFeedbackVisible = true;
+		touchSkipFeedbackNonce += 1;
+		touchSkipFeedbackTimer = setTimeout(() => {
+			touchSkipFeedbackTimer = null;
+			touchSkipFeedbackVisible = false;
+		}, 700);
+	}
 	let vidstackLoadPromise: Promise<void> | null = null;
 	let vidstackReady = false;
 
@@ -325,6 +357,9 @@
 	};
 
 	const DOUBLE_CLICK_DELAY = 220;
+	const TOUCH_DOUBLE_TAP_DELAY = 320;
+	const TOUCH_DOUBLE_TAP_SEEK_SECONDS = 10;
+	const TOUCH_DOUBLE_TAP_SIDE_RATIO = 1 / 3;
 	const LONG_PRESS_DELAY = 350;
 	const SLOW_MOTION_RATE = 0.3;
 	const CONTROLS_HIDE_DELAY = 2000;
@@ -354,11 +389,17 @@
 	const VOLUME_TOLERANCE = 1e-3;
 
 	let isMobileViewport = false;
+	let hasTouchInput = false;
 	let mobileQuery: MediaQueryList | null = null;
 	let cleanupMobileQuery: (() => void) | null = null;
 	let controlsJustShown = false;
 	let isLongPressSlowMotionActive = false;
 	let speedRampAnimationId: number | null = null;
+	let touchSkipFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+	let touchSkipFeedbackVisible = false;
+	let touchSkipFeedbackDirection: 'backward' | 'forward' = 'forward';
+	let touchSkipFeedbackSeconds = TOUCH_DOUBLE_TAP_SEEK_SECONDS;
+	let touchSkipFeedbackNonce = 0;
 	let settingsQualityOptions: SettingsQualityOption[] = [];
 	let settingsQualityHint = 'Auto';
 	let settingsAutoQuality = true;
@@ -945,6 +986,7 @@
 	}
 
 	onDestroy(() => {
+		clearTouchSkipFeedback();
 		cleanupSpotChaptersTrackEvents?.();
 		cleanupSpotChaptersTrackEvents = null;
 		cleanupNowPlaying?.();
@@ -1267,6 +1309,9 @@
 		if (provider) {
 			providerClickHandler = (event: Event) => {
 				event.stopPropagation();
+				if (lastPointerType === 'touch') {
+					return;
+				}
 				if (suppressNextClick) {
 					suppressNextClick = false;
 					return;
@@ -1290,6 +1335,10 @@
 		let suppressNextClick = false;
 		let handledDoubleInClick = false;
 		let activePointerId: number | null = null;
+		let lastPointerType: string | null = null;
+		let lastPointerClientX = 0;
+		let touchTapTimer: number | null = null;
+		let pendingTouchSeekDelta = 0;
 		let previousPlaybackRate = getPlaybackRate(player);
 		let spaceSlowTimer: number | null = null;
 		let spaceSlowActive = false;
@@ -1300,6 +1349,14 @@
 				clearTimeout(clickTimer);
 				clickTimer = null;
 			}
+		};
+
+		const clearTouchTapTimer = () => {
+			if (touchTapTimer !== null) {
+				clearTimeout(touchTapTimer);
+				touchTapTimer = null;
+			}
+			pendingTouchSeekDelta = 0;
 		};
 
 		const clearLongPressTimer = () => {
@@ -1324,8 +1381,24 @@
 			return !isEventFromControls(event);
 		};
 
+		const getTouchDoubleTapSeekDelta = (event: MouseEvent) => {
+			if (lastPointerType !== 'touch') return 0;
+			const bounds = player.getBoundingClientRect();
+			if (bounds.width <= 0) return 0;
+			const clientX = Number.isFinite(lastPointerClientX) ? lastPointerClientX : event.clientX;
+			const relativeX = clientX - bounds.left;
+			if (relativeX <= bounds.width * TOUCH_DOUBLE_TAP_SIDE_RATIO) {
+				return -TOUCH_DOUBLE_TAP_SEEK_SECONDS;
+			}
+			if (relativeX >= bounds.width * (1 - TOUCH_DOUBLE_TAP_SIDE_RATIO)) {
+				return TOUCH_DOUBLE_TAP_SEEK_SECONDS;
+			}
+			return 0;
+		};
+
 		const onClick = (event: MouseEvent) => {
 			if (!isPrimaryClick(event) || !shouldHandle(event)) return;
+			if (lastPointerType === 'touch') return;
 
 			if (suppressNextClick) {
 				suppressNextClick = false;
@@ -1346,12 +1419,20 @@
 			} else if (event.detail === 2) {
 				handledDoubleInClick = true;
 				clearClickTimer();
-				toggleFullscreen(player, resolveRemote());
+				const touchSeekDelta = getTouchDoubleTapSeekDelta(event);
+				if (touchSeekDelta !== 0) {
+					seekBySeconds(player, touchSeekDelta);
+					return;
+				}
+				if (lastPointerType !== 'touch') {
+					toggleFullscreen(player, resolveRemote());
+				}
 			}
 		};
 
 		const onDblClick = (event: MouseEvent) => {
 			if (!isPrimaryClick(event) || !shouldHandle(event)) return;
+			if (lastPointerType === 'touch') return;
 
 			if (handledDoubleInClick) {
 				handledDoubleInClick = false;
@@ -1366,6 +1447,8 @@
 			if (!isPrimaryPointer(event) || !shouldHandle(event)) return;
 
 			activePointerId = event.pointerId;
+			lastPointerType = event.pointerType || null;
+			lastPointerClientX = event.clientX;
 			handledDoubleInClick = false;
 			previousPlaybackRate = getPlaybackRate(player);
 			longPressActive = false;
@@ -1388,12 +1471,37 @@
 		const onPointerUp = (event: PointerEvent) => {
 			if (activePointerId === null || event.pointerId !== activePointerId) return;
 			activePointerId = null;
+			const wasLongPress = longPressActive;
 			finishLongPress();
+			if (wasLongPress || !shouldHandle(event) || event.pointerType !== 'touch') return;
+
+			const touchSeekDelta = getTouchDoubleTapSeekDelta(event as unknown as MouseEvent);
+			if (touchTapTimer !== null) {
+				const previousTouchSeekDelta = pendingTouchSeekDelta;
+				clearTouchTapTimer();
+				if (touchSeekDelta !== 0 && touchSeekDelta === previousTouchSeekDelta) {
+					seekBySeconds(player, touchSeekDelta);
+					showTouchSkipFeedback(touchSeekDelta);
+				}
+				return;
+			}
+
+			pendingTouchSeekDelta = touchSeekDelta;
+			touchTapTimer = window.setTimeout(() => {
+				touchTapTimer = null;
+				pendingTouchSeekDelta = 0;
+				if (isMobileViewport && controlsJustShown) {
+					controlsJustShown = false;
+					return;
+				}
+				togglePlayback(player, resolveRemote());
+			}, TOUCH_DOUBLE_TAP_DELAY);
 		};
 
 		const onPointerCancel = (event: PointerEvent) => {
 			if (activePointerId === null || event.pointerId !== activePointerId) return;
 			activePointerId = null;
+			clearTouchTapTimer();
 			suppressNextClick = false;
 			finishLongPress();
 		};
@@ -1509,6 +1617,7 @@
 
 		return () => {
 			clearClickTimer();
+			clearTouchTapTimer();
 			finishLongPress();
 			activePointerId = null;
 			suppressNextClick = false;
@@ -2123,11 +2232,26 @@
 		}
 	}
 
+	function detectTouchInput() {
+		if (!browser || typeof window === 'undefined') return false;
+		try {
+			const maxTouchPoints =
+				(navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints ?? 0;
+			const hasCoarsePointer =
+				window.matchMedia('(pointer: coarse)').matches ||
+				window.matchMedia('(any-pointer: coarse)').matches;
+			return hasCoarsePointer || maxTouchPoints > 0 || 'ontouchstart' in window;
+		} catch {
+			return false;
+		}
+	}
+
 	$: effectiveAutoPlay = !!autoPlay && !isIOSDevice;
 
 	onMount(() => {
 		mounted = true;
 		isIOSDevice = detectIOSDevice();
+		hasTouchInput = detectTouchInput();
 
 		if (browser && typeof window !== 'undefined') {
 			cleanupMobileQuery?.();
@@ -2316,6 +2440,31 @@
 					</div>
 				{/if}
 
+				{#if touchSkipFeedbackVisible}
+					{#key touchSkipFeedbackNonce}
+						<div class="touch-skip-feedback-layer" aria-hidden="true">
+							<div
+								class="touch-skip-feedback"
+								class:touch-skip-feedback--backward={touchSkipFeedbackDirection === 'backward'}
+								class:touch-skip-feedback--forward={touchSkipFeedbackDirection === 'forward'}
+							>
+								<div class="touch-skip-feedback-icon-strip">
+									{#if touchSkipFeedbackDirection === 'backward'}
+										<ChevronLeftIcon />
+										<ChevronLeftIcon />
+									{:else}
+										<ChevronRightIcon />
+										<ChevronRightIcon />
+									{/if}
+								</div>
+								<span class="touch-skip-feedback-label"
+									>{touchSkipFeedbackDirection === 'backward' ? '-' : '+'}{touchSkipFeedbackSeconds}s</span
+								>
+							</div>
+						</div>
+					{/key}
+				{/if}
+
 				{#if nowPlayingTrackLabel || nowPlayingSpotLabel}
 					<div class="now-pills" aria-live="polite">
 						{#if nowPlayingTrackLabel}
@@ -2425,23 +2574,24 @@
 									<span class="icon icon-replay"><RotateCcwIcon /></span>
 								</media-play-button>
 
-								<media-seek-button
-									class="control-button"
-									seconds={-10}
-									aria-label="Jump back 10 seconds"
-								>
-									<span class="icon"><SkipBackIcon /></span>
-									<span class="label">-10s</span>
-								</media-seek-button>
 
-								<media-seek-button
-									class="control-button"
-									seconds={10}
-									aria-label="Jump forward 10 seconds"
-								>
-									<span class="icon"><SkipForwardIcon /></span>
-									<span class="label">+10s</span>
-								</media-seek-button>
+								{#if !hasTouchInput}
+									<media-seek-button
+										class="control-button"
+										seconds={-10}
+										aria-label="Jump back 10 seconds"
+									>
+										<span class="label">-10s</span>
+									</media-seek-button>
+
+									<media-seek-button
+										class="control-button"
+										seconds={10}
+										aria-label="Jump forward 10 seconds"
+									>
+										<span class="label">+10s</span>
+									</media-seek-button>
+								{/if}
 
 								<div class="time-display" aria-hidden="true">
 									<media-time type="current" class="time-value"></media-time>
@@ -2724,6 +2874,82 @@
 	.ios-tap-to-play-pill :global(svg) {
 		inline-size: 1.1rem;
 		block-size: 1.1rem;
+	}
+
+	.touch-skip-feedback-layer {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	.touch-skip-feedback {
+		position: absolute;
+		top: 50%;
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.15rem;
+		min-inline-size: clamp(5.5rem, 18vw, 7rem);
+		padding: 0.9rem 1rem;
+		border-radius: 1.35rem;
+		background: rgba(2, 6, 23, 0.78);
+		border: 1px solid rgba(148, 163, 184, 0.24);
+		backdrop-filter: blur(10px);
+		color: #f8fafc;
+		transform: translateY(-50%);
+		animation: touch-skip-feedback-pop 700ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.touch-skip-feedback--backward {
+		left: clamp(1rem, 9vw, 5rem);
+	}
+
+	.touch-skip-feedback--forward {
+		right: clamp(1rem, 9vw, 5rem);
+	}
+
+	.touch-skip-feedback-icon-strip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.1rem;
+		opacity: 0.92;
+	}
+
+	.touch-skip-feedback-icon-strip :global(svg) {
+		inline-size: 1.35rem;
+		block-size: 1.35rem;
+		stroke-width: 2.35;
+	}
+
+	.touch-skip-feedback-label {
+		font-size: 0.92rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	@keyframes touch-skip-feedback-pop {
+		0% {
+			opacity: 0;
+			transform: translateY(calc(-50% + 10px)) scale(0.9);
+		}
+
+		18% {
+			opacity: 1;
+			transform: translateY(-50%) scale(1);
+		}
+
+		78% {
+			opacity: 1;
+			transform: translateY(-50%) scale(1);
+		}
+
+		100% {
+			opacity: 0;
+			transform: translateY(calc(-50% - 6px)) scale(0.96);
+		}
 	}
 	.player-controls {
 		position: absolute;

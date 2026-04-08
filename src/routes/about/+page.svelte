@@ -1,6 +1,53 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
 	import { withUtm } from '$lib/utils';
+
+	type AboutFundingSummary = {
+		totalCosts: Array<{ amount: number; currency: string }>;
+		totalDonations: Array<{ amount: number; currency: string }>;
+		totalCostsEur: number;
+		totalDonationsEur: number;
+		netBalanceEur: number;
+		costsCount: number;
+		donationsCount: number;
+	};
+
+	let { data }: { data: { fundingSummary: AboutFundingSummary } } = $props();
+	const fundingSummary = ((data as any)?.fundingSummary ?? {
+		totalCosts: [],
+		totalDonations: [],
+		totalCostsEur: 0,
+		totalDonationsEur: 0,
+		netBalanceEur: 0,
+		costsCount: 0,
+		donationsCount: 0
+	}) as AboutFundingSummary;
+
+	const aboutSections = [
+		{ href: '#story', label: 'Story' },
+		{ href: '#vision', label: 'Vision' },
+		{ href: '#transparency', label: 'Costs' },
+		{ href: '#contribute', label: 'Contribute' },
+		{ href: '#about-me', label: 'About me' }
+	];
+
+	function formatMoney(amount: number, currency: string): string {
+		return new Intl.NumberFormat(undefined, {
+			style: 'currency',
+			currency,
+			minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+			maximumFractionDigits: 2
+		}).format(amount);
+	}
+
+	function formatBuckets(values: Array<{ amount: number; currency: string }>): string {
+		if (!values?.length) return 'Nothing logged yet';
+		return values.map((value) => formatMoney(value.amount, value.currency)).join(' / ');
+	}
+
+	function formatEuro(amount: number): string {
+		return formatMoney(amount, 'EUR');
+	}
 </script>
 
 <svelte:head>
@@ -42,9 +89,20 @@
 		<p class="mt-2 max-w-3xl text-sm text-muted-foreground md:text-base">
 			{m.about_subtitle()}
 		</p>
+
+		<div class="mt-6 flex flex-wrap gap-2">
+			{#each aboutSections as section}
+				<a
+					href={section.href}
+					class="inline-flex items-center rounded-full border border-border bg-background/50 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground transition hover:border-foreground/30 hover:text-foreground"
+				>
+					{section.label}
+				</a>
+			{/each}
+		</div>
 	</div>
 
-	<div class="jf-surface-soft rounded-3xl p-6 md:p-8">
+	<div id="story" class="jf-surface-soft rounded-3xl p-6 md:p-8 scroll-mt-24">
 		<div class="max-w-3xl space-y-6 text-sm leading-7 text-foreground md:text-base">
 			<h2 class="pt-2 text-xl font-semibold tracking-tight md:text-2xl">
 				What did it evolve from?
@@ -118,7 +176,7 @@
 				Winter helps — when it’s dark and wet outside, it’s coding season.
 			</p>
 
-			<h2 class="pt-2 text-xl font-semibold tracking-tight md:text-2xl">
+			<h2 id="vision" class="pt-2 text-xl font-semibold tracking-tight md:text-2xl scroll-mt-24">
 				What’s the bigger vision?
 			</h2>
 
@@ -200,7 +258,54 @@
 		</div>
 	</div>
 
-	<div class="jf-surface mt-6 rounded-3xl p-6 md:mt-8 md:p-8">
+	<div id="transparency" class="jf-surface mt-6 rounded-3xl p-6 md:mt-8 md:p-8 scroll-mt-24">
+		<div class="max-w-3xl space-y-6 text-sm leading-7 text-foreground md:text-base">
+			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">Costs & transparency</h2>
+			<p>
+				I want the financial side of JUMPFLIX to stay visible too: what it costs to run, what gets
+				sponsored, and whether donations offset any of that.
+			</p>
+			<div class="grid gap-3 md:grid-cols-3">
+				<div class="rounded-2xl border border-border bg-background/40 p-4">
+					<div class="text-xs uppercase tracking-[0.16em] text-muted-foreground">Approx. costs</div>
+					<div class="mt-2 text-lg font-semibold text-foreground">
+						{formatEuro(fundingSummary.totalCostsEur)}
+					</div>
+					<div class="mt-1 text-xs text-muted-foreground">Converted to EUR for the summary</div>
+				</div>
+				<div class="rounded-2xl border border-border bg-background/40 p-4">
+					<div class="text-xs uppercase tracking-[0.16em] text-muted-foreground">Approx. donations</div>
+					<div class="mt-2 text-lg font-semibold text-foreground">
+						{formatEuro(fundingSummary.totalDonationsEur)}
+					</div>
+				</div>
+				<div class="rounded-2xl border border-border bg-background/40 p-4">
+					<div class="text-xs uppercase tracking-[0.16em] text-muted-foreground">Approx. net</div>
+					<div class="mt-2 text-lg font-semibold text-foreground">
+						{formatEuro(fundingSummary.netBalanceEur)}
+					</div>
+					<div class="mt-1 text-xs text-muted-foreground">
+						{fundingSummary.costsCount + fundingSummary.donationsCount} entries logged
+					</div>
+				</div>
+			</div>
+			<p class="text-muted-foreground">
+				Netlify hosting is currently on a sponsored open source plan, and Supabase is still on the free
+				tier. Bunny and OpenAI usage will be pulled in via API later.
+			</p>
+			<p>
+				<a
+					href="/costs"
+					class="font-medium text-foreground underline decoration-muted-foreground/60 underline-offset-4 transition hover:decoration-foreground"
+				>
+					Open the full costs & donations page
+				</a>
+				for the detailed history and future monthly reporting.
+			</p>
+		</div>
+	</div>
+
+	<div id="contribute" class="jf-surface mt-6 rounded-3xl p-6 md:mt-8 md:p-8 scroll-mt-24">
 		<div class="max-w-3xl space-y-6 text-sm leading-7 text-foreground md:text-base">
 			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">Want to contribute?</h2>
 			<p>
@@ -254,7 +359,7 @@
 		</div>
 	</div>
 
-	<div class="jf-surface mt-6 rounded-3xl p-6 md:mt-8 md:p-8">
+	<div id="about-me" class="jf-surface mt-6 rounded-3xl p-6 md:mt-8 md:p-8 scroll-mt-24">
 		<div class="text-center">
 			<h2 class="text-2xl font-semibold tracking-tight md:text-4xl">About Me</h2>
 			<div class="mx-auto mt-3 h-1 w-24 rounded bg-foreground/90" aria-hidden="true"></div>

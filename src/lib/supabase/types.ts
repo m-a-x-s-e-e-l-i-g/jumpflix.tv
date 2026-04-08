@@ -3,6 +3,111 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
 	public: {
 		Tables: {
+			project_costs: {
+				Row: {
+					id: number;
+					title: string;
+					description: string | null;
+					vendor: string;
+					category: 'hosting' | 'video' | 'ai' | 'developer-tools' | 'database' | 'other';
+					amount: number;
+					currency: string;
+					occurred_at: string;
+					coverage: 'direct' | 'sponsored' | 'waived';
+					entry_method: 'manual' | 'api_import' | 'seed';
+					source_system: string | null;
+					source_reference: string | null;
+					is_public: boolean;
+					metadata: Json;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: number;
+					title: string;
+					description?: string | null;
+					vendor: string;
+					category: 'hosting' | 'video' | 'ai' | 'developer-tools' | 'database' | 'other';
+					amount: number;
+					currency?: string;
+					occurred_at?: string;
+					coverage?: 'direct' | 'sponsored' | 'waived';
+					entry_method?: 'manual' | 'api_import' | 'seed';
+					source_system?: string | null;
+					source_reference?: string | null;
+					is_public?: boolean;
+					metadata?: Json;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: number;
+					title?: string;
+					description?: string | null;
+					vendor?: string;
+					category?: 'hosting' | 'video' | 'ai' | 'developer-tools' | 'database' | 'other';
+					amount?: number;
+					currency?: string;
+					occurred_at?: string;
+					coverage?: 'direct' | 'sponsored' | 'waived';
+					entry_method?: 'manual' | 'api_import' | 'seed';
+					source_system?: string | null;
+					source_reference?: string | null;
+					is_public?: boolean;
+					metadata?: Json;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
+			project_donations: {
+				Row: {
+					id: number;
+					supporter_name: string | null;
+					note: string | null;
+					amount: number;
+					currency: string;
+					donated_at: string;
+					entry_method: 'manual' | 'api_import' | 'seed';
+					source_system: string | null;
+					source_reference: string | null;
+					is_public: boolean;
+					metadata: Json;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: number;
+					supporter_name?: string | null;
+					note?: string | null;
+					amount: number;
+					currency?: string;
+					donated_at?: string;
+					entry_method?: 'manual' | 'api_import' | 'seed';
+					source_system?: string | null;
+					source_reference?: string | null;
+					is_public?: boolean;
+					metadata?: Json;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: number;
+					supporter_name?: string | null;
+					note?: string | null;
+					amount?: number;
+					currency?: string;
+					donated_at?: string;
+					entry_method?: 'manual' | 'api_import' | 'seed';
+					source_system?: string | null;
+					source_reference?: string | null;
+					is_public?: boolean;
+					metadata?: Json;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 			spot_chapters: {
 				Row: {
 					id: number;

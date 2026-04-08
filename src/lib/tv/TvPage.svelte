@@ -33,7 +33,8 @@
 		selectEpisode,
 		setContent,
 		sortedAllContent,
-		selectedFacets
+		selectedFacets,
+		activeFeedSlug
 	} from '$lib/tv/store';
 	import { slugify } from '$lib/tv/slug';
 	import {
@@ -888,7 +889,7 @@
 			{/if}
 
 			{#if !isProfileRoute}
-				<TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} {selectedFacets} />
+				<TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} {selectedFacets} {activeFeedSlug} />
 			{/if}
 
 			<div class="catalog-toolbar" aria-label="Catalog view controls">

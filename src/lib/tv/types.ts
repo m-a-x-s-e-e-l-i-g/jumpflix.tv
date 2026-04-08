@@ -169,6 +169,7 @@ export interface TvState {
 	watchedBaseIds?: Set<string>;
 	inProgressBaseIds?: Set<string>;
 	selectedFacets?: SelectedFacets;
+	activeFeedSlug?: string | null;
 }
 
 export const DEFAULT_TV_STATE: TvState = {

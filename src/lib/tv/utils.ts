@@ -1,3 +1,4 @@
+import { getFeedBySlug } from './feeds';
 import type { ContentItem, Movie, SortBy, TvState, VideoTrack } from './types';
 
 // Deterministic seeded shuffle (xmur3 + sfc32)
@@ -197,6 +198,121 @@ export function matchesFacets(
 	return true;
 }
 
+export function matchesFeed(item: ContentItem, activeFeedSlug?: string | null): boolean {
+	const feed = getFeedBySlug(activeFeedSlug);
+	if (!feed) return true;
+
+	const { filter } = feed;
+
+	if (filter.itemTypes && filter.itemTypes.length > 0 && !filter.itemTypes.includes(item.type)) {
+		return false;
+	}
+
+	if (filter.yearMin !== undefined || filter.yearMax !== undefined) {
+		const itemYear = parseYear(item);
+		if (itemYear <= 0) return false;
+		if (filter.yearMin !== undefined && itemYear < filter.yearMin) return false;
+		if (filter.yearMax !== undefined && itemYear > filter.yearMax) return false;
+	}
+
+	if (filter.durationMinMinutes !== undefined || filter.durationMaxMinutes !== undefined) {
+		const durationMinutes = parseDurationToMinutes((item as any).duration);
+		if (
+			filter.durationMinMinutes !== undefined &&
+			(durationMinutes === Number.POSITIVE_INFINITY || durationMinutes < filter.durationMinMinutes)
+		) {
+			return false;
+		}
+		if (
+			filter.durationMaxMinutes !== undefined &&
+			(durationMinutes === Number.POSITIVE_INFINITY || durationMinutes > filter.durationMaxMinutes)
+		) {
+			return false;
+		}
+	}
+
+	const feedFacets = filter.facets;
+	const facets = item.facets;
+	if (feedFacets) {
+		if (!facets) return false;
+
+		if (feedFacets.type && feedFacets.type.length > 0) {
+			if (!facets.type || !feedFacets.type.includes(facets.type)) return false;
+		}
+
+		if (feedFacets.mood && feedFacets.mood.length > 0) {
+			if (!facets.mood || !facets.mood.some((mood) => feedFacets.mood!.includes(mood))) return false;
+		}
+
+		if (feedFacets.movement && feedFacets.movement.length > 0) {
+			if (
+				!facets.movement ||
+				!facets.movement.some((movement) => feedFacets.movement!.includes(movement))
+			) {
+				return false;
+			}
+		}
+
+		if (feedFacets.environment && feedFacets.environment.length > 0) {
+			if (!facets.environment || !feedFacets.environment.includes(facets.environment)) return false;
+		}
+
+		if (feedFacets.filmStyle && feedFacets.filmStyle.length > 0) {
+			if (!facets.filmStyle || !feedFacets.filmStyle.includes(facets.filmStyle)) return false;
+		}
+
+		if (feedFacets.theme && feedFacets.theme.length > 0) {
+			if (!facets.theme || !feedFacets.theme.includes(facets.theme)) return false;
+		}
+
+		if (feedFacets.era && feedFacets.era.length > 0) {
+			if (!facets.era || !feedFacets.era.includes(facets.era)) return false;
+		}
+
+		if (feedFacets.length && feedFacets.length.length > 0) {
+			if (!facets.length || !feedFacets.length.includes(facets.length)) return false;
+		}
+	}
+
+	const excludedFacets = filter.excludeFacets;
+	if (!excludedFacets) return true;
+	if (!facets) return true;
+
+	if (excludedFacets.type && excludedFacets.type.length > 0) {
+		if (facets.type && excludedFacets.type.includes(facets.type)) return false;
+	}
+
+	if (excludedFacets.mood && excludedFacets.mood.length > 0) {
+		if (facets.mood?.some((mood) => excludedFacets.mood!.includes(mood))) return false;
+	}
+
+	if (excludedFacets.movement && excludedFacets.movement.length > 0) {
+		if (facets.movement?.some((movement) => excludedFacets.movement!.includes(movement))) return false;
+	}
+
+	if (excludedFacets.environment && excludedFacets.environment.length > 0) {
+		if (facets.environment && excludedFacets.environment.includes(facets.environment)) return false;
+	}
+
+	if (excludedFacets.filmStyle && excludedFacets.filmStyle.length > 0) {
+		if (facets.filmStyle && excludedFacets.filmStyle.includes(facets.filmStyle)) return false;
+	}
+
+	if (excludedFacets.theme && excludedFacets.theme.length > 0) {
+		if (facets.theme && excludedFacets.theme.includes(facets.theme)) return false;
+	}
+
+	if (excludedFacets.era && excludedFacets.era.length > 0) {
+		if (facets.era && excludedFacets.era.includes(facets.era)) return false;
+	}
+
+	if (excludedFacets.length && excludedFacets.length.length > 0) {
+		if (facets.length && excludedFacets.length.includes(facets.length)) return false;
+	}
+
+	return true;
+}
+
 export function filterAndSortContent(
 	all: ContentItem[],
 	rankMap: Map<string, number>,
@@ -204,6 +320,7 @@ export function filterAndSortContent(
 ): ContentItem[] {
 	const filtered = all
 		.filter((item) => (state.showPaid ? true : !item.paid))
+		.filter((item) => matchesFeed(item, state.activeFeedSlug))
 		.filter((item) => matchesSearch(item, state.searchQuery))
 		.filter((item) => matchesFacets(item, state.selectedFacets));
 

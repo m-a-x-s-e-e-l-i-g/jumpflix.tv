@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Writable } from 'svelte/store';
+	import { getFeedBySlug } from './feeds';
 	import type {
 		SelectedFacets,
 		FacetType,
@@ -22,9 +23,10 @@
 
 	interface Props {
 		selectedFacets: Writable<SelectedFacets>;
+		activeFeedSlug?: Writable<string | null>;
 	}
 
-	let { selectedFacets }: Props = $props();
+	let { selectedFacets, activeFeedSlug }: Props = $props();
 
 	// Facet metadata with display names and emojis (using i18n)
 	const facetCategories = $derived({
@@ -179,6 +181,102 @@
 			0
 		)
 	);
+
+	const activeFeed = $derived(getFeedBySlug(activeFeedSlug ? $activeFeedSlug : null));
+
+	function getCategoryLabel(category: keyof SelectedFacets): string {
+		return facetCategories[category].label;
+	}
+
+	function getOptionLabel(category: keyof SelectedFacets, value: string): string {
+		const option = facetCategories[category].options.find((entry) => entry.value === value);
+		return option?.label ?? value;
+	}
+
+	function formatFeedDuration(min?: number, max?: number): string | null {
+		if (min !== undefined && max !== undefined) return `${min}-${max} min`;
+		if (min !== undefined) return `${min}+ min`;
+		if (max !== undefined) return `Up to ${max} min`;
+		return null;
+	}
+
+	function formatFeedYear(min?: number, max?: number): string | null {
+		if (min !== undefined && max !== undefined) return `${min}-${max}`;
+		if (min !== undefined) return `${min}+`;
+		if (max !== undefined) return `${max} and older`;
+		return null;
+	}
+
+	const activeFeedFilterGroups = $derived.by(() => {
+		if (!activeFeed) return [];
+
+		const groups: Array<{ label: string; values: string[] }> = [];
+		const exclusionGroups: Array<{ label: string; values: string[] }> = [];
+		const filter = activeFeed.filter;
+
+		if (filter.itemTypes?.length) {
+			groups.push({
+				label: 'Catalog',
+				values: filter.itemTypes.map((itemType) => (itemType === 'movie' ? 'Movies' : 'Series'))
+			});
+		}
+
+		const durationLabel = formatFeedDuration(
+			filter.durationMinMinutes,
+			filter.durationMaxMinutes
+		);
+		if (durationLabel) {
+			groups.push({
+				label: 'Duration',
+				values: [durationLabel]
+			});
+		}
+
+		const yearLabel = formatFeedYear(filter.yearMin, filter.yearMax);
+		if (yearLabel) {
+			groups.push({
+				label: 'Year',
+				values: [yearLabel]
+			});
+		}
+
+		const feedFacets = filter.facets;
+		const facetKeys: Array<keyof SelectedFacets> = [
+			'type',
+			'mood',
+			'movement',
+			'environment',
+			'filmStyle',
+			'theme',
+			'era',
+			'length'
+		];
+
+		if (feedFacets) {
+			for (const category of facetKeys) {
+				const values = feedFacets[category];
+				if (!Array.isArray(values) || values.length === 0) continue;
+				groups.push({
+					label: getCategoryLabel(category),
+					values: values.map((value) => getOptionLabel(category, value))
+				});
+			}
+		}
+
+		const excludedFacets = filter.excludeFacets;
+		if (excludedFacets) {
+			for (const category of facetKeys) {
+				const values = excludedFacets[category];
+				if (!Array.isArray(values) || values.length === 0) continue;
+				exclusionGroups.push({
+					label: `Exclude ${getCategoryLabel(category)}`,
+					values: values.map((value) => getOptionLabel(category, value))
+				});
+			}
+		}
+
+		return [...groups, ...exclusionGroups];
+	});
 </script>
 
 <button class="filter-toggle" onclick={() => (isOpen = true)} aria-label="Open facet filters">
@@ -210,6 +308,31 @@
 				</button>
 			{/if}
 		</div>
+
+		{#if activeFeed}
+			<section class="feed-summary" aria-label="Active feed filters">
+				<div class="feed-summary-header">
+					<div>
+						<p class="feed-summary-eyebrow">Active feed</p>
+						<h3 class="feed-summary-title">{activeFeed.title}</h3>
+					</div>
+					<p class="feed-summary-description">{activeFeed.description}</p>
+				</div>
+
+				<div class="feed-summary-groups">
+					{#each activeFeedFilterGroups as group}
+						<div class="feed-summary-group">
+							<span class="feed-summary-group-label">{group.label}</span>
+							<div class="feed-summary-values">
+								{#each group.values as value}
+									<span class="feed-summary-chip">{value}</span>
+								{/each}
+							</div>
+						</div>
+					{/each}
+				</div>
+			</section>
+		{/if}
 
 		{#if renderFilters}
 			<div class="filter-categories">
@@ -308,6 +431,77 @@
 	.clear-button:hover {
 		background: rgba(229, 9, 20, 0.1);
 		color: rgba(229, 9, 20, 1);
+	}
+
+	.feed-summary {
+		margin-bottom: 1.5rem;
+		border-radius: 18px;
+		border: 1px solid rgba(229, 9, 20, 0.18);
+		background:
+			linear-gradient(180deg, rgba(229, 9, 20, 0.08), rgba(59, 130, 246, 0.05)),
+			rgba(15, 23, 42, 0.55);
+		padding: 1rem;
+	}
+
+	.feed-summary-header {
+		display: grid;
+		gap: 0.4rem;
+		margin-bottom: 0.85rem;
+	}
+
+	.feed-summary-eyebrow {
+		font-size: 0.68rem;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: rgba(248, 250, 252, 0.72);
+	}
+
+	.feed-summary-title {
+		font-size: 1rem;
+		font-weight: 700;
+		color: rgba(248, 250, 252, 0.96);
+	}
+
+	.feed-summary-description {
+		font-size: 0.84rem;
+		line-height: 1.5;
+		color: rgba(226, 232, 240, 0.74);
+	}
+
+	.feed-summary-groups {
+		display: grid;
+		gap: 0.85rem;
+	}
+
+	.feed-summary-group {
+		display: grid;
+		gap: 0.4rem;
+	}
+
+	.feed-summary-group-label {
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: rgba(248, 250, 252, 0.7);
+	}
+
+	.feed-summary-values {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+	}
+
+	.feed-summary-chip {
+		display: inline-flex;
+		align-items: center;
+		border-radius: 999px;
+		border: 1px solid rgba(248, 250, 252, 0.14);
+		background: rgba(15, 23, 42, 0.65);
+		padding: 0.35rem 0.65rem;
+		font-size: 0.74rem;
+		color: rgba(248, 250, 252, 0.92);
 	}
 
 	.filter-categories {

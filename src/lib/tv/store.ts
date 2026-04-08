@@ -128,6 +128,7 @@ export const catalogView = writable<CatalogView>(loadCatalogViewPreference());
 export const selectedEpisode = writable<Episode | null>(null);
 // Selected facets for filtering
 export const selectedFacets = writable<SelectedFacets>({});
+export const activeFeedSlug = writable<string | null>(null);
 
 // Track thumbnails that have successfully loaded so we can keep them cached
 export const loadedThumbnails = writable<Set<string>>(new Set());
@@ -254,7 +255,8 @@ export const visibleContent = derived(
 		showWatched,
 		watchedBaseIds,
 		inProgressBaseIds,
-		selectedFacets
+		selectedFacets,
+		activeFeedSlug
 	],
 	([
 		$meta,
@@ -264,7 +266,8 @@ export const visibleContent = derived(
 		$showWatched,
 		$watchedBaseIds,
 		$inProgressBaseIds,
-		$selectedFacets
+		$selectedFacets,
+		$activeFeedSlug
 	]) =>
 		filterAndSortContent($meta.items, $meta.rankMap, {
 			searchQuery: $search,
@@ -273,7 +276,8 @@ export const visibleContent = derived(
 			showWatched: $showWatched,
 			watchedBaseIds: $watchedBaseIds,
 			inProgressBaseIds: $inProgressBaseIds,
-			selectedFacets: $selectedFacets
+			selectedFacets: $selectedFacets,
+			activeFeedSlug: $activeFeedSlug
 		})
 );
 

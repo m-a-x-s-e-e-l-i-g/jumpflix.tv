@@ -1,12 +1,30 @@
-import type { Facets } from './types';
+import type { ContentItem, Facets } from './types';
 
 export type FeedFilter = {
-	itemTypes?: Array<'movie' | 'series'>;
+	itemTypes?: ContentItem['type'][];
+	yearMin?: number;
+	yearMax?: number;
 	durationMinMinutes?: number;
 	durationMaxMinutes?: number;
 	facets?: {
-		type?: Facets['type'];
-		environment?: Facets['environment'];
+		type?: NonNullable<Facets['type']>[];
+		mood?: NonNullable<Facets['mood']>;
+		movement?: NonNullable<Facets['movement']>;
+		environment?: NonNullable<Facets['environment']>[];
+		filmStyle?: NonNullable<Facets['filmStyle']>[];
+		theme?: NonNullable<Facets['theme']>[];
+		era?: NonNullable<Facets['era']>[];
+		length?: NonNullable<Facets['length']>[];
+	};
+	excludeFacets?: {
+		type?: NonNullable<Facets['type']>[];
+		mood?: NonNullable<Facets['mood']>;
+		movement?: NonNullable<Facets['movement']>;
+		environment?: NonNullable<Facets['environment']>[];
+		filmStyle?: NonNullable<Facets['filmStyle']>[];
+		theme?: NonNullable<Facets['theme']>[];
+		era?: NonNullable<Facets['era']>[];
+		length?: NonNullable<Facets['length']>[];
 	};
 };
 
@@ -24,7 +42,7 @@ export const FEEDS: FeedDefinition[] = [
 		description: 'Real stories, interviews, behind-the-scenes.',
 		filter: {
 			facets: {
-				type: 'documentary'
+				type: ['documentary']
 			}
 		}
 	},
@@ -34,14 +52,14 @@ export const FEEDS: FeedDefinition[] = [
 		description: 'Narrative-driven parkour films.',
 		filter: {
 			facets: {
-				type: 'fiction'
+				type: ['fiction']
 			}
 		}
 	},
 	{
 		slug: 'movie-night',
-		title: 'Movie Night (Feature Movies)',
-		description: 'Movies ~60–160 minutes. Great for a watch party.',
+		title: 'Movie Night',
+		description: 'Long-form movies that can carry the whole evening.',
 		filter: {
 			itemTypes: ['movie'],
 			durationMinMinutes: 60,
@@ -49,13 +67,34 @@ export const FEEDS: FeedDefinition[] = [
 		}
 	},
 	{
-		slug: 'street-sessions',
-		title: 'Street Sessions',
-		description: 'Classic training edits, mostly in the streets.',
+		slug: 'oldskool-classics',
+		title: 'Oldskool Classics',
+		description: 'Foundational movement, vintage energy, and early-era culture.',
+		filter: {
+			yearMax: 2015,
+			excludeFacets: {
+				theme: ['entertainment']
+			}
+		}
+	},
+	{
+		slug: 'educational',
+		title: 'Educational',
+		description: 'Tutorials, talks, and breakdowns that teach something useful.',
 		filter: {
 			facets: {
-				type: 'session',
-				environment: 'street'
+				type: ['tutorial', 'talk'],
+				theme: ['educational']
+			}
+		}
+	},
+	{
+		slug: 'send-it',
+		title: 'SEND IT',
+		description: 'Big sends, raw commitment, and high-consequence movement.',
+		filter: {
+			facets: {
+				movement: ['big-sends']
 			}
 		}
 	}

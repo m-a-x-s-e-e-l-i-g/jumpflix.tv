@@ -74,6 +74,7 @@
 		"leaflet": "^1.9.4",
 		"lucide-svelte": "^0.544.0",
 		"media-icons": "^1.1.5",
+		"openai": "^6.33.0",
 		"svelte-sonner": "^0.3.28",
 		"tailwind-merge": "^3.3.1",
 		"vidstack": "^1.12.0-next.5"

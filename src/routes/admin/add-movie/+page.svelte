@@ -1,5 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import {
+		getYouTubeThumbnailCandidates,
+		isLikelyMissingYouTubeThumbnail,
+		isYouTubeVideoId
+	} from '$lib/youtube-thumbnails';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
@@ -27,6 +32,10 @@
 	let starring = $state('');
 	let paid = $state(false);
 	let provider = $state('');
+	let generatingPoster = $state(false);
+	let posterGenerationError = $state('');
+	let generatedPosterPreviewUrl = $state('');
+	let generatedPosterSourceLabel = $state('');
 
 	// Autofill (creators / athletes)
 	let creatorsSuggestions = $state<string[]>([]);
@@ -116,7 +125,7 @@
 
 	function updateYouTubeThumbFromVideoId(idRaw: string) {
 		const id = idRaw.trim();
-		if (!/^[A-Za-z0-9_-]{11}$/.test(id)) {
+		if (!isYouTubeVideoId(id)) {
 			youtubeThumbUrl = '';
 			youtubeThumbCandidates = [];
 			youtubeThumbIndex = 0;
@@ -124,8 +133,7 @@
 			lastThumbVideoId = '';
 			return;
 		}
-		const qualities = ['maxresdefault', 'sddefault', 'hqdefault', 'mqdefault', 'default'];
-		youtubeThumbCandidates = qualities.map((q) => `https://img.youtube.com/vi/${id}/${q}.jpg`);
+		youtubeThumbCandidates = getYouTubeThumbnailCandidates(id);
 		youtubeThumbIndex = 0;
 		youtubeThumbUrl = youtubeThumbCandidates[0] ?? '';
 		youtubeThumbFailed = false;
@@ -140,6 +148,14 @@
 		}
 		youtubeThumbIndex = next;
 		youtubeThumbUrl = youtubeThumbCandidates[next] ?? '';
+	}
+
+	function handleYouTubeThumbLoad(event: Event) {
+		const img = event.currentTarget;
+		if (!(img instanceof HTMLImageElement)) return;
+		if (isLikelyMissingYouTubeThumbnail(img.naturalWidth, img.naturalHeight)) {
+			handleYouTubeThumbError();
+		}
 	}
 
 	$effect(() => {
@@ -185,8 +201,63 @@
 			// not a URL — try raw video ID
 		}
 		// Accept raw 11-char video ID
-		if (/^[A-Za-z0-9_-]{11}$/.test(trimmed)) return trimmed;
+		if (isYouTubeVideoId(trimmed)) return trimmed;
 		return null;
+	}
+
+	async function generatePosterFromThumbnail() {
+		if (!isYouTubeVideoId(videoId)) {
+			posterGenerationError = 'Set a valid YouTube video ID first.';
+			return;
+		}
+		if (!slug.trim()) {
+			posterGenerationError = 'Set a slug before generating a poster.';
+			return;
+		}
+
+		generatingPoster = true;
+		posterGenerationError = '';
+		generatedPosterSourceLabel = '';
+
+		try {
+			const res = await fetch('/api/admin/generate-poster', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					videoId: videoId.trim(),
+					slug: slug.trim()
+				})
+			});
+
+			if (!res.ok) {
+				const body: unknown = await res.json().catch(() => ({}));
+				const msg =
+					body !== null && typeof body === 'object' && 'message' in body
+						? String((body as { message: unknown }).message)
+						: '';
+				throw new Error(msg || `HTTP ${res.status}`);
+			}
+
+			const data = (await res.json()) as {
+				posterUrl?: string;
+				previewUrl?: string;
+				sourceThumbnailUrl?: string;
+				sourceWidth?: number;
+				sourceHeight?: number;
+			};
+
+			posterUrl = data.posterUrl || posterUrl;
+			posterTouched = true;
+			generatedPosterPreviewUrl = data.previewUrl || '';
+			if (data.sourceThumbnailUrl && data.sourceWidth && data.sourceHeight) {
+				generatedPosterSourceLabel = `${data.sourceWidth}×${data.sourceHeight} thumbnail used`;
+			}
+		} catch (err: unknown) {
+			posterGenerationError =
+				err instanceof Error ? err.message : 'Failed to generate poster from thumbnail.';
+		} finally {
+			generatingPoster = false;
+		}
 	}
 
 	async function fetchMetadata() {
@@ -533,6 +604,7 @@
 							src={youtubeThumbUrl}
 							alt="YouTube thumbnail preview"
 							class="mb-3 aspect-video w-full max-w-md rounded-lg border border-white/10 object-cover"
+							onload={handleYouTubeThumbLoad}
 							onerror={handleYouTubeThumbError}
 						/>
 					{:else if youtubeThumbCandidates.length && youtubeThumbFailed}
@@ -546,11 +618,42 @@
 						type="text"
 						name="thumbnail"
 						bind:value={posterUrl}
-						oninput={() => (posterTouched = true)}
+						oninput={() => {
+							posterTouched = true;
+							generatedPosterPreviewUrl = '';
+							generatedPosterSourceLabel = '';
+						}}
 						placeholder="/images/posters/your-slug.webp"
 						class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
 					/>
 				</label>
+
+				<div class="flex flex-wrap items-center gap-2">
+					<button
+						type="button"
+						onclick={generatePosterFromThumbnail}
+						disabled={generatingPoster || !isYouTubeVideoId(videoId) || !slug.trim()}
+						class="inline-flex items-center justify-center rounded-xl bg-[#e50914] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#ff1a27] disabled:cursor-not-allowed disabled:opacity-40"
+					>
+						{generatingPoster ? 'Generating Poster…' : 'Generate Poster From Thumbnail'}
+					</button>
+					{#if generatedPosterSourceLabel}
+						<span class="text-xs text-white/55">{generatedPosterSourceLabel}</span>
+					{/if}
+				</div>
+				{#if posterGenerationError}
+					<p class="text-xs text-yellow-300">{posterGenerationError}</p>
+				{/if}
+				{#if generatedPosterPreviewUrl}
+					<div class="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+						<p class="text-xs text-white/60">Generated poster preview</p>
+						<img
+							src={generatedPosterPreviewUrl}
+							alt="Generated poster preview"
+							class="aspect-[2/3] w-full max-w-xs rounded-lg border border-white/10 object-cover"
+						/>
+					</div>
+				{/if}
 
 				<div class="flex items-center gap-2">
 					<input

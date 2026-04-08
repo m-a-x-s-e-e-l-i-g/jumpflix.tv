@@ -1,5 +1,5 @@
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
-import { fetchSpotById } from '$lib/server/parkourSpot';
+import { fetchSpotById, resolveSpotIds } from '$lib/server/parkourSpot';
 import { asTrimmedString, asSafeInt, normalizeParkourSpotId } from '$lib/utils';
 
 export type SpotInfo = {
@@ -71,6 +71,44 @@ export type ApprovedSpotChaptersQuery = {
 	playbackKey?: string | null;
 };
 
+type SpotChapterRow = {
+	id: number;
+	spot_id: string;
+	media_id?: number;
+	media_type?: 'movie' | 'series';
+	playback_key?: string | null;
+	start_seconds?: number;
+	end_seconds?: number;
+};
+
+export async function canonicalizeSpotChapterRows(rows: SpotChapterRow[]): Promise<Map<number, string>> {
+	const normalizedRows = rows.filter((row) => Number.isFinite(Number(row?.id)) && !!normalizeParkourSpotId(row?.spot_id));
+	if (normalizedRows.length === 0) return new Map<number, string>();
+
+	const supabase = createSupabaseServiceClient();
+	const resolvedSpotIds = await resolveSpotIds(
+		normalizedRows
+			.map((row) => normalizeParkourSpotId(row.spot_id))
+			.filter((spotId): spotId is string => !!spotId)
+	);
+
+	const updatedSpotIds = new Map<number, string>();
+	await Promise.all(
+		normalizedRows.map(async (row) => {
+			const originalSpotId = normalizeParkourSpotId(row.spot_id);
+			if (!originalSpotId) return;
+			const finalSpotId = resolvedSpotIds.get(originalSpotId) ?? originalSpotId;
+			updatedSpotIds.set(Number(row.id), finalSpotId);
+
+			if (finalSpotId === originalSpotId) return;
+
+			await (supabase as any).from('spot_chapters').update({ spot_id: finalSpotId }).eq('id', row.id);
+		})
+	);
+
+	return updatedSpotIds;
+}
+
 export async function loadApprovedSpotChapters(
 	query: ApprovedSpotChaptersQuery
 ): Promise<ApprovedSpotChapter[]> {
@@ -109,9 +147,24 @@ export async function loadApprovedSpotChapters(
 	}
 
 	const raw = Array.isArray(data) ? (data as any[]) : [];
+	const canonicalSpotIds = await canonicalizeSpotChapterRows(
+		raw.map((row) => ({
+			id: Number(row?.id),
+			spot_id: String(row?.spot_id ?? ''),
+			media_id: Number(row?.media_id),
+			media_type: row?.media_type,
+			playback_key: row?.playback_key ?? null,
+			start_seconds: Number(row?.start_seconds),
+			end_seconds: Number(row?.end_seconds)
+		}))
+	);
 	const out: ApprovedSpotChapter[] = [];
 	for (const row of raw) {
-		const c = normalizeChapterFromSpotChapterRow(row);
+		const canonicalSpotId = canonicalSpotIds.get(Number(row?.id));
+		const c = normalizeChapterFromSpotChapterRow({
+			...row,
+			spot_id: canonicalSpotId ?? row?.spot_id
+		});
 		if (c) out.push(c);
 	}
 	out.sort((a, b) => a.startSeconds - b.startSeconds || a.endSeconds - b.endSeconds);

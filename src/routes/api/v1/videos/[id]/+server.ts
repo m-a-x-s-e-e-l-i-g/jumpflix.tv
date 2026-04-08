@@ -1,7 +1,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { validateBearerToken } from '$lib/server/bearerAuth';
+import { resolveSpotIds } from '$lib/server/parkourSpot';
+import { canonicalizeSpotChapterRows } from '$lib/server/spotChapters';
 import { createSupabaseClient } from '$lib/server/supabaseClient';
+import { normalizeParkourSpotId } from '$lib/utils';
 
 /**
  * GET /api/v1/videos/[id]
@@ -63,7 +66,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 		// The spot_chapters table only contains admin-approved chapters, so no approval filter is needed.
 		const { data: chapters, error: chaptersError } = await supabase
 			.from('spot_chapters')
-			.select('spot_id, start_seconds, end_seconds, playback_key')
+			.select('id, spot_id, start_seconds, end_seconds, playback_key')
 			.eq('media_id', mediaId)
 			.order('start_seconds', { ascending: true });
 
@@ -75,8 +78,27 @@ export const GET: RequestHandler = async ({ params, request }) => {
 		}[] = [];
 
 		if (!chaptersError && Array.isArray(chapters)) {
+			const canonicalSpotIdsByRow = await canonicalizeSpotChapterRows(
+				chapters.map((row) => ({
+					id: Number(row.id),
+					media_id: mediaId,
+					media_type: mediaItem.type,
+					playback_key: String(row.playback_key ?? '').trim(),
+					spot_id: String(row.spot_id ?? ''),
+					start_seconds: Number(row.start_seconds),
+					end_seconds: Number(row.end_seconds)
+				}))
+			);
+			const canonicalSpotIdsByOriginal = await resolveSpotIds(
+				chapters.map((row) => String(row.spot_id ?? '').trim()).filter(Boolean)
+			);
+
 			for (const row of chapters) {
-				const spotId = String(row.spot_id ?? '').trim();
+				const originalSpotId = normalizeParkourSpotId(row.spot_id) ?? String(row.spot_id ?? '').trim();
+				const spotId =
+					canonicalSpotIdsByRow.get(Number(row.id)) ??
+					canonicalSpotIdsByOriginal.get(originalSpotId) ??
+					originalSpotId;
 				const startSeconds = Number(row.start_seconds);
 				const endSeconds = Number(row.end_seconds);
 				if (!spotId || !Number.isFinite(startSeconds) || !Number.isFinite(endSeconds)) continue;

@@ -1,7 +1,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { validateBearerToken } from '$lib/server/bearerAuth';
+import { resolveSpotId, resolveSpotIds } from '$lib/server/parkourSpot';
+import { canonicalizeSpotChapterRows } from '$lib/server/spotChapters';
 import { createSupabaseClient } from '$lib/server/supabaseClient';
+import { normalizeParkourSpotId } from '$lib/utils';
 
 /**
  * GET /api/v1/videos
@@ -21,7 +24,8 @@ export const GET: RequestHandler = async ({ url, request }) => {
 		return json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const spotIdFilter = url.searchParams.get('spotId')?.trim() || null;
+	const spotIdFilterRaw = url.searchParams.get('spotId')?.trim() || null;
+	const spotIdFilter = spotIdFilterRaw ? normalizeParkourSpotId(spotIdFilterRaw) : null;
 	const typeParam = url.searchParams.get('type')?.trim().toLowerCase() || null;
 	const typeFilter =
 		typeParam === 'movie' || typeParam === 'film' ? 'movie' : typeParam === 'series' ? 'series' : null;
@@ -31,13 +35,20 @@ export const GET: RequestHandler = async ({ url, request }) => {
 
 	try {
 		const supabase = createSupabaseClient();
+		const resolvedSpotIdFilter = spotIdFilter ? await resolveSpotId(spotIdFilter) : null;
 
 		// Build spot_chapters query.
 		// The spot_chapters table only contains admin-approved chapters, so no approval filter is needed.
-		let chaptersQuery = supabase.from('spot_chapters').select('media_id, spot_id, media_type');
+		let chaptersQuery = supabase.from('spot_chapters').select('id, media_id, spot_id, media_type');
 
 		if (spotIdFilter) {
-			chaptersQuery = chaptersQuery.eq('spot_id', spotIdFilter);
+			const spotIdsToMatch = Array.from(
+				new Set([spotIdFilter, resolvedSpotIdFilter].filter((spotId): spotId is string => !!spotId))
+			);
+			chaptersQuery =
+				spotIdsToMatch.length === 1
+					? chaptersQuery.eq('spot_id', spotIdsToMatch[0])
+					: chaptersQuery.in('spot_id', spotIdsToMatch);
 		}
 		if (typeFilter) {
 			chaptersQuery = chaptersQuery.eq('media_type', typeFilter);
@@ -63,14 +74,30 @@ export const GET: RequestHandler = async ({ url, request }) => {
 		}
 
 		const rows = Array.isArray(chapters)
-			? (chapters as { media_id: number; spot_id: string; media_type: 'movie' | 'series' }[])
+			? (chapters as { id: number; media_id: number; spot_id: string; media_type: 'movie' | 'series' }[])
 			: [];
+
+		const canonicalSpotIdsByRow = await canonicalizeSpotChapterRows(
+			rows.map((row) => ({
+				id: Number(row.id),
+				media_id: Number(row.media_id),
+				media_type: row.media_type,
+				spot_id: String(row.spot_id ?? '')
+			}))
+		);
+		const canonicalSpotIdsByOriginal = await resolveSpotIds(
+			rows.map((row) => String(row.spot_id ?? '').trim()).filter(Boolean)
+		);
 
 		// Group spot IDs by media ID
 		const spotsByMediaId = new Map<number, Set<string>>();
 		for (const row of rows) {
 			const mediaId = Number(row.media_id);
-			const spotId = String(row.spot_id ?? '').trim();
+			const originalSpotId = normalizeParkourSpotId(row.spot_id) ?? String(row.spot_id ?? '').trim();
+			const spotId =
+				canonicalSpotIdsByRow.get(Number(row.id)) ??
+				canonicalSpotIdsByOriginal.get(originalSpotId) ??
+				originalSpotId;
 			if (!Number.isFinite(mediaId) || !spotId) continue;
 			if (!spotsByMediaId.has(mediaId)) spotsByMediaId.set(mediaId, new Set());
 			spotsByMediaId.get(mediaId)!.add(spotId);

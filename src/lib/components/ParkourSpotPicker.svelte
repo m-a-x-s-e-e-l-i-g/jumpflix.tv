@@ -142,6 +142,7 @@
 			const c = normalizeCandidate(data);
 			if (c) {
 				selected = c;
+				spotId = c.id;
 				results = [c];
 				renderMarkers([c]);
 				if (map) map.setView([c.lat, c.lng], Math.max(map.getZoom(), 14));

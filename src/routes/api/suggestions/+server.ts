@@ -9,6 +9,7 @@ import {
 	applyNewSeason,
 	type MediaPatch
 } from '$lib/server/content-suggestions';
+import { resolveSpotId } from '$lib/server/parkourSpot';
 import { trySendTelegramMessage } from '$lib/server/telegram';
 import { asTrimmedString, asSafeInt, normalizeParkourSpotId } from '$lib/utils';
 
@@ -106,18 +107,19 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 			if (payload) {
 				if (kind === 'spot_chapter') {
 					const patchAny = payload as any;
-						const spotIdRaw = asTrimmedString(patchAny?.spotId ?? patchAny?.spot_id);
-						const spotId = spotIdRaw ? normalizeParkourSpotId(spotIdRaw) : null;
+					const spotIdRaw = asTrimmedString(patchAny?.spotId ?? patchAny?.spot_id);
+					const spotIdNormalized = spotIdRaw ? normalizeParkourSpotId(spotIdRaw) : null;
 					const startSeconds = asSafeInt(patchAny?.startSeconds ?? patchAny?.start_seconds);
 					const endSeconds = asSafeInt(patchAny?.endSeconds ?? patchAny?.end_seconds);
 					const playbackKey = asTrimmedString(patchAny?.playbackKey ?? patchAny?.playback_key);
 					const spotChapterId = asSafeInt(patchAny?.spotChapterId ?? patchAny?.spot_chapter_id);
-					if (!spotId || startSeconds === null || endSeconds === null) {
+					if (!spotIdNormalized || startSeconds === null || endSeconds === null) {
 						return json(
 							{ error: 'Missing spotId/startSeconds/endSeconds' },
 							{ status: 400 }
 						);
 					}
+					const spotId = await resolveSpotId(spotIdNormalized);
 					if (endSeconds <= startSeconds) {
 						return json(
 							{ error: 'endSeconds must be greater than startSeconds' },

@@ -9,6 +9,7 @@ import {
 	applyNewSeason,
 	type MediaPatch
 } from '$lib/server/content-suggestions';
+import { resolveSpotId } from '$lib/server/parkourSpot';
 import { asTrimmedString, asSafeInt, normalizeParkourSpotId } from '$lib/utils';
 
 const INVALID_JSON = Symbol('invalid-json');
@@ -107,14 +108,15 @@ export const actions: Actions = {
 
 				const patchAny = effectivePatch as any;
 				const spotIdRaw = asTrimmedString(patchAny?.spotId ?? patchAny?.spot_id);
-				const spotId = spotIdRaw ? normalizeParkourSpotId(spotIdRaw) : null;
+				const spotIdNormalized = spotIdRaw ? normalizeParkourSpotId(spotIdRaw) : null;
 				const startSeconds = asSafeInt(patchAny?.startSeconds ?? patchAny?.start_seconds);
 				const endSeconds = asSafeInt(patchAny?.endSeconds ?? patchAny?.end_seconds);
 				const playbackKey = asTrimmedString(patchAny?.playbackKey ?? patchAny?.playback_key);
 				const spotChapterId = asSafeInt(patchAny?.spotChapterId ?? patchAny?.spot_chapter_id);
-				if (!spotId || startSeconds === null || endSeconds === null) {
+				if (!spotIdNormalized || startSeconds === null || endSeconds === null) {
 					return fail(400, { message: 'Missing spotId/startSeconds/endSeconds' });
 				}
+				const spotId = await resolveSpotId(spotIdNormalized);
 				if (endSeconds <= startSeconds) {
 					return fail(400, { message: 'endSeconds must be greater than startSeconds' });
 				}

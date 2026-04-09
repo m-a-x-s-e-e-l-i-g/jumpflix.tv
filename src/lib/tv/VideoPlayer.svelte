@@ -358,7 +358,7 @@
 
 	const DOUBLE_CLICK_DELAY = 220;
 	const TOUCH_DOUBLE_TAP_DELAY = 320;
-	const TOUCH_DOUBLE_TAP_SEEK_SECONDS = 10;
+	const SKIP_SEEK_SECONDS = 5;
 	const TOUCH_DOUBLE_TAP_SIDE_RATIO = 1 / 3;
 	const LONG_PRESS_DELAY = 350;
 	const SLOW_MOTION_RATE = 0.3;
@@ -398,7 +398,7 @@
 	let touchSkipFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 	let touchSkipFeedbackVisible = false;
 	let touchSkipFeedbackDirection: 'backward' | 'forward' = 'forward';
-	let touchSkipFeedbackSeconds = TOUCH_DOUBLE_TAP_SEEK_SECONDS;
+	let touchSkipFeedbackSeconds = SKIP_SEEK_SECONDS;
 	let touchSkipFeedbackNonce = 0;
 	let settingsQualityOptions: SettingsQualityOption[] = [];
 	let settingsQualityHint = 'Auto';
@@ -1388,10 +1388,10 @@
 			const clientX = Number.isFinite(lastPointerClientX) ? lastPointerClientX : event.clientX;
 			const relativeX = clientX - bounds.left;
 			if (relativeX <= bounds.width * TOUCH_DOUBLE_TAP_SIDE_RATIO) {
-				return -TOUCH_DOUBLE_TAP_SEEK_SECONDS;
+				return -SKIP_SEEK_SECONDS;
 			}
 			if (relativeX >= bounds.width * (1 - TOUCH_DOUBLE_TAP_SIDE_RATIO)) {
-				return TOUCH_DOUBLE_TAP_SEEK_SECONDS;
+				return SKIP_SEEK_SECONDS;
 			}
 			return 0;
 		};
@@ -2578,18 +2578,18 @@
 								{#if !hasTouchInput}
 									<media-seek-button
 										class="control-button"
-										seconds={-10}
-										aria-label="Jump back 10 seconds"
+										seconds={-SKIP_SEEK_SECONDS}
+										aria-label={`Jump back ${SKIP_SEEK_SECONDS} seconds`}
 									>
-										<span class="label">-10s</span>
+										<span class="label">-{SKIP_SEEK_SECONDS}s</span>
 									</media-seek-button>
 
 									<media-seek-button
 										class="control-button"
-										seconds={10}
-										aria-label="Jump forward 10 seconds"
+										seconds={SKIP_SEEK_SECONDS}
+										aria-label={`Jump forward ${SKIP_SEEK_SECONDS} seconds`}
 									>
-										<span class="label">+10s</span>
+										<span class="label">+{SKIP_SEEK_SECONDS}s</span>
 									</media-seek-button>
 								{/if}
 

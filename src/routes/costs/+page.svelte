@@ -7,7 +7,8 @@
     };
 
     type CostRow = {
-        id: number;
+        id: string;
+        deleteId: number | null;
         title: string;
         description: string | null;
         vendor: string;
@@ -16,6 +17,7 @@
         currency: string;
         occurred_at: string;
         coverage: string;
+        entry_method: 'manual' | 'api_import' | 'seed';
         source_system: string | null;
         source_reference: string | null;
     };
@@ -264,9 +266,9 @@
                                             {formatEuro(convertToEur(Number(cost.amount), cost.currency))}
                                         </div>
 
-                                        {#if data.isAdmin}
+                                        {#if data.isAdmin && cost.deleteId !== null}
                                             <form method="POST" use:enhance>
-                                                <input type="hidden" name="id" value={cost.id} />
+                                                <input type="hidden" name="id" value={cost.deleteId} />
                                                 <button
                                                     type="submit"
                                                     formaction="?/deleteCost"
@@ -364,8 +366,8 @@
                         Supabase is still on the free plan.
                     </p>
                     <p>
-                        Bunny video costs and OpenAI poster-generation costs are planned next once those API
-                        imports are wired in.
+                        OpenAI API costs import automatically when billing access is configured on the server.
+                        Bunny video costs are still planned next.
                     </p>
                 </div>
             </section>

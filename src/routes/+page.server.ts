@@ -26,7 +26,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			await sendTelegramMessage(`${submission}`, { disableWebPagePreview: true });
+			await sendTelegramMessage(submission, { disableWebPagePreview: false });
 		} catch (error) {
 			console.error('Telegram submission error', error);
 			const message = String(error ?? '').includes('Telegram configuration missing')

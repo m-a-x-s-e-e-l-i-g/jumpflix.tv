@@ -36,6 +36,7 @@
 	let posterGenerationError = $state('');
 	let generatedPosterPreviewUrl = $state('');
 	let generatedPosterSourceLabel = $state('');
+	let includeTitleInPosterPrompt = $state(false);
 
 	// Autofill (creators / athletes)
 	let creatorsSuggestions = $state<string[]>([]);
@@ -225,7 +226,9 @@
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
 					videoId: videoId.trim(),
-					slug: slug.trim()
+					slug: slug.trim(),
+					title: title.trim(),
+					includeTitle: includeTitleInPosterPrompt
 				})
 			});
 
@@ -626,6 +629,27 @@
 						placeholder="/images/posters/your-slug.webp"
 						class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
 					/>
+				</label>
+
+				<label class="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+					<button
+						type="button"
+						role="checkbox"
+						aria-checked={includeTitleInPosterPrompt}
+						aria-label="Include movie title in poster generation"
+						onclick={() => (includeTitleInPosterPrompt = !includeTitleInPosterPrompt)}
+						class={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none ${includeTitleInPosterPrompt ? 'bg-[#e50914]' : 'bg-white/20'}`}
+					>
+						<span
+							class={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform ${includeTitleInPosterPrompt ? 'translate-x-4' : 'translate-x-0'}`}
+						></span>
+					</button>
+					<div class="space-y-0.5">
+						<span class="block text-sm text-white/80">Add movie title to generated poster</span>
+						<p class="text-xs text-white/50">
+							Off by default. When enabled, the poster prompt will ask for the title to be included.
+						</p>
+					</div>
 				</label>
 
 				<div class="flex flex-wrap items-center gap-2">

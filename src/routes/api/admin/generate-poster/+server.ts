@@ -15,6 +15,17 @@ import sharp from 'sharp';
 const POSTER_PROMPT =
 	"make movie poster sized image, keep existing text, don't add any additional text, no borders or frames around the poster.";
 
+function escapePromptText(value: string): string {
+	return value.replace(/["\\]/g, '\\$&');
+}
+
+function buildPosterPrompt(title: string, includeTitle: boolean): string {
+	if (!includeTitle) return POSTER_PROMPT;
+
+	const safeTitle = escapePromptText(title.trim());
+	return `make movie poster sized image, prominently include the movie title "${safeTitle}" as part of the poster design, preserve other important existing visual elements, no borders or frames around the poster, don't add any other text.`;
+}
+
 type ThumbnailSource = {
 	url: string;
 	buffer: Buffer;
@@ -63,10 +74,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const body = (await request.json().catch(() => null)) as {
 		videoId?: unknown;
 		slug?: unknown;
+		title?: unknown;
+		includeTitle?: unknown;
 	} | null;
 
 	const videoId = typeof body?.videoId === 'string' ? body.videoId.trim() : '';
 	const slug = typeof body?.slug === 'string' ? body.slug.trim() : '';
+	const title = typeof body?.title === 'string' ? body.title.trim() : '';
+	const includeTitle = body?.includeTitle === true;
 
 	if (!isYouTubeVideoId(videoId)) {
 		throw error(400, 'A valid YouTube video ID is required.');
@@ -74,6 +89,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	if (!slug) {
 		throw error(400, 'A slug is required before generating a poster.');
+	}
+
+	if (includeTitle && !title) {
+		throw error(400, 'A title is required when including it in the poster.');
 	}
 
 	const source = await fetchBestThumbnail(videoId);
@@ -85,7 +104,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const sourceFile = await toFile(source.buffer, `${videoId}.jpg`, { type: 'image/jpeg' });
 		const result = await openai.images.edit({
 			image: sourceFile,
-			prompt: POSTER_PROMPT,
+			prompt: buildPosterPrompt(title, includeTitle),
 			model: 'gpt-image-1.5',
 			n: 1,
 			size: '1024x1536',

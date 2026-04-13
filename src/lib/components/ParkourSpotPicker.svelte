@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { onDestroy, onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
+	import { normalizeParkourSpotId } from '$lib/utils';
 
 	import 'leaflet/dist/leaflet.css';
 	import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -189,8 +190,10 @@
 
 			queueBoundsSearch();
 
-			if (spotId.trim()) {
-				await hydrateSelectedById(spotId);
+			const normalizedSpotId = normalizeParkourSpotId(spotId) ?? spotId.trim();
+			if (normalizedSpotId) {
+				if (normalizedSpotId !== spotId.trim()) spotId = normalizedSpotId;
+				await hydrateSelectedById(normalizedSpotId);
 			}
 		})();
 
@@ -210,9 +213,13 @@
 	});
 
 	$effect(() => {
-		const id = spotId.trim();
+		const id = normalizeParkourSpotId(spotId) ?? spotId.trim();
 		if (!id) {
 			selected = null;
+			return;
+		}
+		if (spotId.trim() !== id) {
+			spotId = id;
 			return;
 		}
 		if (selected?.id === id) return;
@@ -238,10 +245,14 @@
 			<input
 				type="text"
 				bind:value={spotId}
-				placeholder="e.g. nuZdQoc4IXzw36ZIWvYs"
+				placeholder="ID, parkour.spot URL, or pasted share text"
 				class="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/30"
 			/>
 		</label>
+	</div>
+
+	<div class="text-[11px] text-white/50">
+		Paste a direct ID, a full Parkour.Spot URL, or share text containing a Parkour.Spot link.
 	</div>
 
 	<div class="overflow-hidden rounded-xl border border-white/10 bg-black/30">

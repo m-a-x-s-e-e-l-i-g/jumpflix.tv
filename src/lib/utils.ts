@@ -48,6 +48,7 @@ export function withUtm(url: string, options: UtmOptions = {}): string {
 export function normalizeParkourSpotId(value: unknown): string | null {
 	const raw = typeof value === 'string' ? value.trim() : '';
 	if (!raw) return null;
+	const PARKOUR_SPOT_ID_SEGMENT = /^[A-Za-z0-9_-]{8,}$/;
 
 	const extractFromPathname = (pathname: string): string | null => {
 		const parts = String(pathname ?? '')
@@ -56,32 +57,39 @@ export function normalizeParkourSpotId(value: unknown): string | null {
 			.filter(Boolean);
 		const idx = parts.findIndex((p) => p === 'spot' || p === 'spots');
 		const candidate = idx >= 0 ? parts[idx + 1] : null;
-		if (!candidate) return null;
+		const fallback = parts.at(-1) ?? null;
+		const finalCandidate = candidate ?? fallback;
+		if (!finalCandidate || !PARKOUR_SPOT_ID_SEGMENT.test(finalCandidate)) return null;
 		try {
-			return decodeURIComponent(candidate);
+			return decodeURIComponent(finalCandidate);
 		} catch {
-			return candidate;
+			return finalCandidate;
+		}
+	};
+
+	const extractParkourSpotUrl = (text: string): string | null => {
+		const match = text.match(/(?:https?:\/\/)?(?:www\.)?parkour\.spot[^\s]*/i);
+		return match?.[0] ?? null;
+	};
+
+	const parseCandidate = (candidate: string): string | null => {
+		try {
+			const parsed = new URL(candidate);
+			if (!/(^|\.)parkour\.spot$/i.test(parsed.hostname)) return null;
+			return extractFromPathname(parsed.pathname);
+		} catch {
+			return null;
 		}
 	};
 
 	// Full URL (or protocol-relative-ish) forms.
-	try {
-		const parsed = new URL(raw);
-		const fromPath = extractFromPathname(parsed.pathname);
-		if (fromPath) return fromPath;
-	} catch {
-		// ignore
-	}
+	const rawUrl = extractParkourSpotUrl(raw) ?? raw;
+	const fromRawUrl = parseCandidate(rawUrl);
+	if (fromRawUrl) return fromRawUrl;
 
-	// Common copy-paste form without scheme: parkour.spot/spot(s)/<id>
-	if (raw.includes('parkour.spot') && !raw.startsWith('http')) {
-		try {
-			const parsed = new URL(`https://${raw.replace(/^\/\/+/, '')}`);
-			const fromPath = extractFromPathname(parsed.pathname);
-			if (fromPath) return fromPath;
-		} catch {
-			// ignore
-		}
+	if (rawUrl.includes('parkour.spot') && !/^https?:\/\//i.test(rawUrl)) {
+		const fromSchemedUrl = parseCandidate(`https://${rawUrl.replace(/^\/\/+/, '')}`);
+		if (fromSchemedUrl) return fromSchemedUrl;
 	}
 
 	// Path-ish forms: /spot(s)/<id> or .../spot(s)/<id>

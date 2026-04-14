@@ -126,6 +126,12 @@ export function getParkourSpotUrl(spotIdOrUrl: unknown, options: UtmOptions = {}
 	}
 }
 
+export function getCountryFlagEmoji(code: unknown): string {
+	const normalized = typeof code === 'string' ? code.trim().toUpperCase() : '';
+	if (!/^[A-Z]{2}$/.test(normalized)) return '';
+	return Array.from(normalized, (char) => String.fromCodePoint(127397 + char.charCodeAt(0))).join('');
+}
+
 export function getEmailLocalPart(value?: string | null): string | null {
 	const raw = String(value ?? '').trim();
 	if (!raw) return null;

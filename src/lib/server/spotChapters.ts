@@ -7,6 +7,12 @@ export type SpotInfo = {
 	name: string;
 	lat: number;
 	lng: number;
+	countries?: SpotCountry[];
+};
+
+export type SpotCountry = {
+	code?: string | null;
+	name?: string | null;
 };
 
 export type ApprovedSpotChapter = {
@@ -20,6 +26,117 @@ export type ApprovedSpotChapter = {
 	playbackKey?: string | null;
 	spot?: SpotInfo | null;
 };
+
+function extractCountryNameFromAddress(raw: unknown): string | null {
+	if (typeof raw !== 'string') return null;
+	const parts = raw
+		.split(',')
+		.map((part) => part.trim())
+		.filter(Boolean);
+	if (parts.length < 2) return null;
+	const last = parts[parts.length - 1];
+	if (!/[A-Za-z]/.test(last)) return null;
+	return last;
+}
+
+function normalizeSpotCountry(raw: any): SpotCountry | null {
+	if (!raw) return null;
+
+	if (typeof raw === 'string') {
+		const trimmed = raw.trim();
+		if (!trimmed) return null;
+		if (/^[A-Za-z]{2}$/.test(trimmed)) {
+			return { code: trimmed.toUpperCase() };
+		}
+		const name = extractCountryNameFromAddress(trimmed) ?? trimmed;
+		return name ? { name } : null;
+	}
+
+	if (typeof raw !== 'object' || Array.isArray(raw)) return null;
+
+	const code = asTrimmedString(raw?.code ?? raw?.countryCode ?? raw?.country_code ?? raw?.isoCode ?? raw?.iso_code);
+	const name = asTrimmedString(raw?.name ?? raw?.countryName ?? raw?.country_name ?? raw?.label ?? raw?.title);
+
+	if (!code && !name) return null;
+	return {
+		code: code ? code.toUpperCase() : null,
+		name: name ?? null
+	};
+}
+
+function extractSpotCountries(raw: any): SpotCountry[] {
+	const primaryCode = asTrimmedString(
+		raw?.countryCode ?? raw?.country_code ?? raw?.country?.code ?? raw?.address?.countryCode ?? raw?.address?.country_code
+	);
+	const primaryName =
+		asTrimmedString(raw?.countryName ?? raw?.country_name ?? raw?.country?.name) ??
+		extractCountryNameFromAddress(raw?.address);
+
+	const candidates = [
+		primaryCode || primaryName
+			? {
+				...(primaryCode ? { code: primaryCode } : {}),
+				...(primaryName ? { name: primaryName } : {})
+			}
+			: null,
+		raw?.countries,
+		raw?.country,
+		raw?.location?.countries,
+		raw?.location?.country,
+		raw?.location?.countryName,
+		raw?.location?.country_name,
+		raw?.location?.countryCode,
+		raw?.location?.country_code,
+		raw?.address?.country,
+		raw?.address?.countryName,
+		raw?.address?.country_name,
+		raw?.address?.countryCode,
+		raw?.address?.country_code,
+		raw?.geocoding?.country,
+		raw?.geocoding?.countryName,
+		raw?.geocoding?.country_name,
+		raw?.geocoding?.countryCode,
+		raw?.geocoding?.country_code,
+		raw?.reverseGeocode?.country,
+		raw?.reverseGeocode?.countryName,
+		raw?.reverseGeocode?.country_name,
+		raw?.reverseGeocode?.countryCode,
+		raw?.reverseGeocode?.country_code
+	];
+
+	const out: SpotCountry[] = [];
+	const seen = new Set<string>();
+
+	for (const candidate of candidates) {
+		const items = Array.isArray(candidate) ? candidate : candidate ? [candidate] : [];
+		for (const item of items) {
+			const normalized = normalizeSpotCountry(item);
+			if (!normalized) continue;
+			const key = `${normalized.code ?? ''}|${(normalized.name ?? '').toLowerCase()}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			out.push(normalized);
+		}
+	}
+
+	return out;
+}
+
+export function collectSpotCountries(spots: Array<SpotInfo | null | undefined>): SpotCountry[] {
+	const out: SpotCountry[] = [];
+	const seen = new Set<string>();
+
+	for (const spot of spots) {
+		for (const country of spot?.countries ?? []) {
+			const key = `${country.code ?? ''}|${(country.name ?? '').toLowerCase()}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			out.push(country);
+		}
+	}
+
+	return out;
+}
 
 function normalizeSpot(raw: any, spotIdFallback?: string): SpotInfo | null {
 	const id = asTrimmedString(raw?.id) ?? asTrimmedString(raw?.spotId) ?? spotIdFallback ?? null;
@@ -35,8 +152,9 @@ function normalizeSpot(raw: any, spotIdFallback?: string): SpotInfo | null {
 	const lat = typeof latRaw === 'number' ? latRaw : Number(String(latRaw ?? ''));
 	const lng = typeof lngRaw === 'number' ? lngRaw : Number(String(lngRaw ?? ''));
 	if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+	const countries = extractSpotCountries(raw);
 
-	return { id, name, lat, lng };
+	return { id, name, lat, lng, ...(countries.length ? { countries } : {}) };
 }
 
 function normalizeChapterFromSpotChapterRow(row: any): ApprovedSpotChapter | null {

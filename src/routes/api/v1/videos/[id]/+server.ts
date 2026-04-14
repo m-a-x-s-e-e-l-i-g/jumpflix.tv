@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { validateBearerToken } from '$lib/server/bearerAuth';
 import { resolveSpotIds } from '$lib/server/parkourSpot';
-import { canonicalizeSpotChapterRows } from '$lib/server/spotChapters';
+import { canonicalizeSpotChapterRows, collectSpotCountries, hydrateSpotInfo, type SpotCountry } from '$lib/server/spotChapters';
 import { createSupabaseClient } from '$lib/server/supabaseClient';
 import { normalizeParkourSpotId } from '$lib/utils';
 
@@ -27,8 +27,9 @@ import { normalizeParkourSpotId } from '$lib/utils';
  *   creators?: string[],
  *   starring?: string[],
  *   facets?: object,
+ *   countries?: Array<{ code?: string; name?: string }>,
  *   url: string,
- *   spots: Array<{ spotId: string; startSeconds: number; endSeconds: number; playbackKey?: string }>
+ *   spots: Array<{ spotId: string; startSeconds: number; endSeconds: number; playbackKey?: string; countries?: Array<{ code?: string; name?: string }> }>
  * }
  *
  * Authentication: Bearer token required (PARKOUR_SPOT_BEARER_TOKEN).
@@ -75,6 +76,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 			startSeconds: number;
 			endSeconds: number;
 			playbackKey?: string;
+			countries?: SpotCountry[];
 		}[] = [];
 
 		if (!chaptersError && Array.isArray(chapters)) {
@@ -121,6 +123,32 @@ export const GET: RequestHandler = async ({ params, request }) => {
 			}
 		}
 
+		const hydratedSpotChapters = await hydrateSpotInfo(
+			spotChapters.map((chapter, index) => ({
+				suggestionId: -(index + 1),
+				spotId: chapter.spotId,
+				startSeconds: chapter.startSeconds,
+				endSeconds: chapter.endSeconds,
+				playbackKey: chapter.playbackKey ?? null,
+				startTimecode: null,
+				endTimecode: null,
+				note: null,
+				spot: null
+			}))
+		);
+
+		const spotCountriesById = new Map<string, SpotCountry[]>();
+		for (const chapter of hydratedSpotChapters) {
+			spotCountriesById.set(chapter.spotId, chapter.spot?.countries ?? []);
+		}
+		const countries = collectSpotCountries(hydratedSpotChapters.map((chapter) => chapter.spot));
+		const spots = spotChapters.map((chapter) => ({
+			...chapter,
+			...(spotCountriesById.get(chapter.spotId)?.length
+				? { countries: spotCountriesById.get(chapter.spotId) }
+				: {})
+		}));
+
 		// Build facets object (omit undefined/null values)
 		const facets: Record<string, unknown> = {};
 		if (mediaItem.facet_type) facets.type = mediaItem.facet_type;
@@ -149,7 +177,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 			type: mediaItem.type,
 			title: mediaItem.title,
 			url: videoUrl,
-			spots: spotChapters
+			spots
 		};
 
 		if (mediaItem.description) response.description = mediaItem.description;
@@ -159,6 +187,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 		if (mediaItem.creators?.length) response.creators = mediaItem.creators;
 		if (mediaItem.starring?.length) response.starring = mediaItem.starring;
 		if (Object.keys(facets).length) response.facets = facets;
+		if (countries.length) response.countries = countries;
 
 		return json(response, { headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300' } });
 	} catch (err: unknown) {

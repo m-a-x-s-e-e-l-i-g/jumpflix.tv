@@ -61,14 +61,26 @@
 	let spotChaptersRefreshToken = 0;
 	let spotChaptersRetryCount = 0;
 	let spotChaptersRetryKey: string | null = null;
+	let spotCountryCodesById = new Map<string, string[]>();
+	let spotCountryLookupKey: string | null = null;
+	let spotCountryLookupToken = 0;
 	let nowPlayingTrackLabel: string | null = null;
 	let nowPlayingSpotLabel: string | null = null;
 	let nowPlayingTrackHref: string | null = null;
 	let nowPlayingSpotHref: string | null = null;
+	let nowPlayingSpotCountryCode: string | null = null;
 	type TrackStartEntry = { startSeconds: number; label: string; href: string | null };
 	let sortedTracks: TrackStartEntry[] = [];
 	let disableTrackPill = false;
 	let cleanupNowPlaying: (() => void) | null = null;
+
+	type SpotCountry = { code?: string | null; name?: string | null };
+	type SpotChapterPayload = {
+		spotId?: string | null;
+		spot?: {
+			countries?: SpotCountry[] | null;
+		} | null;
+	};
 
 	$: playbackKey = keySeed ? String(keySeed) : null;
 	$: spotChaptersTrackSrc =
@@ -118,6 +130,56 @@
 			spotChaptersRetryKey = key;
 			spotChaptersRetryCount = 0;
 		}
+	}
+
+	async function loadSpotCountryCodes() {
+		if (!browser || !mediaId || !mediaType || (mediaType === 'series' && !playbackKey)) {
+			spotCountryCodesById = new Map();
+			spotCountryLookupKey = null;
+			return;
+		}
+
+		const requestKey = `${mediaId}:${mediaType}:${playbackKey ?? ''}`;
+		spotCountryLookupKey = requestKey;
+		const token = ++spotCountryLookupToken;
+
+		try {
+			const url = new URL('/api/spot-chapters', window.location.origin);
+			url.searchParams.set('mediaId', String(mediaId));
+			url.searchParams.set('mediaType', mediaType);
+			if (playbackKey) url.searchParams.set('playbackKey', playbackKey);
+
+			const res = await fetch(url.toString(), { cache: 'no-store' });
+			const data = await res.json().catch(() => null);
+			if (!res.ok) throw new Error((data as any)?.error || 'Failed to load spot chapter countries');
+			if (token !== spotCountryLookupToken || spotCountryLookupKey !== requestKey) return;
+
+			const nextMap = new Map<string, string[]>();
+			for (const chapter of Array.isArray(data?.chapters) ? (data.chapters as SpotChapterPayload[]) : []) {
+				const spotId = typeof chapter?.spotId === 'string' ? chapter.spotId.trim() : '';
+				if (!spotId) continue;
+				const codes = Array.from(
+					new Set(
+						(chapter?.spot?.countries ?? [])
+							.map((country) => String(country?.code ?? '').trim().toUpperCase())
+							.filter((code) => /^[A-Z]{2}$/.test(code))
+					)
+				);
+				if (codes.length) nextMap.set(spotId, codes);
+			}
+
+			spotCountryCodesById = nextMap;
+		} catch {
+			if (token !== spotCountryLookupToken || spotCountryLookupKey !== requestKey) return;
+			spotCountryCodesById = new Map();
+		}
+	}
+
+	$: if (browser && mediaId && mediaType && (mediaType === 'movie' || playbackKey)) {
+		void loadSpotCountryCodes();
+	} else {
+		spotCountryCodesById = new Map();
+		spotCountryLookupKey = null;
 	}
 
 	function getTrackStartSeconds(track: VideoTrack): number | null {
@@ -278,8 +340,10 @@
 			const nextSpotStartSeconds = nextSpot ? nextSpot.startSeconds : null;
 			const nextSpotEndSeconds = nextSpot ? nextSpot.endSeconds : null;
 			const nextSpotId = nextSpot?.spotId ?? null;
+			const nextSpotCountryCode = nextSpotId ? spotCountryCodesById.get(nextSpotId)?.[0] ?? null : null;
 			if (nextSpotLabel !== nowPlayingSpotLabel) nowPlayingSpotLabel = nextSpotLabel;
 			if (nextSpotHref !== nowPlayingSpotHref) nowPlayingSpotHref = nextSpotHref;
+			if (nextSpotCountryCode !== nowPlayingSpotCountryCode) nowPlayingSpotCountryCode = nextSpotCountryCode;
 			if (nextSpotChapterId !== activeSpotChapterId) activeSpotChapterId = nextSpotChapterId;
 			if (nextSpotStartSeconds !== activeSpotStartSeconds) activeSpotStartSeconds = nextSpotStartSeconds;
 			if (nextSpotEndSeconds !== activeSpotEndSeconds) activeSpotEndSeconds = nextSpotEndSeconds;
@@ -297,6 +361,7 @@
 	}
 
 	$: isChangingSpot = Boolean(activeSpotChapterId);
+	$: nowPlayingSpotCountryCode = activeSpotSpotId ? spotCountryCodesById.get(activeSpotSpotId)?.[0] ?? null : null;
 	$: spotSuggestionTriggerTitle = isChangingSpot ? 'Change spot' : 'Suggest spot';
 	$: spotSuggestionTriggerAriaLabel = isChangingSpot
 		? 'Change the current parkour spot (chapter)'
@@ -2549,6 +2614,9 @@
 									aria-hidden="true"
 								/>
 								<span class="now-pill-text">{nowPlayingSpotLabel}</span>
+								{#if nowPlayingSpotCountryCode}
+									<span class="now-pill-code">{nowPlayingSpotCountryCode}</span>
+								{/if}
 							</a>
 						{/if}
 					</div>
@@ -3264,6 +3332,23 @@
 		height: 14px;
 		filter: invert(1);
 		opacity: 0.95;
+	}
+
+	.now-pill-code {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: 0 0 auto;
+		min-width: 1.8rem;
+		height: 1.25rem;
+		padding: 0 0.4rem;
+		border-radius: 999px;
+		border: 1px solid currentColor;
+		background: rgba(255, 255, 255, 0.08);
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		line-height: 1;
 	}
 
 	.now-pill-text {

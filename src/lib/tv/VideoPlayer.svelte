@@ -5,6 +5,7 @@
 	import PlayIcon from 'lucide-svelte/icons/play';
 	import PauseIcon from 'lucide-svelte/icons/pause';
 	import RotateCcwIcon from 'lucide-svelte/icons/rotate-ccw';
+	import SkipForwardIcon from 'lucide-svelte/icons/skip-forward';
 	import VolumeXIcon from 'lucide-svelte/icons/volume-x';
 	import Volume2Icon from 'lucide-svelte/icons/volume-2';
 	import Maximize2Icon from 'lucide-svelte/icons/maximize-2';
@@ -38,6 +39,19 @@
 	export let tracks: VideoTrack[] | null | undefined = undefined;
 	export let autoPlay = false;
 	export let onClose: (() => void) | null = null;
+	export let onSkipNext: (() => void) | null = null;
+	export let showSeekControls = true;
+	export let enableSeekGestures = true;
+	export let showSpotSuggestion = true;
+	export let preservePlayerInstance = false;
+	export let cornerBadge:
+		| {
+				eyebrow: string;
+				title: string;
+				poster?: string | null;
+				siteLabel?: string;
+		  }
+		| null = null;
 
 	let mounted = false;
 	let playerEl: MediaPlayerElement | null = null;
@@ -1382,6 +1396,7 @@
 		};
 
 		const getTouchDoubleTapSeekDelta = (event: MouseEvent) => {
+			if (!enableSeekGestures) return 0;
 			if (lastPointerType !== 'touch') return 0;
 			const bounds = player.getBoundingClientRect();
 			if (bounds.width <= 0) return 0;
@@ -2394,6 +2409,7 @@
 	$: resolvedPoster = poster ?? undefined;
 	$: playerTitle = title ?? undefined;
 	$: shouldRender = mounted && browser && !!resolvedSrc && vidstackReady;
+	$: renderKey = preservePlayerInstance ? 'stable-player' : `${keySeed}:${resolvedSrcKey}`;
 
 	// Reset resume state when content changes
 	$: if (keySeed) {
@@ -2405,7 +2421,7 @@
 </script>
 
 {#if shouldRender}
-	{#key `${keySeed}:${resolvedSrcKey}`}
+	{#key renderKey}
 			<media-player
 				bind:this={playerEl}
 				class="vidstack-player"
@@ -2440,7 +2456,7 @@
 					</div>
 				{/if}
 
-				{#if touchSkipFeedbackVisible}
+				{#if enableSeekGestures && touchSkipFeedbackVisible}
 					{#key touchSkipFeedbackNonce}
 						<div class="touch-skip-feedback-layer" aria-hidden="true">
 							<div
@@ -2463,6 +2479,22 @@
 							</div>
 						</div>
 					{/key}
+				{/if}
+
+				{#if cornerBadge}
+					<div class="player-corner-badge" aria-live="polite" data-jumpflix-gesture-ignore="true">
+						{#if cornerBadge.poster}
+							<img class="player-corner-badge__poster" src={cornerBadge.poster} alt="" />
+						{/if}
+						<div class="player-corner-badge__copy">
+							<p class="player-corner-badge__eyebrow">{cornerBadge.eyebrow}</p>
+							<h2 class="player-corner-badge__title">{cornerBadge.title}</h2>
+							<div class="player-corner-badge__site">
+								<img src="/icons/apple-touch-icon.png" alt="JUMPFLIX" class="player-corner-badge__logo" />
+								<span>{cornerBadge.siteLabel ?? 'on jumpflix.tv'}</span>
+							</div>
+						</div>
+					</div>
 				{/if}
 
 				{#if nowPlayingTrackLabel || nowPlayingSpotLabel}
@@ -2575,7 +2607,7 @@
 								</media-play-button>
 
 
-								{#if !hasTouchInput}
+								{#if showSeekControls && !hasTouchInput}
 									<media-seek-button
 										class="control-button"
 										seconds={-SKIP_SEEK_SECONDS}
@@ -2591,6 +2623,19 @@
 									>
 										<span class="label">+{SKIP_SEEK_SECONDS}s</span>
 									</media-seek-button>
+								{/if}
+
+								{#if typeof onSkipNext === 'function'}
+									<button
+										type="button"
+										class="control-button control-button-skip-next"
+										aria-label="Skip to next video"
+										data-jumpflix-gesture-ignore="true"
+										on:click={onSkipNext}
+									>
+										<span class="icon"><SkipForwardIcon /></span>
+										<span class="label">Skip</span>
+									</button>
 								{/if}
 
 								<div class="time-display" aria-hidden="true">
@@ -2714,23 +2759,25 @@
 									</media-menu-items>
 								</media-menu>
 
-								<SpotChapterSuggestionDialog
-									{mediaId}
-									{mediaType}
-									{playbackKey}
-									getCurrentTimeSeconds={() => Number(playerEl?.currentTime ?? 0)}
-									spotChapterId={activeSpotChapterId}
-									initialSpotId={activeSpotSpotId}
-									initialStartSeconds={activeSpotStartSeconds}
-									initialEndSeconds={activeSpotEndSeconds}
-									lockTimeRange={isChangingSpot}
-									triggerClass="control-button"
-									triggerAriaLabel={spotSuggestionTriggerAriaLabel}
-									triggerTitle={spotSuggestionTriggerTitle}
-									on:submitted={() => {
-										spotChaptersRefreshToken += 1;
-									}}
-								/>
+								{#if showSpotSuggestion}
+									<SpotChapterSuggestionDialog
+										{mediaId}
+										{mediaType}
+										{playbackKey}
+										getCurrentTimeSeconds={() => Number(playerEl?.currentTime ?? 0)}
+										spotChapterId={activeSpotChapterId}
+										initialSpotId={activeSpotSpotId}
+										initialStartSeconds={activeSpotStartSeconds}
+										initialEndSeconds={activeSpotEndSeconds}
+										lockTimeRange={isChangingSpot}
+										triggerClass="control-button"
+										triggerAriaLabel={spotSuggestionTriggerAriaLabel}
+										triggerTitle={spotSuggestionTriggerTitle}
+										on:submitted={() => {
+											spotChaptersRefreshToken += 1;
+										}}
+									/>
+								{/if}
 
 								<media-fullscreen-button class="control-button" aria-label="Toggle fullscreen">
 									<span class="icon icon-enter"><Maximize2Icon /></span>
@@ -2762,6 +2809,93 @@
 
 	:global(media-player.vidstack-player [data-media-provider]) {
 		background: #000 !important;
+	}
+
+	.player-corner-badge {
+		position: absolute;
+		top: 1rem;
+		right: 1rem;
+		z-index: 18;
+		display: flex;
+		max-width: min(28rem, calc(100vw - 2rem));
+		align-items: center;
+		gap: 0.9rem;
+		padding: 0.85rem 1rem;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		border-radius: 1rem;
+		background: rgba(3, 7, 18, 0.72);
+		backdrop-filter: blur(18px);
+		box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+		pointer-events: none;
+	}
+
+	.player-corner-badge__poster {
+		width: 3.75rem;
+		height: 5.25rem;
+		flex: 0 0 auto;
+		border-radius: 0.8rem;
+		object-fit: cover;
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.player-corner-badge__copy {
+		min-width: 0;
+	}
+
+	.player-corner-badge__eyebrow {
+		margin: 0 0 0.2rem;
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: rgba(248, 250, 252, 0.68);
+	}
+
+	.player-corner-badge__title {
+		margin: 0;
+		font-size: clamp(1rem, 2vw, 1.2rem);
+		font-weight: 700;
+		line-height: 1.25;
+		color: #f8fafc;
+		text-wrap: balance;
+	}
+
+	.player-corner-badge__site {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		margin-top: 0.45rem;
+		font-size: 0.82rem;
+		font-weight: 600;
+		color: rgba(226, 232, 240, 0.88);
+	}
+
+	.player-corner-badge__logo {
+		width: 1.15rem;
+		height: 1.15rem;
+		border-radius: 0.35rem;
+		object-fit: cover;
+		box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28);
+	}
+
+	.control-button-skip-next {
+		gap: 0.45rem;
+	}
+
+	@media (max-width: 640px) {
+		.player-corner-badge {
+			top: 0.75rem;
+			right: 0.75rem;
+			left: 0.75rem;
+			max-width: none;
+			padding: 0.75rem 0.85rem;
+			gap: 0.75rem;
+		}
+
+		.player-corner-badge__poster {
+			width: 3rem;
+			height: 4.4rem;
+		}
 	}
 
 	:global(media-player.vidstack-player[data-view-type='video']) {

@@ -98,6 +98,7 @@
 	);
 	const isAboutRoute = $derived($page.url.pathname === '/about');
 	const isCostsRoute = $derived(/\/costs$/.test(String($page.url.pathname)));
+	const isAutoplayRoute = $derived(String($page.url.pathname) === '/autoplay');
 	const isDetailRoute = $derived(
 		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
 	);
@@ -697,6 +698,7 @@
 
 <div class="relative z-[var(--z-index-content)]">
 	<!-- Top-left settings cog that opens a left-side sheet -->
+	{#if !isAutoplayRoute}
 	<SheetRoot bind:open={sheetOpen}>
 		<nav
 			class="absolute top-4 right-4 left-4 z-[var(--z-index-settings)] flex items-start justify-between gap-2"
@@ -860,12 +862,13 @@
 			</div>
 		</SheetContent>
 	</SheetRoot>
+	{/if}
 
 	{#key currentLocale}
 		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
 		{#if $page.error}
 			{@render children?.()}
-		{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute}
+		{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute || isAutoplayRoute}
 			{@render children?.()}
 		{:else}
 			<TvPage

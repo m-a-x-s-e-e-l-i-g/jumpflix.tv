@@ -16,6 +16,7 @@
 	import XIcon from 'lucide-svelte/icons/x';
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
 	import SpotChapterSuggestionDialog from '$lib/tv/SpotChapterSuggestionDialog.svelte';
+	import { getPublicProviderLinkSource, resolveInlinePlaybackSource } from '$lib/tv/playback-source';
 	import type { VideoTrack } from '$lib/tv/types';
 	import { parseTimecodeToSeconds } from '$lib/utils/timecode';
 	import { getParkourSpotUrl } from '$lib/utils';
@@ -450,6 +451,7 @@
 	let cleanupProgressTracking: (() => void) | null = null;
 	let cleanupPlaybackComplete: (() => void) | null = null;
 	let cleanupProviderParams: (() => void) | null = null;
+	let cleanupYouTubeGateState: (() => void) | null = null;
 	let cleanupSettingsMenuState: (() => void) | null = null;
 	let cleanupSpotChaptersTrackEvents: (() => void) | null = null;
 	let controlsEl: HTMLElement | null = null;
@@ -489,6 +491,12 @@
 	let settingsAirPlayActive = false;
 	let settingsYouTubeQualityLevels: string[] = [];
 	let settingsYouTubePlaybackQuality: string | null = null;
+	let activeProviderType: string | null = null;
+	let youTubeGateVisible = false;
+	let youTubeGateMode: 'open' | 'login' = 'open';
+	let currentYouTubePublicUrl: string | null = null;
+
+	const YOUTUBE_GATE_ERROR_CODES = new Set([2, 5, 100, 101, 150]);
 
 	// Watch progress tracking
 	let lastProgressUpdate = 0;
@@ -528,7 +536,97 @@
 	type YouTubeMessageInfo = {
 		availableQualityLevels?: string[];
 		playbackQuality?: string;
+		errorCode?: number;
+		videoData?: {
+			errorCode?: number;
+			title?: string;
+			video_id?: string;
+		};
 	};
+
+	type YouTubeRawMessage = {
+		event?: string;
+		info?: YouTubeMessageInfo | number | null;
+		errorCode?: number;
+		reason?: string;
+		[key: string]: unknown;
+	};
+
+	function getYouTubePublicUrl(value: string | null | undefined) {
+		const playbackSource = resolveInlinePlaybackSource(value, { fallback: 'direct' });
+		const publicSource = getPublicProviderLinkSource(playbackSource);
+		return publicSource?.kind === 'youtube' ? publicSource.url : null;
+	}
+
+	function resetYouTubeGate() {
+		youTubeGateVisible = false;
+		youTubeGateMode = 'open';
+	}
+
+	function showYouTubeGate(mode: 'open' | 'login' = 'open') {
+		youTubeGateVisible = true;
+		youTubeGateMode = mode;
+	}
+
+	function getYouTubeMessageErrorCode(message: YouTubeRawMessage): number | null {
+		if (typeof message.info === 'number' && Number.isFinite(message.info)) {
+			return message.info;
+		}
+
+		const info = message.info && typeof message.info === 'object' ? message.info : null;
+		const directCode = typeof message.errorCode === 'number' ? message.errorCode : null;
+		const infoCode = typeof info?.errorCode === 'number' ? info.errorCode : null;
+		const videoDataCode = typeof info?.videoData?.errorCode === 'number' ? info.videoData.errorCode : null;
+
+		return videoDataCode ?? infoCode ?? directCode;
+	}
+
+	function getYouTubeGateMode(message: YouTubeRawMessage): 'open' | 'login' | null {
+		const errorCode = getYouTubeMessageErrorCode(message);
+		if (errorCode !== null && YOUTUBE_GATE_ERROR_CODES.has(errorCode)) {
+			return 'open';
+		}
+
+		let haystack = '';
+		try {
+			haystack = JSON.stringify(message).toLowerCase();
+		} catch {
+			haystack = '';
+		}
+
+		if (
+			haystack.includes('sign in') ||
+			haystack.includes('signin') ||
+			haystack.includes('login') ||
+			haystack.includes('verify your age') ||
+			haystack.includes('confirm your age') ||
+			haystack.includes('age-restricted') ||
+			haystack.includes('age restricted') ||
+			haystack.includes('unusual traffic') ||
+			haystack.includes('automated queries') ||
+			haystack.includes('anti bot') ||
+			haystack.includes('anti-bot') ||
+			haystack.includes('bot check')
+		) {
+			return 'login';
+		}
+
+		if (
+			haystack.includes('playback on other websites has been disabled') ||
+			haystack.includes('embedding disabled') ||
+			haystack.includes('not available on this app') ||
+			haystack.includes('not available on this device') ||
+			haystack.includes('watch on youtube')
+		) {
+			return 'open';
+		}
+
+		if (typeof message.event === 'string' && message.event.toLowerCase() === 'onerror') {
+			return 'open';
+		}
+
+		return null;
+	}
 
 	function patchVimeoProviderBackground(provider: unknown) {
 		const vimeoProvider = provider as {
@@ -612,19 +710,28 @@
 	function patchYouTubeProviderQuality(provider: unknown, player: MediaPlayerElement) {
 		const youTubeProvider = provider as {
 			type?: unknown;
-			onMessage?: ((message: { info?: YouTubeMessageInfo }, event: MessageEvent) => void) | undefined;
+			onMessage?: ((message: YouTubeRawMessage, event: MessageEvent) => void) | undefined;
 			postMessage?: ((message: Record<string, unknown>, target?: string) => void) | undefined;
 		};
 
 		if (!youTubeProvider || youTubeProvider.type !== 'youtube') {
 			resetYouTubeQualityState();
+			resetYouTubeGate();
 			return () => {};
 		}
 
 		const originalOnMessage = youTubeProvider.onMessage?.bind(youTubeProvider);
 		if (originalOnMessage) {
 			youTubeProvider.onMessage = (message, event) => {
-				updateYouTubeQualityState(message?.info, player);
+				const gateMode = getYouTubeGateMode(message);
+				if (gateMode) {
+					showYouTubeGate(gateMode);
+				}
+				const info = message?.info;
+				updateYouTubeQualityState(
+					info && typeof info === 'object' ? (info as YouTubeMessageInfo) : undefined,
+					player
+				);
 				return originalOnMessage(message, event);
 			};
 		}
@@ -637,6 +744,7 @@
 				youTubeProvider.onMessage = originalOnMessage;
 			}
 			resetYouTubeQualityState();
+			resetYouTubeGate();
 		};
 	}
 
@@ -646,6 +754,11 @@
 		let cleanupYouTubePatch: (() => void) | null = null;
 
 		const patchProvider = (provider: unknown) => {
+			activeProviderType =
+				typeof (provider as { type?: unknown } | null)?.type === 'string'
+					? ((provider as { type?: string }).type ?? null)
+					: null;
+			resetYouTubeGate();
 			patchVimeoProviderBackground(provider);
 			patchHlsProviderLibrary(provider);
 			cleanupYouTubePatch?.();
@@ -662,8 +775,35 @@
 		patchProvider(initialProvider);
 
 		return () => {
+			activeProviderType = null;
 			cleanupYouTubePatch?.();
 			player.removeEventListener('provider-change', onProviderChange as EventListener);
+		};
+	}
+
+	function setupYouTubeGateState(player: MediaPlayerElement) {
+		if (!browser) return () => {};
+
+		const hideGate = () => {
+			if (activeProviderType === 'youtube') {
+				resetYouTubeGate();
+			}
+		};
+
+		const showGate = () => {
+			if (activeProviderType === 'youtube') {
+				showYouTubeGate('open');
+			}
+		};
+
+		player.addEventListener('playing', hideGate);
+		player.addEventListener('can-play', hideGate);
+		player.addEventListener('error', showGate);
+
+		return () => {
+			player.removeEventListener('playing', hideGate);
+			player.removeEventListener('can-play', hideGate);
+			player.removeEventListener('error', showGate);
 		};
 	}
 
@@ -1012,6 +1152,15 @@
 	}
 
 	$: if (browser && playerEl) {
+		cleanupYouTubeGateState?.();
+		cleanupYouTubeGateState = setupYouTubeGateState(playerEl);
+	} else if (!browser || !playerEl) {
+		cleanupYouTubeGateState?.();
+		cleanupYouTubeGateState = null;
+		resetYouTubeGate();
+	}
+
+	$: if (browser && playerEl) {
 		cleanupSettingsMenuState?.();
 		cleanupSettingsMenuState = setupSettingsMenuState(playerEl);
 	} else if (!browser || !playerEl) {
@@ -1074,6 +1223,8 @@
 		cleanupSettingsMenuState = null;
 		cleanupProviderParams?.();
 		cleanupProviderParams = null;
+		cleanupYouTubeGateState?.();
+		cleanupYouTubeGateState = null;
 		cleanupGestures?.();
 		cleanupGestures = null;
 		cleanupAutoHide?.();
@@ -2473,6 +2624,7 @@
 		typeof resolvedSrc === 'string' ? resolvedSrc : resolvedSrc?.src ? `${resolvedSrc.src}:${resolvedSrc.type}` : '';
 	$: resolvedPoster = poster ?? undefined;
 	$: playerTitle = title ?? undefined;
+	$: currentYouTubePublicUrl = getYouTubePublicUrl(src);
 	$: shouldRender = mounted && browser && !!resolvedSrc && vidstackReady;
 	$: renderKey = preservePlayerInstance ? 'stable-player' : `${keySeed}:${resolvedSrcKey}`;
 
@@ -2482,6 +2634,7 @@
 		lastProgressUpdate = 0;
 		hasResumed = false;
 		isSeeking = false;
+		resetYouTubeGate();
 	}
 </script>
 
@@ -2562,6 +2715,54 @@
 					</div>
 				{/if}
 
+				{#if youTubeGateVisible}
+					<div
+						class="youtube-fallback-gate"
+						role="dialog"
+						aria-live="assertive"
+						aria-label="YouTube playback requires YouTube"
+					>
+						<div class="youtube-fallback-card" data-jumpflix-gesture-ignore="true">
+							<p class="youtube-fallback-eyebrow">YouTube playback blocked</p>
+							<h2 class="youtube-fallback-title">
+								{#if youTubeGateMode === 'login'}
+									Open this on YouTube to sign in or verify access
+								{:else}
+									This video needs to be opened on YouTube
+								{/if}
+							</h2>
+							<p class="youtube-fallback-copy">
+								{#if youTubeGateMode === 'login'}
+									YouTube is asking for sign-in, age verification, or an anti-bot check. Open the video on YouTube, finish that there, then come back and try again.
+								{:else}
+									YouTube is not allowing this one to play inside the embedded player right now. Open it on YouTube to keep watching.
+								{/if}
+							</p>
+							<div class="youtube-fallback-actions">
+								{#if currentYouTubePublicUrl}
+									<a
+										class="youtube-fallback-primary"
+										href={currentYouTubePublicUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										Open on YouTube
+									</a>
+								{/if}
+								{#if typeof onClose === 'function'}
+									<button
+										type="button"
+										class="youtube-fallback-secondary"
+										on:click={onClose}
+									>
+										{m.tv_close()}
+									</button>
+								{/if}
+							</div>
+						</div>
+					</div>
+				{/if}
+
 				{#if nowPlayingTrackLabel || nowPlayingSpotLabel}
 					<div class="now-pills" aria-live="polite">
 						{#if nowPlayingTrackLabel}
@@ -2625,7 +2826,7 @@
 				<media-controls
 					class="player-controls"
 					data-jumpflix-gesture-ignore="true"
-					data-hidden={controlsVisible ? undefined : ''}
+					data-hidden={controlsVisible && !youTubeGateVisible ? undefined : ''}
 					bind:this={controlsEl}
 				>
 					{#if typeof onClose === 'function'}
@@ -3076,6 +3277,106 @@
 	.ios-tap-to-play-pill :global(svg) {
 		inline-size: 1.1rem;
 		block-size: 1.1rem;
+	}
+
+	.youtube-fallback-gate {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1.25rem;
+		background:
+			radial-gradient(circle at top, rgba(220, 38, 38, 0.2), transparent 48%),
+			rgba(2, 6, 23, 0.78);
+		backdrop-filter: blur(10px);
+		z-index: 12;
+	}
+
+	.youtube-fallback-card {
+		width: min(100%, 34rem);
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+		padding: 1.25rem;
+		border-radius: 1.25rem;
+		border: 1px solid rgba(248, 113, 113, 0.28);
+		background: rgba(15, 23, 42, 0.94);
+		box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
+	}
+
+	.youtube-fallback-eyebrow {
+		margin: 0;
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: rgba(254, 202, 202, 0.9);
+	}
+
+	.youtube-fallback-title {
+		margin: 0;
+		font-size: clamp(1.2rem, 2.8vw, 1.8rem);
+		line-height: 1.15;
+		color: #fff7ed;
+		text-wrap: balance;
+	}
+
+	.youtube-fallback-copy {
+		margin: 0;
+		font-size: 0.96rem;
+		line-height: 1.55;
+		color: rgba(255, 237, 213, 0.84);
+	}
+
+	.youtube-fallback-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+		margin-top: 0.15rem;
+	}
+
+	.youtube-fallback-primary,
+	.youtube-fallback-secondary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 2.85rem;
+		padding: 0.8rem 1.1rem;
+		border-radius: 0.9rem;
+		font: inherit;
+		font-weight: 700;
+		text-decoration: none;
+		cursor: pointer;
+		transition:
+			transform 140ms ease,
+			background 140ms ease,
+			border-color 140ms ease;
+	}
+
+	.youtube-fallback-primary {
+		border: 1px solid rgba(248, 113, 113, 0.5);
+		background: linear-gradient(135deg, rgba(220, 38, 38, 0.95), rgba(249, 115, 22, 0.95));
+		color: white;
+	}
+
+	.youtube-fallback-secondary {
+		border: 1px solid rgba(148, 163, 184, 0.32);
+		background: rgba(30, 41, 59, 0.75);
+		color: rgba(226, 232, 240, 0.96);
+	}
+
+	.youtube-fallback-primary:hover,
+	.youtube-fallback-primary:focus-visible,
+	.youtube-fallback-secondary:hover,
+	.youtube-fallback-secondary:focus-visible {
+		transform: translateY(-1px);
+	}
+
+	.youtube-fallback-primary:focus-visible,
+	.youtube-fallback-secondary:focus-visible {
+		outline: 2px solid rgba(255, 255, 255, 0.3);
+		outline-offset: 2px;
 	}
 
 	.touch-skip-feedback-layer {

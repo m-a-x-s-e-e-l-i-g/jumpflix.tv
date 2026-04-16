@@ -807,7 +807,7 @@
 </script>
 
 {#if selected}
-	<section class="detail-wrap">
+	<section class="detail-wrap" class:detail-wrap--movie={selected.type === 'movie'}>
 		{#if showStickyPlay && !$showPlayer}
 			<div class="detail-play-fixedbar">
 				<div class="detail-play-fixedinner">
@@ -2104,6 +2104,59 @@
 		}
 	}
 
+	@media (min-width: 1200px) and (max-width: 1339px) {
+		.detail-wrap--movie .detail-grid {
+			grid-template-columns: minmax(272px, 320px) minmax(0, 1fr);
+			grid-template-rows: auto auto;
+			column-gap: clamp(1.5rem, 2.8vw, 2.25rem);
+			row-gap: 1.75rem;
+			align-items: start;
+		}
+
+		.detail-wrap--movie .detail-aside,
+		.detail-wrap--movie .detail-main,
+		.detail-wrap--movie .detail-review-sidebar {
+			order: initial;
+		}
+
+		.detail-wrap--movie .detail-aside {
+			grid-column: 1;
+			grid-row: 1;
+			justify-items: stretch;
+			gap: 0.85rem;
+		}
+
+		.detail-wrap--movie .detail-poster,
+		.detail-wrap--movie .detail-actions,
+		.detail-wrap--movie .detail-review-sidebar {
+			max-width: 320px;
+		}
+
+		.detail-wrap--movie .detail-poster,
+		.detail-wrap--movie .detail-actions {
+			width: 100%;
+		}
+
+		.detail-wrap--movie .detail-main {
+			grid-column: 2;
+			grid-row: 1 / span 2;
+			align-self: start;
+		}
+
+		.detail-wrap--movie .detail-main-content {
+			grid-column: auto;
+		}
+
+		.detail-wrap--movie .detail-review-sidebar {
+			grid-column: 1;
+			grid-row: 2;
+			min-width: 0;
+			min-height: 0;
+			margin-top: 0;
+			gap: 0.75rem;
+		}
+	}
+
 	@media (max-width: 960px) {
 		.detail-main-content {
 			grid-column: 1 / -1;
@@ -2123,6 +2176,58 @@
 
 		.detail-review-sidebar {
 			order: 2;
+		}
+	}
+
+	@media (min-width: 641px) and (max-width: 1199px) {
+		.detail-wrap--movie .detail-grid {
+			grid-template-columns: minmax(256px, 312px) minmax(0, 1fr);
+			grid-template-rows: auto auto;
+			column-gap: clamp(1.25rem, 3vw, 2.25rem);
+			row-gap: 1.75rem;
+			align-items: start;
+		}
+
+		.detail-wrap--movie .detail-aside,
+		.detail-wrap--movie .detail-main,
+		.detail-wrap--movie .detail-review-sidebar {
+			order: initial;
+		}
+
+		.detail-wrap--movie .detail-aside {
+			grid-column: 1;
+			grid-row: 1;
+			justify-items: stretch;
+			gap: 0.85rem;
+		}
+
+		.detail-wrap--movie .detail-poster {
+			width: 100%;
+			max-width: 312px;
+		}
+
+		.detail-wrap--movie .detail-actions {
+			width: 100%;
+			max-width: 312px;
+		}
+
+		.detail-wrap--movie .detail-main {
+			grid-column: 2;
+			grid-row: 1 / span 2;
+			align-self: start;
+		}
+
+		.detail-wrap--movie .detail-main-content {
+			grid-column: auto;
+		}
+
+		.detail-wrap--movie .detail-review-sidebar {
+			grid-column: 1;
+			grid-row: 2;
+			min-width: 0;
+			max-width: 312px;
+			margin-top: 0;
+			gap: 0.75rem;
 		}
 	}
 

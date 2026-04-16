@@ -807,7 +807,10 @@
 </script>
 
 {#if selected}
-	<section class="detail-wrap" class:detail-wrap--movie={selected.type === 'movie'}>
+	<section
+		class="detail-wrap"
+		class:detail-wrap--feature={selected.type === 'movie' || selected.type === 'series'}
+	>
 		{#if showStickyPlay && !$showPlayer}
 			<div class="detail-play-fixedbar">
 				<div class="detail-play-fixedinner">
@@ -2105,7 +2108,7 @@
 	}
 
 	@media (min-width: 1200px) and (max-width: 1339px) {
-		.detail-wrap--movie .detail-grid {
+		.detail-wrap--feature .detail-grid {
 			grid-template-columns: minmax(272px, 320px) minmax(0, 1fr);
 			grid-template-rows: auto auto;
 			column-gap: clamp(1.5rem, 2.8vw, 2.25rem);
@@ -2113,41 +2116,41 @@
 			align-items: start;
 		}
 
-		.detail-wrap--movie .detail-aside,
-		.detail-wrap--movie .detail-main,
-		.detail-wrap--movie .detail-review-sidebar {
+		.detail-wrap--feature .detail-aside,
+		.detail-wrap--feature .detail-main,
+		.detail-wrap--feature .detail-review-sidebar {
 			order: initial;
 		}
 
-		.detail-wrap--movie .detail-aside {
+		.detail-wrap--feature .detail-aside {
 			grid-column: 1;
 			grid-row: 1;
 			justify-items: stretch;
 			gap: 0.85rem;
 		}
 
-		.detail-wrap--movie .detail-poster,
-		.detail-wrap--movie .detail-actions,
-		.detail-wrap--movie .detail-review-sidebar {
+		.detail-wrap--feature .detail-poster,
+		.detail-wrap--feature .detail-actions,
+		.detail-wrap--feature .detail-review-sidebar {
 			max-width: 320px;
 		}
 
-		.detail-wrap--movie .detail-poster,
-		.detail-wrap--movie .detail-actions {
+		.detail-wrap--feature .detail-poster,
+		.detail-wrap--feature .detail-actions {
 			width: 100%;
 		}
 
-		.detail-wrap--movie .detail-main {
+		.detail-wrap--feature .detail-main {
 			grid-column: 2;
 			grid-row: 1 / span 2;
 			align-self: start;
 		}
 
-		.detail-wrap--movie .detail-main-content {
+		.detail-wrap--feature .detail-main-content {
 			grid-column: auto;
 		}
 
-		.detail-wrap--movie .detail-review-sidebar {
+		.detail-wrap--feature .detail-review-sidebar {
 			grid-column: 1;
 			grid-row: 2;
 			min-width: 0;
@@ -2180,7 +2183,7 @@
 	}
 
 	@media (min-width: 641px) and (max-width: 1199px) {
-		.detail-wrap--movie .detail-grid {
+		.detail-wrap--feature .detail-grid {
 			grid-template-columns: minmax(256px, 312px) minmax(0, 1fr);
 			grid-template-rows: auto auto;
 			column-gap: clamp(1.25rem, 3vw, 2.25rem);
@@ -2188,40 +2191,40 @@
 			align-items: start;
 		}
 
-		.detail-wrap--movie .detail-aside,
-		.detail-wrap--movie .detail-main,
-		.detail-wrap--movie .detail-review-sidebar {
+		.detail-wrap--feature .detail-aside,
+		.detail-wrap--feature .detail-main,
+		.detail-wrap--feature .detail-review-sidebar {
 			order: initial;
 		}
 
-		.detail-wrap--movie .detail-aside {
+		.detail-wrap--feature .detail-aside {
 			grid-column: 1;
 			grid-row: 1;
 			justify-items: stretch;
 			gap: 0.85rem;
 		}
 
-		.detail-wrap--movie .detail-poster {
+		.detail-wrap--feature .detail-poster {
 			width: 100%;
 			max-width: 312px;
 		}
 
-		.detail-wrap--movie .detail-actions {
+		.detail-wrap--feature .detail-actions {
 			width: 100%;
 			max-width: 312px;
 		}
 
-		.detail-wrap--movie .detail-main {
+		.detail-wrap--feature .detail-main {
 			grid-column: 2;
 			grid-row: 1 / span 2;
 			align-self: start;
 		}
 
-		.detail-wrap--movie .detail-main-content {
+		.detail-wrap--feature .detail-main-content {
 			grid-column: auto;
 		}
 
-		.detail-wrap--movie .detail-review-sidebar {
+		.detail-wrap--feature .detail-review-sidebar {
 			grid-column: 1;
 			grid-row: 2;
 			min-width: 0;

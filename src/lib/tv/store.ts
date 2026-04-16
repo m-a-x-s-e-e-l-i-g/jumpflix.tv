@@ -12,6 +12,7 @@ import {
 // Base data (loaded at runtime via setContent)
 const seed = new Date().toISOString().slice(0, 10);
 const SHOW_PAID_STORAGE_KEY = 'jumpflix.tv:showPaid';
+const KID_SAFE_ONLY_STORAGE_KEY = 'jumpflix.tv:kidSafeOnly';
 const SHOW_WATCHED_STORAGE_KEY = 'jumpflix.tv:showWatched';
 const SEARCH_QUERY_STORAGE_KEY = 'jumpflix.tv:searchQuery';
 const GRID_SCALE_STORAGE_KEY = 'jumpflix.tv:gridScale';
@@ -117,6 +118,7 @@ contentMeta.subscribe((meta) => {
 // UI state stores
 export const searchQuery = writable(loadStringPreference(SEARCH_QUERY_STORAGE_KEY));
 export const showPaid = writable(loadBooleanPreference(SHOW_PAID_STORAGE_KEY));
+export const kidSafeOnly = writable(loadBooleanPreference(KID_SAFE_ONLY_STORAGE_KEY, false));
 export const sortBy = writable<SortBy>('default');
 export const showWatched = writable(loadBooleanPreference(SHOW_WATCHED_STORAGE_KEY));
 export const selectedContent = writable<ContentItem | null>(null);
@@ -230,6 +232,7 @@ if (browser) {
 	const handleProgressChange: EventListener = () => refreshProgressSets();
 	window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
 	showPaid.subscribe((value) => persistBooleanPreference(SHOW_PAID_STORAGE_KEY, value));
+	kidSafeOnly.subscribe((value) => persistBooleanPreference(KID_SAFE_ONLY_STORAGE_KEY, value));
 	showWatched.subscribe((value) => persistBooleanPreference(SHOW_WATCHED_STORAGE_KEY, value));
 	searchQuery.subscribe((value) => persistStringPreference(SEARCH_QUERY_STORAGE_KEY, value));
 	gridScale.subscribe((value) => persistNumberPreference(GRID_SCALE_STORAGE_KEY, value));
@@ -251,6 +254,7 @@ export const visibleContent = derived(
 		contentMeta,
 		debouncedSearch,
 		showPaid,
+		kidSafeOnly,
 		sortBy,
 		showWatched,
 		watchedBaseIds,
@@ -262,6 +266,7 @@ export const visibleContent = derived(
 		$meta,
 		$search,
 		$showPaid,
+		$kidSafeOnly,
 		$sortBy,
 		$showWatched,
 		$watchedBaseIds,
@@ -272,6 +277,7 @@ export const visibleContent = derived(
 		filterAndSortContent($meta.items, $meta.rankMap, {
 			searchQuery: $search,
 			showPaid: $showPaid,
+			kidSafeOnly: $kidSafeOnly,
 			sortBy: $sortBy,
 			showWatched: $showWatched,
 			watchedBaseIds: $watchedBaseIds,

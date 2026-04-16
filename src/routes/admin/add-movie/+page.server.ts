@@ -49,6 +49,7 @@ export const actions: Actions = {
 				video_id: String(form.get('video_id') || '').trim() || null,
 				thumbnail: String(form.get('thumbnail') || '').trim() || null,
 				blurhash: String(form.get('blurhash') || '').trim() || null,
+				not_safe_for_kids: form.get('not_safe_for_kids') === 'true',
 				paid: form.get('paid') === 'true',
 				provider: String(form.get('provider') || '').trim() || null,
 				external_url: String(form.get('external_url') || '').trim() || null,

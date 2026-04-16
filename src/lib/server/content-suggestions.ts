@@ -72,7 +72,7 @@ export async function applyMediaPatch(
 	const { data: media, error: mediaError } = await supabase
 		.from('media_items')
 		.select(
-			'id, type, description, creators, starring, facet_mood, facet_movement, facet_type, facet_environment, facet_film_style, facet_theme, thumbnail, paid, provider, external_url'
+			'id, type, description, creators, starring, facet_mood, facet_movement, facet_type, facet_environment, facet_film_style, facet_theme, thumbnail, not_safe_for_kids, paid, provider, external_url'
 		)
 		.eq('id', mediaId)
 		.maybeSingle();
@@ -85,6 +85,7 @@ export async function applyMediaPatch(
 	const set = patch?.set && typeof patch.set === 'object' ? patch.set : {};
 	if ('description' in set) next.description = set.description ?? null;
 	if ('thumbnail' in set) next.thumbnail = set.thumbnail ?? null;
+	if ('not_safe_for_kids' in set) next.not_safe_for_kids = Boolean(set.not_safe_for_kids);
 	if ('paid' in set) next.paid = set.paid ?? null;
 	if ('provider' in set) next.provider = set.provider ?? null;
 	if ('external_url' in set) next.external_url = set.external_url ?? null;

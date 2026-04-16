@@ -18,6 +18,7 @@
 		visibleContent,
 		searchQuery,
 		showPaid,
+		kidSafeOnly,
 		showWatched,
 		sortBy,
 		gridScale,
@@ -889,7 +890,7 @@
 			{/if}
 
 			{#if !isProfileRoute}
-				<TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} {selectedFacets} {activeFeedSlug} />
+				<TvSearchControls {searchQuery} {showPaid} {kidSafeOnly} {showWatched} {sortBy} {selectedFacets} {activeFeedSlug} />
 			{/if}
 
 			<div class="catalog-toolbar" aria-label="Catalog view controls">

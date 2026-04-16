@@ -9,13 +9,14 @@
 	interface Props {
 		searchQuery: Writable<string>;
 		showPaid: Writable<boolean>;
+		kidSafeOnly: Writable<boolean>;
 		showWatched: Writable<boolean>;
 		sortBy: Writable<SortBy>;
 		selectedFacets: Writable<SelectedFacets>;
 		activeFeedSlug: Writable<string | null>;
 	}
 
-	let { searchQuery, showPaid, showWatched, sortBy, selectedFacets, activeFeedSlug }: Props =
+	let { searchQuery, showPaid, kidSafeOnly, showWatched, sortBy, selectedFacets, activeFeedSlug }: Props =
 		$props();
 
 	function clearSearch() {
@@ -128,7 +129,7 @@
 			</form>
 
 			<div class="search-controls">
-				<FacetFilterPanel {selectedFacets} {activeFeedSlug} />
+				<FacetFilterPanel {selectedFacets} {activeFeedSlug} {kidSafeOnly} />
 
 				<div class="search-toggle-row">
 					<label class={labelClass}>

@@ -42,6 +42,7 @@
 		| 'facets'
 		| 'people'
 		| 'description'
+		| 'safety'
 		| 'new_season'
 		| 'new_episode'
 		| 'tracks'
@@ -58,6 +59,7 @@
 	// Structured patch payload (optional)
 	let posterUrl = $state('');
 	let description = $state('');
+	let notSafeForKids = $state(false);
 	let paid = $state(false);
 	let provider = $state('');
 	let externalUrl = $state('');
@@ -160,6 +162,7 @@
 	type InitialSnapshot = {
 		posterUrl: string;
 		description: string;
+		notSafeForKids: boolean;
 		paid: boolean;
 		provider: string;
 		externalUrl: string;
@@ -332,6 +335,7 @@
 
 			posterUrl = normString(selected.thumbnail);
 			description = normString(selected.description);
+			notSafeForKids = Boolean(selected.notSafeForKids);
 			paid = Boolean(selected.paid);
 			provider = normString(selected.provider);
 			externalUrl = normString(selected.externalUrl);
@@ -365,6 +369,7 @@
 			initial = {
 				posterUrl: normString(selected.thumbnail),
 				description: normString(selected.description),
+				notSafeForKids: Boolean(selected.notSafeForKids),
 				paid: Boolean(selected.paid),
 				provider: normString(selected.provider),
 				externalUrl: normString(selected.externalUrl),
@@ -404,6 +409,9 @@
 	let posterEdited: boolean = $derived(normString(posterUrl) !== normString(initial?.posterUrl));
 	let descriptionEdited: boolean = $derived(
 		normString(description) !== normString(initial?.description)
+	);
+	let notSafeForKidsEdited: boolean = $derived(
+		Boolean(notSafeForKids) !== Boolean(initial?.notSafeForKids)
 	);
 	let paidEdited: boolean = $derived(Boolean(paid) !== Boolean(initial?.paid));
 	let providerEdited: boolean = $derived(normString(provider) !== normString(initial?.provider));
@@ -569,6 +577,13 @@
 
 		if (kind === 'description' && descriptionEdited) {
 			payload.set = { ...(payload.set ?? {}), description: normString(description) || null };
+		}
+
+		if (kind === 'safety' && notSafeForKidsEdited) {
+			payload.set = {
+				...(payload.set ?? {}),
+				not_safe_for_kids: Boolean(notSafeForKids)
+			};
 		}
 
 		if (kind === 'people') {
@@ -802,6 +817,9 @@
 								<option value="description" class="bg-background text-foreground"
 									>Description</option
 								>
+								<option value="safety" class="bg-background text-foreground"
+									>Content safety / kid-safe flag</option
+								>
 								{#if selected?.type === 'series'}
 									<option value="new_episode" class="bg-background text-foreground"
 										>New episode available</option
@@ -932,6 +950,29 @@
 											Current: <span class="text-white/80">{initial.description}</span>
 										</div>
 									{/if}
+								</label>
+							</div>
+						{/if}
+
+						{#if kind === 'safety'}
+							<div class="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
+								<label class="inline-flex items-start gap-3 text-sm text-white/80">
+									<input type="checkbox" bind:checked={notSafeForKids} class="mt-0.5" />
+									<div>
+										<div class="inline-flex items-center gap-2">
+											<span>Mark as not safe for kids</span>
+											<span class={editedBadge(notSafeForKidsEdited)}>Edited</span>
+										</div>
+										<p class="mt-1 text-xs text-white/60">
+											Use this for swearing, drug use or references, explicit song lyrics, or similar content a user may want to hide.
+										</p>
+										<div class="mt-2 text-xs text-white/60">
+											Current:
+											<span class="text-white/80">
+												{initial?.notSafeForKids ? 'Not safe for kids' : 'Kid-safe / unflagged'}
+											</span>
+										</div>
+									</div>
 								</label>
 							</div>
 						{/if}

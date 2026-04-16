@@ -859,7 +859,10 @@
 					{selected.type === 'movie' ? m.tv_pillFilm() : m.tv_pillSeries()}
 				</span>
 				{#if selected.paid}
-					<span class="detail-pill detail-pill--paid">Paid</span>
+					<span class="detail-pill detail-pill--paid">{m.tv_paid()}</span>
+				{/if}
+				{#if selected.notSafeForKids}
+					<span class="detail-pill detail-pill--warning">{m.tv_notSafeForKids()}</span>
 				{/if}
 				{#if selected.type === 'movie' && (selected as any).year}
 					<span>{(selected as any).year}</span>
@@ -1509,6 +1512,11 @@
 	.detail-pill--paid {
 		border-color: rgba(250, 204, 21, 0.6);
 		color: rgba(254, 240, 138, 0.85);
+	}
+
+	.detail-pill--warning {
+		border-color: rgba(251, 146, 60, 0.55);
+		color: rgba(255, 237, 213, 0.9);
 	}
 
 	.detail-icon {

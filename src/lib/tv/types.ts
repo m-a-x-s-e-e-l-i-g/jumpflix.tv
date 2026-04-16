@@ -65,6 +65,7 @@ export interface BaseContent {
 	thumbnail?: string;
 	blurhash?: string;
 	type: 'movie' | 'series';
+	notSafeForKids?: boolean;
 	paid?: boolean;
 	provider?: string;
 	externalUrl?: string;
@@ -164,6 +165,7 @@ export interface SelectedFacets {
 export interface TvState {
 	searchQuery: string;
 	showPaid: boolean; // show paid content
+	kidSafeOnly?: boolean;
 	sortBy: SortBy;
 	showWatched?: boolean;
 	watchedBaseIds?: Set<string>;
@@ -175,6 +177,7 @@ export interface TvState {
 export const DEFAULT_TV_STATE: TvState = {
 	searchQuery: '',
 	showPaid: true,
+	kidSafeOnly: false,
 	sortBy: 'default',
 	showWatched: true
 };

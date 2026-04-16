@@ -30,6 +30,7 @@
 	let trakt = $state('');
 	let creators = $state('');
 	let starring = $state('');
+	let notSafeForKids = $state(false);
 	let paid = $state(false);
 	let provider = $state('');
 	let generatingPoster = $state(false);
@@ -790,6 +791,28 @@
 					{#if starringSuggestError}
 						<p class="text-xs text-yellow-300">{starringSuggestError}</p>
 					{/if}
+				</label>
+
+				<label class="flex items-center gap-3">
+					<input type="hidden" name="not_safe_for_kids" value={notSafeForKids ? 'true' : 'false'} />
+					<button
+						type="button"
+						role="checkbox"
+						aria-checked={notSafeForKids}
+						aria-label="Not safe for kids"
+						onclick={() => (notSafeForKids = !notSafeForKids)}
+						class={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none ${notSafeForKids ? 'bg-[#f97316]' : 'bg-white/20'}`}
+					>
+						<span
+							class={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform ${notSafeForKids ? 'translate-x-4' : 'translate-x-0'}`}
+						></span>
+					</button>
+					<div>
+						<span class="text-sm text-white/80">Not safe for kids</span>
+						<p class="mt-1 text-xs text-white/50">
+							Mark films with swearing, drug use or references, or explicit lyrics so they can be filtered out.
+						</p>
+					</div>
 				</label>
 
 				<label class="flex items-center gap-3">

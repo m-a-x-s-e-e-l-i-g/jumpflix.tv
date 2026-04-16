@@ -576,6 +576,11 @@ async function addMovie() {
 		default: false
 	});
 
+	const notSafeForKids = await prompts.confirm({
+		message: 'Should this be marked as not safe for kids (swearing / drugs / explicit lyrics)?',
+		default: false
+	});
+
 	const provider = await prompts.input({
 		message: 'Provider:'
 	});
@@ -607,6 +612,7 @@ async function addMovie() {
 		vimeo_id: vimeoId || null,
 		thumbnail: thumbnail || null,
 		blurhash: blurhash,
+		not_safe_for_kids: notSafeForKids,
 		paid: paid || false,
 		provider: provider || null,
 		external_url: externalUrl || null,
@@ -705,6 +711,11 @@ async function addSeries() {
 		default: false
 	});
 
+	const notSafeForKids = await prompts.confirm({
+		message: 'Should this be marked as not safe for kids (swearing / drugs / explicit lyrics)?',
+		default: false
+	});
+
 	const provider = await prompts.input({
 		message: 'Provider:'
 	});
@@ -731,6 +742,7 @@ async function addSeries() {
 		year: year || null,
 		thumbnail: thumbnail || null,
 		blurhash: blurhash,
+		not_safe_for_kids: notSafeForKids,
 		paid: paid || false,
 		provider: provider || null,
 		creators: parseArrayInput(creatorsInput),
@@ -1589,6 +1601,7 @@ async function listContent() {
 		console.log(`   ID: ${item.id}`);
 		if (item.year) console.log(`   Year: ${item.year}`);
 		if (item.paid) console.log(`   💰 Paid`);
+		if (item.not_safe_for_kids) console.log(`   ⚠ Not safe for kids`);
 		console.log('');
 	}
 }
@@ -1719,6 +1732,12 @@ async function editContent() {
 		default: item.paid || false
 	});
 	if (paid !== item.paid) updates.paid = paid;
+
+	const notSafeForKids = await prompts.confirm({
+		message: 'Mark as not safe for kids (swearing / drugs / explicit lyrics)?',
+		default: item.not_safe_for_kids || false
+	});
+	if (notSafeForKids !== item.not_safe_for_kids) updates.not_safe_for_kids = notSafeForKids;
 
 	const provider = await prompts.input({
 		message: 'Provider:',

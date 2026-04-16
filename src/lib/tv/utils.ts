@@ -320,6 +320,7 @@ export function filterAndSortContent(
 ): ContentItem[] {
 	const filtered = all
 		.filter((item) => (state.showPaid ? true : !item.paid))
+		.filter((item) => (state.kidSafeOnly ? !item.notSafeForKids : true))
 		.filter((item) => matchesFeed(item, state.activeFeedSlug))
 		.filter((item) => matchesSearch(item, state.searchQuery))
 		.filter((item) => matchesFacets(item, state.selectedFacets));

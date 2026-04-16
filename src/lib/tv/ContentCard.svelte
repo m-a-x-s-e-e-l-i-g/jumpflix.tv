@@ -223,6 +223,9 @@
 			{#if item.paid && !isWatched}
 				<span class="card-badge card-badge--paid">{m.tv_paid()}</span>
 			{/if}
+			{#if item.notSafeForKids && !isWatched}
+				<span class="card-badge card-badge--warning">{m.tv_notSafeForKids()}</span>
+			{/if}
 			{#if isWatched}
 				<span class="card-badge card-badge--watched">{m.tv_showWatched()}</span>
 			{/if}
@@ -316,6 +319,13 @@
 		border-color: rgba(252, 211, 77, 0.9);
 		color: rgba(24, 24, 24, 0.95);
 		box-shadow: 0 12px 18px -12px rgba(250, 204, 21, 0.75);
+	}
+
+	.card-badge--warning {
+		background: linear-gradient(135deg, rgba(249, 115, 22, 0.95), rgba(234, 88, 12, 0.92));
+		border-color: rgba(251, 146, 60, 0.85);
+		color: #fff7ed;
+		box-shadow: 0 12px 20px -12px rgba(249, 115, 22, 0.7);
 	}
 
 	.card-badge--watched {

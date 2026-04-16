@@ -238,6 +238,7 @@ export type Database = {
 					description: string | null;
 					thumbnail: string | null;
 					blurhash: string | null;
+					not_safe_for_kids: boolean;
 					paid: boolean | null;
 					provider: string | null;
 					external_url: string | null;
@@ -283,6 +284,7 @@ export type Database = {
 					description?: string | null;
 					thumbnail?: string | null;
 					blurhash?: string | null;
+					not_safe_for_kids?: boolean;
 					paid?: boolean | null;
 					provider?: string | null;
 					external_url?: string | null;
@@ -328,6 +330,7 @@ export type Database = {
 					description?: string | null;
 					thumbnail?: string | null;
 					blurhash?: string | null;
+					not_safe_for_kids?: boolean;
 					paid?: boolean | null;
 					provider?: string | null;
 					external_url?: string | null;

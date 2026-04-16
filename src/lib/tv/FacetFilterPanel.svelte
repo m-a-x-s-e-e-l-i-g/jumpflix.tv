@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Writable } from 'svelte/store';
+	import Switch from '$lib/components/ui/Switch.svelte';
 	import { getFeedBySlug } from './feeds';
 	import type {
 		SelectedFacets,
@@ -24,9 +25,10 @@
 	interface Props {
 		selectedFacets: Writable<SelectedFacets>;
 		activeFeedSlug?: Writable<string | null>;
+		kidSafeOnly: Writable<boolean>;
 	}
 
-	let { selectedFacets, activeFeedSlug }: Props = $props();
+	let { selectedFacets, activeFeedSlug, kidSafeOnly }: Props = $props();
 
 	// Facet metadata with display names and emojis (using i18n)
 	const facetCategories = $derived({
@@ -170,13 +172,15 @@
 
 	function clearAllFilters() {
 		selectedFacets.set({});
+		kidSafeOnly.set(false);
 	}
 
 	const hasAnyFilters = $derived(
-		Object.values($selectedFacets).some((arr) => Array.isArray(arr) && arr.length > 0)
+		$kidSafeOnly || Object.values($selectedFacets).some((arr) => Array.isArray(arr) && arr.length > 0)
 	);
 	const filterCount = $derived(
-		Object.values($selectedFacets).reduce(
+		($kidSafeOnly ? 1 : 0) +
+			Object.values($selectedFacets).reduce(
 			(sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0),
 			0
 		)
@@ -336,6 +340,17 @@
 
 		{#if renderFilters}
 			<div class="filter-categories">
+				<div class="filter-category">
+					<h4 class="category-label">{m.facet_safety()}</h4>
+					<label class="safety-toggle">
+						<div>
+							<div class="safety-toggle-label">{m.tv_kidSafeOnly()}</div>
+							<p class="safety-toggle-copy">{m.facet_kidSafeOnlyHint()}</p>
+						</div>
+						<Switch bind:checked={$kidSafeOnly} ariaLabel={m.tv_kidSafeOnly()} />
+					</label>
+				</div>
+
 				{#each Object.entries(facetCategories) as [categoryKey, category]}
 					<div class="filter-category">
 						<h4 class="category-label">{category.label}</h4>
@@ -514,6 +529,30 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+	}
+
+	.safety-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		border-radius: 18px;
+		border: 1px solid rgba(248, 250, 252, 0.12);
+		background: rgba(255, 255, 255, 0.04);
+		padding: 0.9rem 1rem;
+	}
+
+	.safety-toggle-label {
+		font-size: 0.9rem;
+		font-weight: 600;
+		color: rgba(248, 250, 252, 0.94);
+	}
+
+	.safety-toggle-copy {
+		margin-top: 0.25rem;
+		font-size: 0.78rem;
+		line-height: 1.45;
+		color: rgba(226, 232, 240, 0.68);
 	}
 
 	.category-label {

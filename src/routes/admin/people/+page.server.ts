@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { requireAdmin } from '$lib/server/admin';
 import { fetchAllContent, invalidateContentCache } from '$lib/server/content-service';
+import { movePersonProfile } from '$lib/server/person-profiles';
 
 type MediaRow = {
 	id: number;
@@ -274,6 +275,17 @@ export const actions: Actions = {
 			const { error } = await supabase.from('media_items').update(updates).eq('id', row.id);
 			if (error) return fail(400, { message: error.message });
 			updated += 1;
+		}
+
+		try {
+			await movePersonProfile(supabase as any, { fromName: from, toName: to });
+		} catch (profileError) {
+			return fail(400, {
+				message:
+					profileError instanceof Error
+						? `Media merged, but Instagram profile metadata could not be moved: ${profileError.message}`
+						: 'Media merged, but Instagram profile metadata could not be moved.'
+			});
 		}
 
 		await invalidateContentCache();

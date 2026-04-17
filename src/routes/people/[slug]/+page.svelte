@@ -4,7 +4,14 @@
 	import { get } from 'svelte/store';
 	import { searchQuery, selectedFacets, showPaid, showWatched, sortBy } from '$lib/tv/store';
 
-	let { data } = $props<{ data: { name: string; slug: string; roles: { creator: boolean; athlete: boolean } } }>();
+	let { data } = $props<{
+		data: {
+			name: string;
+			slug: string;
+			roles: { creator: boolean; athlete: boolean };
+			instagramHandles: string[];
+		};
+	}>();
 
 	let previousQuery: string | null = null;
 	let previousFacets: any = null;

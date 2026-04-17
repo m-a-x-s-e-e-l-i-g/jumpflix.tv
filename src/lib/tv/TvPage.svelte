@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount, tick } from 'svelte';
+	import InstagramIcon from '@lucide/svelte/icons/instagram';
 	import LayoutGridIcon from '@lucide/svelte/icons/layout-grid';
 	import ListIcon from '@lucide/svelte/icons/list';
 	import { page } from '$app/stores';
@@ -97,6 +98,7 @@
 		name: string;
 		slug: string;
 		kinds: Array<'creator' | 'athlete'>;
+		instagramHandles: string[];
 	} | null;
 
 	function computeProfileContext(pathname: string, pageData: any): ProfileContext {
@@ -117,10 +119,13 @@
 		}
 		const name = typeof dataName === 'string' && dataName.trim() ? dataName : fallback;
 		const slug = typeof dataSlug === 'string' && dataSlug.trim() ? dataSlug : raw;
+		const instagramHandles = Array.isArray(pageData?.instagramHandles)
+			? pageData.instagramHandles.filter((value: unknown): value is string => typeof value === 'string')
+			: [];
 		const kinds: Array<'creator' | 'athlete'> = [];
 		if (roles?.creator) kinds.push('creator');
 		if (roles?.athlete) kinds.push('athlete');
-		return { name, slug, kinds };
+		return { name, slug, kinds, instagramHandles };
 	}
 
 	type ProfileCreditStats = {
@@ -881,6 +886,21 @@
 								<p class="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
 									{profileBlurb}
 								</p>
+							{/if}
+							{#if profileContext.instagramHandles.length}
+								<div class="mt-4 flex flex-wrap items-center gap-2">
+									{#each profileContext.instagramHandles as handle (handle)}
+										<a
+											href={`https://instagram.com/${handle}`}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-border hover:bg-background"
+										>
+											<InstagramIcon class="size-3.5" />
+											<span>@{handle}</span>
+										</a>
+									{/each}
+								</div>
 							{/if}
 						</div>
 				</div>

@@ -1,4 +1,6 @@
 import type { PageServerLoad } from './$types';
+import { createSupabaseClient } from '$lib/server/supabaseClient';
+import { isMissingPersonProfilesTableError, normalizeInstagramHandles } from '$lib/server/person-profiles';
 import type { ContentItem } from '$lib/tv/types';
 import { slugify } from '$lib/tv/slug';
 import { error, redirect } from '@sveltejs/kit';
@@ -85,6 +87,26 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 		athlete: hasAthlete
 	};
 
+	let instagramHandles: string[] = [];
+	try {
+		const supabase = createSupabaseClient();
+		const { data: profile, error: profileError } = await supabase
+			.from('person_profiles')
+			.select('instagram_handles')
+			.eq('slug', slug)
+			.maybeSingle();
+
+		if (profileError) {
+			if (!isMissingPersonProfilesTableError(profileError)) {
+				console.warn('[people] Failed to load person profile:', profileError.message);
+			}
+		} else {
+			instagramHandles = normalizeInstagramHandles(profile?.instagram_handles ?? []);
+		}
+	} catch (profileError) {
+		console.warn('[people] Failed to initialize person profiles query:', profileError);
+	}
+
 	const isAuthenticated = Boolean((parentData as any)?.session || (parentData as any)?.user);
 	setHeaders({
 		'Cache-Control': isAuthenticated
@@ -93,5 +115,5 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 		Vary: 'Cookie'
 	});
 
-	return { content: filtered, name, slug, roles };
+	return { content: filtered, name, slug, roles, instagramHandles };
 };

@@ -159,6 +159,30 @@ export type Database = {
 					}
 				];
 			};
+			person_profiles: {
+				Row: {
+					slug: string;
+					name: string;
+					instagram_handles: string[];
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					slug: string;
+					name: string;
+					instagram_handles?: string[];
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					slug?: string;
+					name?: string;
+					instagram_handles?: string[];
+					created_at?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 			user_preferences: {
 				Row: {
 					user_id: string;

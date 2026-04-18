@@ -5,6 +5,7 @@
 	import type { ContentItem, Episode } from './types';
 	import { resolveInlinePlaybackSource, resolveMoviePlaybackSource } from './playback-source';
 	import VideoPlayer from '$lib/tv/VideoPlayer.svelte';
+	import * as m from '$lib/paraglide/messages';
 	export let show = false;
 	export let selected: ContentItem | null = null;
 	export let selectedEpisode: Episode | null = null;
@@ -34,7 +35,7 @@
 		  }
 		| { kind: 'message'; text: string };
 
-	const sanitizeTitle = (value?: string | null) => (value?.trim() ? value.trim() : 'Now Playing');
+	const sanitizeTitle = (value?: string | null) => (value?.trim() ? value.trim() : m.tv_nowPlaying());
 
 	function handlePlaybackCompleted(
 		event: CustomEvent<{ mediaId: string | null; mediaType: 'movie' | 'series' | 'episode' }>
@@ -71,16 +72,16 @@
 		if (selectedEpisode) {
 			const episodeId = selectedEpisode.id;
 			if (!episodeId) {
-				return { kind: 'message', text: 'Episode data is still loading…' } satisfies PlayerView;
+				return { kind: 'message', text: m.tv_episodeDataLoading() } satisfies PlayerView;
 			}
 			if (episodeId.startsWith?.('pos:')) {
-				return { kind: 'message', text: 'Fetching episode details…' } satisfies PlayerView;
+				return { kind: 'message', text: m.tv_fetchingEpisodeDetails() } satisfies PlayerView;
 			}
 			// Check if episode has an external URL (for paid content on external providers)
 			if (selectedEpisode.externalUrl) {
 				return {
 					kind: 'message',
-					text: `This episode is only available on its external provider.`
+					text: m.tv_episodeExternalProviderOnly()
 				} satisfies PlayerView;
 			}
 			// Only try to play if there's a video ID (not just a database ID)
@@ -96,7 +97,7 @@
 			}
 			return {
 				kind: 'message',
-				text: 'This episode is not available for inline playback.'
+				text: m.tv_episodeInlinePlaybackUnavailable()
 			} satisfies PlayerView;
 		}
 
@@ -112,17 +113,17 @@
 			}
 			return {
 				kind: 'message',
-				text: 'This movie is only available on its external provider.'
+				text: m.tv_movieExternalProviderOnly()
 			} satisfies PlayerView;
 		}
 
 		if (selected.type === 'series') {
-			return { kind: 'message', text: 'Select an episode to start watching.' } satisfies PlayerView;
+			return { kind: 'message', text: m.tv_selectEpisodeToStartWatching() } satisfies PlayerView;
 		}
 
 		return {
 			kind: 'message',
-			text: 'This content is not available for inline playback yet.'
+			text: m.tv_contentInlinePlaybackUnavailable()
 		} satisfies PlayerView;
 	})();
 
@@ -158,6 +159,7 @@
 		on:click={close}
 		role="dialog"
 		aria-modal="true"
+		aria-label={playerView?.kind === 'video' ? playerView.title : m.tv_nowPlaying()}
 		tabindex="0"
 		on:keydown={(e) => {
 			if (e.key === 'Escape' && !document.fullscreenElement) {
@@ -187,7 +189,7 @@
 			{:else if playerView?.kind === 'message'}
 				<div class="player-fallback"><p>{playerView.text}</p></div>
 			{:else}
-				<div class="player-fallback"><p>Preparing player…</p></div>
+				<div class="player-fallback"><p>{m.tv_preparingPlayer()}</p></div>
 			{/if}
 		</div>
 	</div>

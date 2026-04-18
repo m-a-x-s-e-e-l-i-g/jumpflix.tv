@@ -2720,22 +2720,22 @@
 						class="youtube-fallback-gate"
 						role="dialog"
 						aria-live="assertive"
-						aria-label="YouTube playback requires YouTube"
+						aria-label={m.tv_youtubeGateDialogLabel()}
 					>
 						<div class="youtube-fallback-card" data-jumpflix-gesture-ignore="true">
-							<p class="youtube-fallback-eyebrow">YouTube playback blocked</p>
+							<p class="youtube-fallback-eyebrow">{m.tv_youtubeGateEyebrow()}</p>
 							<h2 class="youtube-fallback-title">
 								{#if youTubeGateMode === 'login'}
-									Open this on YouTube to sign in or verify access
+									{m.tv_youtubeGateTitleLogin()}
 								{:else}
-									This video needs to be opened on YouTube
+									{m.tv_youtubeGateTitleOpen()}
 								{/if}
 							</h2>
 							<p class="youtube-fallback-copy">
 								{#if youTubeGateMode === 'login'}
-									YouTube is asking for sign-in, age verification, or an anti-bot check. Open the video on YouTube, finish that there, then come back and try again.
+									{m.tv_youtubeGateCopyLogin()}
 								{:else}
-									YouTube is not allowing this one to play inside the embedded player right now. Open it on YouTube to keep watching.
+									{m.tv_youtubeGateCopyOpen()}
 								{/if}
 							</p>
 							<div class="youtube-fallback-actions">
@@ -2746,7 +2746,7 @@
 										target="_blank"
 										rel="noopener noreferrer"
 									>
-										Open on YouTube
+										{m.tv_openOnYouTube()}
 									</a>
 								{/if}
 								{#if typeof onClose === 'function'}
@@ -2772,8 +2772,8 @@
 										href={nowPlayingTrackHref}
 										target="_blank"
 										rel="noopener noreferrer"
-										aria-label={`Open on Spotify: ${nowPlayingTrackLabel}`}
-										title="Open on Spotify"
+										aria-label={m.tv_openInSpotifyAria({ label: nowPlayingTrackLabel })}
+										title={m.tv_openInSpotify()}
 									>
 										<span class="now-pill-icon" aria-hidden="true">
 											<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -2788,8 +2788,8 @@
 								{:else}
 									<div
 										class="now-pill now-pill-track-unlinked"
-										aria-label={`Track: ${nowPlayingTrackLabel}`}
-										title="Track (no Spotify link)"
+										aria-label={m.tv_trackNoSpotifyLinkAria({ label: nowPlayingTrackLabel })}
+										title={m.tv_trackNoSpotifyLink()}
 									>
 										<span class="now-pill-text">{nowPlayingTrackLabel}</span>
 									</div>
@@ -2802,6 +2802,7 @@
 								target={nowPlayingSpotHref ? '_blank' : undefined}
 								rel={nowPlayingSpotHref ? 'noopener noreferrer' : undefined}
 								aria-label={m.tv_openOnParkourSpotAria({ label: nowPlayingSpotLabel })}
+								aria-disabled={nowPlayingSpotHref ? undefined : 'true'}
 								title={m.tv_openOnParkourSpot()}
 								data-disabled={nowPlayingSpotHref ? undefined : 'true'}
 								on:click={(e) => {
@@ -2835,7 +2836,7 @@
 								<button
 									type="button"
 									class="player-close-button"
-									aria-label="Close player"
+									aria-label={m.tv_closePlayer()}
 									data-jumpflix-gesture-ignore="true"
 									on:click={onClose}
 								>
@@ -2848,7 +2849,7 @@
 						<media-controls-group class="controls-group scrub">
 							<media-time-slider
 								class="time-slider vds-time-slider vds-slider"
-								aria-label={title ? `Scrub through ${title}` : 'Scrub through video'}
+								aria-label={title ? m.tv_scrubThroughTitle({ title }) : m.tv_scrubThroughVideo()}
 							>
 								<media-slider-chapters class="vds-slider-chapters slider-chapters" aria-hidden="true">
 									<template>
@@ -2869,7 +2870,7 @@
 
 						<div class="controls-row">
 							<media-controls-group class="controls-group left">
-								<media-play-button class="control-button" aria-label="Toggle playback">
+								<media-play-button class="control-button" aria-label={m.tv_togglePlayback()}>
 									<span class="icon icon-play"><PlayIcon /></span>
 									<span class="icon icon-pause"><PauseIcon /></span>
 									<span class="icon icon-replay"><RotateCcwIcon /></span>
@@ -2880,7 +2881,7 @@
 									<media-seek-button
 										class="control-button"
 										seconds={-SKIP_SEEK_SECONDS}
-										aria-label={`Jump back ${SKIP_SEEK_SECONDS} seconds`}
+										aria-label={m.tv_jumpBackSeconds({ seconds: SKIP_SEEK_SECONDS })}
 									>
 										<span class="label">-{SKIP_SEEK_SECONDS}s</span>
 									</media-seek-button>
@@ -2888,7 +2889,7 @@
 									<media-seek-button
 										class="control-button"
 										seconds={SKIP_SEEK_SECONDS}
-										aria-label={`Jump forward ${SKIP_SEEK_SECONDS} seconds`}
+										aria-label={m.tv_jumpForwardSeconds({ seconds: SKIP_SEEK_SECONDS })}
 									>
 										<span class="label">+{SKIP_SEEK_SECONDS}s</span>
 									</media-seek-button>
@@ -2898,12 +2899,12 @@
 									<button
 										type="button"
 										class="control-button control-button-skip-next"
-										aria-label="Skip to next video"
+										aria-label={m.tv_skipNextVideo()}
 										data-jumpflix-gesture-ignore="true"
 										on:click={onSkipNext}
 									>
 										<span class="icon"><SkipForwardIcon /></span>
-										<span class="label">Skip</span>
+										<span class="label">{m.tv_skip()}</span>
 									</button>
 								{/if}
 
@@ -2916,12 +2917,12 @@
 
 							<media-controls-group class="controls-group right">
 								{#if !isMobileViewport}
-									<media-mute-button class="control-button" aria-label="Toggle mute">
+									<media-mute-button class="control-button" aria-label={m.tv_toggleMute()}>
 										<span class="icon icon-muted"><VolumeXIcon /></span>
 										<span class="icon icon-unmuted"><Volume2Icon /></span>
 									</media-mute-button>
 
-									<media-volume-slider class="volume-slider" aria-label="Adjust volume">
+									<media-volume-slider class="volume-slider" aria-label={m.tv_adjustVolume()}>
 										<div class="slider-track" aria-hidden="true">
 											<div class="slider-track-progress"></div>
 											<div class="slider-track-fill"></div>
@@ -2939,7 +2940,7 @@
 								>
 									<media-menu-button
 										class="control-button vds-menu-button"
-										aria-label="Player settings"
+										aria-label={m.tv_playerSettings()}
 										data-jumpflix-gesture-ignore="true"
 									>
 										<span class="icon"><SettingsIcon /></span>
@@ -2954,10 +2955,10 @@
 											<media-menu class="vds-menu player-settings-submenu">
 												<media-menu-button
 													class="vds-menu-item player-settings-submenu-button"
-													aria-label="Video quality"
+													aria-label={m.tv_videoQuality()}
 													data-jumpflix-gesture-ignore="true"
 												>
-													<span class="vds-menu-item-label">Quality</span>
+														<span class="vds-menu-item-label">{m.tv_quality()}</span>
 													<span class="vds-menu-item-hint">{settingsQualityHint}</span>
 													<ChevronRightIcon class="vds-menu-open-icon" />
 													<ChevronLeftIcon class="vds-menu-close-icon" />
@@ -2973,7 +2974,7 @@
 																class="settings-quality-note"
 																data-jumpflix-gesture-ignore="true"
 															>
-																Managed by provider
+																{m.tv_qualityManagedByProvider()}
 															</div>
 														{/if}
 													{#each settingsQualityOptions as option (option.key)}
@@ -3002,13 +3003,13 @@
 											<button
 												type="button"
 												class="vds-menu-item settings-action settings-action-airplay"
-												aria-label="Stream via AirPlay"
+												aria-label={m.tv_streamViaAirPlay()}
 												data-active={settingsAirPlayActive ? '' : undefined}
 												data-jumpflix-gesture-ignore="true"
 												on:click={requestAirPlay}
 											>
 												<span class="icon"><AirplayIcon /></span>
-												<span class="vds-menu-item-label">AirPlay</span>
+												<span class="vds-menu-item-label">{m.tv_airplay()}</span>
 											</button>
 										{/if}
 
@@ -3016,13 +3017,13 @@
 											<button
 												type="button"
 												class="vds-menu-item settings-action settings-action-cast"
-												aria-label="Cast to device"
+												aria-label={m.tv_castToDevice()}
 												data-active={settingsCastActive ? '' : undefined}
 												data-jumpflix-gesture-ignore="true"
 												on:click={requestGoogleCast}
 											>
 												<span class="icon chromecast-icon" aria-hidden="true"></span>
-												<span class="vds-menu-item-label">Chromecast</span>
+												<span class="vds-menu-item-label">{m.tv_chromecast()}</span>
 											</button>
 										{/if}
 									</media-menu-items>
@@ -3048,7 +3049,7 @@
 									/>
 								{/if}
 
-								<media-fullscreen-button class="control-button" aria-label="Toggle fullscreen">
+								<media-fullscreen-button class="control-button" aria-label={m.tv_toggleFullscreen()}>
 									<span class="icon icon-enter"><Maximize2Icon /></span>
 									<span class="icon icon-exit"><Minimize2Icon /></span>
 								</media-fullscreen-button>
@@ -3060,7 +3061,7 @@
 	{/key}
 {:else}
 	<div class="player-loader" role="status" aria-live="polite">
-		<span>Loading player…</span>
+		<span>{m.tv_loadingPlayer()}</span>
 	</div>
 {/if}
 
@@ -3070,6 +3071,22 @@
 		block-size: 100%;
 		background: #000;
 		position: relative;
+		--player-surface: color-mix(in oklch, var(--card) 74%, transparent);
+		--player-surface-strong: color-mix(in oklch, var(--card) 88%, var(--background) 12%);
+		--player-surface-soft: color-mix(in oklch, var(--background) 64%, transparent);
+		--player-border: color-mix(in oklch, var(--foreground) 16%, transparent);
+		--player-border-strong: color-mix(in oklch, var(--foreground) 28%, transparent);
+		--player-primary-soft: color-mix(in oklch, var(--primary) 18%, transparent);
+		--player-primary-soft-strong: color-mix(in oklch, var(--primary) 28%, transparent);
+		--player-primary-border: color-mix(in oklch, var(--primary) 46%, transparent);
+		--player-primary-text: color-mix(in oklch, var(--primary-foreground) 96%, transparent);
+		--player-text: color-mix(in oklch, var(--foreground) 96%, transparent);
+		--player-text-muted: color-mix(in oklch, var(--muted-foreground) 88%, transparent);
+		--player-shadow: 0 20px 48px -30px rgba(2, 6, 23, 0.92);
+		--player-shadow-soft: 0 14px 34px -24px rgba(2, 6, 23, 0.88);
+		--player-focus-ring:
+			0 0 0 2px color-mix(in oklch, var(--background) 78%, transparent),
+			0 0 0 4px color-mix(in oklch, var(--primary) 32%, transparent);
 	}
 
 	:global(media-player.vidstack-player) {
@@ -3300,8 +3317,10 @@
 		gap: 0.9rem;
 		padding: 1.25rem;
 		border-radius: 1.25rem;
-		border: 1px solid rgba(248, 113, 113, 0.28);
-		background: rgba(15, 23, 42, 0.94);
+		border: 1px solid color-mix(in oklch, var(--primary) 24%, var(--foreground) 10%);
+		background:
+			radial-gradient(120% 110% at 12% 0%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 62%),
+			var(--player-surface-strong);
 		box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
 	}
 
@@ -3326,7 +3345,7 @@
 		margin: 0;
 		font-size: 0.96rem;
 		line-height: 1.55;
-		color: rgba(255, 237, 213, 0.84);
+		color: color-mix(in oklch, var(--foreground) 84%, transparent);
 	}
 
 	.youtube-fallback-actions {
@@ -3349,21 +3368,28 @@
 		text-decoration: none;
 		cursor: pointer;
 		transition:
-			transform 140ms ease,
-			background 140ms ease,
-			border-color 140ms ease;
+			transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			background 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			color 180ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	.youtube-fallback-primary {
-		border: 1px solid rgba(248, 113, 113, 0.5);
-		background: linear-gradient(135deg, rgba(220, 38, 38, 0.95), rgba(249, 115, 22, 0.95));
-		color: white;
+		border: 1px solid var(--player-primary-border);
+		background: linear-gradient(
+			135deg,
+			color-mix(in oklch, var(--primary) 88%, black 12%),
+			color-mix(in oklch, var(--chart-5) 72%, var(--primary) 28%)
+		);
+		color: var(--player-primary-text);
+		box-shadow: 0 16px 38px -26px color-mix(in oklch, var(--primary) 55%, transparent);
 	}
 
 	.youtube-fallback-secondary {
-		border: 1px solid rgba(148, 163, 184, 0.32);
-		background: rgba(30, 41, 59, 0.75);
-		color: rgba(226, 232, 240, 0.96);
+		border: 1px solid var(--player-border);
+		background: color-mix(in oklch, var(--background) 72%, transparent);
+		color: var(--player-text);
 	}
 
 	.youtube-fallback-primary:hover,
@@ -3371,12 +3397,18 @@
 	.youtube-fallback-secondary:hover,
 	.youtube-fallback-secondary:focus-visible {
 		transform: translateY(-1px);
+		box-shadow: var(--player-shadow-soft);
+	}
+
+	.youtube-fallback-primary:active,
+	.youtube-fallback-secondary:active {
+		transform: translateY(0) scale(0.98);
 	}
 
 	.youtube-fallback-primary:focus-visible,
 	.youtube-fallback-secondary:focus-visible {
-		outline: 2px solid rgba(255, 255, 255, 0.3);
-		outline-offset: 2px;
+		outline: none;
+		box-shadow: var(--player-focus-ring), var(--player-shadow-soft);
 	}
 
 	.touch-skip-feedback-layer {
@@ -3397,10 +3429,10 @@
 		min-inline-size: clamp(5.5rem, 18vw, 7rem);
 		padding: 0.9rem 1rem;
 		border-radius: 1.35rem;
-		background: rgba(2, 6, 23, 0.78);
-		border: 1px solid rgba(148, 163, 184, 0.24);
+		background: color-mix(in oklch, var(--background) 78%, transparent);
+		border: 1px solid var(--player-border);
 		backdrop-filter: blur(10px);
-		color: #f8fafc;
+		color: var(--player-text);
 		transform: translateY(-50%);
 		animation: touch-skip-feedback-pop 700ms cubic-bezier(0.22, 1, 0.36, 1);
 	}
@@ -3462,12 +3494,19 @@
 		justify-content: flex-end;
 		opacity: 1;
 		pointer-events: auto;
-		transition: opacity 160ms ease-in-out;
+		transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
 		z-index: 2;
 	}
 
 	.player-controls::before {
-		content: none;
+		content: '';
+		position: absolute;
+		inset: 0;
+		background:
+			linear-gradient(180deg, transparent 46%, color-mix(in oklch, var(--background) 14%, transparent) 64%, color-mix(in oklch, var(--background) 68%, transparent) 100%),
+			radial-gradient(120% 80% at 50% 100%, color-mix(in oklch, var(--foreground) 7%, transparent), transparent 72%);
+		pointer-events: none;
+		z-index: 0;
 	}
 
 	.player-controls[data-hidden] {
@@ -3494,19 +3533,22 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		inline-size: clamp(2.25rem, 2.9vw, 2.75rem);
-		block-size: clamp(2.25rem, 2.9vw, 2.75rem);
+		inline-size: clamp(2.75rem, 2.9vw, 3rem);
+		block-size: clamp(2.75rem, 2.9vw, 3rem);
 		border-radius: 999px;
-		border: 1px solid rgba(148, 163, 184, 0.4);
-		background: rgba(10, 16, 40, 0.6);
-		color: #f1f5f9;
+		border: 1px solid var(--player-border);
+		background: var(--player-surface-soft);
+		color: var(--player-text);
 		transition:
-			background 140ms ease,
-			border-color 140ms ease,
-			transform 140ms ease,
-			color 140ms ease;
+			background 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
 		cursor: pointer;
-		box-shadow: 0 12px 28px rgba(10, 16, 40, 0.35);
+		box-shadow: var(--player-shadow-soft);
+		backdrop-filter: blur(14px) saturate(112%);
+		-webkit-backdrop-filter: blur(14px) saturate(112%);
 	}
 
 	.player-close-button .icon {
@@ -3522,16 +3564,22 @@
 
 	.player-close-button:hover,
 	.player-close-button:focus-visible {
-		background: rgba(46, 120, 255, 0.55);
-		border-color: rgba(180, 217, 255, 0.75);
+		background: linear-gradient(
+			180deg,
+			var(--player-primary-soft-strong),
+			color-mix(in oklch, var(--card) 82%, transparent)
+		);
+		border-color: var(--player-primary-border);
 		transform: translateY(-1px);
 	}
 
 	.player-close-button:focus-visible {
 		outline: none;
-		box-shadow:
-			0 0 0 2px rgba(24, 36, 84, 0.9),
-			0 0 0 4px rgba(104, 183, 255, 0.6);
+		box-shadow: var(--player-focus-ring), var(--player-shadow-soft);
+	}
+
+	.player-close-button:active {
+		transform: translateY(0) scale(0.98);
 	}
 
 	.controls-surface {
@@ -3547,11 +3595,13 @@
 		position: absolute;
 		top: max(0.75rem, env(safe-area-inset-top, 0px));
 		left: max(0.75rem, env(safe-area-inset-left, 0px));
+		right: max(0.75rem, env(safe-area-inset-right, 0px));
 		display: flex;
 		justify-content: flex-start;
 		flex-wrap: wrap;
 		gap: 0.5rem;
 		padding: 0;
+		max-inline-size: min(42rem, calc(100% - 5.75rem));
 		pointer-events: none;
 		z-index: 5;
 	}
@@ -3560,25 +3610,45 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.45rem;
-		max-width: min(100%, 42rem);
-		padding: 0.25rem 0.65rem;
+		max-width: min(100%, 36rem);
+		padding: 0.35rem 0.72rem;
 		border-radius: 999px;
-		border: 1px solid rgba(148, 163, 184, 0.25);
-		background: rgba(10, 16, 40, 0.55);
-		color: rgba(248, 250, 252, 0.9);
+		border: 1px solid var(--player-border);
+		background: color-mix(in oklch, var(--background) 70%, transparent);
+		color: var(--player-text);
 		font-size: 0.75rem;
 		line-height: 1.1;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		box-shadow: 0 10px 30px rgba(10, 16, 40, 0.25);
+		box-shadow: var(--player-shadow-soft);
 		text-decoration: none;
 		pointer-events: auto;
 		cursor: pointer;
+		backdrop-filter: blur(14px) saturate(112%);
+		-webkit-backdrop-filter: blur(14px) saturate(112%);
+		transition:
+			transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			background 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			color 180ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-	.now-pill:hover {
-		background: rgba(10, 16, 40, 0.7);
+	.now-pill:hover,
+	.now-pill:focus-visible {
+		background: color-mix(in oklch, var(--card) 78%, transparent);
+		border-color: var(--player-border-strong);
+		transform: translateY(-1px);
+	}
+
+	.now-pill:focus-visible {
+		outline: none;
+		box-shadow: var(--player-focus-ring), var(--player-shadow-soft);
+	}
+
+	.now-pill:active {
+		transform: translateY(0) scale(0.98);
 	}
 
 	.now-pill[data-disabled='true'] {
@@ -3587,31 +3657,33 @@
 	}
 
 	.now-pill-track {
-		border-color: rgba(29, 185, 84, 0.35);
-		background: rgba(29, 185, 84, 0.12);
-		color: #1db954;
+		border-color: color-mix(in oklch, #1db954 34%, var(--foreground) 10%);
+		background: color-mix(in oklch, #1db954 14%, transparent);
+		color: color-mix(in oklch, #1db954 82%, white 18%);
 	}
 
-	.now-pill-track:hover {
-		background: rgba(29, 185, 84, 0.18);
+	.now-pill-track:hover,
+	.now-pill-track:focus-visible {
+		background: color-mix(in oklch, #1db954 18%, transparent);
 	}
 
 	.now-pill-track-unlinked {
-		border-color: rgba(29, 185, 84, 0.2);
-		background: rgba(29, 185, 84, 0.06);
-		color: rgba(29, 185, 84, 0.55);
+		border-color: color-mix(in oklch, #1db954 20%, transparent);
+		background: color-mix(in oklch, #1db954 8%, transparent);
+		color: color-mix(in oklch, #1db954 58%, transparent);
 		cursor: default;
 		pointer-events: none;
 	}
 
 	.now-pill-spot {
-		border-color: rgba(142, 207, 242, 0.35);
-		background: rgba(142, 207, 242, 0.12);
-		color: #8ecff2;
+		border-color: color-mix(in oklch, #8ecff2 34%, var(--foreground) 10%);
+		background: color-mix(in oklch, #8ecff2 14%, transparent);
+		color: color-mix(in oklch, #8ecff2 82%, white 18%);
 	}
 
-	.now-pill-spot:hover {
-		background: rgba(142, 207, 242, 0.18);
+	.now-pill-spot:hover,
+	.now-pill-spot:focus-visible {
+		background: color-mix(in oklch, #8ecff2 18%, transparent);
 	}
 
 	.now-pill-icon {
@@ -3696,33 +3768,42 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.35rem;
-		inline-size: clamp(2.5rem, 3.2vw, 2.9rem);
-		block-size: clamp(2.5rem, 3.2vw, 2.9rem);
+		inline-size: clamp(2.75rem, 3.2vw, 3rem);
+		block-size: clamp(2.75rem, 3.2vw, 3rem);
 		border-radius: 0.85rem;
-		border: 1px solid rgba(126, 160, 255, 0.25);
-		background: rgba(10, 16, 40, 0.65);
-		color: #f8fafc;
+		border: 1px solid var(--player-border);
+		background: var(--player-surface-soft);
+		color: var(--player-text);
 		transition:
-			background 140ms ease,
-			transform 140ms ease,
-			border-color 140ms ease,
-			color 140ms ease;
+			background 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
 		cursor: pointer;
-		box-shadow: 0 10px 30px rgba(10, 16, 40, 0.35);
+		box-shadow: var(--player-shadow-soft);
+		backdrop-filter: blur(14px) saturate(112%);
+		-webkit-backdrop-filter: blur(14px) saturate(112%);
 	}
 
 	.control-button:hover,
 	.control-button:focus-visible {
-		background: rgba(46, 120, 255, 0.55);
-		border-color: rgba(180, 217, 255, 0.75);
+		background: linear-gradient(
+			180deg,
+			var(--player-primary-soft-strong),
+			color-mix(in oklch, var(--card) 82%, transparent)
+		);
+		border-color: var(--player-primary-border);
 		transform: translateY(-1px);
 	}
 
 	.control-button:focus-visible {
 		outline: none;
-		box-shadow:
-			0 0 0 2px rgba(24, 36, 84, 0.9),
-			0 0 0 4px rgba(104, 183, 255, 0.6);
+		box-shadow: var(--player-focus-ring), var(--player-shadow-soft);
+	}
+
+	.control-button:active {
+		transform: translateY(0) scale(0.98);
 	}
 
 	.control-button .icon {
@@ -3763,8 +3844,12 @@
 
 	:global(media-airplay-button.control-button[data-active]),
 	:global(media-google-cast-button.control-button[data-active]) {
-		background: rgba(46, 120, 255, 0.55);
-		border-color: rgba(180, 217, 255, 0.75);
+		background: linear-gradient(
+			180deg,
+			var(--player-primary-soft-strong),
+			color-mix(in oklch, var(--card) 82%, transparent)
+		);
+		border-color: var(--player-primary-border);
 	}
 
 	:global(.player-settings-menu) {
@@ -3772,23 +3857,27 @@
 	}
 
 	:global(.player-settings-menu .vds-menu-button.control-button[aria-expanded='true']) {
-		background: rgba(46, 120, 255, 0.55);
-		border-color: rgba(180, 217, 255, 0.75);
+		background: linear-gradient(
+			180deg,
+			var(--player-primary-soft-strong),
+			color-mix(in oklch, var(--card) 82%, transparent)
+		);
+		border-color: var(--player-primary-border);
 	}
 
 	:global(.player-settings-menu .player-settings-menu-items),
 	:global(.player-settings-menu .player-settings-submenu-items) {
-		--media-menu-bg: rgba(10, 16, 40, 0.92);
-		--media-menu-border: 1px solid rgba(126, 160, 255, 0.24);
+		--media-menu-bg: color-mix(in oklch, var(--card) 90%, var(--background) 10%);
+		--media-menu-border: 1px solid var(--player-border);
 		--media-menu-border-radius: 1rem;
-		--media-menu-box-shadow: 0 18px 40px rgba(10, 16, 40, 0.45);
-		--media-menu-item-hover-bg: rgba(46, 120, 255, 0.22);
+		--media-menu-box-shadow: var(--player-shadow);
+		--media-menu-item-hover-bg: var(--player-primary-soft);
 		--media-menu-item-border-radius: 0.8rem;
 		--media-menu-item-padding: 0.8rem 0.9rem;
-		--media-menu-text-color: #f8fafc;
-		--media-menu-hint-color: rgba(216, 233, 255, 0.72);
-		--media-menu-divider: 1px solid rgba(126, 160, 255, 0.18);
-		--media-menu-scrollbar-thumb-bg: rgba(126, 160, 255, 0.24);
+		--media-menu-text-color: var(--player-text);
+		--media-menu-hint-color: color-mix(in oklch, var(--muted-foreground) 84%, transparent);
+		--media-menu-divider: 1px solid color-mix(in oklch, var(--foreground) 12%, transparent);
+		--media-menu-scrollbar-thumb-bg: color-mix(in oklch, var(--foreground) 20%, transparent);
 		overflow-x: hidden;
 		backdrop-filter: blur(18px);
 	}
@@ -3856,7 +3945,7 @@
 		padding: 0.35rem 1.15rem 0.55rem;
 		font-size: 0.76rem;
 		line-height: 1.35;
-		color: rgba(216, 233, 255, 0.62);
+		color: var(--player-text-muted);
 		letter-spacing: 0.01em;
 	}
 
@@ -3876,7 +3965,7 @@
 	:global(.player-settings-menu .settings-quality-option[data-checked]),
 	:global(.player-settings-menu .settings-action-airplay[data-active]),
 	:global(.player-settings-menu .settings-action-cast[data-active]) {
-		background-color: rgba(46, 120, 255, 0.22);
+		background-color: var(--player-primary-soft);
 	}
 
 	:global(.player-settings-menu .settings-quality-option[data-readonly]) {
@@ -3894,6 +3983,27 @@
 	:global(.player-settings-menu .settings-quality-option) {
 		border: 0;
 		outline: none;
+		transition:
+			background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	:global(.player-settings-menu .settings-action:hover),
+	:global(.player-settings-menu .settings-action:focus-visible),
+	:global(.player-settings-menu .settings-quality-option:hover),
+	:global(.player-settings-menu .settings-quality-option:focus-visible) {
+		background-color: color-mix(in oklch, var(--primary) 16%, transparent);
+	}
+
+	:global(.player-settings-menu .settings-action:focus-visible),
+	:global(.player-settings-menu .settings-quality-option:focus-visible) {
+		box-shadow: inset 0 0 0 1px var(--player-primary-border);
+	}
+
+	:global(.player-settings-menu .settings-action:active),
+	:global(.player-settings-menu .settings-quality-option:active) {
+		transform: scale(0.99);
 	}
 
 	:global(.control-button svg) {
@@ -3933,7 +4043,7 @@
 		font-size: 0.7rem;
 		font-weight: 600;
 		letter-spacing: 0.04em;
-		color: rgba(226, 232, 240, 0.85);
+		color: var(--player-text-muted);
 	}
 
 	.time-display {
@@ -3942,7 +4052,7 @@
 		gap: 0.35rem;
 		font-variant-numeric: tabular-nums;
 		font-size: clamp(0.85rem, 1.3vw, 1rem);
-		color: rgba(226, 232, 240, 0.9);
+		color: var(--player-text);
 	}
 
 	.time-divider {
@@ -4042,7 +4152,7 @@
 		position: relative;
 		inline-size: 100%;
 		block-size: var(--media-slider-track-height, 6px);
-		background: rgba(148, 163, 215, 0.25);
+		background: color-mix(in oklch, var(--foreground) 18%, transparent);
 		border-radius: 999px;
 		overflow: hidden;
 		pointer-events: none;
@@ -4062,7 +4172,7 @@
 		left: 0;
 		transform: none !important;
 		inline-size: var(--slider-progress, 0%);
-		background: rgba(255, 255, 255, 0.28);
+		background: color-mix(in oklch, var(--foreground) 26%, transparent);
 		z-index: 1;
 	}
 
@@ -4081,7 +4191,11 @@
 		left: 0;
 		transform: none !important;
 		inline-size: var(--slider-fill, 0%);
-		background: linear-gradient(90deg, #60a5fa 0%, #c084fc 100%);
+		background: linear-gradient(
+			90deg,
+			color-mix(in oklch, var(--primary) 84%, white 16%) 0%,
+			color-mix(in oklch, var(--chart-5) 72%, white 28%) 100%
+		);
 		z-index: 2;
 	}
 
@@ -4105,26 +4219,30 @@
 		inline-size: var(--media-slider-thumb-size, 16px);
 		block-size: var(--media-slider-thumb-size, 16px);
 		border-radius: 999px;
-		background: #ffffff;
-		border: 1px solid rgba(15, 23, 42, 0.35);
-		box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.18);
+		background: var(--player-text);
+		border: 1px solid color-mix(in oklch, var(--background) 42%, transparent);
+		box-shadow: 0 0 0 6px color-mix(in oklch, var(--primary) 22%, transparent);
 		transform: translate(-50%, -50%);
 		inset-inline-start: var(--slider-fill, 0%);
 		inset-block-start: 50%;
 		pointer-events: none;
 		z-index: 3;
 		opacity: 0;
-		transition: opacity 200ms ease-in-out;
+		transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 	:global(media-time-slider.time-slider [part='track']) {
-		background: rgba(148, 163, 215, 0.45);
+		background: color-mix(in oklch, var(--foreground) 22%, transparent);
 		height: var(--media-slider-track-height);
 		border-radius: 999px;
 		overflow: hidden;
 	}
 
 	:global(media-time-slider.time-slider [part='track-fill']) {
-		background: linear-gradient(90deg, #60a5fa 0%, #c084fc 100%);
+		background: linear-gradient(
+			90deg,
+			color-mix(in oklch, var(--primary) 84%, white 16%) 0%,
+			color-mix(in oklch, var(--chart-5) 72%, white 28%) 100%
+		);
 		inset: 0 !important;
 		top: 0 !important;
 		bottom: 0 !important;
@@ -4133,7 +4251,7 @@
 	}
 
 	:global(media-time-slider.time-slider [part='track-progress']) {
-		background: rgba(255, 255, 255, 0.28);
+		background: color-mix(in oklch, var(--foreground) 26%, transparent);
 		inset: 0 !important;
 		top: 0 !important;
 		bottom: 0 !important;
@@ -4145,11 +4263,11 @@
 		width: 16px;
 		height: 16px;
 		border-radius: 999px;
-		background: #ffffff;
-		border: 1px solid rgba(15, 23, 42, 0.4);
-		box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.18);
+		background: var(--player-text);
+		border: 1px solid color-mix(in oklch, var(--background) 42%, transparent);
+		box-shadow: 0 0 0 6px color-mix(in oklch, var(--primary) 22%, transparent);
 		opacity: 0;
-		transition: opacity 200ms ease-in-out;
+		transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	:global(media-time-slider.time-slider[data-pointing] [part='thumb']) {
@@ -4157,22 +4275,22 @@
 	}
 
 	:global(media-slider-preview.slider-preview) {
-		background: rgba(15, 23, 42, 0.9);
+		background: var(--player-surface-strong);
 		border-radius: 0.5rem;
-		border: 1px solid rgba(148, 163, 184, 0.4);
+		border: 1px solid var(--player-border);
 		padding: 0.25rem 0.6rem;
-		box-shadow: 0 12px 24px rgba(10, 16, 36, 0.35);
+		box-shadow: var(--player-shadow-soft);
 		display: flex;
 		flex-direction: column;
 		gap: 0.15rem;
 		opacity: 0;
-		transition: opacity 200ms ease-in-out;
+		transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	:global(media-slider-preview.slider-preview [data-part='chapter-title']) {
 		font-size: 0.75rem;
 		line-height: 1.1;
-		color: rgba(255, 255, 255, 0.9);
+		color: var(--player-text);
 		max-width: 18rem;
 		white-space: nowrap;
 		overflow: hidden;
@@ -4189,18 +4307,22 @@
 		--media-slider-track-fill-height: var(--media-slider-track-height);
 		--media-slider-track-progress-height: var(--media-slider-track-height);
 		--media-slider-thumb-size: 14px;
-		--media-slider-track-bg: rgba(148, 163, 215, 0.3);
-		--media-slider-track-fill-bg: linear-gradient(90deg, #facc15 0%, #f97316 100%);
-		--media-slider-thumb-bg: #ffffff;
-		--media-slider-thumb-border: 1px solid rgba(15, 23, 42, 0.35);
+		--media-slider-track-bg: color-mix(in oklch, var(--foreground) 20%, transparent);
+		--media-slider-track-fill-bg: linear-gradient(
+			90deg,
+			color-mix(in oklch, var(--chart-3) 82%, white 18%) 0%,
+			color-mix(in oklch, var(--chart-5) 70%, white 30%) 100%
+		);
+		--media-slider-thumb-bg: var(--player-text);
+		--media-slider-thumb-border: 1px solid color-mix(in oklch, var(--background) 42%, transparent);
 		inline-size: clamp(110px, 12vw, 160px);
 		position: relative;
 	}
 
 	:global(media-volume-slider.volume-slider .vds-slider-thumb) {
-		box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.18);
+		box-shadow: 0 0 0 5px color-mix(in oklch, var(--chart-3) 24%, transparent);
 		opacity: 0;
-		transition: opacity 200ms ease-in-out;
+		transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	:global(media-volume-slider.volume-slider[data-pointing] .vds-slider-thumb) {
@@ -4227,12 +4349,48 @@
 	}
 
 	:global(media-volume-slider.volume-slider .vds-slider-preview) {
-		background: rgba(15, 23, 42, 0.9);
-		border: 1px solid rgba(148, 163, 184, 0.35);
+		background: var(--player-surface-strong);
+		border: 1px solid var(--player-border);
 		border-radius: 0.45rem;
 		padding: 0.2rem 0.5rem;
 		opacity: 0;
-		transition: opacity 200ms ease-in-out;
+		transition: opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.player-controls,
+		.player-close-button,
+		.now-pill,
+		.control-button,
+		.youtube-fallback-primary,
+		.youtube-fallback-secondary,
+		:global(.player-settings-menu .settings-action),
+		:global(.player-settings-menu .settings-quality-option),
+		.time-slider .slider-thumb,
+		.volume-slider .slider-thumb,
+		:global(media-time-slider.time-slider [part='thumb']),
+		:global(media-slider-preview.slider-preview),
+		:global(media-volume-slider.volume-slider .vds-slider-thumb),
+		:global(media-volume-slider.volume-slider .vds-slider-preview) {
+			transition: none;
+		}
+
+		.touch-skip-feedback {
+			animation: none;
+		}
+
+		.player-close-button:hover,
+		.player-close-button:focus-visible,
+		.now-pill:hover,
+		.now-pill:focus-visible,
+		.control-button:hover,
+		.control-button:focus-visible,
+		.youtube-fallback-primary:hover,
+		.youtube-fallback-primary:focus-visible,
+		.youtube-fallback-secondary:hover,
+		.youtube-fallback-secondary:focus-visible {
+			transform: none;
+		}
 	}
 
 	:global(media-volume-slider.volume-slider .vds-slider-preview[data-visible]) {
@@ -4274,6 +4432,17 @@
 			aspect-ratio: auto;
 		}
 
+		.now-pills {
+			top: calc(max(0.65rem, env(safe-area-inset-top, 0px)) + 3rem);
+			left: 0.65rem;
+			right: 0.65rem;
+			max-inline-size: calc(100% - 1.3rem);
+		}
+
+		.now-pill {
+			max-width: 100%;
+		}
+
 		.player-controls {
 			padding: 0.65rem;
 		}
@@ -4290,8 +4459,8 @@
 		}
 
 		.player-close-button {
-			inline-size: 2.35rem;
-			block-size: 2.35rem;
+			inline-size: 2.75rem;
+			block-size: 2.75rem;
 		}
 
 		.controls-group.left {
@@ -4307,9 +4476,9 @@
 
 		.control-button {
 			inline-size: auto;
-			min-inline-size: 2.55rem;
+			min-inline-size: 2.75rem;
 			padding-inline: 0.6rem;
-			block-size: 2.55rem;
+			block-size: 2.75rem;
 			border-radius: 0.75rem;
 		}
 

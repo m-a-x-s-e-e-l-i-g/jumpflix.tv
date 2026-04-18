@@ -3,7 +3,7 @@
 	import { dev } from '$app/environment';
 	import { Image } from '@unpic/svelte';
 	import * as m from '$lib/paraglide/messages';
-	import type { ContentItem } from '$lib/tv/types';
+	import type { ContentItem, Movie, Series } from '$lib/tv/types';
 	import { isImage, keyFor } from '$lib/tv/utils';
 	import {
 		getLatestWatchProgressByBaseId,
@@ -23,6 +23,21 @@
 		onSelect: (item: ContentItem) => void;
 	} = $props();
 
+	const UNRATED = '__unrated__';
+
+	function getCreators(item: ContentItem): string[] {
+		return Array.isArray(item.creators) ? item.creators : [];
+	}
+
+	function getStarring(item: ContentItem): string[] {
+		return Array.isArray(item.starring) ? item.starring : [];
+	}
+
+	function getEpisodeCount(item: Series): number | null {
+		const count = Number(item.episodeCount);
+		return Number.isFinite(count) && count > 0 ? Math.floor(count) : null;
+	}
+
 	type RowWatchState = {
 		isWatched: boolean;
 		hasProgress: boolean;
@@ -30,31 +45,43 @@
 	};
 
 	function metaParts(item: ContentItem): string[] {
-		const parts: string[] = [item.type === 'movie' ? 'Movie' : 'Series'];
+		const parts: string[] = [item.type === 'movie' ? m.tv_pillFilm() : m.tv_pillSeries()];
 		if (item.type === 'movie' && item.year) parts.push(item.year);
 		if (item.type === 'movie' && item.duration) parts.push(item.duration);
 		if (item.type === 'series') {
-			const count = Number((item as any)?.episodeCount);
-			if (Number.isFinite(count) && count > 0) {
-				parts.push(`${Math.floor(count)} eps`);
-			}
+			const count = getEpisodeCount(item);
+			if (count) parts.push(m.tv_episodeCount({ count: String(count) }));
 		}
 		return parts;
 	}
 
 	function peopleLine(item: ContentItem): string | null {
-		const creators = Array.isArray((item as any)?.creators) ? ((item as any).creators as string[]) : [];
-		const starring = Array.isArray((item as any)?.starring) ? ((item as any).starring as string[]) : [];
+		const creators = getCreators(item);
+		const starring = getStarring(item);
 		const parts: string[] = [];
-		if (creators.length) parts.push(`Creators: ${creators.join(', ')}`);
-		if (starring.length) parts.push(`Athletes: ${starring.join(', ')}`);
+		if (creators.length) parts.push(`${m.tv_creators()}: ${creators.join(', ')}`);
+		if (starring.length) parts.push(`${m.tv_starring()}: ${starring.join(', ')}`);
 		return parts.length ? parts.join('  •  ') : null;
 	}
 
 	function ratingLabel(item: ContentItem): string {
 		const ratingValue = typeof item.averageRating === 'number' ? item.averageRating : null;
 		const ratingCount = typeof item.ratingCount === 'number' ? item.ratingCount : 0;
-		return ratingValue !== null && ratingCount > 0 ? `${ratingValue.toFixed(1)} (${ratingCount})` : 'No ratings';
+		return ratingValue !== null && ratingCount > 0
+			? `${ratingValue.toFixed(1)} (${ratingCount})`
+			: UNRATED;
+	}
+
+	function ratingText(label: string): string {
+		return label === UNRATED ? m.tv_noRatings() : label;
+	}
+
+	function rowAriaLabel(item: ContentItem, watchState: RowWatchState, rating: string): string {
+		const parts = [item.title, ...metaParts(item)];
+		if (watchState.isWatched) parts.push(m.tv_showWatched());
+		if (watchState.hasProgress) parts.push(`${m.tv_continue()} ${watchState.progressPercent}%`);
+		parts.push(ratingText(rating));
+		return parts.join(' • ');
 	}
 
 	const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -130,17 +157,23 @@
 	{:else}
 		<div bind:this={listElement} class="catalog-list">
 			{#each visibleContent as item (keyFor(item))}
+				{@const itemKey = keyFor(item)}
 				{@const watchState = watchStates.get(keyFor(item)) ?? {
 					isWatched: false,
 					hasProgress: false,
 					progressPercent: 0
 				}}
 				{@const itemRating = ratingLabel(item)}
-				{@const hasRating = itemRating !== 'No ratings'}
+				{@const hasRating = itemRating !== UNRATED}
+				{@const peopleSummary = peopleLine(item)}
+				{@const rowSelected = !!(selectedContent && selectedContent.id === item.id && selectedContent.type === item.type)}
 				<button
 					type="button"
-					class:selected={!!(selectedContent && selectedContent.id === item.id && selectedContent.type === item.type)}
+					class:selected={rowSelected}
 					class="catalog-row"
+					aria-pressed={rowSelected}
+					aria-label={rowAriaLabel(item, watchState, itemRating)}
+					data-item-key={itemKey}
 					onclick={() => onSelect(item)}
 				>
 					<div class="catalog-thumb">
@@ -163,7 +196,7 @@
 					<div class="catalog-body">
 						<div class="catalog-header-row">
 							<h3 class="catalog-title">{item.title}</h3>
-							<div class="catalog-meta">{metaParts(item).join(' • ')}</div>
+							<div class="catalog-meta jf-label">{metaParts(item).join(' • ')}</div>
 						</div>
 
 						<div class="catalog-badges">
@@ -186,8 +219,8 @@
 							<p class="catalog-description">{item.description}</p>
 						{/if}
 
-						{#if peopleLine(item)}
-							<p class="catalog-people">{peopleLine(item)}</p>
+						{#if peopleSummary}
+							<p class="catalog-people">{peopleSummary}</p>
 						{/if}
 
 						{#if watchState.hasProgress}
@@ -201,7 +234,7 @@
 
 					<div class="catalog-side">
 						<span class:catalog-rating--empty={!hasRating} class="catalog-rating">
-							★ {itemRating}
+							★ {ratingText(itemRating)}
 						</span>
 					</div>
 				</button>
@@ -212,6 +245,30 @@
 
 <style>
 	.catalog-shell {
+		--catalog-border: color-mix(in oklch, var(--foreground) 12%, transparent);
+		--catalog-border-strong: color-mix(in oklch, var(--foreground) 20%, transparent);
+		--catalog-row-bg: linear-gradient(
+			145deg,
+			color-mix(in oklch, var(--card) 68%, var(--background) 32%),
+			color-mix(in oklch, var(--background) 88%, var(--card) 12%)
+		);
+		--catalog-row-bg-hover: linear-gradient(
+			145deg,
+			color-mix(in oklch, var(--card) 82%, var(--background) 18%),
+			color-mix(in oklch, var(--background) 72%, var(--card) 28%)
+		);
+		--catalog-row-bg-selected: linear-gradient(
+			145deg,
+			color-mix(in oklch, var(--card) 78%, var(--primary) 22%),
+			color-mix(in oklch, var(--background) 70%, var(--card) 30%)
+		);
+		--catalog-row-shadow: 0 18px 42px -30px rgba(2, 6, 23, 0.92);
+		--catalog-row-shadow-hover: 0 24px 52px -34px rgba(2, 6, 23, 0.96);
+		--catalog-primary-soft: color-mix(in oklch, var(--primary) 18%, transparent);
+		--catalog-primary-border: color-mix(in oklch, var(--primary) 48%, transparent);
+		--catalog-muted-soft: color-mix(in oklch, var(--muted-foreground) 14%, transparent);
+		--catalog-gold-soft: color-mix(in oklch, var(--chart-3) 18%, transparent);
+		--catalog-gold-border: color-mix(in oklch, var(--chart-3) 34%, transparent);
 		position: relative;
 		z-index: 20;
 		margin: 0;
@@ -221,51 +278,61 @@
 	.catalog-list {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
+		gap: 0.9rem;
 	}
 
 	.catalog-row {
 		display: grid;
 		grid-template-columns: 7rem minmax(0, 1fr) 9.5rem;
-		gap: 1rem;
-		align-items: center;
+		gap: 1rem 1.25rem;
+		align-items: stretch;
 		width: 100%;
-		border-radius: 1.25rem;
-		border: 1px solid rgba(148, 163, 184, 0.18);
-		background: rgba(8, 12, 24, 0.6);
-		padding: 0.9rem;
+		border-radius: calc(var(--radius) + 0.45rem);
+		border: 1px solid var(--catalog-border);
+		background: var(--catalog-row-bg);
+		box-shadow: var(--catalog-row-shadow);
+		padding: 1rem;
 		text-align: left;
 		color: inherit;
 		transition:
-			transform 180ms ease,
-			border-color 180ms ease,
-			background 180ms ease,
-			box-shadow 180ms ease;
+			transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			background 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	.catalog-row:hover,
 	.catalog-row:focus-visible {
 		transform: translateY(-1px);
-		border-color: rgba(229, 9, 20, 0.38);
-		background: rgba(10, 16, 30, 0.82);
-		box-shadow: 0 18px 40px -28px rgba(2, 6, 23, 0.95);
+		border-color: var(--catalog-primary-border);
+		background: var(--catalog-row-bg-hover);
+		box-shadow:
+			0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent),
+			var(--catalog-row-shadow-hover);
 		outline: none;
 	}
 
 	.catalog-row.selected {
-		border-color: rgba(229, 9, 20, 0.68);
-		background: rgba(15, 22, 40, 0.92);
-		box-shadow: 0 0 0 1px rgba(229, 9, 20, 0.2) inset;
+		border-color: color-mix(in oklch, var(--primary) 68%, transparent);
+		background: var(--catalog-row-bg-selected);
+		box-shadow:
+			0 0 0 1px color-mix(in oklch, var(--primary) 24%, transparent),
+			0 28px 58px -36px rgba(65, 9, 16, 0.82);
 	}
 
 	.catalog-thumb {
 		aspect-ratio: 2 / 3;
 		width: 7rem;
 		overflow: hidden;
-		border-radius: 0.95rem;
+		border-radius: calc(var(--radius) + 0.1rem);
 		background:
-			linear-gradient(180deg, rgba(37, 99, 235, 0.18), rgba(15, 23, 42, 0.18)),
-			rgba(15, 23, 42, 0.9);
+			linear-gradient(
+				180deg,
+				color-mix(in oklch, var(--primary) 12%, transparent),
+				color-mix(in oklch, var(--background) 82%, var(--card) 18%)
+			);
+		border: 1px solid color-mix(in oklch, var(--foreground) 10%, transparent);
+		box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--background) 25%, transparent);
 	}
 
 	.catalog-thumb :global(img) {
@@ -283,18 +350,21 @@
 		font-weight: 600;
 		line-height: 1.35;
 		text-align: center;
-		color: rgba(226, 232, 240, 0.82);
+		color: color-mix(in oklch, var(--foreground) 84%, transparent);
 	}
 
 	.catalog-body {
 		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
 	}
 
 	.catalog-badges {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.45rem;
-		margin-top: 0.6rem;
+		margin-top: 0.7rem;
 	}
 
 	.catalog-badge {
@@ -302,64 +372,69 @@
 		align-items: center;
 		justify-content: center;
 		border-radius: 999px;
-		padding: 0.28rem 0.62rem;
+		padding: 0.32rem 0.68rem;
 		font-size: 0.64rem;
 		font-weight: 700;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
-		border: 1px solid rgba(248, 250, 252, 0.18);
-		background: rgba(8, 12, 24, 0.72);
-		color: rgba(248, 250, 252, 0.92);
+		border: 1px solid var(--catalog-border-strong);
+		background: color-mix(in oklch, var(--background) 84%, var(--card) 16%);
+		color: color-mix(in oklch, var(--foreground) 94%, transparent);
 	}
 
 	.catalog-badge--new {
-		background: linear-gradient(135deg, rgba(190, 10, 24, 0.98), rgba(156, 8, 20, 0.92));
-		border-color: rgba(239, 68, 68, 0.7);
-		color: #fff;
+		background: color-mix(in oklch, var(--primary) 80%, var(--background) 20%);
+		border-color: color-mix(in oklch, var(--primary) 52%, transparent);
+		color: color-mix(in oklch, var(--primary-foreground) 96%, transparent);
 	}
 
 	.catalog-badge--paid {
-		background: linear-gradient(135deg, rgba(250, 204, 21, 0.98), rgba(245, 158, 11, 0.92));
-		border-color: rgba(252, 211, 77, 0.9);
-		color: rgba(24, 24, 24, 0.95);
+		background: color-mix(in oklch, var(--chart-3) 20%, var(--background) 80%);
+		border-color: color-mix(in oklch, var(--chart-3) 42%, transparent);
+		color: color-mix(in oklch, var(--chart-3) 82%, white 18%);
 	}
 
 	.catalog-badge--watched {
-		background: rgba(10, 16, 28, 0.85);
-		border-color: rgba(148, 163, 184, 0.55);
-		color: rgba(226, 232, 240, 0.9);
+		background: color-mix(in oklch, var(--muted) 76%, var(--background) 24%);
+		border-color: color-mix(in oklch, var(--muted-foreground) 30%, transparent);
+		color: color-mix(in oklch, var(--foreground) 90%, transparent);
 	}
 
 	.catalog-badge--progress {
-		background: rgba(229, 9, 20, 0.14);
-		border-color: rgba(229, 9, 20, 0.3);
-		color: rgba(254, 226, 226, 0.96);
+		background: var(--catalog-primary-soft);
+		border-color: color-mix(in oklch, var(--primary) 34%, transparent);
+		color: color-mix(in oklch, var(--primary) 58%, white 42%);
 	}
 
 	.catalog-header-row {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.6rem 0.9rem;
+		gap: 0.45rem 0.9rem;
 		align-items: baseline;
 	}
 
 	.catalog-title {
 		margin: 0;
-		font-size: 1rem;
+		display: -webkit-box;
+		overflow: hidden;
+		font-size: 1.02rem;
 		font-weight: 700;
-		color: rgba(248, 250, 252, 0.96);
+		line-height: 1.28;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		color: color-mix(in oklch, var(--foreground) 96%, transparent);
 	}
 
 	.catalog-meta {
-		font-size: 0.72rem;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: rgba(148, 163, 184, 0.86);
+		font-size: 0.68rem;
+		line-height: 1.2;
+		color: color-mix(in oklch, var(--muted-foreground) 90%, transparent);
 	}
 
 	.catalog-description,
 		.catalog-people {
-		margin: 0.45rem 0 0;
+		margin: 0.55rem 0 0;
 		overflow: hidden;
 		display: -webkit-box;
 		line-clamp: 2;
@@ -369,18 +444,20 @@
 
 	.catalog-description {
 		font-size: 0.92rem;
-		line-height: 1.5;
-		color: rgba(226, 232, 240, 0.8);
+		line-height: 1.58;
+		max-width: 68ch;
+		color: color-mix(in oklch, var(--foreground) 80%, transparent);
 	}
 
 	.catalog-people {
 		font-size: 0.78rem;
-		line-height: 1.45;
-		color: rgba(148, 163, 184, 0.9);
+		line-height: 1.55;
+		max-width: 72ch;
+		color: color-mix(in oklch, var(--muted-foreground) 96%, transparent);
 	}
 
 	.catalog-progress {
-		margin-top: 0.75rem;
+		margin-top: 0.85rem;
 	}
 
 	.catalog-progress-track {
@@ -388,19 +465,24 @@
 		width: 100%;
 		overflow: hidden;
 		border-radius: 999px;
-		background: rgba(51, 65, 85, 0.6);
+		background: color-mix(in oklch, var(--muted) 82%, transparent);
 	}
 
 	.catalog-progress-fill {
 		height: 100%;
 		border-radius: inherit;
-		background: linear-gradient(90deg, rgba(229, 9, 20, 0.98), rgba(248, 113, 113, 0.88));
+		background: linear-gradient(
+			90deg,
+			color-mix(in oklch, var(--primary) 85%, white 15%),
+			color-mix(in oklch, var(--primary) 58%, white 42%)
+		);
 	}
 
 	.catalog-side {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
+		justify-content: center;
 		gap: 0.45rem;
 		width: 9.5rem;
 	}
@@ -411,40 +493,52 @@
 		justify-content: center;
 		width: 100%;
 		border-radius: 999px;
-		padding: 0.35rem 0.7rem;
+		padding: 0.44rem 0.8rem;
 		font-size: 0.68rem;
 		font-weight: 700;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
+		font-variant-numeric: tabular-nums;
 	}
 
 	.catalog-rating {
-		border: 1px solid rgba(250, 204, 21, 0.22);
-		background: rgba(250, 204, 21, 0.12);
-		color: rgba(254, 249, 195, 0.96);
+		border: 1px solid var(--catalog-gold-border);
+		background: var(--catalog-gold-soft);
+		color: color-mix(in oklch, var(--chart-3) 82%, white 18%);
 	}
 
 	.catalog-rating--empty {
-		border-color: rgba(148, 163, 184, 0.22);
-		background: rgba(51, 65, 85, 0.22);
-		color: rgba(203, 213, 225, 0.82);
+		border-color: var(--catalog-border);
+		background: var(--catalog-muted-soft);
+		color: color-mix(in oklch, var(--muted-foreground) 88%, transparent);
 	}
 
 	.catalog-empty {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1.5rem;
-		padding: 2.5rem 0;
+		gap: 1rem;
+		padding: 3rem 0;
 		text-align: center;
-		color: rgb(156, 163, 175);
+		color: color-mix(in oklch, var(--muted-foreground) 90%, transparent);
 	}
 
 	.catalog-empty-image {
 		height: auto;
 		width: 12rem;
 		max-width: 100%;
-		opacity: 0.9;
+		opacity: 0.88;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.catalog-row {
+			transition: none;
+		}
+
+		.catalog-row:hover,
+		.catalog-row:focus-visible {
+			transform: none;
+		}
 	}
 
 	@media (max-width: 767px) {
@@ -454,10 +548,20 @@
 
 		.catalog-row {
 			grid-template-columns: 5rem minmax(0, 1fr);
+			gap: 0.85rem 1rem;
+			padding: 0.85rem;
 		}
 
 		.catalog-thumb {
 			width: 5rem;
+		}
+
+		.catalog-title {
+			font-size: 0.96rem;
+		}
+
+		.catalog-description {
+			font-size: 0.88rem;
 		}
 
 		.catalog-side {

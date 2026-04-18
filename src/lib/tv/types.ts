@@ -42,6 +42,7 @@ export type FacetTheme =
 	| 'educational'
 	| 'travel'
 	| 'creative'
+	| 'showcase'
 	| 'entertainment';
 export type FacetEra = '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000';
 export type FacetLength = 'short-form' | 'medium-form' | 'long-form';

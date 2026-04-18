@@ -116,10 +116,12 @@
 			options: [
 				{ value: 'journey', label: m.facet_theme_journey(), emoji: '🗺️' },
 				{ value: 'team', label: m.facet_theme_team(), emoji: '👥' },
+				{ value: 'event', label: m.facet_theme_event(), emoji: '🎉' },
 				{ value: 'competition', label: m.facet_theme_competition(), emoji: '🥇' },
 				{ value: 'educational', label: m.facet_theme_educational(), emoji: '🎓' },
 				{ value: 'travel', label: m.facet_theme_travel(), emoji: '✈️' },
 				{ value: 'creative', label: m.facet_theme_creative(), emoji: '✨' },
+				{ value: 'showcase', label: m.facet_theme_showcase(), emoji: '🎞️' },
 				{ value: 'entertainment', label: m.facet_theme_entertainment(), emoji: '🎪' }
 			] as const
 		}

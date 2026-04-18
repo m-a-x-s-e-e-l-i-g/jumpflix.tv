@@ -154,6 +154,7 @@
 		'educational',
 		'travel',
 		'creative',
+		'showcase',
 		'entertainment'
 	];
 

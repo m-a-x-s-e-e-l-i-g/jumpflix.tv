@@ -5,235 +5,247 @@
   
   export let facets: Facets | undefined;
 
+  type FacetCategory = 'type' | 'mood' | 'movement' | 'environment' | 'filmStyle' | 'theme' | 'era' | 'length';
+  type Chip = { key: string; category: FacetCategory };
+
+  const facetLookupKey = (category: FacetCategory, key: string): string => `${category}:${key}`;
+
   const facetEmojis: Record<string, string> = {
     // Type
-    fiction: '🎬',
-    documentary: '📹',
-    session: '🎥',
-    event: '🏆',
-    tutorial: '📚',
-    'music-video': '🎵',
-    talk: '🎤',
+    'type:fiction': '🎬',
+    'type:documentary': '📹',
+    'type:session': '🎥',
+    'type:event': '🏆',
+    'type:tutorial': '📚',
+    'type:music-video': '🎵',
+    'type:talk': '🎤',
 
     // Mood
-    energetic: '⚡',
-    chill: '😌',
-    gritty: '🔥',
-    wholesome: '💚',
-    artistic: '🎨',
+    'mood:energetic': '⚡',
+    'mood:chill': '😌',
+    'mood:gritty': '🔥',
+    'mood:wholesome': '💚',
+    'mood:artistic': '🎨',
 
     // Movement
-    flow: '🌊',
-    'big-sends': '🚀',
-    style: '🤸',
-    descents: '⬇️',
-    technical: '⚙️',
-    speed: '🏎️',
-    oldskool: '📼',
-    contemporary: '💃',
+    'movement:flow': '🌊',
+    'movement:big-sends': '🚀',
+    'movement:style': '🤸',
+    'movement:descents': '⬇️',
+    'movement:technical': '⚙️',
+    'movement:speed': '🏎️',
+    'movement:oldskool': '📼',
+    'movement:contemporary': '💃',
 
     // Environment
-    street: '🏙️',
-    rooftops: '🏢',
-    nature: '🌲',
-    urbex: '🏚️',
-    gym: '🏋️',
+    'environment:street': '🏙️',
+    'environment:rooftops': '🏢',
+    'environment:nature': '🌲',
+    'environment:urbex': '🏚️',
+    'environment:gym': '🏋️',
 
     // Film Style
-    cinematic: '🎞️',
-    'street-cinematic': '🛣️',
-    skateish: '🛹',
-    raw: '📱',
-    pov: '👁️',
-    longtakes: '🎥',
-    'music-driven': '🎵',
-    montage: '⚡',
-    slowmo: '🐌',
-    gonzo: '🌀',
-    vintage: '📼',
-    minimalist: '⬜',
-    experimental: '🔮',
+    'filmStyle:cinematic': '🎞️',
+    'filmStyle:street-cinematic': '🛣️',
+    'filmStyle:skateish': '🛹',
+    'filmStyle:raw': '📱',
+    'filmStyle:pov': '👁️',
+    'filmStyle:longtakes': '🎥',
+    'filmStyle:music-driven': '🎵',
+    'filmStyle:montage': '⚡',
+    'filmStyle:slowmo': '🐌',
+    'filmStyle:gonzo': '🌀',
+    'filmStyle:vintage': '📼',
+    'filmStyle:minimalist': '⬜',
+    'filmStyle:experimental': '🔮',
 
     // Theme
-    journey: '🗺️',
-    team: '👥',
-    competition: '🥇',
-    educational: '🎓',
-    travel: '✈️',
-    creative: '✨',
-    entertainment: '🎪',
+    'theme:journey': '🗺️',
+    'theme:team': '👥',
+    'theme:event': '🎉',
+    'theme:competition': '🥇',
+    'theme:educational': '🎓',
+    'theme:travel': '✈️',
+    'theme:creative': '✨',
+    'theme:showcase': '🎞️',
+    'theme:entertainment': '🎪',
 
     // Era
-    'pre-2000': '📹',
-    '2000s': '📀',
-    '2010s': '📱',
-    '2020s': '🎬',
-    '2030s': '🚀',
+    'era:pre-2000': '📹',
+    'era:2000s': '📀',
+    'era:2010s': '📱',
+    'era:2020s': '🎬',
+    'era:2030s': '🚀',
 
     // Length
-    'short-form': '⚡',
-    'medium-form': '⏱️',
-    'long-form': '🎞️'
+    'length:short-form': '⚡',
+    'length:medium-form': '⏱️',
+    'length:long-form': '🎞️'
   };
 
   const facetLabelMessages: Record<string, () => string> = {
     // Type
-    fiction: m.facet_type_fiction,
-    documentary: m.facet_type_documentary,
-    session: m.facet_type_session,
-    event: m.facet_type_event,
-    tutorial: m.facet_type_tutorial,
-    'music-video': m.facet_type_musicVideo,
-    talk: m.facet_type_talk,
+    'type:fiction': m.facet_type_fiction,
+    'type:documentary': m.facet_type_documentary,
+    'type:session': m.facet_type_session,
+    'type:event': m.facet_type_event,
+    'type:tutorial': m.facet_type_tutorial,
+    'type:music-video': m.facet_type_musicVideo,
+    'type:talk': m.facet_type_talk,
 
     // Mood
-    energetic: m.facet_mood_energetic,
-    chill: m.facet_mood_chill,
-    gritty: m.facet_mood_gritty,
-    wholesome: m.facet_mood_wholesome,
-    artistic: m.facet_mood_artistic,
+    'mood:energetic': m.facet_mood_energetic,
+    'mood:chill': m.facet_mood_chill,
+    'mood:gritty': m.facet_mood_gritty,
+    'mood:wholesome': m.facet_mood_wholesome,
+    'mood:artistic': m.facet_mood_artistic,
 
     // Movement
-    flow: m.facet_movement_flow,
-    'big-sends': m.facet_movement_bigSends,
-    style: m.facet_movement_style,
-    descents: m.facet_movement_descents,
-    technical: m.facet_movement_technical,
-    speed: m.facet_movement_speed,
-    oldskool: m.facet_movement_oldskool,
-    contemporary: m.facet_movement_contemporary,
+    'movement:flow': m.facet_movement_flow,
+    'movement:big-sends': m.facet_movement_bigSends,
+    'movement:style': m.facet_movement_style,
+    'movement:descents': m.facet_movement_descents,
+    'movement:technical': m.facet_movement_technical,
+    'movement:speed': m.facet_movement_speed,
+    'movement:oldskool': m.facet_movement_oldskool,
+    'movement:contemporary': m.facet_movement_contemporary,
 
     // Environment
-    street: m.facet_environment_street,
-    rooftops: m.facet_environment_rooftops,
-    nature: m.facet_environment_nature,
-    urbex: m.facet_environment_urbex,
-    gym: m.facet_environment_gym,
+    'environment:street': m.facet_environment_street,
+    'environment:rooftops': m.facet_environment_rooftops,
+    'environment:nature': m.facet_environment_nature,
+    'environment:urbex': m.facet_environment_urbex,
+    'environment:gym': m.facet_environment_gym,
 
     // Film Style
-    cinematic: m.facet_filmStyle_cinematic,
-    'street-cinematic': m.facet_filmStyle_streetCinematic,
-    skateish: m.facet_filmStyle_skateish,
-    raw: m.facet_filmStyle_raw,
-    pov: m.facet_filmStyle_pov,
-    longtakes: m.facet_filmStyle_longtakes,
-    'music-driven': m.facet_filmStyle_musicDriven,
-    montage: m.facet_filmStyle_montage,
-    slowmo: m.facet_filmStyle_slowmo,
-    gonzo: m.facet_filmStyle_gonzo,
-    vintage: m.facet_filmStyle_vintage,
-    minimalist: m.facet_filmStyle_minimalist,
-    experimental: m.facet_filmStyle_experimental,
+    'filmStyle:cinematic': m.facet_filmStyle_cinematic,
+    'filmStyle:street-cinematic': m.facet_filmStyle_streetCinematic,
+    'filmStyle:skateish': m.facet_filmStyle_skateish,
+    'filmStyle:raw': m.facet_filmStyle_raw,
+    'filmStyle:pov': m.facet_filmStyle_pov,
+    'filmStyle:longtakes': m.facet_filmStyle_longtakes,
+    'filmStyle:music-driven': m.facet_filmStyle_musicDriven,
+    'filmStyle:montage': m.facet_filmStyle_montage,
+    'filmStyle:slowmo': m.facet_filmStyle_slowmo,
+    'filmStyle:gonzo': m.facet_filmStyle_gonzo,
+    'filmStyle:vintage': m.facet_filmStyle_vintage,
+    'filmStyle:minimalist': m.facet_filmStyle_minimalist,
+    'filmStyle:experimental': m.facet_filmStyle_experimental,
 
     // Theme
-    journey: m.facet_theme_journey,
-    team: m.facet_theme_team,
-    competition: m.facet_theme_competition,
-    educational: m.facet_theme_educational,
-    travel: m.facet_theme_travel,
-    creative: m.facet_theme_creative,
-    entertainment: m.facet_theme_entertainment,
+    'theme:journey': m.facet_theme_journey,
+    'theme:team': m.facet_theme_team,
+    'theme:event': m.facet_theme_event,
+    'theme:competition': m.facet_theme_competition,
+    'theme:educational': m.facet_theme_educational,
+    'theme:travel': m.facet_theme_travel,
+    'theme:creative': m.facet_theme_creative,
+    'theme:showcase': m.facet_theme_showcase,
+    'theme:entertainment': m.facet_theme_entertainment,
 
     // Era
-    'pre-2000': m.facet_era_pre2000,
-    '2000s': m.facet_era_2000s,
-    '2010s': m.facet_era_2010s,
-    '2020s': m.facet_era_2020s,
-    '2030s': m.facet_era_2030s,
+    'era:pre-2000': m.facet_era_pre2000,
+    'era:2000s': m.facet_era_2000s,
+    'era:2010s': m.facet_era_2010s,
+    'era:2020s': m.facet_era_2020s,
+    'era:2030s': m.facet_era_2030s,
 
     // Length
-    'short-form': m.facet_length_shortForm,
-    'medium-form': m.facet_length_mediumForm,
-    'long-form': m.facet_length_longForm
+    'length:short-form': m.facet_length_shortForm,
+    'length:medium-form': m.facet_length_mediumForm,
+    'length:long-form': m.facet_length_longForm
   };
 
   const facetDescriptionMessages: Record<string, () => string> = {
     // Type
-    fiction: m.facet_type_fiction_desc,
-    documentary: m.facet_type_documentary_desc,
-    session: m.facet_type_session_desc,
-    event: m.facet_type_event_desc,
-    tutorial: m.facet_type_tutorial_desc,
-    'music-video': m.facet_type_musicVideo_desc,
-    talk: m.facet_type_talk_desc,
+    'type:fiction': m.facet_type_fiction_desc,
+    'type:documentary': m.facet_type_documentary_desc,
+    'type:session': m.facet_type_session_desc,
+    'type:event': m.facet_type_event_desc,
+    'type:tutorial': m.facet_type_tutorial_desc,
+    'type:music-video': m.facet_type_musicVideo_desc,
+    'type:talk': m.facet_type_talk_desc,
 
     // Mood
-    energetic: m.facet_mood_energetic_desc,
-    chill: m.facet_mood_chill_desc,
-    gritty: m.facet_mood_gritty_desc,
-    wholesome: m.facet_mood_wholesome_desc,
-    artistic: m.facet_mood_artistic_desc,
+    'mood:energetic': m.facet_mood_energetic_desc,
+    'mood:chill': m.facet_mood_chill_desc,
+    'mood:gritty': m.facet_mood_gritty_desc,
+    'mood:wholesome': m.facet_mood_wholesome_desc,
+    'mood:artistic': m.facet_mood_artistic_desc,
 
     // Movement
-    flow: m.facet_movement_flow_desc,
-    'big-sends': m.facet_movement_bigSends_desc,
-    style: m.facet_movement_style_desc,
-    descents: m.facet_movement_descents_desc,
-    technical: m.facet_movement_technical_desc,
-    speed: m.facet_movement_speed_desc,
-    oldskool: m.facet_movement_oldskool_desc,
-    contemporary: m.facet_movement_contemporary_desc,
+    'movement:flow': m.facet_movement_flow_desc,
+    'movement:big-sends': m.facet_movement_bigSends_desc,
+    'movement:style': m.facet_movement_style_desc,
+    'movement:descents': m.facet_movement_descents_desc,
+    'movement:technical': m.facet_movement_technical_desc,
+    'movement:speed': m.facet_movement_speed_desc,
+    'movement:oldskool': m.facet_movement_oldskool_desc,
+    'movement:contemporary': m.facet_movement_contemporary_desc,
 
     // Environment
-    street: m.facet_environment_street_desc,
-    rooftops: m.facet_environment_rooftops_desc,
-    nature: m.facet_environment_nature_desc,
-    urbex: m.facet_environment_urbex_desc,
-    gym: m.facet_environment_gym_desc,
+    'environment:street': m.facet_environment_street_desc,
+    'environment:rooftops': m.facet_environment_rooftops_desc,
+    'environment:nature': m.facet_environment_nature_desc,
+    'environment:urbex': m.facet_environment_urbex_desc,
+    'environment:gym': m.facet_environment_gym_desc,
 
     // Film Style
-    cinematic: m.facet_filmStyle_cinematic_desc,
-    'street-cinematic': m.facet_filmStyle_streetCinematic_desc,
-    skateish: m.facet_filmStyle_skateish_desc,
-    raw: m.facet_filmStyle_raw_desc,
-    pov: m.facet_filmStyle_pov_desc,
-    longtakes: m.facet_filmStyle_longtakes_desc,
-    'music-driven': m.facet_filmStyle_musicDriven_desc,
-    montage: m.facet_filmStyle_montage_desc,
-    slowmo: m.facet_filmStyle_slowmo_desc,
-    gonzo: m.facet_filmStyle_gonzo_desc,
-    vintage: m.facet_filmStyle_vintage_desc,
-    minimalist: m.facet_filmStyle_minimalist_desc,
-    experimental: m.facet_filmStyle_experimental_desc,
+    'filmStyle:cinematic': m.facet_filmStyle_cinematic_desc,
+    'filmStyle:street-cinematic': m.facet_filmStyle_streetCinematic_desc,
+    'filmStyle:skateish': m.facet_filmStyle_skateish_desc,
+    'filmStyle:raw': m.facet_filmStyle_raw_desc,
+    'filmStyle:pov': m.facet_filmStyle_pov_desc,
+    'filmStyle:longtakes': m.facet_filmStyle_longtakes_desc,
+    'filmStyle:music-driven': m.facet_filmStyle_musicDriven_desc,
+    'filmStyle:montage': m.facet_filmStyle_montage_desc,
+    'filmStyle:slowmo': m.facet_filmStyle_slowmo_desc,
+    'filmStyle:gonzo': m.facet_filmStyle_gonzo_desc,
+    'filmStyle:vintage': m.facet_filmStyle_vintage_desc,
+    'filmStyle:minimalist': m.facet_filmStyle_minimalist_desc,
+    'filmStyle:experimental': m.facet_filmStyle_experimental_desc,
 
     // Theme
-    journey: m.facet_theme_journey_desc,
-    team: m.facet_theme_team_desc,
-    competition: m.facet_theme_competition_desc,
-    educational: m.facet_theme_educational_desc,
-    travel: m.facet_theme_travel_desc,
-    creative: m.facet_theme_creative_desc,
-    entertainment: m.facet_theme_entertainment_desc,
+    'theme:journey': m.facet_theme_journey_desc,
+    'theme:team': m.facet_theme_team_desc,
+    'theme:event': m.facet_theme_event_desc,
+    'theme:competition': m.facet_theme_competition_desc,
+    'theme:educational': m.facet_theme_educational_desc,
+    'theme:travel': m.facet_theme_travel_desc,
+    'theme:creative': m.facet_theme_creative_desc,
+    'theme:showcase': m.facet_theme_showcase_desc,
+    'theme:entertainment': m.facet_theme_entertainment_desc,
 
     // Era
-    'pre-2000': m.facet_era_pre2000_desc,
-    '2000s': m.facet_era_2000s_desc,
-    '2010s': m.facet_era_2010s_desc,
-    '2020s': m.facet_era_2020s_desc,
-    '2030s': m.facet_era_2030s_desc,
+    'era:pre-2000': m.facet_era_pre2000_desc,
+    'era:2000s': m.facet_era_2000s_desc,
+    'era:2010s': m.facet_era_2010s_desc,
+    'era:2020s': m.facet_era_2020s_desc,
+    'era:2030s': m.facet_era_2030s_desc,
 
     // Length
-    'short-form': m.facet_length_shortForm_desc,
-    'medium-form': m.facet_length_mediumForm_desc,
-    'long-form': m.facet_length_longForm_desc
+    'length:short-form': m.facet_length_shortForm_desc,
+    'length:medium-form': m.facet_length_mediumForm_desc,
+    'length:long-form': m.facet_length_longForm_desc
   };
 
-  const getFacetLabel = (key: string, fallback: string): string => {
-    const msg = facetLabelMessages[key];
+  const getFacetLabel = (chip: Chip): string => {
+    const msg = facetLabelMessages[facetLookupKey(chip.category, chip.key)];
+    const fallback = chip.key;
     return msg ? msg() : fallback;
   };
 
-  const getFacetDescription = (key: string): string => {
-    const msg = facetDescriptionMessages[key];
+  const getFacetDescription = (chip: Chip): string => {
+    const msg = facetDescriptionMessages[facetLookupKey(chip.category, chip.key)];
     return msg ? msg() : '';
   };
   
   // Helper to add facets to result array
-  const addFacet = (result: Array<{ key: string }>, key: string | string[]) => {
+  const addFacet = (result: Chip[], category: FacetCategory, key: string | string[]) => {
     if (Array.isArray(key)) {
-      key.forEach(k => result.push({ key: k }));
+      key.forEach(k => result.push({ key: k, category }));
     } else {
-      result.push({ key });
+      result.push({ key, category });
     }
   };
   
@@ -242,17 +254,17 @@
   $: chips = (() => {
     if (!facets) return [];
     
-    const result: Array<{ key: string }> = [];
+    const result: Chip[] = [];
     
     // Add facets in order, skipping any that are undefined or empty
-    if (facets.type) addFacet(result, facets.type);
-    if (facets.mood?.length) addFacet(result, facets.mood);
-    if (facets.movement?.length) addFacet(result, facets.movement);
-    if (facets.environment) addFacet(result, facets.environment);
-    if (facets.filmStyle) addFacet(result, facets.filmStyle);
-    if (facets.theme) addFacet(result, facets.theme);
-    if (facets.era) addFacet(result, facets.era);
-    if (facets.length) addFacet(result, facets.length);
+    if (facets.type) addFacet(result, 'type', facets.type);
+    if (facets.mood?.length) addFacet(result, 'mood', facets.mood);
+    if (facets.movement?.length) addFacet(result, 'movement', facets.movement);
+    if (facets.environment) addFacet(result, 'environment', facets.environment);
+    if (facets.filmStyle) addFacet(result, 'filmStyle', facets.filmStyle);
+    if (facets.theme) addFacet(result, 'theme', facets.theme);
+    if (facets.era) addFacet(result, 'era', facets.era);
+    if (facets.length) addFacet(result, 'length', facets.length);
     
     return result;
   })();
@@ -268,15 +280,16 @@
               class="chip"
               role="listitem"
             >
-              {#if facetEmojis[chip.key]}
-                <span class="emoji" aria-hidden="true">{facetEmojis[chip.key]}</span>
+              {#if facetEmojis[facetLookupKey(chip.category, chip.key)]}
+                <span class="emoji" aria-hidden="true">{facetEmojis[facetLookupKey(chip.category, chip.key)]}</span>
               {/if}
-              {getFacetLabel(chip.key, chip.key)}
+              {getFacetLabel(chip)}
             </span>
           </Tooltip.Trigger>
           <Tooltip.Content class="bg-gray-900 text-white border border-gray-700" arrowClasses="bg-gray-900">
             {#snippet children()}
-              <p class="tooltip-text">{getFacetDescription(chip.key)}</p>
+              <p class="font-medium">{getFacetLabel(chip)}</p>
+              <p class="tooltip-text">{getFacetDescription(chip)}</p>
             {/snippet}
           </Tooltip.Content>
         </Tooltip.Root>

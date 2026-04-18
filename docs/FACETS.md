@@ -127,7 +127,8 @@ The underlying purpose or narrative focus of the content.
 | `educational`   | Educational - Tutorials, technique breakdowns         |
 | `travel`        | Travel - City hopping, exploring new spots            |
 | `creative`      | Creative / Expression - Artistic intent, experimental |
-| `entertainment` | Showcase / Entertainment - Fun, hype, performance     |
+| `showcase`      | Showcase / Showreel - Best-of reel, athlete profile, year compilation |
+| `entertainment` | Entertainment - Fun-first, hype-heavy, performance-led content |
 
 ---
 
@@ -208,6 +209,7 @@ GIN indexes are used for array columns to support efficient queries using array 
 5. **20251109000000_expand_film_styles.sql** - Expanded film style options from 5 to 13 values
 6. **20251109000002_replace_tricking_with_style.sql** - Renamed "tricking" → "style" in movement facets, "dance" → "contemporary"
 7. **20260218000001_add_length_facet.sql** - Re-added length facet with improved `short-form`/`medium-form`/`long-form` categorization
+8. **20260419000000_add_showcase_theme.sql** - Added `showcase` as a dedicated theme for showreels and year compilations
 
 ---
 

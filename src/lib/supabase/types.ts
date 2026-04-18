@@ -294,6 +294,7 @@ export type Database = {
 						| 'educational'
 						| 'travel'
 						| 'creative'
+						| 'showcase'
 						| 'entertainment'
 						| null;
 					created_at: string;
@@ -339,6 +340,7 @@ export type Database = {
 						| 'educational'
 						| 'travel'
 						| 'creative'
+						| 'showcase'
 						| 'entertainment'
 						| null;
 					created_at?: string;
@@ -384,6 +386,7 @@ export type Database = {
 						| 'educational'
 						| 'travel'
 						| 'creative'
+						| 'showcase'
 						| 'entertainment'
 						| null;
 					created_at?: string;
@@ -636,6 +639,7 @@ export type Database = {
 						| 'educational'
 						| 'travel'
 						| 'creative'
+						| 'showcase'
 						| 'entertainment'
 						| null;
 					facet_length: 'short-form' | 'medium-form' | 'long-form' | null;

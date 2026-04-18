@@ -290,6 +290,8 @@
 	"stats_uniqueNamesInStarring": "出演の固有名",
 	"stats_yearsCovered": "対象年",
 	"stats_basedOnCatalogYearMetadata": "カタログの年メタデータに基づく",
+	"stats_approxCosts": "概算コスト",
+	"stats_publicCostEntries": "公開コスト項目 {count} 件",
 	"stats_watchActivity30d": "視聴アクティビティ（30日）",
 	"stats_dailyActiveWatchers": "日別アクティブ視聴者",
 	"stats_watchActivitySummary": "ピーク {peak} · 1日平均 {avgPerDay}",

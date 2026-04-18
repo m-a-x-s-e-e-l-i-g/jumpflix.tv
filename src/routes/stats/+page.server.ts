@@ -1,3 +1,4 @@
+import { loadPublicFundingData } from '$lib/server/funding';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { error } from '@sveltejs/kit';
 
@@ -18,6 +19,13 @@ export const load = async ({ parent, setHeaders }) => {
 		media_type: string;
 		watchers: number;
 		avg_percent: number;
+	};
+
+	type WatchHistoryTopRow = {
+		user_id: string;
+		media_id: string;
+		media_type: string;
+		percent_watched: number | null;
 	};
 
 	type EnrichedTopWatchedRow = TopWatchedRpcRow & {
@@ -54,20 +62,23 @@ export const load = async ({ parent, setHeaders }) => {
 		return null;
 	}
 
-	const [overviewRes, activityRes, ratingsDistRes, topMediaRes, topContributorsRes] =
+	const [overviewRes, activityRes, ratingsDistRes, topWatchHistoryRes, topContributorsRes] =
 		await Promise.all([
 		supabase.rpc('admin_stats_overview'),
 		supabase.rpc('admin_watch_activity', { days: 30 }),
 		supabase.rpc('admin_ratings_distribution'),
-		supabase.rpc('admin_top_watched_media', { limit_n: 10 }),
+		supabase
+			.from('watch_history')
+			.select('user_id, media_id, media_type, percent_watched')
+			.eq('status', 'active'),
 		(supabase as any).rpc('admin_top_contributors', { limit_n: 10 })
 	]);
+	const funding = await loadPublicFundingData();
 
 	const rpcErrors = [
 		overviewRes.error,
 		activityRes.error,
 		ratingsDistRes.error,
-		topMediaRes.error,
 		topContributorsRes.error
 	].filter((e): e is NonNullable<typeof e> => Boolean(e));
 	if (rpcErrors.length > 0) {
@@ -79,6 +90,9 @@ export const load = async ({ parent, setHeaders }) => {
 			);
 		}
 		throw error(500, message);
+	}
+	if (topWatchHistoryRes.error) {
+		throw error(500, topWatchHistoryRes.error.message);
 	}
 
 	const [moviesCountRes, seriesCountRes, episodesCountRes] = await Promise.all([
@@ -209,6 +223,7 @@ export const load = async ({ parent, setHeaders }) => {
 		min: minYear,
 		max: maxYear
 	};
+	const fundingSummary = funding.summary;
 
 	const facetStats = {
 		contentCounts: movieCounts,
@@ -220,7 +235,59 @@ export const load = async ({ parent, setHeaders }) => {
 		movement: topN(movementCounts, 10)
 	};
 
-	const rawTop = ((topMediaRes.data as any[]) ?? []) as TopWatchedRpcRow[];
+	const topWatchMap = new Map<
+		string,
+		{
+			media_id: string;
+			media_type: string;
+			watcherIds: Set<string>;
+			totalPercent: number;
+			percentSamples: number;
+		}
+	>();
+	const watchHistoryRows = ((topWatchHistoryRes.data as any[]) ?? []) as WatchHistoryTopRow[];
+	for (const row of watchHistoryRows) {
+		const parsedKey = parseMediaKey(row.media_id);
+		const canonicalMediaId = parsedKey
+			? parsedKey.kind === 'movie'
+				? `movie:${parsedKey.itemId}`
+				: `series:${parsedKey.kind === 'series' ? parsedKey.itemId : parsedKey.seriesId}`
+			: String(row.media_id ?? '');
+		const canonicalMediaType = parsedKey
+			? parsedKey.kind === 'movie'
+				? 'movie'
+				: 'series'
+			: String(row.media_type ?? '');
+
+		const aggregate = topWatchMap.get(canonicalMediaId) ?? {
+			media_id: canonicalMediaId,
+			media_type: canonicalMediaType,
+			watcherIds: new Set<string>(),
+			totalPercent: 0,
+			percentSamples: 0
+		};
+
+		if (row.user_id) {
+			aggregate.watcherIds.add(String(row.user_id));
+		}
+		if (typeof row.percent_watched === 'number' && Number.isFinite(row.percent_watched)) {
+			aggregate.totalPercent += row.percent_watched;
+			aggregate.percentSamples += 1;
+		}
+
+		topWatchMap.set(canonicalMediaId, aggregate);
+	}
+
+	const rawTop: TopWatchedRpcRow[] = Array.from(topWatchMap.values())
+		.map((entry) => ({
+			media_id: entry.media_id,
+			media_type: entry.media_type,
+			watchers: entry.watcherIds.size,
+			avg_percent: entry.percentSamples > 0 ? Number((entry.totalPercent / entry.percentSamples).toFixed(1)) : 0
+		}))
+		.sort((a, b) => b.watchers - a.watchers || b.avg_percent - a.avg_percent)
+		.slice(0, 10);
+
 	const parsed = rawTop
 		.map((row) => ({ row, parsed: parseMediaKey(row.media_id) }))
 		.filter(
@@ -248,22 +315,8 @@ export const load = async ({ parent, setHeaders }) => {
 				.filter((id): id is number => typeof id === 'number')
 		)
 	);
-	const episodeVideoIds = Array.from(
-		new Set(
-			parsed
-				.filter((entry) => entry.parsed.kind === 'episode')
-				.map((entry) => (entry.parsed.kind === 'episode' ? entry.parsed.episodeVideoId : null))
-				.filter((id): id is string => typeof id === 'string' && id.length > 0)
-		)
-	);
-
 	const titleByMovieId = new Map<number, { title: string; slug: string }>();
 	const titleBySeriesId = new Map<number, { title: string; slug: string }>();
-	const episodeByVideoId = new Map<
-		string,
-		{ title: string | null; episode_number: number; season_id: number }
-	>();
-	const seasonById = new Map<number, { season_number: number; series_id: number }>();
 
 	if (movieIds.length > 0 || seriesIds.length > 0) {
 		const ids = Array.from(new Set([...movieIds, ...seriesIds]));
@@ -275,47 +328,6 @@ export const load = async ({ parent, setHeaders }) => {
 		for (const row of data ?? []) {
 			if (row.type === 'movie') titleByMovieId.set(row.id, { title: row.title, slug: row.slug });
 			if (row.type === 'series') titleBySeriesId.set(row.id, { title: row.title, slug: row.slug });
-		}
-	}
-
-	if (episodeVideoIds.length > 0) {
-		const { data: episodeRows, error: episodeError } = await supabase
-			.from('series_episodes')
-			.select('video_id, title, episode_number, season_id')
-			.in('video_id', episodeVideoIds);
-		if (episodeError) throw error(500, episodeError.message);
-		for (const row of episodeRows ?? []) {
-			if (row.video_id) {
-				episodeByVideoId.set(row.video_id, {
-					title: row.title,
-					episode_number: row.episode_number,
-					season_id: row.season_id
-				});
-			}
-		}
-
-		const seasonIds = Array.from(new Set((episodeRows ?? []).map((row) => row.season_id)));
-		if (seasonIds.length > 0) {
-			const { data: seasons, error: seasonsError } = await supabase
-				.from('series_seasons')
-				.select('id, season_number, series_id')
-				.in('id', seasonIds);
-			if (seasonsError) throw error(500, seasonsError.message);
-			for (const row of seasons ?? []) {
-				seasonById.set(row.id, { season_number: row.season_number, series_id: row.series_id });
-			}
-
-			const episodeSeriesIds = Array.from(new Set((seasons ?? []).map((row) => row.series_id)));
-			if (episodeSeriesIds.length > 0) {
-				const { data: seriesRows, error: seriesError } = await supabase
-					.from('media_items')
-					.select('id, title, slug')
-					.in('id', episodeSeriesIds);
-				if (seriesError) throw error(500, seriesError.message);
-				for (const row of seriesRows ?? []) {
-					titleBySeriesId.set(row.id, { title: row.title, slug: row.slug });
-				}
-			}
 		}
 	}
 
@@ -347,24 +359,6 @@ export const load = async ({ parent, setHeaders }) => {
 				title: series?.title ?? `Series #${parsedKey.itemId}`,
 				href: series?.slug ? `/series/${series.slug}` : null,
 				subtitle: null
-			};
-		}
-
-		if (parsedKey.kind === 'episode') {
-			const episode = episodeByVideoId.get(parsedKey.episodeVideoId);
-			const season = episode ? seasonById.get(episode.season_id) : null;
-			const series = season ? titleBySeriesId.get(season.series_id) : null;
-			const seriesTitle = series?.title ?? `Series #${parsedKey.seriesId}`;
-			const seasonLabel = season ? `S${season.season_number}` : 'S?';
-			const episodeLabel = episode ? `E${episode.episode_number}` : 'E?';
-			const episodeTitle = episode?.title ?? null;
-			return {
-				...row,
-				title: episodeTitle
-					? `${seriesTitle} — ${episodeTitle}`
-					: `${seriesTitle} — ${seasonLabel}${episodeLabel}`,
-				href: series?.slug ? `/series/${series.slug}` : null,
-				subtitle: `${seasonLabel}${episodeLabel}`
 			};
 		}
 
@@ -405,6 +399,7 @@ export const load = async ({ parent, setHeaders }) => {
 		spots,
 		peopleStats,
 		yearsCovered,
+		fundingSummary,
 		facetStats,
 		watchActivity: (activityRes.data as any[]) ?? [],
 		ratingsDistribution: (ratingsDistRes.data as any[]) ?? [],

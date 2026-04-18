@@ -290,6 +290,8 @@
 	"stats_uniqueNamesInStarring": "Unique names in starring",
 	"stats_yearsCovered": "Years covered",
 	"stats_basedOnCatalogYearMetadata": "Based on catalog year metadata",
+	"stats_approxCosts": "Approx. costs",
+	"stats_publicCostEntries": "{count} public cost entries",
 	"stats_watchActivity30d": "Watch activity (30d)",
 	"stats_dailyActiveWatchers": "Daily active watchers",
 	"stats_watchActivitySummary": "Peak {peak} · Avg/day {avgPerDay}",

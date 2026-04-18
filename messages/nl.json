@@ -290,6 +290,8 @@
 	"stats_uniqueNamesInStarring": "Unieke namen in hoofdrollen",
 	"stats_yearsCovered": "Jaren gedekt",
 	"stats_basedOnCatalogYearMetadata": "Gebaseerd op jaarmetadata in de catalogus",
+	"stats_approxCosts": "Geschatte kosten",
+	"stats_publicCostEntries": "{count} openbare kostenposten",
 	"stats_watchActivity30d": "Kijkactiviteit (30d)",
 	"stats_dailyActiveWatchers": "Dagelijkse actieve kijkers",
 	"stats_watchActivitySummary": "Piek {peak} · Gem./dag {avgPerDay}",

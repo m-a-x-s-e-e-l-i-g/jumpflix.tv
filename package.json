@@ -66,6 +66,7 @@
 		"@supabase/auth-ui-svelte": "^0.2.9",
 		"@supabase/ssr": "^0.7.0",
 		"@supabase/supabase-js": "^2.78.0",
+		"@tabler/icons-svelte": "^3.41.1",
 		"@types/leaflet": "^1.9.21",
 		"@unpic/placeholder": "^0.1.2",
 		"@unpic/svelte": "^1.0.0",

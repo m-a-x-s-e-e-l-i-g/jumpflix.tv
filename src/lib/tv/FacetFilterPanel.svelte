@@ -310,13 +310,13 @@
 		</div>
 
 		{#if activeFeed}
-			<section class="feed-summary" aria-label="Active feed filters">
+			<section class="feed-summary" aria-label={m.facet_activeFeedFilters()}>
 				<div class="feed-summary-header">
 					<div>
-						<p class="feed-summary-eyebrow">Active feed</p>
-						<h3 class="feed-summary-title">{activeFeed.title}</h3>
+						<p class="feed-summary-eyebrow">{m.facet_activeFeed()}</p>
+						<h3 class="feed-summary-title">{activeFeed.title()}</h3>
 					</div>
-					<p class="feed-summary-description">{activeFeed.description}</p>
+					<p class="feed-summary-description">{activeFeed.description()}</p>
 				</div>
 
 				<div class="feed-summary-groups">

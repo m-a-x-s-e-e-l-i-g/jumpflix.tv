@@ -60,8 +60,8 @@
 	<div class={containerClass}>
 		<div class="feed-strip">
 			<div class="feed-strip-copy">
-				<span class="feed-strip-label">Curated feeds</span>
-				<p class="feed-strip-text">Preset combinations built from the facet system.</p>
+				<span class="feed-strip-label jf-label">{m.tv_feedStripLabel()}</span>
+				<p class="feed-strip-text">{m.tv_feedStripDescription()}</p>
 			</div>
 
 			<div class="feed-strip-grid">
@@ -73,14 +73,14 @@
 						onclick={() => toggleFeed(feed.slug)}
 						aria-pressed={$activeFeedSlug === feed.slug}
 					>
-						<span class="feed-card-title">{feed.title}</span>
-						<span class="feed-card-description">{feed.description}</span>
+						<span class="feed-card-title">{feed.title()}</span>
+						<span class="feed-card-description">{feed.description()}</span>
 					</button>
 				{/each}
 			</div>
 
 			{#if $activeFeedSlug}
-				<button type="button" class="feed-reset" onclick={clearFeed}>Clear feed</button>
+				<button type="button" class="feed-reset" onclick={clearFeed}>{m.tv_clearFeed()}</button>
 			{/if}
 		</div>
 
@@ -101,7 +101,7 @@
 						type="button"
 						class="search-clear"
 						onclick={clearSearch}
-						aria-label="Clear search"
+						aria-label={m.tv_clearSearch()}
 					>
 						<svg
 							class="h-4 w-4"
@@ -121,7 +121,7 @@
 					autocomplete="off"
 					spellcheck="false"
 					placeholder={m.tv_searchPlaceholder()}
-					aria-label="Search content"
+					aria-label={m.tv_searchAria()}
 					class="search-field"
 				/>
 				<button type="submit" class="hidden" aria-hidden="true" tabindex="-1"></button>
@@ -142,14 +142,14 @@
 					</label>
 				</div>
 
-        <div class="search-select">
-          <select value={$sortBy} onchange={handleSortChange} class={selectClass}>
-            {#each sortOptions as option (option.value)}
-              <option value={option.value}>{option.label()}</option>
-            {/each}
-          </select>
-          <span class="search-caret" aria-hidden="true">▾</span>
-        </div>
+				<div class="search-select">
+				  <select value={$sortBy} onchange={handleSortChange} class={selectClass} aria-label={m.tv_sortLabel()}>
+				    {#each sortOptions as option (option.value)}
+				      <option value={option.value}>{option.label()}</option>
+				    {/each}
+				  </select>
+				  <span class="search-caret" aria-hidden="true">▾</span>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -158,6 +158,18 @@
 
 <style>
 	.search-wrap {
+		--search-border: color-mix(in oklch, var(--foreground) 12%, transparent);
+		--search-border-strong: color-mix(in oklch, var(--foreground) 18%, transparent);
+		--search-field-bg: color-mix(in oklch, var(--card) 62%, transparent);
+		--search-field-bg-soft: color-mix(in oklch, var(--card) 54%, transparent);
+		--search-surface-bg: linear-gradient(
+			155deg,
+			color-mix(in oklch, var(--background) 46%, transparent),
+			color-mix(in oklch, var(--card) 50%, transparent)
+		);
+		--search-accent-soft: color-mix(in oklch, var(--primary) 18%, transparent);
+		--search-accent-border: color-mix(in oklch, var(--primary) 46%, transparent);
+		--search-shadow: 0 40px 100px -55px rgba(2, 6, 23, 0.9);
 		position: relative;
 		z-index: 10;
 		margin: 0;
@@ -170,9 +182,11 @@
 		position: relative;
 		border-radius: 30px;
 		padding: 1.6rem;
-		border: 1px solid rgba(248, 250, 252, 0.2);
-		background: linear-gradient(155deg, rgba(14, 19, 36, 0.96), rgba(10, 14, 26, 0.88));
-		box-shadow: 0 40px 100px -55px rgba(2, 6, 23, 0.9);
+		border: 1px solid var(--search-border-strong);
+		background: var(--search-surface-bg);
+		backdrop-filter: blur(28px) saturate(116%);
+		-webkit-backdrop-filter: blur(28px) saturate(116%);
+		box-shadow: var(--search-shadow);
 		overflow: hidden;
 	}
 
@@ -181,10 +195,12 @@
 		position: absolute;
 		inset: 0;
 		border-radius: inherit;
-		background: linear-gradient(130deg, rgba(229, 9, 20, 0.14), rgba(37, 99, 235, 0.16));
-		opacity: 0.9;
+		background:
+			radial-gradient(120% 110% at 10% 0%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 62%),
+			radial-gradient(90% 90% at 100% 0%, color-mix(in oklch, var(--foreground) 6%, transparent), transparent 68%),
+			linear-gradient(180deg, color-mix(in oklch, var(--foreground) 4%, transparent), transparent 26%);
+		opacity: 1;
 		pointer-events: none;
-		mix-blend-mode: screen;
 	}
 
 	.feed-strip {
@@ -204,16 +220,14 @@
 	}
 
 	.feed-strip-label {
-		font-size: 0.68rem;
-		font-weight: 700;
-		letter-spacing: 0.2em;
-		text-transform: uppercase;
-		color: rgba(248, 250, 252, 0.92);
+		color: color-mix(in oklch, var(--foreground) 94%, transparent);
 	}
 
 	.feed-strip-text {
 		font-size: 0.82rem;
-		color: rgba(226, 232, 240, 0.68);
+		line-height: 1.55;
+		max-width: 60ch;
+		color: color-mix(in oklch, var(--muted-foreground) 88%, transparent);
 	}
 
 	.feed-strip-grid {
@@ -228,35 +242,54 @@
 		min-height: 5.5rem;
 		align-content: start;
 		border-radius: 22px;
-		border: 1px solid rgba(248, 250, 252, 0.12);
+		border: 1px solid var(--search-border);
 		background:
-			linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
-			rgba(7, 10, 20, 0.72);
+			linear-gradient(
+				180deg,
+				color-mix(in oklch, var(--foreground) 5%, transparent),
+				color-mix(in oklch, var(--foreground) 1.5%, transparent)
+			),
+			var(--search-field-bg);
+		backdrop-filter: blur(18px) saturate(110%);
+		-webkit-backdrop-filter: blur(18px) saturate(110%);
 		padding: 0.95rem 1rem;
 		text-align: left;
 		transition:
-			transform 0.18s ease,
-			border-color 0.18s ease,
-			background 0.18s ease,
-			box-shadow 0.18s ease;
+			transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			background 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	.feed-card:hover,
 	.feed-card:focus-visible {
 		transform: translateY(-1px);
-		border-color: rgba(229, 9, 20, 0.35);
+		border-color: var(--search-accent-border);
 		background:
-			linear-gradient(180deg, rgba(229, 9, 20, 0.12), rgba(59, 130, 246, 0.08)),
-			rgba(7, 10, 20, 0.82);
-		box-shadow: 0 20px 40px -32px rgba(2, 6, 23, 0.9);
+			linear-gradient(
+				180deg,
+				color-mix(in oklch, var(--primary) 14%, transparent),
+				color-mix(in oklch, var(--foreground) 3%, transparent)
+			),
+			color-mix(in oklch, var(--card) 78%, transparent);
+		box-shadow:
+			0 0 0 1px color-mix(in oklch, var(--primary) 16%, transparent),
+			0 20px 40px -32px rgba(2, 6, 23, 0.9);
+		outline: none;
 	}
 
 	.feed-card.selected {
-		border-color: rgba(229, 9, 20, 0.48);
+		border-color: color-mix(in oklch, var(--primary) 58%, transparent);
 		background:
-			linear-gradient(180deg, rgba(229, 9, 20, 0.18), rgba(59, 130, 246, 0.1)),
-			rgba(7, 10, 20, 0.88);
-		box-shadow: inset 0 0 0 1px rgba(229, 9, 20, 0.18);
+			linear-gradient(
+				180deg,
+				color-mix(in oklch, var(--primary) 18%, transparent),
+				color-mix(in oklch, var(--foreground) 4%, transparent)
+			),
+			color-mix(in oklch, var(--card) 82%, transparent);
+		box-shadow:
+			inset 0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent),
+			0 18px 38px -30px rgba(65, 9, 16, 0.54);
 	}
 
 	.feed-card-title {
@@ -269,26 +302,34 @@
 	.feed-card-description {
 		font-size: 0.76rem;
 		line-height: 1.45;
-		color: rgba(226, 232, 240, 0.68);
+		color: color-mix(in oklch, var(--muted-foreground) 88%, transparent);
 	}
 
 	.feed-reset {
 		justify-self: start;
 		border-radius: 999px;
-		border: 1px solid rgba(248, 250, 252, 0.18);
-		background: rgba(7, 10, 20, 0.72);
+		border: 1px solid var(--search-border-strong);
+		background: var(--search-field-bg-soft);
+		backdrop-filter: blur(12px) saturate(106%);
+		-webkit-backdrop-filter: blur(12px) saturate(106%);
 		padding: 0.5rem 0.85rem;
 		font-size: 0.68rem;
 		font-weight: 700;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
-		color: rgba(226, 232, 240, 0.8);
+		color: color-mix(in oklch, var(--muted-foreground) 92%, transparent);
+		transition:
+			border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			background 220ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	.feed-reset:hover,
 	.feed-reset:focus-visible {
-		border-color: rgba(248, 250, 252, 0.3);
-		color: rgba(248, 250, 252, 0.96);
+		border-color: var(--search-accent-border);
+		background: var(--search-accent-soft);
+		color: color-mix(in oklch, var(--foreground) 96%, transparent);
+		outline: none;
 	}
 
 	.search-grid {
@@ -310,43 +351,65 @@
 		left: 1rem;
 		top: 50%;
 		transform: translateY(-50%);
-		color: rgba(226, 232, 240, 0.6);
+		color: color-mix(in oklch, var(--foreground) 82%, transparent);
+		filter: drop-shadow(0 1px 8px color-mix(in oklch, var(--background) 40%, transparent));
 	}
 
 	.search-clear {
 		position: absolute;
 		right: 1rem;
 		top: 50%;
-		transform: translateY(-50%);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 2rem;
+		width: 2rem;
 		border-radius: 999px;
+		border: 1px solid transparent;
+		background: transparent;
+		transform: translateY(-50%);
 		padding: 0.2rem;
-		color: rgba(226, 232, 240, 0.6);
-		transition: color 0.2s ease;
+		color: color-mix(in oklch, var(--muted-foreground) 80%, transparent);
+		transition:
+			color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			background 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-color 220ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-	.search-clear:hover {
-		color: rgba(248, 250, 252, 0.9);
+	.search-clear:hover,
+	.search-clear:focus-visible {
+		border-color: color-mix(in oklch, var(--primary) 28%, transparent);
+		background: var(--search-accent-soft);
+		color: color-mix(in oklch, var(--foreground) 96%, transparent);
+		outline: none;
 	}
 
 	.search-field {
 		width: 100%;
 		height: 3.1rem;
 		border-radius: 22px;
-		border: 1px solid rgba(248, 250, 252, 0.15);
-		background: rgba(7, 10, 20, 0.72);
+		border: 1px solid var(--search-border);
+		background: var(--search-field-bg);
+		backdrop-filter: blur(16px) saturate(108%);
+		-webkit-backdrop-filter: blur(16px) saturate(108%);
 		padding: 0 3rem 0 3rem;
 		font-size: 0.9rem;
-		color: rgba(248, 250, 252, 0.92);
-		box-shadow: inset 0 0 0 1px rgba(248, 250, 252, 0.04);
+		color: color-mix(in oklch, var(--foreground) 94%, transparent);
+		box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--foreground) 4%, transparent);
 		transition:
-			border-color 0.2s ease,
-			box-shadow 0.2s ease;
+			border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			background 220ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	.search-field::placeholder {
+		color: color-mix(in oklch, var(--muted-foreground) 80%, transparent);
 	}
 
 	.search-field:focus {
 		outline: none;
-		border-color: rgba(229, 9, 20, 0.6);
-		box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.2);
+		border-color: var(--search-accent-border);
+		box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 20%, transparent);
 	}
 
 	.search-controls {
@@ -366,22 +429,26 @@
 		align-items: center;
 		gap: 0.65rem;
 		border-radius: 999px;
-		border: 1px solid rgba(248, 250, 252, 0.2);
-		background: rgba(8, 12, 24, 0.65);
+		border: 1px solid var(--search-border-strong);
+		background: var(--search-field-bg-soft);
+		backdrop-filter: blur(16px) saturate(108%);
+		-webkit-backdrop-filter: blur(16px) saturate(108%);
 		padding: 0.6rem 1rem;
 		font-size: 0.68rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.2em;
-		color: rgba(226, 232, 240, 0.85);
+		color: color-mix(in oklch, var(--foreground) 88%, transparent);
 		transition:
-			transform 0.2s ease,
-			box-shadow 0.2s ease;
+			transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-color 220ms cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	.tv-search-toggle:hover {
 		transform: translateY(-1px);
 		box-shadow: 0 12px 30px -22px rgba(2, 6, 23, 0.55);
+		border-color: color-mix(in oklch, var(--foreground) 24%, transparent);
 	}
 
 	.search-select {
@@ -393,24 +460,26 @@
 		appearance: none;
 		width: 100%;
 		border-radius: 18px;
-		border: 1px solid rgba(248, 250, 252, 0.2);
-		background: rgba(10, 14, 26, 0.7);
+		border: 1px solid var(--search-border-strong);
+		background: var(--search-field-bg-soft);
+		backdrop-filter: blur(16px) saturate(108%);
+		-webkit-backdrop-filter: blur(16px) saturate(108%);
 		padding: 0.6rem 2.4rem 0.6rem 1rem;
 		font-size: 0.72rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.14em;
-		color: rgba(226, 232, 240, 0.9);
+		color: color-mix(in oklch, var(--foreground) 90%, transparent);
 		transition:
-			border-color 0.2s ease,
-			box-shadow 0.2s ease;
+			border-color 220ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 220ms cubic-bezier(0.16, 1, 0.3, 1);
 		color-scheme: dark;
 	}
 
 	.tv-search-select:focus {
 		outline: none;
-		border-color: rgba(229, 9, 20, 0.6);
-		box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.2);
+		border-color: var(--search-accent-border);
+		box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 20%, transparent);
 	}
 
 	.search-caret {
@@ -419,12 +488,29 @@
 		top: 50%;
 		right: 1rem;
 		transform: translateY(-50%);
-		color: rgba(226, 232, 240, 0.7);
+		color: color-mix(in oklch, var(--muted-foreground) 84%, transparent);
 	}
 
 	.tv-search-select option {
 		background-color: rgb(15, 23, 42);
 		color: rgb(226, 232, 240);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.feed-card,
+		.feed-reset,
+		.search-clear,
+		.search-field,
+		.tv-search-toggle,
+		.tv-search-select {
+			transition: none;
+		}
+
+		.feed-card:hover,
+		.feed-card:focus-visible,
+		.tv-search-toggle:hover {
+			transform: none;
+		}
 	}
 
 	@media (max-width: 1024px) and (min-width: 641px) {

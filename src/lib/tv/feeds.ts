@@ -1,3 +1,5 @@
+import * as m from '$lib/paraglide/messages';
+
 import type { ContentItem, Facets } from './types';
 
 export type FeedFilter = {
@@ -30,16 +32,16 @@ export type FeedFilter = {
 
 export type FeedDefinition = {
 	slug: string;
-	title: string;
-	description: string;
+	title: () => string;
+	description: () => string;
 	filter: FeedFilter;
 };
 
 export const FEEDS: FeedDefinition[] = [
 	{
 		slug: 'documentaries',
-		title: 'Documentaries',
-		description: 'Real stories, interviews, behind-the-scenes.',
+		title: () => m.tv_feed_documentaries_title(),
+		description: () => m.tv_feed_documentaries_description(),
 		filter: {
 			facets: {
 				type: ['documentary']
@@ -48,8 +50,8 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'fiction-films',
-		title: 'Fiction Films',
-		description: 'Narrative-driven parkour films.',
+		title: () => m.tv_feed_fictionFilms_title(),
+		description: () => m.tv_feed_fictionFilms_description(),
 		filter: {
 			facets: {
 				type: ['fiction']
@@ -58,8 +60,8 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'movie-night',
-		title: 'Movie Night',
-		description: 'Long-form movies that can carry the whole evening.',
+		title: () => m.tv_feed_movieNight_title(),
+		description: () => m.tv_feed_movieNight_description(),
 		filter: {
 			itemTypes: ['movie'],
 			durationMinMinutes: 60,
@@ -68,8 +70,8 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'oldskool-classics',
-		title: 'Oldskool Classics',
-		description: 'Foundational movement, vintage energy, and early-era culture.',
+		title: () => m.tv_feed_oldskoolClassics_title(),
+		description: () => m.tv_feed_oldskoolClassics_description(),
 		filter: {
 			yearMax: 2015,
 			excludeFacets: {
@@ -79,8 +81,8 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'educational',
-		title: 'Educational',
-		description: 'Tutorials, talks, and breakdowns that teach something useful.',
+		title: () => m.tv_feed_educational_title(),
+		description: () => m.tv_feed_educational_description(),
 		filter: {
 			facets: {
 				type: ['tutorial', 'talk'],
@@ -90,8 +92,8 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'send-it',
-		title: 'SEND IT',
-		description: 'Big sends, raw commitment, and high-consequence movement.',
+		title: () => m.tv_feed_sendIt_title(),
+		description: () => m.tv_feed_sendIt_description(),
 		filter: {
 			facets: {
 				movement: ['big-sends']

@@ -102,6 +102,7 @@
 	"tv_tracklist": "Tracklist",
 	"tv_ratingsAndReviews": "Ratings & Reviews",
 	"tv_reviews": "Reviews",
+	"tv_noRatings": "Unrated",
 	"tv_noReviews": "No reviews yet.",
 	"tv_loadingReviews": "Loading reviews…",
 	"tv_writeReview": "Write a review",

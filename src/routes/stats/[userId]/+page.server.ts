@@ -160,13 +160,13 @@ export const load = async ({ params, locals, setHeaders }) => {
 	const username: string = String(overview.username ?? 'User');
 
 	type RatingDistRow = { rating: number; count: number };
-	const distRows = ((distRes.data ?? []) as any[]) ?? [];
+	const distRows = (distRes.data ?? []) as any[];
 	const ratingDistribution: RatingDistRow[] = distRows.map((row) => ({
 		rating: Number(row.rating) || 0,
 		count: Number(row.count) || 0
 	}));
 
-	const ratedRows = ((ratedRes.data ?? []) as any[]) ?? [];
+	const ratedRows = (ratedRes.data ?? []) as any[];
 	const ratedItems = (
 		ratedRows as Array<{
 			media_id: number;
@@ -192,7 +192,7 @@ export const load = async ({ params, locals, setHeaders }) => {
 		href: String(item.href ?? '')
 	}));
 
-	const reviewRows = ((reviewsRes.data ?? []) as any[]) ?? [];
+	const reviewRows = (reviewsRes.data ?? []) as any[];
 	const reviewMediaIds = Array.from(
 		new Set(reviewRows.map((r) => Number(r.media_id)).filter((id) => Number.isFinite(id)))
 	);
@@ -242,6 +242,7 @@ export const load = async ({ params, locals, setHeaders }) => {
 	return {
 		username,
 		userId,
+		isOwner: Boolean(viewer?.id && viewer.id === userId),
 		stats: {
 			averageRating: Number(overview.average_rating) || 0,
 			ratingCount: Number(overview.ratings_count) || 0,

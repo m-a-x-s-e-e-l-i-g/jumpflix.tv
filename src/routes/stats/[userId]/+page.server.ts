@@ -2,6 +2,110 @@ import { error } from '@sveltejs/kit';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+type WatchedButNotRatedItem = {
+	id: number;
+	title: string;
+	type: string;
+	href: string;
+	lastWatched: string;
+};
+
+function parseWatchedItemId(mediaId: unknown, mediaType: unknown): number | null {
+	if (mediaType !== 'movie' && mediaType !== 'series') return null;
+	if (typeof mediaId !== 'string') return null;
+
+	const trimmed = mediaId.trim();
+	if (!trimmed) return null;
+
+	const directMatch = trimmed.match(/^\d+$/);
+	if (directMatch) {
+		const parsed = Number.parseInt(trimmed, 10);
+		return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+	}
+
+	const prefixedMatch = trimmed.match(/^(movie|series):(\d+)(?::|$)/i);
+	if (!prefixedMatch) return null;
+
+	const parsed = Number.parseInt(prefixedMatch[2], 10);
+	if (!Number.isSafeInteger(parsed) || parsed <= 0) return null;
+
+	return parsed;
+}
+
+async function loadWatchedButNotRated(supabase: any, userId: string) {
+	const { data: watchRows, error: watchError } = await supabase
+		.from('watch_history')
+		.select('media_id, media_type, updated_at')
+		.eq('user_id', userId)
+		.eq('status', 'active')
+		.eq('is_watched', true)
+		.in('media_type', ['movie', 'series']);
+
+	if (watchError) {
+		throw error(500, watchError.message);
+	}
+
+	const lastWatchedByItemId = new Map<number, string>();
+	for (const row of watchRows ?? []) {
+		const itemId = parseWatchedItemId(row.media_id, row.media_type);
+		if (!itemId) continue;
+		const updatedAt = String(row.updated_at ?? '');
+		const previous = lastWatchedByItemId.get(itemId);
+		if (!previous || updatedAt > previous) {
+			lastWatchedByItemId.set(itemId, updatedAt);
+		}
+	}
+
+	const itemIds = Array.from(lastWatchedByItemId.keys());
+	if (itemIds.length === 0) return [];
+
+	const { data: ratingRows, error: ratingsError } = await supabase
+		.from('ratings')
+		.select('media_id')
+		.eq('user_id', userId)
+		.in('media_id', itemIds);
+
+	if (ratingsError) {
+		throw error(500, ratingsError.message);
+	}
+
+	const ratedIds = new Set(
+		(ratingRows ?? [])
+			.map((row: { media_id: unknown }) => Number(row.media_id))
+			.filter((id: number) => Number.isFinite(id))
+	);
+
+	const unwatchedRatedIds = itemIds.filter((itemId) => !ratedIds.has(itemId));
+	if (unwatchedRatedIds.length === 0) return [];
+
+	const { data: mediaRows, error: mediaError } = await supabase
+		.from('media_items')
+		.select('id, type, title, slug')
+		.in('id', unwatchedRatedIds);
+
+	if (mediaError) {
+		throw error(500, mediaError.message);
+	}
+
+	const watchedItems: Array<WatchedButNotRatedItem | null> = (mediaRows ?? [])
+		.map((item: { id: unknown; title: unknown; type: unknown; slug: unknown }) => {
+			const id = Number(item.id);
+			if (!Number.isFinite(id) || ratedIds.has(id)) return null;
+			return {
+				id,
+				title: String(item.title ?? ''),
+				type: String(item.type ?? ''),
+				href: `/${String(item.type ?? '')}/${String(item.slug ?? '')}`,
+				lastWatched: lastWatchedByItemId.get(id) ?? ''
+			};
+		});
+
+	return watchedItems
+		.filter((item: WatchedButNotRatedItem | null): item is WatchedButNotRatedItem => Boolean(item))
+		.sort((a, b) => b.lastWatched.localeCompare(a.lastWatched))
+		.slice(0, 50);
+}
+
 export const load = async ({ params, locals, setHeaders }) => {
 	const userId = params.userId;
 	if (!UUID_RE.test(userId)) throw error(404, 'Not found');
@@ -18,7 +122,7 @@ export const load = async ({ params, locals, setHeaders }) => {
 		supabase.rpc('user_stats_overview', { target_user: userId }),
 		supabase.rpc('user_ratings_distribution', { target_user: userId }),
 		supabase.rpc('user_rated_media', { target_user: userId }),
-		supabase.rpc('user_watched_not_rated', { target_user: userId, limit_n: 50 }),
+		loadWatchedButNotRated(supabase, userId),
 		(supabase as any)
 			.from('reviews')
 			.select('id, media_id, body, created_at, updated_at')
@@ -30,8 +134,7 @@ export const load = async ({ params, locals, setHeaders }) => {
 	const rpcErrors = [
 		overviewRes.error,
 		distRes.error,
-		ratedRes.error,
-		watchedNotRatedRes.error
+		ratedRes.error
 	].filter((e): e is NonNullable<typeof e> => Boolean(e));
 	if (rpcErrors.length > 0) {
 		const message = rpcErrors.map((e) => e.message).join(' | ');
@@ -82,20 +185,11 @@ export const load = async ({ params, locals, setHeaders }) => {
 		href: `/${String(r.type ?? '')}/${String(r.slug ?? '')}`
 	}));
 
-	const watchedRows = ((watchedNotRatedRes.data ?? []) as any[]) ?? [];
-	const watchedButNotRated = (
-		watchedRows as Array<{
-			id: number;
-			type: string;
-			title: string;
-			slug: string;
-			last_watched: string;
-		}>
-	).map((item) => ({
+	const watchedButNotRated = watchedNotRatedRes.map((item: WatchedButNotRatedItem) => ({
 		id: Number(item.id) || 0,
 		title: String(item.title ?? ''),
 		type: String(item.type ?? ''),
-		href: `/${String(item.type ?? '')}/${String(item.slug ?? '')}`
+		href: String(item.href ?? '')
 	}));
 
 	const reviewRows = ((reviewsRes.data ?? []) as any[]) ?? [];

@@ -22,11 +22,6 @@
 		searchQuery.set('');
 	}
 
-	function handleInput(event: Event) {
-		const target = event.target as HTMLInputElement;
-		searchQuery.set(target.value);
-	}
-
 	function handleSortChange(event: Event) {
 		const target = event.target as HTMLSelectElement;
 		sortBy.set(target.value as SortBy);
@@ -96,6 +91,15 @@
 						/>
 					</svg>
 				</span>
+				<input
+					bind:value={$searchQuery}
+					type="text"
+					autocomplete="off"
+					spellcheck="false"
+					placeholder={m.tv_searchPlaceholder()}
+					aria-label={m.tv_searchAria()}
+					class="search-field"
+				/>
 				{#if $searchQuery}
 					<button
 						type="button"
@@ -114,16 +118,6 @@
 						</svg>
 					</button>
 				{/if}
-				<input
-					value={$searchQuery}
-					oninput={handleInput}
-					type="text"
-					autocomplete="off"
-					spellcheck="false"
-					placeholder={m.tv_searchPlaceholder()}
-					aria-label={m.tv_searchAria()}
-					class="search-field"
-				/>
 				<button type="submit" class="hidden" aria-hidden="true" tabindex="-1"></button>
 			</form>
 
@@ -359,6 +353,7 @@
 		position: absolute;
 		right: 1rem;
 		top: 50%;
+		z-index: 1;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;

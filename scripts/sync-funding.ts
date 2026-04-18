@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
-import type { Database } from '../src/lib/supabase/types';
+import type { Database, Json } from '../src/lib/supabase/types';
 
 dotenv.config({ path: '.env' });
 
@@ -15,8 +15,17 @@ type OpenAICostBucket = {
 	results?: unknown;
 };
 
+type BunnyBillingRecord = Record<string, unknown>;
+
+type ExternalFundingSource = {
+	sourceSystem: string;
+	displayName: string;
+	rows: ProjectCostInsert[] | null;
+};
+
 const OPENAI_COSTS_START_FALLBACK = '2024-01-01';
 const OPENAI_SOURCE_SYSTEM = 'openai_api';
+const BUNNY_SOURCE_SYSTEM = 'bunny_billing_api';
 
 function requireEnv(name: string): string {
 	const value = String(process.env[name] ?? '').trim();
@@ -40,6 +49,134 @@ function toCurrency(value: unknown): string {
 	return typeof value === 'string' && value.trim().length === 3
 		? value.trim().toUpperCase()
 		: 'USD';
+}
+
+function firstString(...values: unknown[]): string | null {
+	for (const value of values) {
+		if (typeof value === 'string' && value.trim()) {
+			return value.trim();
+		}
+	}
+	return null;
+}
+
+function firstFiniteNumber(...values: unknown[]): number | null {
+	for (const value of values) {
+		const parsed = typeof value === 'number' ? value : Number(value);
+		if (Number.isFinite(parsed)) {
+			return Math.round(parsed * 100) / 100;
+		}
+	}
+	return null;
+}
+
+function normalizeIsoDate(value: unknown): string | null {
+	if (typeof value !== 'string' || !value.trim()) return null;
+	const parsed = Date.parse(value);
+	if (!Number.isFinite(parsed)) return null;
+	return new Date(parsed).toISOString();
+}
+
+function pickBunnyCategory(record: BunnyBillingRecord): ProjectCostInsert['category'] {
+	const haystack = [
+		firstString(record['Type']),
+		firstString(record['Category']),
+		firstString(record['Description']),
+		firstString(record['ProductName']),
+		firstString(record['ServiceType'])
+	]
+		.filter(Boolean)
+		.join(' ')
+		.toLowerCase();
+
+	if (haystack.includes('stream') || haystack.includes('video') || haystack.includes('cdn')) {
+		return 'video';
+	}
+	if (haystack.includes('storage') || haystack.includes('volume')) {
+		return 'database';
+	}
+	return 'other';
+}
+
+function extractBunnyRecords(payload: unknown): BunnyBillingRecord[] {
+	if (Array.isArray(payload)) {
+		return payload.filter((entry): entry is BunnyBillingRecord => Boolean(entry) && typeof entry === 'object');
+	}
+
+	if (!payload || typeof payload !== 'object') {
+		throw new Error('Bunny billing response was not an object or array.');
+	}
+
+	const container = payload as Record<string, unknown>;
+	const candidates = [
+		container['Items'],
+		container['Data'],
+		container['Results'],
+		container['Records'],
+		container['Invoices'],
+		container['BillingRequests'],
+		container['History'],
+		container['BillingHistory']
+	];
+
+	for (const candidate of candidates) {
+		if (Array.isArray(candidate)) {
+			return candidate.filter((entry): entry is BunnyBillingRecord => Boolean(entry) && typeof entry === 'object');
+		}
+	}
+
+	throw new Error('Could not find a bill list in the Bunny billing response.');
+}
+
+function mapBunnyRecordToCost(record: BunnyBillingRecord): ProjectCostInsert | null {
+	const amount = firstFiniteNumber(
+		record['Amount'],
+		record['TotalAmount'],
+		record['Total'],
+		record['GrandTotal'],
+		record['Price']
+	);
+	if (amount === null || amount <= 0) return null;
+
+	const occurredAt =
+		normalizeIsoDate(record['Date']) ??
+		normalizeIsoDate(record['CreatedAt']) ??
+		normalizeIsoDate(record['BillingDate']) ??
+		normalizeIsoDate(record['IssueDate']) ??
+		normalizeIsoDate(record['GeneratedAt']);
+	if (!occurredAt) return null;
+
+	const reference =
+		firstString(
+			record['Id'],
+			record['ID'],
+			record['Guid'],
+			record['Number'],
+			record['InvoiceNumber'],
+			record['Reference']
+		) ?? `${occurredAt.slice(0, 10)}:${amount}:${toCurrency(record['Currency'] ?? record['CurrencyCode'])}`;
+
+	const description =
+		firstString(record['Description'], record['Note'], record['Details'], record['ProductName']) ??
+		'Imported from the Bunny.net billing API.';
+
+	const invoiceLabel = firstString(record['Number'], record['InvoiceNumber'], record['Reference']);
+
+	return {
+		title: invoiceLabel ? `Bunny.net bill ${invoiceLabel}` : 'Bunny.net bill',
+		description,
+		vendor: 'Bunny.net',
+		category: pickBunnyCategory(record),
+		amount,
+		currency: toCurrency(record['Currency'] ?? record['CurrencyCode']),
+		occurred_at: occurredAt,
+		coverage: 'direct',
+		entry_method: 'api_import',
+		source_system: BUNNY_SOURCE_SYSTEM,
+		source_reference: `billing:${reference}`,
+		is_public: true,
+		metadata: record as Json
+	};
 }
 
 function toInteger(value: unknown): number | null {
@@ -148,6 +285,36 @@ async function fetchOpenAICostRows(): Promise<ProjectCostInsert[] | null> {
 	return rows;
 }
 
+async function fetchBunnyBillingRows(): Promise<ProjectCostInsert[] | null> {
+	const apiKey = optionalEnv('BUNNYNET_API_KEY') ?? optionalEnv('BUNNY_API_KEY');
+	if (!apiKey) {
+		console.log('[funding-sync] BUNNYNET_API_KEY not configured, skipping Bunny billing import.');
+		return null;
+	}
+
+	const response = await fetch('https://api.bunny.net/billing', {
+		headers: {
+			AccessKey: apiKey,
+			Accept: 'application/json'
+		}
+	});
+
+	if (!response.ok) {
+		const detail = await response.text().catch(() => '');
+		throw new Error(`Bunny billing import failed: ${response.status} ${detail || response.statusText}`);
+	}
+
+	const payload = (await response.json()) as unknown;
+	const records = extractBunnyRecords(payload);
+	const rows = records.map(mapBunnyRecordToCost).filter((row): row is ProjectCostInsert => Boolean(row));
+
+	if (!rows.length && records.length) {
+		throw new Error('Bunny billing import returned records, but none matched the expected bill shape.');
+	}
+
+	return rows;
+}
+
 function equivalentCost(existing: Pick<ProjectCostRow, 'title' | 'description' | 'vendor' | 'category' | 'amount' | 'currency' | 'occurred_at' | 'coverage' | 'entry_method' | 'is_public' | 'metadata'>, incoming: ProjectCostInsert): boolean {
 	return (
 		existing.title === incoming.title &&
@@ -164,19 +331,26 @@ function equivalentCost(existing: Pick<ProjectCostRow, 'title' | 'description' |
 	);
 }
 
-async function syncImportedCosts(rows: ProjectCostInsert[]) {
+function createSupabaseServiceClient() {
 	const supabaseUrl = requireEnv('PUBLIC_SUPABASE_URL');
 	const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
-	const supabase = createClient<Database>(supabaseUrl, serviceKey, {
+	return createClient<Database>(supabaseUrl, serviceKey, {
 		auth: { persistSession: false }
 	});
+}
 
+async function syncImportedCosts(
+	supabase: ReturnType<typeof createClient<Database>>,
+	sourceSystem: string,
+	displayName: string,
+	rows: ProjectCostInsert[]
+) {
 	const { data: existingRows, error: existingError } = await supabase
 		.from('project_costs')
 		.select(
 			'id, title, description, vendor, category, amount, currency, occurred_at, coverage, entry_method, is_public, metadata, source_system, source_reference'
 		)
-		.eq('source_system', OPENAI_SOURCE_SYSTEM);
+		.eq('source_system', sourceSystem);
 
 	if (existingError) {
 		throw new Error(existingError.message);
@@ -217,18 +391,39 @@ async function syncImportedCosts(rows: ProjectCostInsert[]) {
 	}
 
 	console.log(
-		`[funding-sync] OpenAI costs synced. inserted=${inserts.length} updated=${updates.length} deleted=${staleIds.length}`
+		`[funding-sync] ${displayName} synced. inserted=${inserts.length} updated=${updates.length} deleted=${staleIds.length}`
 	);
 	return { inserted: inserts.length, updated: updates.length, deleted: staleIds.length };
 }
 
 async function main() {
-	const openAiRows = await fetchOpenAICostRows();
-	if (openAiRows === null) {
+	const sources: ExternalFundingSource[] = [
+		{
+			sourceSystem: OPENAI_SOURCE_SYSTEM,
+			displayName: 'OpenAI costs',
+			rows: await fetchOpenAICostRows()
+		},
+		{
+			sourceSystem: BUNNY_SOURCE_SYSTEM,
+			displayName: 'Bunny.net bills',
+			rows: await fetchBunnyBillingRows()
+		}
+	];
+
+	const configuredSources = sources.filter(
+		(source): source is ExternalFundingSource & { rows: ProjectCostInsert[] } => source.rows !== null
+	);
+
+	if (!configuredSources.length) {
 		console.log('[funding-sync] No external funding sources configured.');
 		return;
 	}
-	await syncImportedCosts(openAiRows);
+
+	const supabase = createSupabaseServiceClient();
+	for (const source of configuredSources) {
+		await syncImportedCosts(supabase, source.sourceSystem, source.displayName, source.rows);
+	}
+
 	console.log('[funding-sync] Funding sync completed.');
 }
 

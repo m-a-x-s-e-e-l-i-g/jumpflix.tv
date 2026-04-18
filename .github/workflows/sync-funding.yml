@@ -29,5 +29,6 @@ jobs:
         env:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BUNNYNET_API_KEY: ${{ secrets.BUNNYNET_API_KEY }}
           OPENAI_ADMIN_KEY: ${{ secrets.OPENAI_ADMIN_KEY }}
           OPENAI_COSTS_START_DATE: ${{ secrets.OPENAI_COSTS_START_DATE }}

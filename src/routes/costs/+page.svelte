@@ -366,8 +366,8 @@
                         Supabase is still on the free plan.
                     </p>
                     <p>
-                        OpenAI API costs import automatically when billing access is configured on the server.
-                        Bunny video costs are still planned next.
+                        OpenAI API costs and Bunny.net bills import automatically when billing access is configured
+                        on the server.
                     </p>
                 </div>
             </section>

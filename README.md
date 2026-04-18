@@ -108,6 +108,7 @@ SPOTIFY_CLIENT_SECRET=
 FORCE_SITEMAP_SUBMISSION=false
 
 # Funding sync (optional - for daily import of external cost data into project_costs)
+BUNNYNET_API_KEY=
 OPENAI_ADMIN_KEY=
 OPENAI_COSTS_START_DATE=2024-01-01
 ```
@@ -220,6 +221,7 @@ SUPABASE_SERVICE_ROLE_KEY="service-role-key" # server-only
 ADMIN_EMAILS="you@example.com" # server-only (comma-separated)
 ADMIN_USER_IDS="" # server-only (comma-separated)
 PARKOUR_SPOT_API_KEY="" # server-only (used by /api/parkour-spot/* proxy)
+BUNNYNET_API_KEY="" # scripts/workflows only, used for Bunny.net billing import
 OPENAI_ADMIN_KEY="" # scripts/workflows only, used for external funding cost import
 OPENAI_COSTS_START_DATE="2024-01-01" # scripts/workflows only
 ```
@@ -240,6 +242,7 @@ The repo also includes a daily GitHub Actions workflow at `.github/workflows/syn
 
 - `PUBLIC_SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `BUNNYNET_API_KEY`
 - `OPENAI_ADMIN_KEY`
 - `OPENAI_COSTS_START_DATE` (optional)
 

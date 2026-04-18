@@ -33,7 +33,6 @@ export default defineConfig(({ mode }) => ({
 		rollupOptions: {
 			output: {
 				manualChunks: {
-					'vendor-lucide': ['@lucide/svelte', 'lucide-svelte'],
 					'vendor-sonner': ['svelte-sonner']
 				}
 			}

@@ -134,6 +134,7 @@ npm run check      # svelte-check + TS
 npm run lint       # eslint + prettier check
 npm run format     # auto-format
 npm run sync:funding  # import external funding data into Supabase
+npm run sync:funding:debug:bunny  # print Bunny payload shape and mapped rows
 ```
 
 Build production bundle:
@@ -237,6 +238,14 @@ Run the importer locally:
 ```bash
 npm run sync:funding
 ```
+
+Debug only the Bunny import mapping:
+
+```bash
+npm run sync:funding:debug:bunny
+```
+
+You can also use `DEBUG_BUNNY_SYNC=1` when running the sync script manually.
 
 The repo also includes a daily GitHub Actions workflow at `.github/workflows/sync-funding.yml`. Configure these repository secrets before enabling it:
 

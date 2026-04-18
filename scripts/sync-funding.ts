@@ -16,6 +16,7 @@ type OpenAICostBucket = {
 };
 
 type BunnyBillingRecord = Record<string, unknown>;
+type BunnyBillingSummary = Record<string, unknown>;
 
 type ExternalFundingSource = {
 	sourceSystem: string;
@@ -26,6 +27,38 @@ type ExternalFundingSource = {
 const OPENAI_COSTS_START_FALLBACK = '2024-01-01';
 const OPENAI_SOURCE_SYSTEM = 'openai_api';
 const BUNNY_SOURCE_SYSTEM = 'bunny_billing_api';
+const DEBUG_BUNNY = process.argv.includes('--debug-bunny') || optionalEnv('DEBUG_BUNNY_SYNC') === '1';
+
+const BUNNY_MONTHLY_CHARGE_FIELDS: Array<{
+	field: string;
+	title: string;
+	category: ProjectCostInsert['category'];
+}> = [
+	{ field: 'MonthlyChargesEUTraffic', title: 'Bunny.net EU traffic', category: 'video' },
+	{ field: 'MonthlyChargesUSTraffic', title: 'Bunny.net US traffic', category: 'video' },
+	{ field: 'MonthlyChargesASIATraffic', title: 'Bunny.net Asia traffic', category: 'video' },
+	{ field: 'MonthlyChargesAFTraffic', title: 'Bunny.net Africa traffic', category: 'video' },
+	{ field: 'MonthlyChargesSATraffic', title: 'Bunny.net South America traffic', category: 'video' },
+	{ field: 'MonthlyChargesStorage', title: 'Bunny.net storage', category: 'video' },
+	{ field: 'MonthlyChargesDNS', title: 'Bunny.net DNS', category: 'other' },
+	{ field: 'MonthlyChargesOptimizer', title: 'Bunny.net optimizer', category: 'video' },
+	{ field: 'MonthlyChargesTranscribe', title: 'Bunny.net transcribe', category: 'video' },
+	{ field: 'MonthlyChargesPremiumEncoding', title: 'Bunny.net premium encoding', category: 'video' },
+	{ field: 'MonthlyChargesLiveEncoding', title: 'Bunny.net live encoding', category: 'video' },
+	{ field: 'MonthlyChargesExtraPullZones', title: 'Bunny.net extra pull zones', category: 'video' },
+	{ field: 'MonthlyChargesExtraStorageZones', title: 'Bunny.net extra storage zones', category: 'video' },
+	{ field: 'MonthlyChargesExtraDnsZones', title: 'Bunny.net extra DNS zones', category: 'other' },
+	{ field: 'MonthlyChargesExtraVideoLibraries', title: 'Bunny.net extra video libraries', category: 'video' },
+	{ field: 'MonthlyChargesScripting', title: 'Bunny.net scripting', category: 'developer-tools' },
+	{ field: 'MonthlyChargesScriptingRequests', title: 'Bunny.net scripting requests', category: 'developer-tools' },
+	{ field: 'MonthlyChargesScriptingCpu', title: 'Bunny.net scripting CPU', category: 'developer-tools' },
+	{ field: 'MonthlyChargesDrm', title: 'Bunny.net DRM', category: 'video' },
+	{ field: 'MonthlyChargesMagicContainers', title: 'Bunny.net magic containers', category: 'developer-tools' },
+	{ field: 'MonthlyChargesShield', title: 'Bunny.net shield', category: 'other' },
+	{ field: 'MonthlyChargesTaxes', title: 'Bunny.net taxes', category: 'other' },
+	{ field: 'MonthlyChargesWebSockets', title: 'Bunny.net websockets', category: 'video' },
+	{ field: 'MonthlyChargesDB', title: 'Bunny.net database', category: 'database' }
+];
 
 function requireEnv(name: string): string {
 	const value = String(process.env[name] ?? '').trim();
@@ -77,6 +110,51 @@ function normalizeIsoDate(value: unknown): string | null {
 	return new Date(parsed).toISOString();
 }
 
+function toSerializableDebugValue(value: unknown): Json {
+	if (
+		value === null ||
+		typeof value === 'string' ||
+		typeof value === 'number' ||
+		typeof value === 'boolean'
+	) {
+		return value;
+	}
+
+	if (Array.isArray(value)) {
+		return value.map((entry) => toSerializableDebugValue(entry));
+	}
+
+	if (value && typeof value === 'object') {
+		const result: Record<string, Json> = {};
+		for (const [key, entry] of Object.entries(value)) {
+			result[key] = toSerializableDebugValue(entry);
+		}
+		return result;
+	}
+
+	return String(value);
+}
+
+function debugBunny(label: string, payload: unknown): void {
+	if (!DEBUG_BUNNY) return;
+	console.log(`[funding-sync][bunny-debug] ${label}`);
+	console.log(JSON.stringify(toSerializableDebugValue(payload), null, 2));
+}
+
+function redactBunnyRecord(record: BunnyBillingRecord): BunnyBillingRecord {
+	const clone: BunnyBillingRecord = { ...record };
+	if (typeof clone['Payer'] === 'string') {
+		clone['Payer'] = '[redacted]';
+	}
+	if (typeof clone['DocumentDownloadUrl'] === 'string') {
+		clone['DocumentDownloadUrl'] = '[redacted]';
+	}
+	if (typeof clone['DetailedDocumentDownloadUrl'] === 'string') {
+		clone['DetailedDocumentDownloadUrl'] = '[redacted]';
+	}
+	return clone;
+}
+
 function pickBunnyCategory(record: BunnyBillingRecord): ProjectCostInsert['category'] {
 	const haystack = [
 		firstString(record['Type']),
@@ -99,16 +177,13 @@ function pickBunnyCategory(record: BunnyBillingRecord): ProjectCostInsert['categ
 }
 
 function extractBunnyRecords(payload: unknown): BunnyBillingRecord[] {
-	if (Array.isArray(payload)) {
-		return payload.filter((entry): entry is BunnyBillingRecord => Boolean(entry) && typeof entry === 'object');
-	}
-
 	if (!payload || typeof payload !== 'object') {
-		throw new Error('Bunny billing response was not an object or array.');
+		return [];
 	}
 
 	const container = payload as Record<string, unknown>;
 	const candidates = [
+		container['BillingRecords'],
 		container['Items'],
 		container['Data'],
 		container['Results'],
@@ -125,58 +200,52 @@ function extractBunnyRecords(payload: unknown): BunnyBillingRecord[] {
 		}
 	}
 
-	throw new Error('Could not find a bill list in the Bunny billing response.');
+	return [];
 }
 
-function mapBunnyRecordToCost(record: BunnyBillingRecord): ProjectCostInsert | null {
-	const amount = firstFiniteNumber(
-		record['Amount'],
-		record['TotalAmount'],
-		record['Total'],
-		record['GrandTotal'],
-		record['Price']
-	);
-	if (amount === null || amount <= 0) return null;
+function buildBunnySummaryRows(payload: unknown): ProjectCostInsert[] {
+	if (!payload || typeof payload !== 'object') {
+		throw new Error('Bunny billing response was not an object.');
+	}
 
-	const occurredAt =
-		normalizeIsoDate(record['Date']) ??
-		normalizeIsoDate(record['CreatedAt']) ??
-		normalizeIsoDate(record['BillingDate']) ??
-		normalizeIsoDate(record['IssueDate']) ??
-		normalizeIsoDate(record['GeneratedAt']);
-	if (!occurredAt) return null;
+	const summary = payload as BunnyBillingSummary;
+	const currency = toCurrency(summary['Currency'] ?? summary['AccountCurrency'] ?? 'EUR');
+	const now = new Date();
+	const monthAnchor = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+	const monthKey = monthAnchor.slice(0, 7);
+	const vatRate = firstFiniteNumber(summary['VATRate']);
+	const thisMonthCharges = firstFiniteNumber(summary['ThisMonthCharges']);
 
-	const reference =
-		firstString(
-			record['Id'],
-			record['ID'],
-			record['Guid'],
-			record['Number'],
-			record['InvoiceNumber'],
-			record['Reference']
-		) ?? `${occurredAt.slice(0, 10)}:${amount}:${toCurrency(record['Currency'] ?? record['CurrencyCode'])}`;
+	const rows: ProjectCostInsert[] = [];
 
-	const description =
-		firstString(record['Description'], record['Note'], record['Details'], record['ProductName']) ??
-		'Imported from the Bunny.net billing API.';
+	for (const { field, title, category } of BUNNY_MONTHLY_CHARGE_FIELDS) {
+		const amount = firstFiniteNumber(summary[field]);
+		if (amount === null || amount <= 0) continue;
 
-	const invoiceLabel = firstString(record['Number'], record['InvoiceNumber'], record['Reference']);
+		rows.push({
+			title,
+			description: 'Imported from the Bunny.net billing summary.',
+			vendor: 'Bunny.net',
+			category,
+			amount,
+			currency,
+			occurred_at: monthAnchor,
+			coverage: 'direct',
+			entry_method: 'api_import',
+			source_system: BUNNY_SOURCE_SYSTEM,
+			source_reference: `billing-summary:${monthKey}:${field}`,
+			is_public: true,
+			metadata: {
+				source_kind: 'billing_summary',
+				field,
+				this_month_charges: thisMonthCharges,
+				vat_rate: vatRate,
+				minimum_monthly_commit: firstFiniteNumber(summary['MinimumMonthlyCommit'])
+			}
+		});
+	}
 
-	return {
-		title: invoiceLabel ? `Bunny.net bill ${invoiceLabel}` : 'Bunny.net bill',
-		description,
-		vendor: 'Bunny.net',
-		category: pickBunnyCategory(record),
-		amount,
-		currency: toCurrency(record['Currency'] ?? record['CurrencyCode']),
-		occurred_at: occurredAt,
-		coverage: 'direct',
-		entry_method: 'api_import',
-		source_system: BUNNY_SOURCE_SYSTEM,
-		source_reference: `billing:${reference}`,
-		is_public: true,
-		metadata: record as Json
-	};
+	return rows;
 }
 
 function toInteger(value: unknown): number | null {
@@ -305,11 +374,47 @@ async function fetchBunnyBillingRows(): Promise<ProjectCostInsert[] | null> {
 	}
 
 	const payload = (await response.json()) as unknown;
-	const records = extractBunnyRecords(payload);
-	const rows = records.map(mapBunnyRecordToCost).filter((row): row is ProjectCostInsert => Boolean(row));
+	debugBunny('Raw Bunny billing payload preview', payload);
 
-	if (!rows.length && records.length) {
-		throw new Error('Bunny billing import returned records, but none matched the expected bill shape.');
+	const records = extractBunnyRecords(payload);
+	debugBunny(
+		'Extracted Bunny billing records summary',
+		records.slice(0, 3).map((record, index) => ({
+			index,
+			keys: Object.keys(record).sort(),
+			record: redactBunnyRecord(record)
+		}))
+	);
+
+	const rows = buildBunnySummaryRows(payload);
+	const payloadObject = payload as BunnyBillingSummary;
+	const exactMappedTotal = rows.reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
+	debugBunny(
+		'Mapped Bunny cost rows preview',
+		rows.slice(0, 5).map((row) => ({
+			title: row.title,
+			amount: row.amount,
+			currency: row.currency,
+			occurred_at: row.occurred_at,
+			source_reference: row.source_reference,
+			category: row.category
+		}))
+	);
+	debugBunny('Bunny monthly totals comparison', {
+		thisMonthChargesRaw: payloadObject['ThisMonthCharges'],
+		mappedRoundedRowTotal: exactMappedTotal,
+		differenceAfterRowRounding:
+			typeof payloadObject['ThisMonthCharges'] === 'number'
+				? Math.round((payloadObject['ThisMonthCharges'] - exactMappedTotal) * 1000000) / 1000000
+				: null
+	});
+
+	if (!rows.length) {
+		throw new Error(
+			records.length
+				? 'Bunny billing import returned account records but no positive monthly charge summary rows.'
+				: 'Bunny billing import returned no positive monthly charge summary rows.'
+		);
 	}
 
 	return rows;
@@ -397,6 +502,18 @@ async function syncImportedCosts(
 }
 
 async function main() {
+	if (DEBUG_BUNNY) {
+		console.log('[funding-sync][bunny-debug] Bunny debug mode enabled.');
+		const bunnyRows = await fetchBunnyBillingRows();
+		if (bunnyRows === null) {
+			console.log('[funding-sync][bunny-debug] BUNNYNET_API_KEY not configured.');
+			return;
+		}
+		console.log(`[funding-sync][bunny-debug] Bunny mapped row count: ${bunnyRows.length}`);
+		console.log('[funding-sync][bunny-debug] Bunny debug fetch completed.');
+		return;
+	}
+
 	const sources: ExternalFundingSource[] = [
 		{
 			sourceSystem: OPENAI_SOURCE_SYSTEM,

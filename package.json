@@ -15,6 +15,7 @@
 		"lint": "prettier --check . && eslint .",
 		"admin": "tsx scripts/admin-cli.ts",
 		"backup": "tsx scripts/backup-database.ts",
+		"sync:funding": "tsx scripts/sync-funding.ts",
 		"submit-sitemap": "node scripts/submit-sitemap.mjs",
 		"generate:blurhash": "node scripts/generate-blurhash.mjs",
 		"generate:icons": "node scripts/generate-icons.mjs",

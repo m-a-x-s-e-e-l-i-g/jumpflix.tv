@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { isAdminUser, requireAdmin } from '$lib/server/admin';
-import { loadPublicFundingData } from '$lib/server/funding';
+import { invalidatePublicFundingCache, loadPublicFundingData } from '$lib/server/funding';
 
 const COST_CATEGORIES = ['hosting', 'video', 'ai', 'developer-tools', 'database', 'other'] as const;
 const COST_COVERAGE = ['direct', 'sponsored', 'waived'] as const;
@@ -98,6 +98,7 @@ export const actions: Actions = {
         });
 
         if (error) return fail(400, { message: error.message, adminSection: 'cost' });
+        invalidatePublicFundingCache();
 
         return { ok: true, success: 'Cost added.', adminSection: 'cost' };
     },
@@ -129,6 +130,7 @@ export const actions: Actions = {
         });
 
         if (error) return fail(400, { message: error.message, adminSection: 'donation' });
+        invalidatePublicFundingCache();
 
         return { ok: true, success: 'Donation added.', adminSection: 'donation' };
     },
@@ -144,6 +146,7 @@ export const actions: Actions = {
         const supabase = createSupabaseServiceClient();
         const { error } = await supabase.from('project_costs').delete().eq('id', id);
         if (error) return fail(400, { message: error.message, adminSection: 'cost' });
+        invalidatePublicFundingCache();
 
         return { ok: true, success: 'Cost deleted.', adminSection: 'cost' };
     },
@@ -159,6 +162,7 @@ export const actions: Actions = {
         const supabase = createSupabaseServiceClient();
         const { error } = await supabase.from('project_donations').delete().eq('id', id);
         if (error) return fail(400, { message: error.message, adminSection: 'donation' });
+        invalidatePublicFundingCache();
 
         return { ok: true, success: 'Donation deleted.', adminSection: 'donation' };
     }

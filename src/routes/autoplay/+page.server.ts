@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { fetchEpisodesBySeasonId } from '$lib/server/content-service';
+import { fetchAllContent } from '$lib/server/content-service';
 import { resolveInlinePlaybackSource, resolveMoviePlaybackSource } from '$lib/tv/playback-source';
 import type { ContentItem, Movie, Series, VideoTrack } from '$lib/tv/types';
 import { decode } from 'html-entities';
@@ -117,9 +118,8 @@ async function buildAutoplayQueue(content: ContentItem[]): Promise<AutoplayEntry
 	return shuffleEntries(uniqueEntries);
 }
 
-export const load: PageServerLoad = async ({ parent, setHeaders }) => {
-	const parentData = await parent();
-	const content = Array.isArray(parentData.content) ? (parentData.content as ContentItem[]) : [];
+export const load: PageServerLoad = async ({ setHeaders }) => {
+	const content = await fetchAllContent();
 	const queue = await buildAutoplayQueue(content);
 
 	setHeaders({

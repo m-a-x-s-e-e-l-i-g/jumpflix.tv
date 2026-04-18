@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ContentItem, Episode } from './types';
+	import type { ContentItem, Episode, Movie } from './types';
 	import { isInlinePlayable } from './utils';
 	import { getUrlForItem, getEpisodeUrl } from './slug';
 	import { browser } from '$app/environment';
@@ -7,6 +7,7 @@
 	import { toast } from 'svelte-sonner';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import Link2Icon from '@lucide/svelte/icons/link-2';
+	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
@@ -257,6 +258,10 @@
 	let playObserver: IntersectionObserver | null = null;
 	let showStickyPlay = false;
 	let isSmallScreen = false;
+	let regeneratingPoster = false;
+	let posterOverrideUrl: string | null = null;
+	let posterRefreshVersion = 0;
+	let lastPosterSelectionKey = '';
 
 	function setupStickyPlayObserver() {
 		if (!browser) return;
@@ -276,6 +281,70 @@
 			{ threshold: 0.01 }
 		);
 		playObserver.observe(playObserverEl);
+	}
+
+	function appendCacheBust(url: string, version: number): string {
+		if (!version) return url;
+		return `${url}${url.includes('?') ? '&' : '?'}v=${version}`;
+	}
+
+	$: movieForPoster = selected?.type === 'movie' ? (selected as Movie) : null;
+	$: posterSelectionKey = selected
+		? `${selected.type}:${selected.id}:${selected.thumbnail ?? ''}`
+		: '';
+	$: if (posterSelectionKey !== lastPosterSelectionKey) {
+		lastPosterSelectionKey = posterSelectionKey;
+		posterOverrideUrl = null;
+		posterRefreshVersion = 0;
+		regeneratingPoster = false;
+	}
+	$: isLocalPosterRegenerationEnabled = Boolean(
+		browser &&
+			$page.data?.isAdmin === true &&
+			window.location.hostname === 'localhost' &&
+			movieForPoster?.slug?.trim() &&
+			movieForPoster?.videoId?.trim()
+	);
+	$: resolvedPosterUrl = posterOverrideUrl ?? selected?.thumbnail ?? '';
+	$: displayPosterUrl = resolvedPosterUrl
+		? appendCacheBust(resolvedPosterUrl, posterRefreshVersion)
+		: '';
+
+	async function regeneratePoster() {
+		if (!movieForPoster || regeneratingPoster) return;
+
+		regeneratingPoster = true;
+
+		try {
+			const res = await fetch('/api/admin/generate-poster', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					videoId: movieForPoster.videoId?.trim(),
+					slug: movieForPoster.slug.trim(),
+					title: movieForPoster.title.trim(),
+					includeTitle: false
+				})
+			});
+
+			if (!res.ok) {
+				const body: unknown = await res.json().catch(() => ({}));
+				const message =
+					body !== null && typeof body === 'object' && 'message' in body
+						? String((body as { message: unknown }).message)
+						: '';
+				throw new Error(message || `HTTP ${res.status}`);
+			}
+
+			const data = (await res.json()) as { posterUrl?: string };
+			posterOverrideUrl = data.posterUrl?.trim() || movieForPoster.thumbnail || null;
+			posterRefreshVersion = Date.now();
+			toast.success('Poster regenerated');
+		} catch (err: unknown) {
+			toast.error(err instanceof Error ? err.message : 'Failed to regenerate poster');
+		} finally {
+			regeneratingPoster = false;
+		}
 	}
 
 	$: if (browser) {
@@ -932,8 +1001,24 @@
 						? 'detail-poster detail-poster--series'
 						: 'detail-poster'}
 				>
-					{#if selected.thumbnail}
-						<img src={selected.thumbnail} alt={selected.title} loading="lazy" decoding="async" />
+					{#if isLocalPosterRegenerationEnabled}
+						<div class="detail-poster-tools">
+							<button
+								type="button"
+								class="detail-poster-refresh"
+								on:click|stopPropagation={regeneratePoster}
+								disabled={regeneratingPoster}
+								data-busy={regeneratingPoster}
+								aria-label={regeneratingPoster ? 'Regenerating poster' : 'Regenerate poster'}
+								title={regeneratingPoster ? 'Regenerating poster' : 'Regenerate poster'}
+							>
+								<RefreshCwIcon class="h-4 w-4" />
+								<span>{regeneratingPoster ? 'Refreshing…' : 'Refresh poster'}</span>
+							</button>
+						</div>
+					{/if}
+					{#if resolvedPosterUrl}
+						<img src={displayPosterUrl} alt={selected.title} loading="lazy" decoding="async" />
 					{:else}
 						<div class="detail-poster-fallback"></div>
 					{/if}
@@ -1551,6 +1636,7 @@
 	}
 
 	.detail-poster {
+		position: relative;
 		border-radius: 24px;
 		overflow: hidden;
 		border: 1px solid rgba(248, 250, 252, 0.2);
@@ -1559,6 +1645,73 @@
 		aspect-ratio: 2 / 3;
 		width: clamp(220px, 30vw, 300px);
 		max-width: 100%;
+	}
+
+	.detail-poster-tools {
+		position: absolute;
+		top: 0.7rem;
+		right: 0.7rem;
+		z-index: 2;
+		opacity: 0;
+		transform: translateY(-0.2rem);
+		pointer-events: none;
+		transition:
+			opacity 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	.detail-poster:hover .detail-poster-tools,
+	.detail-poster:focus-within .detail-poster-tools {
+		opacity: 1;
+		transform: translateY(0);
+		pointer-events: auto;
+	}
+
+	.detail-poster-refresh {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		border-radius: 999px;
+		border: 1px solid rgba(248, 250, 252, 0.22);
+		background:
+			linear-gradient(145deg, rgba(229, 9, 20, 0.82), rgba(102, 12, 18, 0.88)),
+			rgba(15, 23, 42, 0.78);
+		color: rgba(255, 248, 248, 0.96);
+		padding: 0.44rem 0.68rem;
+		font-size: 0.58rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		backdrop-filter: blur(16px) saturate(125%);
+		-webkit-backdrop-filter: blur(16px) saturate(125%);
+		box-shadow: 0 12px 24px -20px rgba(0, 0, 0, 0.75);
+		transition:
+			transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	.detail-poster-refresh :global(svg) {
+		height: 0.8rem;
+		width: 0.8rem;
+	}
+
+	.detail-poster-refresh:hover:not(:disabled),
+	.detail-poster-refresh:focus-visible {
+		transform: translateY(-1px);
+		border-color: rgba(255, 237, 237, 0.38);
+		box-shadow: 0 16px 32px -24px rgba(122, 10, 20, 0.85);
+		outline: none;
+	}
+
+	.detail-poster-refresh:disabled {
+		cursor: wait;
+		opacity: 0.88;
+	}
+
+	.detail-poster-refresh[data-busy='true'] :global(svg) {
+		animation: detail-poster-spin 1s linear infinite;
 	}
 
 	.detail-poster img {
@@ -1575,6 +1728,16 @@
 	.detail-poster-fallback {
 		height: 100%;
 		background: linear-gradient(160deg, rgba(229, 9, 20, 0.4), rgba(37, 99, 235, 0.3));
+	}
+
+	@keyframes detail-poster-spin {
+		from {
+			transform: rotate(0deg);
+		}
+
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.detail-actions {

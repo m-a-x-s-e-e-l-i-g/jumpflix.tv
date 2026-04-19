@@ -50,6 +50,11 @@
 		RATING_UPDATED_EVENT,
 		type RatingUpdatedDetail
 	} from '$lib/rating-events';
+	import {
+		dispatchReviewUpdated,
+		REVIEW_UPDATED_EVENT,
+		type ReviewUpdatedDetail
+	} from '$lib/review-events';
 
 	let isAuthenticated = false;
 
@@ -478,12 +483,19 @@
 			syncRatingFromEvent(detail);
 		};
 
+		const handleReviewUpdated = (event: Event) => {
+			const detail = (event as CustomEvent<ReviewUpdatedDetail>).detail;
+			syncReviewFromEvent(detail);
+		};
+
 		window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
 		window.addEventListener(RATING_UPDATED_EVENT, handleRatingUpdated as EventListener);
+		window.addEventListener(REVIEW_UPDATED_EVENT, handleReviewUpdated as EventListener);
 
 		return () => {
 			window.removeEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
 			window.removeEventListener(RATING_UPDATED_EVENT, handleRatingUpdated as EventListener);
+			window.removeEventListener(REVIEW_UPDATED_EVENT, handleReviewUpdated as EventListener);
 
 			playObserver?.disconnect();
 			playObserver = null;
@@ -642,6 +654,19 @@
 		});
 	}
 
+	function getReviewTimestamp(review: ReviewRow): number {
+		const updatedAt = Date.parse(review.updated_at || review.created_at || '');
+		if (Number.isFinite(updatedAt)) return updatedAt;
+		const createdAt = Date.parse(review.created_at || '');
+		return Number.isFinite(createdAt) ? createdAt : 0;
+	}
+
+	function mergeReview(review: ReviewRow) {
+		reviews = [...reviews.filter((entry) => entry.id !== review.id), review].sort(
+			(a, b) => getReviewTimestamp(b) - getReviewTimestamp(a)
+		);
+	}
+
 	async function loadReviewsForSelected() {
 		if (!browser || !selected) return;
 
@@ -693,8 +718,12 @@
 			});
 			myReviewId = saved.id;
 			myReviewText = saved.body;
+			mergeReview(saved);
+			dispatchReviewUpdated({
+				mediaId: Number(saved.media_id),
+				review: saved
+			});
 			reviewComposerOpen = false;
-			void loadReviewsForSelected();
 			toast.success('Review posted');
 		} catch (error: any) {
 			myReviewError = error?.message ?? 'Failed to post review';
@@ -716,6 +745,18 @@
 			ratingsSummary = update.summary;
 		} else if (update.shouldReload) {
 			void loadRatingData();
+		}
+	}
+
+	function syncReviewFromEvent(detail?: ReviewUpdatedDetail) {
+		if (!selected || !detail) return;
+		const numericId = Number(selected.id);
+		if (!Number.isFinite(numericId) || detail.mediaId !== numericId) return;
+		mergeReview(detail.review);
+		if ($authUser?.id && detail.review.user_id === $authUser.id) {
+			myReviewId = detail.review.id;
+			myReviewText = detail.review.body;
+			myReviewError = null;
 		}
 	}
 

@@ -25,6 +25,7 @@ export async function fetchMediaReviews(
 		.from('reviews_with_author')
 		.select('id, user_id, media_id, author_name, body, created_at, updated_at')
 		.eq('media_id', normalizedId)
+		.order('updated_at', { ascending: false })
 		.order('created_at', { ascending: false })
 		.limit(Math.max(1, Math.min(200, limit)));
 

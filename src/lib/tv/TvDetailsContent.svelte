@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ContentItem, Episode, Movie } from './types';
+	import type { ContentItem, ContentWarning, Episode, Movie } from './types';
 	import { isInlinePlayable } from './utils';
 	import { getUrlForItem, getEpisodeUrl } from './slug';
 	import { browser } from '$app/environment';
@@ -45,6 +45,11 @@
 	import { getPublicUserName, getPublicUserNameOrFallback } from '$lib/utils';
 	import { slugify } from '$lib/tv/slug';
 	import FacetChips from '$lib/components/FacetChips.svelte';
+	import ContentWarningIcon from '$lib/components/ContentWarningIcon.svelte';
+	import {
+		CONTENT_WARNING_DESCRIPTIONS,
+		CONTENT_WARNING_LABELS
+	} from '$lib/tv/facet-options';
 	import {
 		dispatchRatingUpdated,
 		RATING_UPDATED_EVENT,
@@ -907,6 +912,13 @@
 
 	let providerLink: ProviderLink | null = null;
 	$: providerLink = selected ? getProviderLink(selected, selectedEpisode) : null;
+	$: detailContentWarnings = ((selected?.facets?.contentWarnings ?? []) as ContentWarning[]).map(
+		(key) => ({
+			key,
+			label: CONTENT_WARNING_LABELS[key],
+			description: CONTENT_WARNING_DESCRIPTIONS[key]
+		})
+	);
 
 	// Fallback external source for series when no inline player is available.
 	// Prefer explicit externalUrl, then trakt metadata link.
@@ -1030,6 +1042,20 @@
 								<span class="provider-icon provider-icon-vimeo h-4 w-4" aria-hidden="true"></span>
 							{/if}
 						</a>
+					{/if}
+					{#if detailContentWarnings.length}
+						<div class="detail-warning-list" aria-label="Content warnings">
+							{#each detailContentWarnings as warning (warning.key)}
+								<span
+									class={`detail-warning-badge detail-warning-badge--${warning.key}`}
+									title={`${warning.label}: ${warning.description}`}
+									aria-label={`${warning.label}: ${warning.description}`}
+								>
+									<span class="sr-only">{warning.label}</span>
+									<ContentWarningIcon warning={warning.key} className="h-[0.9rem] w-[0.9rem]" />
+								</span>
+							{/each}
+						</div>
 					{/if}
 				</div>
 			</div>
@@ -1621,6 +1647,27 @@
 		display: inline-flex;
 		gap: 0.6rem;
 		align-items: center;
+	}
+
+	.detail-warning-list {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+		align-items: center;
+	}
+
+	.detail-warning-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		color: rgba(248, 250, 252, 0.82);
+	}
+
+	.detail-warning-badge :global(svg) {
+		width: 22px;
+		height: 22px;
 	}
 
 	.detail-pill {

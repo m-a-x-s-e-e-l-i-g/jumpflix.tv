@@ -96,6 +96,7 @@ function mapFacets(row: MediaItemRow): Facets | undefined {
 		row.facet_focus ||
 		row.facet_production ||
 		row.facet_presentation ||
+		(row.content_warnings && row.content_warnings.length > 0) ||
 		row.facet_medium ||
 		era ||
 		length;
@@ -112,6 +113,10 @@ function mapFacets(row: MediaItemRow): Facets | undefined {
 		environment: row.facet_environment ?? undefined,
 		production: row.facet_production ?? undefined,
 		presentation: row.facet_presentation ?? undefined,
+		contentWarnings:
+			row.content_warnings && row.content_warnings.length > 0
+				? (row.content_warnings as any)
+				: undefined,
 		medium: row.facet_medium ?? undefined,
 		era: era ?? undefined,
 		length: length ?? undefined

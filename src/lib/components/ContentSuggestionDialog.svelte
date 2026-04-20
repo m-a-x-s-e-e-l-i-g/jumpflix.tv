@@ -9,10 +9,11 @@
 		ContentItem,
 		Episode,
 		FacetEnvironment,
-		FacetFilmStyle,
-		FacetMood,
+		FacetFocus,
+		FacetMedium,
 		FacetMovement,
-		FacetTheme,
+		FacetPresentation,
+		FacetProduction,
 		FacetType
 	} from '$lib/tv/types';
 	import { parseTimecodeToSeconds } from '$lib/utils/timecode';
@@ -69,9 +70,10 @@
 
 	let setFacetType = $state<FacetType | ''>('');
 	let setFacetEnvironment = $state<FacetEnvironment | ''>('');
-	let setFacetFilmStyle = $state<FacetFilmStyle | ''>('');
-	let setFacetTheme = $state<FacetTheme | ''>('');
-	let facetMood = $state<FacetMood[]>([]);
+	let setFacetFocus = $state<FacetFocus | ''>('');
+	let setFacetProduction = $state<FacetProduction | ''>('');
+	let setFacetPresentation = $state<FacetPresentation | ''>('');
+	let setFacetMedium = $state<FacetMedium | ''>('');
 	let facetMovement = $state<FacetMovement[]>([]);
 
 	// New season/episode fields
@@ -111,10 +113,16 @@
 		'event',
 		'tutorial',
 		'music-video',
-		'talk',
-		'vlog'
+		'talk'
 	];
-	const FACET_MOOD_OPTIONS: FacetMood[] = ['energetic', 'chill', 'gritty', 'wholesome', 'artistic'];
+	const FACET_FOCUS_OPTIONS: FacetFocus[] = [
+		'showreel',
+		'competition',
+		'jam',
+		'conceptual',
+		'gear',
+		'awards'
+	];
 	const FACET_MOVEMENT_OPTIONS: FacetMovement[] = [
 		'flow',
 		'big-sends',
@@ -132,32 +140,15 @@
 		'urbex',
 		'gym'
 	];
-	const FACET_FILM_STYLE_OPTIONS: FacetFilmStyle[] = [
-		'cinematic',
-		'street-cinematic',
-		'skateish',
-		'raw',
+	const FACET_PRODUCTION_OPTIONS: FacetProduction[] = ['raw', 'casual', 'produced', 'premium'];
+	const FACET_PRESENTATION_OPTIONS: FacetPresentation[] = [
+		'standard',
 		'pov',
-		'longtakes',
-		'music-driven',
-		'montage',
-		'slowmo',
-		'gonzo',
-		'vintage',
-		'minimalist',
-		'experimental'
+		'vlog',
+		'top-down',
+		'stylized'
 	];
-	const FACET_THEME_OPTIONS: FacetTheme[] = [
-		'journey',
-		'team',
-		'event',
-		'competition',
-		'educational',
-		'travel',
-		'creative',
-		'showcase',
-		'entertainment'
-	];
+	const FACET_MEDIUM_OPTIONS: FacetMedium[] = ['live-action', 'animation', 'mixed-media'];
 
 	type InitialSnapshot = {
 		posterUrl: string;
@@ -169,9 +160,10 @@
 		starring: string[];
 		facetType: string;
 		facetEnvironment: string;
-		facetFilmStyle: string;
-		facetTheme: string;
-		facetMood: string[];
+		facetFocus: string;
+		facetProduction: string;
+		facetPresentation: string;
+		facetMedium: string;
 		facetMovement: string[];
 	};
 
@@ -345,9 +337,10 @@
 
 			setFacetType = (selected.facets?.type ?? '') as FacetType | '';
 			setFacetEnvironment = (selected.facets?.environment ?? '') as FacetEnvironment | '';
-			setFacetFilmStyle = (selected.facets?.filmStyle ?? '') as FacetFilmStyle | '';
-			setFacetTheme = (selected.facets?.theme ?? '') as FacetTheme | '';
-			facetMood = (selected.facets?.mood ?? []) as FacetMood[];
+			setFacetFocus = (selected.facets?.focus ?? '') as FacetFocus | '';
+			setFacetProduction = (selected.facets?.production ?? '') as FacetProduction | '';
+			setFacetPresentation = (selected.facets?.presentation ?? '') as FacetPresentation | '';
+			setFacetMedium = (selected.facets?.medium ?? '') as FacetMedium | '';
 			facetMovement = (selected.facets?.movement ?? []) as FacetMovement[];
 
 			trackAction = 'add';
@@ -374,9 +367,10 @@
 				starring: normList(selected.starring),
 				facetType: normString(selected.facets?.type),
 				facetEnvironment: normString(selected.facets?.environment),
-				facetFilmStyle: normString(selected.facets?.filmStyle),
-				facetTheme: normString(selected.facets?.theme),
-				facetMood: normList(selected.facets?.mood),
+				facetFocus: normString(selected.facets?.focus),
+				facetProduction: normString(selected.facets?.production),
+				facetPresentation: normString(selected.facets?.presentation),
+				facetMedium: normString(selected.facets?.medium),
 				facetMovement: normList(selected.facets?.movement)
 			};
 		}
@@ -421,14 +415,17 @@
 	let facetEnvironmentEdited: boolean = $derived(
 		normString(setFacetEnvironment) !== normString(initial?.facetEnvironment)
 	);
-	let facetFilmStyleEdited: boolean = $derived(
-		normString(setFacetFilmStyle) !== normString(initial?.facetFilmStyle)
+	let facetFocusEdited: boolean = $derived(
+		normString(setFacetFocus) !== normString(initial?.facetFocus)
 	);
-	let facetThemeEdited: boolean = $derived(
-		normString(setFacetTheme) !== normString(initial?.facetTheme)
+	let facetProductionEdited: boolean = $derived(
+		normString(setFacetProduction) !== normString(initial?.facetProduction)
 	);
-	let facetMoodEdited: boolean = $derived(
-		!stringSetEqual(facetMood as unknown as string[], initial?.facetMood ?? [])
+	let facetPresentationEdited: boolean = $derived(
+		normString(setFacetPresentation) !== normString(initial?.facetPresentation)
+	);
+	let facetMediumEdited: boolean = $derived(
+		normString(setFacetMedium) !== normString(initial?.facetMedium)
 	);
 	let facetMovementEdited: boolean = $derived(
 		!stringSetEqual(facetMovement as unknown as string[], initial?.facetMovement ?? [])
@@ -599,23 +596,20 @@
 			const remove: any = {};
 			const set: any = {};
 
-			const baseMood = initial?.facetMood ?? [];
 			const baseMovement = initial?.facetMovement ?? [];
 
-			const addMoodList = diffAdd(facetMood as unknown as string[], baseMood);
-			const removeMoodList = diffRemove(baseMood, facetMood as unknown as string[]);
 			const addMovementList = diffAdd(facetMovement as unknown as string[], baseMovement);
 			const removeMovementList = diffRemove(baseMovement, facetMovement as unknown as string[]);
 
-			if (addMoodList.length) add.facet_mood = addMoodList;
-			if (removeMoodList.length) remove.facet_mood = removeMoodList;
 			if (addMovementList.length) add.facet_movement = addMovementList;
 			if (removeMovementList.length) remove.facet_movement = removeMovementList;
 
 			if (facetTypeEdited) set.facet_type = normString(setFacetType) || null;
 			if (facetEnvironmentEdited) set.facet_environment = normString(setFacetEnvironment) || null;
-			if (facetFilmStyleEdited) set.facet_film_style = normString(setFacetFilmStyle) || null;
-			if (facetThemeEdited) set.facet_theme = normString(setFacetTheme) || null;
+			if (facetFocusEdited) set.facet_focus = normString(setFacetFocus) || null;
+			if (facetProductionEdited) set.facet_production = normString(setFacetProduction) || null;
+			if (facetPresentationEdited) set.facet_presentation = normString(setFacetPresentation) || null;
+			if (facetMediumEdited) set.facet_medium = normString(setFacetMedium) || null;
 
 			if (Object.keys(add).length) payload.add = add;
 			if (Object.keys(remove).length) payload.remove = remove;
@@ -1074,27 +1068,51 @@
 									</label>
 									<label class="space-y-1">
 										<span class="inline-flex items-center gap-2 text-xs text-white/70">
-											Film style
-											<span class={editedBadge(facetFilmStyleEdited)}>Edited</span>
+											Focus
+											<span class={editedBadge(facetFocusEdited)}>Edited</span>
 										</span>
 										<select
-											bind:value={setFacetFilmStyle}
-											class={editedSelectClass(facetFilmStyleEdited)}
+											bind:value={setFacetFocus}
+											class={editedSelectClass(facetFocusEdited)}
 										>
 											<option value="" class="bg-background text-foreground">(none)</option>
-											{#each FACET_FILM_STYLE_OPTIONS as opt (opt)}
+											{#each FACET_FOCUS_OPTIONS as opt (opt)}
 												<option value={opt} class="bg-background text-foreground">{opt}</option>
 											{/each}
 										</select>
 									</label>
 									<label class="space-y-1">
 										<span class="inline-flex items-center gap-2 text-xs text-white/70">
-											Theme
-											<span class={editedBadge(facetThemeEdited)}>Edited</span>
+											Production
+											<span class={editedBadge(facetProductionEdited)}>Edited</span>
 										</span>
-										<select bind:value={setFacetTheme} class={editedSelectClass(facetThemeEdited)}>
+										<select bind:value={setFacetProduction} class={editedSelectClass(facetProductionEdited)}>
 											<option value="" class="bg-background text-foreground">(none)</option>
-											{#each FACET_THEME_OPTIONS as opt (opt)}
+											{#each FACET_PRODUCTION_OPTIONS as opt (opt)}
+												<option value={opt} class="bg-background text-foreground">{opt}</option>
+											{/each}
+										</select>
+									</label>
+									<label class="space-y-1">
+										<span class="inline-flex items-center gap-2 text-xs text-white/70">
+											Presentation
+											<span class={editedBadge(facetPresentationEdited)}>Edited</span>
+										</span>
+										<select bind:value={setFacetPresentation} class={editedSelectClass(facetPresentationEdited)}>
+											<option value="" class="bg-background text-foreground">(none)</option>
+											{#each FACET_PRESENTATION_OPTIONS as opt (opt)}
+												<option value={opt} class="bg-background text-foreground">{opt}</option>
+											{/each}
+										</select>
+									</label>
+									<label class="space-y-1">
+										<span class="inline-flex items-center gap-2 text-xs text-white/70">
+											Medium
+											<span class={editedBadge(facetMediumEdited)}>Edited</span>
+										</span>
+										<select bind:value={setFacetMedium} class={editedSelectClass(facetMediumEdited)}>
+											<option value="" class="bg-background text-foreground">(none)</option>
+											{#each FACET_MEDIUM_OPTIONS as opt (opt)}
 												<option value={opt} class="bg-background text-foreground">{opt}</option>
 											{/each}
 										</select>
@@ -1102,24 +1120,6 @@
 								</div>
 
 								<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-									<div class="space-y-2">
-										<div class="inline-flex items-center gap-2 text-xs text-white/70">
-											Mood
-											<span class={editedBadge(facetMoodEdited)}>Edited</span>
-										</div>
-										<div
-											class={`rounded-lg border p-3 ${facetMoodEdited ? 'border-[#e50914]/40 bg-[#e50914]/5' : 'border-white/10 bg-white/5'}`}
-										>
-											<div class="flex flex-wrap gap-3 text-sm text-white/80">
-												{#each FACET_MOOD_OPTIONS as opt (opt)}
-													<label class="inline-flex items-center gap-2">
-														<input type="checkbox" bind:group={facetMood} value={opt} />
-														{opt}
-													</label>
-												{/each}
-											</div>
-										</div>
-									</div>
 									<div class="space-y-2">
 										<div class="inline-flex items-center gap-2 text-xs text-white/70">
 											Movement

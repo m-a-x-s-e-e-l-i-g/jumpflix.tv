@@ -10,21 +10,23 @@ export type FeedFilter = {
 	durationMaxMinutes?: number;
 	facets?: {
 		type?: NonNullable<Facets['type']>[];
-		mood?: NonNullable<Facets['mood']>;
+		focus?: NonNullable<Facets['focus']>[];
 		movement?: NonNullable<Facets['movement']>;
 		environment?: NonNullable<Facets['environment']>[];
-		filmStyle?: NonNullable<Facets['filmStyle']>[];
-		theme?: NonNullable<Facets['theme']>[];
+		production?: NonNullable<Facets['production']>[];
+		presentation?: NonNullable<Facets['presentation']>[];
+		medium?: NonNullable<Facets['medium']>[];
 		era?: NonNullable<Facets['era']>[];
 		length?: NonNullable<Facets['length']>[];
 	};
 	excludeFacets?: {
 		type?: NonNullable<Facets['type']>[];
-		mood?: NonNullable<Facets['mood']>;
+		focus?: NonNullable<Facets['focus']>[];
 		movement?: NonNullable<Facets['movement']>;
 		environment?: NonNullable<Facets['environment']>[];
-		filmStyle?: NonNullable<Facets['filmStyle']>[];
-		theme?: NonNullable<Facets['theme']>[];
+		production?: NonNullable<Facets['production']>[];
+		presentation?: NonNullable<Facets['presentation']>[];
+		medium?: NonNullable<Facets['medium']>[];
 		era?: NonNullable<Facets['era']>[];
 		length?: NonNullable<Facets['length']>[];
 	};
@@ -73,10 +75,7 @@ export const FEEDS: FeedDefinition[] = [
 		title: () => m.tv_feed_oldskoolClassics_title(),
 		description: () => m.tv_feed_oldskoolClassics_description(),
 		filter: {
-			yearMax: 2015,
-			excludeFacets: {
-				theme: ['entertainment']
-			}
+			yearMax: 2015
 		}
 	},
 	{
@@ -85,8 +84,7 @@ export const FEEDS: FeedDefinition[] = [
 		description: () => m.tv_feed_educational_description(),
 		filter: {
 			facets: {
-				type: ['tutorial', 'talk'],
-				theme: ['educational']
+				type: ['tutorial', 'talk']
 			}
 		}
 	},

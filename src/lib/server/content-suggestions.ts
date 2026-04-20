@@ -72,7 +72,7 @@ export async function applyMediaPatch(
 	const { data: media, error: mediaError } = await supabase
 		.from('media_items')
 		.select(
-			'id, type, description, creators, starring, facet_mood, facet_movement, facet_type, facet_environment, facet_film_style, facet_theme, thumbnail, paid, provider, external_url'
+			'id, type, description, creators, starring, facet_movement, facet_type, facet_environment, facet_focus, facet_production, facet_presentation, facet_medium, content_warnings, thumbnail, paid, provider, external_url'
 		)
 		.eq('id', mediaId)
 		.maybeSingle();
@@ -91,8 +91,10 @@ export async function applyMediaPatch(
 
 	if ('facet_type' in set) next.facet_type = set.facet_type ?? null;
 	if ('facet_environment' in set) next.facet_environment = set.facet_environment ?? null;
-	if ('facet_film_style' in set) next.facet_film_style = set.facet_film_style ?? null;
-	if ('facet_theme' in set) next.facet_theme = set.facet_theme ?? null;
+	if ('facet_focus' in set) next.facet_focus = set.facet_focus ?? null;
+	if ('facet_production' in set) next.facet_production = set.facet_production ?? null;
+	if ('facet_presentation' in set) next.facet_presentation = set.facet_presentation ?? null;
+	if ('facet_medium' in set) next.facet_medium = set.facet_medium ?? null;
 
 	const add = patch?.add && typeof patch.add === 'object' ? patch.add : {};
 	const remove = patch?.remove && typeof patch.remove === 'object' ? patch.remove : {};
@@ -111,18 +113,18 @@ export async function applyMediaPatch(
 			(remove as any).starring
 		);
 	}
-	if ('facet_mood' in add || 'facet_mood' in remove) {
-		next.facet_mood = applyArrayOps(
-			(media as any).facet_mood,
-			(add as any).facet_mood,
-			(remove as any).facet_mood
-		);
-	}
 	if ('facet_movement' in add || 'facet_movement' in remove) {
 		next.facet_movement = applyArrayOps(
 			(media as any).facet_movement,
 			(add as any).facet_movement,
 			(remove as any).facet_movement
+		);
+	}
+	if ('content_warnings' in add || 'content_warnings' in remove) {
+		next.content_warnings = applyArrayOps(
+			(media as any).content_warnings,
+			(add as any).content_warnings,
+			(remove as any).content_warnings
 		);
 	}
 

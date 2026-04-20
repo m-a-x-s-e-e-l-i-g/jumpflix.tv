@@ -164,15 +164,16 @@ export const load = async ({ parent, setHeaders }) => {
 	const { data: facetRows, error: facetsError } = await supabase
 		.from('media_items')
 		.select(
-			'facet_type, facet_environment, facet_film_style, facet_theme, facet_mood, facet_movement, type, creators, starring, year'
+			'facet_type, facet_environment, facet_focus, facet_production, facet_presentation, facet_medium, facet_movement, type, creators, starring, year'
 		);
 	if (facetsError) throw error(500, facetsError.message);
 
 	const facetTypeCounts = new Map<string, number>();
 	const environmentCounts = new Map<string, number>();
-	const filmStyleCounts = new Map<string, number>();
-	const themeCounts = new Map<string, number>();
-	const moodCounts = new Map<string, number>();
+	const focusCounts = new Map<string, number>();
+	const productionCounts = new Map<string, number>();
+	const presentationCounts = new Map<string, number>();
+	const mediumCounts = new Map<string, number>();
 	const movementCounts = new Map<string, number>();
 	const movieCounts = { movies: 0, series: 0 };
 	const creatorNames = new Set<string>();
@@ -206,9 +207,10 @@ export const load = async ({ parent, setHeaders }) => {
 		if (row.type === 'series') movieCounts.series += 1;
 		bump(facetTypeCounts, row.facet_type);
 		bump(environmentCounts, row.facet_environment);
-		bump(filmStyleCounts, row.facet_film_style);
-		bump(themeCounts, row.facet_theme);
-		for (const mood of row.facet_mood ?? []) bump(moodCounts, mood);
+		bump(focusCounts, (row as any).facet_focus);
+		bump(productionCounts, (row as any).facet_production);
+		bump(presentationCounts, (row as any).facet_presentation);
+		bump(mediumCounts, (row as any).facet_medium);
 		for (const movement of row.facet_movement ?? []) bump(movementCounts, movement);
 		addNames(creatorNames, (row as any).creators);
 		addNames(athleteNames, (row as any).starring);
@@ -229,9 +231,10 @@ export const load = async ({ parent, setHeaders }) => {
 		contentCounts: movieCounts,
 		facetType: topN(facetTypeCounts, 10),
 		environment: topN(environmentCounts, 10),
-		filmStyle: topN(filmStyleCounts, 10),
-		theme: topN(themeCounts, 10),
-		mood: topN(moodCounts, 10),
+		focus: topN(focusCounts, 10),
+		production: topN(productionCounts, 10),
+		presentation: topN(presentationCounts, 10),
+		medium: topN(mediumCounts, 10),
 		movement: topN(movementCounts, 10)
 	};
 

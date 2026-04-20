@@ -71,14 +71,18 @@ update public.media_items
       facet_type = 'session'
   where facet_type = 'vlog' and facet_presentation is null;
 
--- ─── Step 3: Drop old columns ────────────────────────────────────────────────
+-- ─── Step 3: Drop dependent view and old columns ─────────────────────────────
+
+drop view if exists public.media_facets_view;
+
+-- ─── Step 4: Drop old columns ────────────────────────────────────────────────
 
 alter table public.media_items
   drop column if exists facet_mood,
   drop column if exists facet_film_style,
   drop column if exists facet_theme;
 
--- ─── Step 4: Update facet_type CHECK constraint (remove 'vlog') ──────────────
+-- ─── Step 5: Update facet_type CHECK constraint (remove 'vlog') ──────────────
 
 -- Drop all existing facet_type constraints (name may vary)
 alter table public.media_items
@@ -112,7 +116,7 @@ alter table public.media_items
     )
   );
 
--- ─── Step 5: Add CHECK constraints for new columns ───────────────────────────
+-- ─── Step 6: Add CHECK constraints for new columns ───────────────────────────
 
 alter table public.media_items
   add constraint media_items_facet_focus_check check (
@@ -150,7 +154,7 @@ alter table public.media_items
     )
   );
 
--- ─── Step 6: Add indexes ─────────────────────────────────────────────────────
+-- ─── Step 7: Add indexes ─────────────────────────────────────────────────────
 
 create index if not exists media_items_facet_focus_idx on public.media_items (facet_focus);
 create index if not exists media_items_facet_production_idx on public.media_items (facet_production);
@@ -163,9 +167,10 @@ drop index if exists public.media_items_facet_film_style_idx;
 drop index if exists public.media_items_facet_theme_idx;
 drop index if exists public.media_items_facet_mood_idx;
 
--- ─── Step 7: Recreate media_facets_view with new columns ─────────────────────
+-- ─── Step 8: Recreate media_facets_view with new columns ─────────────────────
 
-create or replace view public.media_facets_view as
+create view public.media_facets_view
+with (security_invoker = true) as
 select
   id,
   slug,
@@ -216,7 +221,7 @@ from public.media_items;
 -- Re-grant read access
 grant select on public.media_facets_view to anon, authenticated;
 
--- ─── Step 8: Update column comments ─────────────────────────────────────────
+-- ─── Step 9: Update column comments ─────────────────────────────────────────
 
 comment on column public.media_items.facet_type is
   'Content format: fiction, documentary, session, event, tutorial, music-video, talk (single-select)';

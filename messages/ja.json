@@ -190,6 +190,8 @@
 	"facet_type_musicVideo_desc": "音楽主導で、曲の構成に合わせた編集",
 	"facet_type_talk": "トーク",
 	"facet_type_talk_desc": "トーク／プレゼン形式（アイデア、インタビュー、講演）",
+	"facet_type_vlog": "Vlog",
+	"facet_type_vlog_desc": "より個人的で日記的な、あるいは一日の流れを追うパルクールの語り",
 	"facet_mood_energetic": "エネルギッシュ",
 	"facet_mood_chill": "チル",
 	"facet_type_fiction_desc": "物語性のあるパルクール作品",

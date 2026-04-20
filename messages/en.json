@@ -195,6 +195,8 @@
 	"facet_type_musicVideo_desc": "Music-driven edit with a track-focused structure",
 	"facet_type_talk": "Talk",
 	"facet_type_talk_desc": "Talk/presentation format (ideas, interviews, lectures)",
+	"facet_type_vlog": "Vlog",
+	"facet_type_vlog_desc": "More personal, diary-like, or day-in-the-life parkour storytelling",
 	"facet_mood_energetic": "Energetic",
 	"facet_mood_energetic_desc": "High-energy vibe with intense action",
 	"facet_mood_chill": "Chill",

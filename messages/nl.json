@@ -192,6 +192,8 @@
 	"facet_type_musicVideo_desc": "Muziek-gedreven edit met een track-centrische opbouw",
 	"facet_type_talk": "Talk",
 	"facet_type_talk_desc": "Talk/presentatievorm (ideeën, interviews, lezingen)",
+	"facet_type_vlog": "Vlog",
+	"facet_type_vlog_desc": "Persoonlijkere, dagboekachtige of day-in-the-life parkourverhalen",
 	"facet_mood_energetic": "Energiek",
 	"facet_type_session_desc": "Team edit of sessiemateriaal van training",
 	"facet_mood_chill": "Chill",

@@ -14,7 +14,8 @@ export const FACET_TYPE_OPTIONS: FacetType[] = [
 	'event',
 	'tutorial',
 	'music-video',
-	'talk'
+	'talk',
+	'vlog'
 ];
 
 export const FACET_TYPE_LABELS: Record<FacetType, string> = {
@@ -24,7 +25,8 @@ export const FACET_TYPE_LABELS: Record<FacetType, string> = {
 	event: 'Event',
 	tutorial: 'Tutorial',
 	'music-video': 'Music Video',
-	talk: 'Talk'
+	talk: 'Talk',
+	vlog: 'Vlog'
 };
 
 export const FACET_TYPE_DESCRIPTIONS: Record<FacetType, string> = {
@@ -34,7 +36,8 @@ export const FACET_TYPE_DESCRIPTIONS: Record<FacetType, string> = {
 	event: 'Jam, competition, or organized gathering',
 	tutorial: 'Educational content teaching parkour techniques',
 	'music-video': 'Music-driven edit with a track-focused structure',
-	talk: 'Talk or presentation format with ideas, interviews, or lectures'
+	talk: 'Talk or presentation format with ideas, interviews, or lectures',
+	vlog: 'More personal, diary-like, or day-in-the-life parkour storytelling'
 };
 
 export const FACET_MOOD_OPTIONS: FacetMood[] = [

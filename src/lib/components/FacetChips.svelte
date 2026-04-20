@@ -19,6 +19,7 @@
     'type:tutorial': '📚',
     'type:music-video': '🎵',
     'type:talk': '🎤',
+    'type:vlog': '📓',
 
     // Mood
     'mood:energetic': '⚡',
@@ -92,6 +93,7 @@
     'type:tutorial': m.facet_type_tutorial,
     'type:music-video': m.facet_type_musicVideo,
     'type:talk': m.facet_type_talk,
+    'type:vlog': m.facet_type_vlog,
 
     // Mood
     'mood:energetic': m.facet_mood_energetic,
@@ -165,6 +167,7 @@
     'type:tutorial': m.facet_type_tutorial_desc,
     'type:music-video': m.facet_type_musicVideo_desc,
     'type:talk': m.facet_type_talk_desc,
+    'type:vlog': m.facet_type_vlog_desc,
 
     // Mood
     'mood:energetic': m.facet_mood_energetic_desc,

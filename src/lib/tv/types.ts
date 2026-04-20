@@ -8,7 +8,8 @@ export type FacetType =
 	| 'event'
 	| 'tutorial'
 	| 'music-video'
-	| 'talk';
+	| 'talk'
+	| 'vlog';
 export type FacetMood = 'energetic' | 'chill' | 'gritty' | 'wholesome' | 'artistic';
 export type FacetMovement =
 	| 'flow'

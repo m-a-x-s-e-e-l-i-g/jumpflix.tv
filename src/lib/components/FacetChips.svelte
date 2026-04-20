@@ -5,7 +5,7 @@
   
   export let facets: Facets | undefined;
 
-  type FacetCategory = 'type' | 'mood' | 'movement' | 'environment' | 'filmStyle' | 'theme' | 'era' | 'length';
+  type FacetCategory = 'type' | 'focus' | 'movement' | 'environment' | 'production' | 'presentation' | 'medium' | 'era' | 'length';
   type Chip = { key: string; category: FacetCategory };
 
   const facetLookupKey = (category: FacetCategory, key: string): string => `${category}:${key}`;
@@ -19,14 +19,14 @@
     'type:tutorial': '📚',
     'type:music-video': '🎵',
     'type:talk': '🎤',
-    'type:vlog': '📓',
 
-    // Mood
-    'mood:energetic': '⚡',
-    'mood:chill': '😌',
-    'mood:gritty': '🔥',
-    'mood:wholesome': '💚',
-    'mood:artistic': '🎨',
+    // Focus
+    'focus:showreel': '🎞️',
+    'focus:competition': '🥇',
+    'focus:jam': '🎉',
+    'focus:conceptual': '💭',
+    'focus:gear': '🔧',
+    'focus:awards': '🏅',
 
     // Movement
     'movement:flow': '🌊',
@@ -45,31 +45,23 @@
     'environment:urbex': '🏚️',
     'environment:gym': '🏋️',
 
-    // Film Style
-    'filmStyle:cinematic': '🎞️',
-    'filmStyle:street-cinematic': '🛣️',
-    'filmStyle:skateish': '🛹',
-    'filmStyle:raw': '📱',
-    'filmStyle:pov': '👁️',
-    'filmStyle:longtakes': '🎥',
-    'filmStyle:music-driven': '🎵',
-    'filmStyle:montage': '⚡',
-    'filmStyle:slowmo': '🐌',
-    'filmStyle:gonzo': '🌀',
-    'filmStyle:vintage': '📼',
-    'filmStyle:minimalist': '⬜',
-    'filmStyle:experimental': '🔮',
+    // Production
+    'production:raw': '📱',
+    'production:casual': '🎒',
+    'production:produced': '🎬',
+    'production:premium': '✨',
 
-    // Theme
-    'theme:journey': '🗺️',
-    'theme:team': '👥',
-    'theme:event': '🎉',
-    'theme:competition': '🥇',
-    'theme:educational': '🎓',
-    'theme:travel': '✈️',
-    'theme:creative': '✨',
-    'theme:showcase': '🎞️',
-    'theme:entertainment': '🎪',
+    // Presentation
+    'presentation:standard': '🎥',
+    'presentation:pov': '👁️',
+    'presentation:vlog': '📓',
+    'presentation:top-down': '🚁',
+    'presentation:stylized': '🔮',
+
+    // Medium
+    'medium:live-action': '🎞️',
+    'medium:animation': '🎨',
+    'medium:mixed-media': '🔀',
 
     // Era
     'era:pre-2000': '📹',
@@ -93,14 +85,14 @@
     'type:tutorial': m.facet_type_tutorial,
     'type:music-video': m.facet_type_musicVideo,
     'type:talk': m.facet_type_talk,
-    'type:vlog': m.facet_type_vlog,
 
-    // Mood
-    'mood:energetic': m.facet_mood_energetic,
-    'mood:chill': m.facet_mood_chill,
-    'mood:gritty': m.facet_mood_gritty,
-    'mood:wholesome': m.facet_mood_wholesome,
-    'mood:artistic': m.facet_mood_artistic,
+    // Focus
+    'focus:showreel': m.facet_focus_showreel,
+    'focus:competition': m.facet_focus_competition,
+    'focus:jam': m.facet_focus_jam,
+    'focus:conceptual': m.facet_focus_conceptual,
+    'focus:gear': m.facet_focus_gear,
+    'focus:awards': m.facet_focus_awards,
 
     // Movement
     'movement:flow': m.facet_movement_flow,
@@ -119,31 +111,23 @@
     'environment:urbex': m.facet_environment_urbex,
     'environment:gym': m.facet_environment_gym,
 
-    // Film Style
-    'filmStyle:cinematic': m.facet_filmStyle_cinematic,
-    'filmStyle:street-cinematic': m.facet_filmStyle_streetCinematic,
-    'filmStyle:skateish': m.facet_filmStyle_skateish,
-    'filmStyle:raw': m.facet_filmStyle_raw,
-    'filmStyle:pov': m.facet_filmStyle_pov,
-    'filmStyle:longtakes': m.facet_filmStyle_longtakes,
-    'filmStyle:music-driven': m.facet_filmStyle_musicDriven,
-    'filmStyle:montage': m.facet_filmStyle_montage,
-    'filmStyle:slowmo': m.facet_filmStyle_slowmo,
-    'filmStyle:gonzo': m.facet_filmStyle_gonzo,
-    'filmStyle:vintage': m.facet_filmStyle_vintage,
-    'filmStyle:minimalist': m.facet_filmStyle_minimalist,
-    'filmStyle:experimental': m.facet_filmStyle_experimental,
+    // Production
+    'production:raw': m.facet_production_raw,
+    'production:casual': m.facet_production_casual,
+    'production:produced': m.facet_production_produced,
+    'production:premium': m.facet_production_premium,
 
-    // Theme
-    'theme:journey': m.facet_theme_journey,
-    'theme:team': m.facet_theme_team,
-    'theme:event': m.facet_theme_event,
-    'theme:competition': m.facet_theme_competition,
-    'theme:educational': m.facet_theme_educational,
-    'theme:travel': m.facet_theme_travel,
-    'theme:creative': m.facet_theme_creative,
-    'theme:showcase': m.facet_theme_showcase,
-    'theme:entertainment': m.facet_theme_entertainment,
+    // Presentation
+    'presentation:standard': m.facet_presentation_standard,
+    'presentation:pov': m.facet_presentation_pov,
+    'presentation:vlog': m.facet_presentation_vlog,
+    'presentation:top-down': m.facet_presentation_topDown,
+    'presentation:stylized': m.facet_presentation_stylized,
+
+    // Medium
+    'medium:live-action': m.facet_medium_liveAction,
+    'medium:animation': m.facet_medium_animation,
+    'medium:mixed-media': m.facet_medium_mixedMedia,
 
     // Era
     'era:pre-2000': m.facet_era_pre2000,
@@ -167,14 +151,14 @@
     'type:tutorial': m.facet_type_tutorial_desc,
     'type:music-video': m.facet_type_musicVideo_desc,
     'type:talk': m.facet_type_talk_desc,
-    'type:vlog': m.facet_type_vlog_desc,
 
-    // Mood
-    'mood:energetic': m.facet_mood_energetic_desc,
-    'mood:chill': m.facet_mood_chill_desc,
-    'mood:gritty': m.facet_mood_gritty_desc,
-    'mood:wholesome': m.facet_mood_wholesome_desc,
-    'mood:artistic': m.facet_mood_artistic_desc,
+    // Focus
+    'focus:showreel': m.facet_focus_showreel_desc,
+    'focus:competition': m.facet_focus_competition_desc,
+    'focus:jam': m.facet_focus_jam_desc,
+    'focus:conceptual': m.facet_focus_conceptual_desc,
+    'focus:gear': m.facet_focus_gear_desc,
+    'focus:awards': m.facet_focus_awards_desc,
 
     // Movement
     'movement:flow': m.facet_movement_flow_desc,
@@ -193,31 +177,23 @@
     'environment:urbex': m.facet_environment_urbex_desc,
     'environment:gym': m.facet_environment_gym_desc,
 
-    // Film Style
-    'filmStyle:cinematic': m.facet_filmStyle_cinematic_desc,
-    'filmStyle:street-cinematic': m.facet_filmStyle_streetCinematic_desc,
-    'filmStyle:skateish': m.facet_filmStyle_skateish_desc,
-    'filmStyle:raw': m.facet_filmStyle_raw_desc,
-    'filmStyle:pov': m.facet_filmStyle_pov_desc,
-    'filmStyle:longtakes': m.facet_filmStyle_longtakes_desc,
-    'filmStyle:music-driven': m.facet_filmStyle_musicDriven_desc,
-    'filmStyle:montage': m.facet_filmStyle_montage_desc,
-    'filmStyle:slowmo': m.facet_filmStyle_slowmo_desc,
-    'filmStyle:gonzo': m.facet_filmStyle_gonzo_desc,
-    'filmStyle:vintage': m.facet_filmStyle_vintage_desc,
-    'filmStyle:minimalist': m.facet_filmStyle_minimalist_desc,
-    'filmStyle:experimental': m.facet_filmStyle_experimental_desc,
+    // Production
+    'production:raw': m.facet_production_raw_desc,
+    'production:casual': m.facet_production_casual_desc,
+    'production:produced': m.facet_production_produced_desc,
+    'production:premium': m.facet_production_premium_desc,
 
-    // Theme
-    'theme:journey': m.facet_theme_journey_desc,
-    'theme:team': m.facet_theme_team_desc,
-    'theme:event': m.facet_theme_event_desc,
-    'theme:competition': m.facet_theme_competition_desc,
-    'theme:educational': m.facet_theme_educational_desc,
-    'theme:travel': m.facet_theme_travel_desc,
-    'theme:creative': m.facet_theme_creative_desc,
-    'theme:showcase': m.facet_theme_showcase_desc,
-    'theme:entertainment': m.facet_theme_entertainment_desc,
+    // Presentation
+    'presentation:standard': m.facet_presentation_standard_desc,
+    'presentation:pov': m.facet_presentation_pov_desc,
+    'presentation:vlog': m.facet_presentation_vlog_desc,
+    'presentation:top-down': m.facet_presentation_topDown_desc,
+    'presentation:stylized': m.facet_presentation_stylized_desc,
+
+    // Medium
+    'medium:live-action': m.facet_medium_liveAction_desc,
+    'medium:animation': m.facet_medium_animation_desc,
+    'medium:mixed-media': m.facet_medium_mixedMedia_desc,
 
     // Era
     'era:pre-2000': m.facet_era_pre2000_desc,
@@ -253,19 +229,19 @@
   };
   
   // Build ordered list of chips to display
-  // Order: Type · Mood · Movement · Environment · Film Style · Theme · Era · Length
+  // Order: Type · Focus · Movement · Environment · Production · Presentation · Medium · Era · Length
   $: chips = (() => {
     if (!facets) return [];
     
     const result: Chip[] = [];
     
-    // Add facets in order, skipping any that are undefined or empty
     if (facets.type) addFacet(result, 'type', facets.type);
-    if (facets.mood?.length) addFacet(result, 'mood', facets.mood);
+    if (facets.focus) addFacet(result, 'focus', facets.focus);
     if (facets.movement?.length) addFacet(result, 'movement', facets.movement);
     if (facets.environment) addFacet(result, 'environment', facets.environment);
-    if (facets.filmStyle) addFacet(result, 'filmStyle', facets.filmStyle);
-    if (facets.theme) addFacet(result, 'theme', facets.theme);
+    if (facets.production) addFacet(result, 'production', facets.production);
+    if (facets.presentation) addFacet(result, 'presentation', facets.presentation);
+    if (facets.medium) addFacet(result, 'medium', facets.medium);
     if (facets.era) addFacet(result, 'era', facets.era);
     if (facets.length) addFacet(result, 'length', facets.length);
     

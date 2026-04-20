@@ -91,11 +91,12 @@ function mapFacets(row: MediaItemRow): Facets | undefined {
 
 	const hasFacets =
 		row.facet_type ||
-		(row.facet_mood && row.facet_mood.length > 0) ||
 		(row.facet_movement && row.facet_movement.length > 0) ||
 		row.facet_environment ||
-		row.facet_film_style ||
-		row.facet_theme ||
+		row.facet_focus ||
+		row.facet_production ||
+		row.facet_presentation ||
+		row.facet_medium ||
 		era ||
 		length;
 
@@ -105,12 +106,13 @@ function mapFacets(row: MediaItemRow): Facets | undefined {
 
 	return removeUndefined({
 		type: row.facet_type ?? undefined,
-		mood: row.facet_mood && row.facet_mood.length > 0 ? (row.facet_mood as any) : undefined,
+		focus: row.facet_focus ?? undefined,
 		movement:
 			row.facet_movement && row.facet_movement.length > 0 ? (row.facet_movement as any) : undefined,
 		environment: row.facet_environment ?? undefined,
-		filmStyle: row.facet_film_style ?? undefined,
-		theme: row.facet_theme ?? undefined,
+		production: row.facet_production ?? undefined,
+		presentation: row.facet_presentation ?? undefined,
+		medium: row.facet_medium ?? undefined,
 		era: era ?? undefined,
 		length: length ?? undefined
 	});

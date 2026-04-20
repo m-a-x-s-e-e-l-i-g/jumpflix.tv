@@ -4,11 +4,12 @@
 	import type {
 		SelectedFacets,
 		FacetType,
-		FacetMood,
+		FacetFocus,
 		FacetMovement,
 		FacetEnvironment,
-		FacetFilmStyle,
-		FacetTheme,
+		FacetProduction,
+		FacetPresentation,
+		FacetMedium,
 		FacetEra,
 		FacetLength
 	} from './types';
@@ -39,8 +40,18 @@
 				{ value: 'event', label: m.facet_type_event(), emoji: '🏆' },
 				{ value: 'tutorial', label: m.facet_type_tutorial(), emoji: '📚' },
 				{ value: 'music-video', label: m.facet_type_musicVideo(), emoji: '🎵' },
-					{ value: 'talk', label: m.facet_type_talk(), emoji: '🎤' },
-					{ value: 'vlog', label: m.facet_type_vlog(), emoji: '📓' }
+				{ value: 'talk', label: m.facet_type_talk(), emoji: '🎤' }
+			] as const
+		},
+		focus: {
+			label: m.facet_focus(),
+			options: [
+				{ value: 'showreel', label: m.facet_focus_showreel(), emoji: '🎞️' },
+				{ value: 'competition', label: m.facet_focus_competition(), emoji: '🥇' },
+				{ value: 'jam', label: m.facet_focus_jam(), emoji: '🎉' },
+				{ value: 'conceptual', label: m.facet_focus_conceptual(), emoji: '💭' },
+				{ value: 'gear', label: m.facet_focus_gear(), emoji: '🔧' },
+				{ value: 'awards', label: m.facet_focus_awards(), emoji: '🏅' }
 			] as const
 		},
 		era: {
@@ -59,16 +70,6 @@
 				{ value: 'short-form', label: m.facet_length_shortForm(), emoji: '⚡' },
 				{ value: 'medium-form', label: m.facet_length_mediumForm(), emoji: '⏱️' },
 				{ value: 'long-form', label: m.facet_length_longForm(), emoji: '🎞️' }
-			] as const
-		},
-		mood: {
-			label: m.facet_mood(),
-			options: [
-				{ value: 'energetic', label: m.facet_mood_energetic(), emoji: '⚡' },
-				{ value: 'chill', label: m.facet_mood_chill(), emoji: '😌' },
-				{ value: 'gritty', label: m.facet_mood_gritty(), emoji: '🔥' },
-				{ value: 'wholesome', label: m.facet_mood_wholesome(), emoji: '💚' },
-				{ value: 'artistic', label: m.facet_mood_artistic(), emoji: '🎨' }
 			] as const
 		},
 		movement: {
@@ -94,36 +95,31 @@
 				{ value: 'gym', label: m.facet_environment_gym(), emoji: '🏋️' }
 			] as const
 		},
-		filmStyle: {
-			label: m.facet_filmStyle(),
+		production: {
+			label: m.facet_production(),
 			options: [
-				{ value: 'cinematic', label: m.facet_filmStyle_cinematic(), emoji: '🎞️' },
-				{ value: 'street-cinematic', label: m.facet_filmStyle_streetCinematic(), emoji: '🛣️' },
-				{ value: 'skateish', label: m.facet_filmStyle_skateish(), emoji: '🛹' },
-				{ value: 'raw', label: m.facet_filmStyle_raw(), emoji: '📱' },
-				{ value: 'pov', label: m.facet_filmStyle_pov(), emoji: '👁️' },
-				{ value: 'longtakes', label: m.facet_filmStyle_longtakes(), emoji: '🎥' },
-				{ value: 'music-driven', label: m.facet_filmStyle_musicDriven(), emoji: '🎵' },
-				{ value: 'montage', label: m.facet_filmStyle_montage(), emoji: '⚡' },
-				{ value: 'slowmo', label: m.facet_filmStyle_slowmo(), emoji: '🐌' },
-				{ value: 'gonzo', label: m.facet_filmStyle_gonzo(), emoji: '🌀' },
-				{ value: 'vintage', label: m.facet_filmStyle_vintage(), emoji: '📼' },
-				{ value: 'minimalist', label: m.facet_filmStyle_minimalist(), emoji: '⬜' },
-				{ value: 'experimental', label: m.facet_filmStyle_experimental(), emoji: '🔮' }
+				{ value: 'raw', label: m.facet_production_raw(), emoji: '📱' },
+				{ value: 'casual', label: m.facet_production_casual(), emoji: '🎒' },
+				{ value: 'produced', label: m.facet_production_produced(), emoji: '🎬' },
+				{ value: 'premium', label: m.facet_production_premium(), emoji: '✨' }
 			] as const
 		},
-		theme: {
-			label: m.facet_theme(),
+		presentation: {
+			label: m.facet_presentation(),
 			options: [
-				{ value: 'journey', label: m.facet_theme_journey(), emoji: '🗺️' },
-				{ value: 'team', label: m.facet_theme_team(), emoji: '👥' },
-				{ value: 'event', label: m.facet_theme_event(), emoji: '🎉' },
-				{ value: 'competition', label: m.facet_theme_competition(), emoji: '🥇' },
-				{ value: 'educational', label: m.facet_theme_educational(), emoji: '🎓' },
-				{ value: 'travel', label: m.facet_theme_travel(), emoji: '✈️' },
-				{ value: 'creative', label: m.facet_theme_creative(), emoji: '✨' },
-				{ value: 'showcase', label: m.facet_theme_showcase(), emoji: '🎞️' },
-				{ value: 'entertainment', label: m.facet_theme_entertainment(), emoji: '🎪' }
+				{ value: 'standard', label: m.facet_presentation_standard(), emoji: '🎥' },
+				{ value: 'pov', label: m.facet_presentation_pov(), emoji: '👁️' },
+				{ value: 'vlog', label: m.facet_presentation_vlog(), emoji: '📓' },
+				{ value: 'top-down', label: m.facet_presentation_topDown(), emoji: '🚁' },
+				{ value: 'stylized', label: m.facet_presentation_stylized(), emoji: '🔮' }
+			] as const
+		},
+		medium: {
+			label: m.facet_medium(),
+			options: [
+				{ value: 'live-action', label: m.facet_medium_liveAction(), emoji: '🎞️' },
+				{ value: 'animation', label: m.facet_medium_animation(), emoji: '🎨' },
+				{ value: 'mixed-media', label: m.facet_medium_mixedMedia(), emoji: '🔀' }
 			] as const
 		}
 	});
@@ -246,11 +242,12 @@
 		const feedFacets = filter.facets;
 		const facetKeys: Array<keyof SelectedFacets> = [
 			'type',
-			'mood',
+			'focus',
 			'movement',
 			'environment',
-			'filmStyle',
-			'theme',
+			'production',
+			'presentation',
+			'medium',
 			'era',
 			'length'
 		];

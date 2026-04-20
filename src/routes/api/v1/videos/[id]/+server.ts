@@ -51,7 +51,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 		const { data: mediaItem, error: mediaError } = await supabase
 			.from('media_items')
 			.select(
-				'id, slug, type, title, description, thumbnail, year, duration, creators, starring, facet_type, facet_mood, facet_movement, facet_environment, facet_film_style, facet_theme'
+				'id, slug, type, title, description, thumbnail, year, duration, creators, starring, facet_type, facet_focus, facet_movement, facet_environment, facet_production, facet_presentation, facet_medium, content_warnings'
 			)
 			.eq('id', mediaId)
 			.maybeSingle();
@@ -152,11 +152,13 @@ export const GET: RequestHandler = async ({ params, request }) => {
 		// Build facets object (omit undefined/null values)
 		const facets: Record<string, unknown> = {};
 		if (mediaItem.facet_type) facets.type = mediaItem.facet_type;
-		if (mediaItem.facet_mood?.length) facets.mood = mediaItem.facet_mood;
+		if (mediaItem.facet_focus) facets.focus = mediaItem.facet_focus;
 		if (mediaItem.facet_movement?.length) facets.movement = mediaItem.facet_movement;
 		if (mediaItem.facet_environment) facets.environment = mediaItem.facet_environment;
-		if (mediaItem.facet_film_style) facets.filmStyle = mediaItem.facet_film_style;
-		if (mediaItem.facet_theme) facets.theme = mediaItem.facet_theme;
+		if (mediaItem.facet_production) facets.production = mediaItem.facet_production;
+		if (mediaItem.facet_presentation) facets.presentation = mediaItem.facet_presentation;
+		if (mediaItem.facet_medium) facets.medium = mediaItem.facet_medium;
+		if (mediaItem.content_warnings?.length) facets.contentWarnings = mediaItem.content_warnings;
 
 		const videoUrl =
 			mediaItem.type === 'series'

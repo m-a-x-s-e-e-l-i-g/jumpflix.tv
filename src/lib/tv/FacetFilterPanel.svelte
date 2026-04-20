@@ -39,7 +39,8 @@
 				{ value: 'event', label: m.facet_type_event(), emoji: '🏆' },
 				{ value: 'tutorial', label: m.facet_type_tutorial(), emoji: '📚' },
 				{ value: 'music-video', label: m.facet_type_musicVideo(), emoji: '🎵' },
-				{ value: 'talk', label: m.facet_type_talk(), emoji: '🎤' }
+					{ value: 'talk', label: m.facet_type_talk(), emoji: '🎤' },
+					{ value: 'vlog', label: m.facet_type_vlog(), emoji: '📓' }
 			] as const
 		},
 		era: {

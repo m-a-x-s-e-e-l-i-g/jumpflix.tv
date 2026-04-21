@@ -2,6 +2,8 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
 	import { browser } from '$app/environment';
+	import { familySafeOnly } from '$lib/tv/store';
+	import { isFamilySafeContent } from '$lib/tv/utils';
 	import type { ContentItem, Episode } from './types';
 	import { resolveInlinePlaybackSource, resolveMoviePlaybackSource } from './playback-source';
 	import VideoPlayer from '$lib/tv/VideoPlayer.svelte';
@@ -36,6 +38,8 @@
 		| { kind: 'message'; text: string };
 
 	const sanitizeTitle = (value?: string | null) => (value?.trim() ? value.trim() : m.tv_nowPlaying());
+	let familySafeOnlyEnabled = false;
+	$: familySafeOnlyEnabled = $familySafeOnly;
 
 	function handlePlaybackCompleted(
 		event: CustomEvent<{ mediaId: string | null; mediaType: 'movie' | 'series' | 'episode' }>
@@ -56,6 +60,12 @@
 
 	$: playerView = (() => {
 		if (!show || !selected) return null;
+		if (familySafeOnlyEnabled && !isFamilySafeContent(selected)) {
+			return {
+				kind: 'message',
+				text: 'This title is blocked while Family safe only is enabled.'
+			} satisfies PlayerView;
+		}
 
 		const poster = selectedEpisode?.thumbnail ?? (selected as any)?.thumbnail ?? null;
 		const baseKey = `${selected.type}:${selected.id ?? 'unknown'}`;

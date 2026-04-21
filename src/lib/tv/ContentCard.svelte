@@ -4,7 +4,7 @@
 	import { Image } from '@unpic/svelte';
 	import { blurhashToCssGradientString } from '@unpic/placeholder';
 	import { dev } from '$app/environment';
-	import { loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
+	import { familySafeOnly, loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
 	import {
 		getWatchProgress,
 		getLatestWatchProgressByBaseId,
@@ -15,6 +15,7 @@
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
 	import { resolveMoviePlaybackSource } from '$lib/tv/playback-source';
+	import { isFamilySafeContent } from '$lib/tv/utils';
 
 	export let item: ContentItem;
 	export let isSelected = false;
@@ -133,6 +134,9 @@
 	$: ratingCount = typeof item.ratingCount === 'number' ? item.ratingCount : 0;
 	$: ratingLabel =
 		ratingValue !== null && ratingCount > 0 ? `${ratingValue.toFixed(1)} (${ratingCount})` : null;
+	let familySafeOnlyEnabled = false;
+	$: familySafeOnlyEnabled = $familySafeOnly;
+	$: isFamilySafeBlocked = familySafeOnlyEnabled && !isFamilySafeContent(item);
 
 	// no loading lifecycle needed
 
@@ -214,6 +218,12 @@
 			<div
 				class="pointer-events-none absolute inset-0 z-10 bg-black/50 transition-opacity duration-300 group-hover:opacity-0"
 			></div>
+		{/if}
+
+		{#if isFamilySafeBlocked}
+			<div class="card-family-safe-overlay">
+				<span class="card-family-safe-pill">Family safe only</span>
+			</div>
 		{/if}
 
 		<div class="card-badges">
@@ -338,6 +348,33 @@
 		background: rgba(6, 10, 20, 0.7);
 		border: 1px solid rgba(248, 250, 252, 0.12);
 		color: rgba(226, 232, 240, 0.85);
+	}
+
+	.card-family-safe-overlay {
+		position: absolute;
+		inset: 0;
+		z-index: 18;
+		display: flex;
+		align-items: flex-end;
+		justify-content: center;
+		padding: 0.9rem;
+		background: linear-gradient(180deg, rgba(4, 7, 18, 0.08), rgba(4, 7, 18, 0.72));
+		pointer-events: none;
+	}
+
+	.card-family-safe-pill {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, 0.18);
+		background: rgba(8, 12, 24, 0.84);
+		padding: 0.38rem 0.7rem;
+		font-size: 0.58rem;
+		font-weight: 700;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: rgba(248, 250, 252, 0.92);
 	}
 
 	.card-rating {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import VideoPlayer from '$lib/tv/VideoPlayer.svelte';
+	import { familySafeOnly } from '$lib/tv/store';
 	import { browser } from '$app/environment';
 	import { tick } from 'svelte';
 	import type { VideoTrack } from '$lib/tv/types';
@@ -12,6 +13,7 @@
 		keySeed: string;
 		mediaId: number | null;
 		mediaType: 'movie' | 'series';
+		familySafe: boolean;
 		tracks?: VideoTrack[];
 	};
 
@@ -31,11 +33,27 @@
 	let currentIndex = $state(0);
 	let playbackNonce = $state(0);
 	let autoplayPlayerEl = $state<HTMLDivElement | null>(null);
+	const familySafeOnlyEnabled = $derived($familySafeOnly);
 
-	const currentEntry = $derived(queue[currentIndex] ?? null);
+	const filteredQueue = $derived(
+		familySafeOnlyEnabled ? queue.filter((entry) => entry.familySafe !== false) : queue
+	);
+
+	const currentEntry = $derived(filteredQueue[currentIndex] ?? null);
 	const playerKeySeed = $derived(
 		currentEntry ? `${currentEntry.keySeed}:run:${playbackNonce}` : 'autoplay:empty'
 	);
+
+	$effect(() => {
+		if (!filteredQueue.length) {
+			currentIndex = 0;
+			return;
+		}
+
+		if (currentIndex >= filteredQueue.length) {
+			currentIndex = 0;
+		}
+	});
 
 	async function restoreFullscreenIfNeeded(shouldRestore: boolean) {
 		if (!shouldRestore || !browser) return;
@@ -54,16 +72,16 @@
 	}
 
 	async function advancePlayback() {
-		if (!queue.length) return;
+		if (!filteredQueue.length) return;
 		const shouldRestoreFullscreen = browser && Boolean(document.fullscreenElement);
 
 		playbackNonce += 1;
-		if (queue.length === 1) {
+		if (filteredQueue.length === 1) {
 			await restoreFullscreenIfNeeded(shouldRestoreFullscreen);
 			return;
 		}
 
-		if (currentIndex >= queue.length - 1) {
+		if (currentIndex >= filteredQueue.length - 1) {
 			queue = shuffleEntries(queue);
 			currentIndex = 0;
 			await restoreFullscreenIfNeeded(shouldRestoreFullscreen);

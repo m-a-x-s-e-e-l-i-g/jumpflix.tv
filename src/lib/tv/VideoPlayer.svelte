@@ -17,6 +17,7 @@
 	import AirplayIcon from 'lucide-svelte/icons/airplay';
 	import SpotChapterSuggestionDialog from '$lib/tv/SpotChapterSuggestionDialog.svelte';
 	import { getPublicProviderLinkSource, resolveInlinePlaybackSource } from '$lib/tv/playback-source';
+	import { familySafeOnly } from '$lib/tv/store';
 	import type { VideoTrack } from '$lib/tv/types';
 	import { parseTimecodeToSeconds } from '$lib/utils/timecode';
 	import { getParkourSpotUrl } from '$lib/utils';
@@ -3026,6 +3027,19 @@
 												<span class="vds-menu-item-label">{m.tv_chromecast()}</span>
 											</button>
 										{/if}
+
+										<button
+											type="button"
+											class="vds-menu-item settings-action settings-action-family-safe"
+											role="menuitemcheckbox"
+											aria-checked={$familySafeOnly}
+											data-active={$familySafeOnly ? '' : undefined}
+											data-jumpflix-gesture-ignore="true"
+											on:click={() => familySafeOnly.set(!$familySafeOnly)}
+										>
+											<span class="vds-menu-item-label">Family safe only</span>
+											<span class="vds-menu-item-hint">{$familySafeOnly ? 'On' : 'Off'}</span>
+										</button>
 									</media-menu-items>
 								</media-menu>
 

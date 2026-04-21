@@ -1,7 +1,13 @@
 import { writable, derived, type Readable, get } from 'svelte/store';
 import { browser } from '$app/environment';
 import type { CatalogView, ContentItem, Episode, SortBy, SelectedFacets } from './types';
-import { buildRankMap, filterAndSortContent, isInlinePlayable, keyFor } from './utils';
+import {
+	buildRankMap,
+	filterAndSortContent,
+	isFamilySafeContent,
+	isInlinePlayable,
+	keyFor
+} from './utils';
 import {
 	getAllWatchProgress,
 	getSeriesProgressSummary,
@@ -16,6 +22,7 @@ const SHOW_WATCHED_STORAGE_KEY = 'jumpflix.tv:showWatched';
 const SEARCH_QUERY_STORAGE_KEY = 'jumpflix.tv:searchQuery';
 const GRID_SCALE_STORAGE_KEY = 'jumpflix.tv:gridScale';
 const CATALOG_VIEW_STORAGE_KEY = 'jumpflix.tv:catalogView';
+const FAMILY_SAFE_ONLY_STORAGE_KEY = 'jumpflix.tv:familySafeOnly';
 
 // Remember toggle preferences across sessions on the same device.
 function loadBooleanPreference(key: string, defaultValue = true): boolean {
@@ -119,6 +126,7 @@ export const searchQuery = writable(loadStringPreference(SEARCH_QUERY_STORAGE_KE
 export const showPaid = writable(loadBooleanPreference(SHOW_PAID_STORAGE_KEY));
 export const sortBy = writable<SortBy>('default');
 export const showWatched = writable(loadBooleanPreference(SHOW_WATCHED_STORAGE_KEY));
+export const familySafeOnly = writable(loadBooleanPreference(FAMILY_SAFE_ONLY_STORAGE_KEY, false));
 export const selectedContent = writable<ContentItem | null>(null);
 export const showPlayer = writable(false);
 export const selectedIndex = writable(0);
@@ -231,6 +239,7 @@ if (browser) {
 	window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
 	showPaid.subscribe((value) => persistBooleanPreference(SHOW_PAID_STORAGE_KEY, value));
 	showWatched.subscribe((value) => persistBooleanPreference(SHOW_WATCHED_STORAGE_KEY, value));
+	familySafeOnly.subscribe((value) => persistBooleanPreference(FAMILY_SAFE_ONLY_STORAGE_KEY, value));
 	searchQuery.subscribe((value) => persistStringPreference(SEARCH_QUERY_STORAGE_KEY, value));
 	gridScale.subscribe((value) => persistNumberPreference(GRID_SCALE_STORAGE_KEY, value));
 	catalogView.subscribe((value) => persistStringPreference(CATALOG_VIEW_STORAGE_KEY, value));
@@ -360,6 +369,9 @@ export function selectByOffset(offset: number, currentCols = 1) {
 
 export function openContent(item: ContentItem) {
 	selectContent(item);
+	if (get(familySafeOnly) && !isFamilySafeContent(item)) {
+		return;
+	}
 	if (isInlinePlayable(item)) {
 		showPlayer.set(true);
 	}
@@ -367,6 +379,10 @@ export function openContent(item: ContentItem) {
 
 // Open a specific episode (YouTube video) within a series
 export function openEpisode(ep: Episode) {
+	const current = get(selectedContent);
+	if (get(familySafeOnly) && current && !isFamilySafeContent(current)) {
+		return;
+	}
 	selectedEpisode.set(ep);
 	showPlayer.set(true);
 }

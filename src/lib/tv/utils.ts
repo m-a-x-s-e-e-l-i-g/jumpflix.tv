@@ -60,6 +60,11 @@ export function keyFor(item: ContentItem) {
 	return `${item.type}:${item.id}`;
 }
 
+export function isFamilySafeContent(item: ContentItem | null | undefined) {
+	if (!item) return true;
+	return (item.facets?.contentWarnings?.length ?? 0) === 0;
+}
+
 export function parseYear(item: ContentItem): number {
 	const y = parseInt((item as any).year);
 	return isNaN(y) ? 0 : y;

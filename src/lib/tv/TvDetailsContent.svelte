@@ -14,7 +14,11 @@
 	import * as m from '$lib/paraglide/messages';
 	import { fade } from 'svelte/transition';
 	import { decode } from 'html-entities';
-	import { showPlayer, selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
+	import {
+		familySafeOnly,
+		showPlayer,
+		selectEpisode as updateSelectedEpisode
+	} from '$lib/tv/store';
 	import Tracklist from '$lib/tv/Tracklist.svelte';
 	import { getProviderLink, type ProviderLink } from '$lib/tv/provider-links';
 	import { getCountryFlagEmoji, getParkourSpotUrl, withUtm } from '$lib/utils';
@@ -60,6 +64,7 @@
 		REVIEW_UPDATED_EVENT,
 		type ReviewUpdatedDetail
 	} from '$lib/review-events';
+	import { isFamilySafeContent } from '$lib/tv/utils';
 
 	let isAuthenticated = false;
 
@@ -103,6 +108,8 @@
 	let spotChaptersMediaId: number | null = null;
 	let spotChaptersPlaybackKey: string | null = null;
 	let spotChaptersMediaType: 'movie' | 'series' | null = null;
+	let familySafeOnlyEnabled = false;
+	$: familySafeOnlyEnabled = $familySafeOnly;
 
 	function buildSeriesEpisodePlaybackKey(seriesId: number, episodeId: string): string {
 		return `series:${seriesId}:ep:${episodeId}`;
@@ -366,6 +373,7 @@
 
 	function handlePlayClick() {
 		if (!selected) return;
+		if (familySafeOnlyEnabled && !isFamilySafeContent(selected)) return;
 
 		if (selected?.type === 'series' && !selectedEpisode) {
 			// No episode selected/available: open series external source if present.
@@ -926,6 +934,7 @@
 		selected?.type === 'series'
 			? selected.externalUrl || (selected as any).trakt || undefined
 			: undefined;
+	$: familySafeBlocked = familySafeOnlyEnabled && selected ? !isFamilySafeContent(selected) : false;
 </script>
 
 {#if selected}
@@ -937,14 +946,16 @@
 			<div class="detail-play-fixedbar">
 				<div class="detail-play-fixedinner">
 					<button
-						disabled={isSeriesWithoutEpisode && !seriesExternalSourceUrl}
+						disabled={familySafeBlocked || (isSeriesWithoutEpisode && !seriesExternalSourceUrl)}
 						on:click={handlePlayClick}
 						class="detail-play"
 					>
 						<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"
 							><path d="M8 5v10l8-5-8-5z" /></svg
 						>
-						{#if selected?.type === 'series'}
+						{#if familySafeBlocked}
+							Family safe only
+						{:else if selected?.type === 'series'}
 							{#if selectedEpisode}
 								{#if isEpisodePlayable(selectedEpisode)}
 									{m.tv_playSelectedEpisode()}
@@ -1027,7 +1038,7 @@
 					>
 						<Link2Icon class="h-4 w-4" />
 					</button>
-					{#if providerLink}
+					{#if providerLink && !familySafeBlocked}
 						<a
 							href={providerLink.url}
 							target="_blank"
@@ -1102,14 +1113,16 @@
 					<div class="detail-play-observer" bind:this={playObserverEl}>
 						{#if !$showPlayer}
 							<button
-								disabled={isSeriesWithoutEpisode && !seriesExternalSourceUrl}
+								disabled={familySafeBlocked || (isSeriesWithoutEpisode && !seriesExternalSourceUrl)}
 								on:click={handlePlayClick}
 								class="detail-play"
 							>
 								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"
 									><path d="M8 5v10l8-5-8-5z" /></svg
 								>
-								{#if selected?.type === 'series'}
+								{#if familySafeBlocked}
+									Family safe only
+								{:else if selected?.type === 'series'}
 									{#if selectedEpisode}
 										{#if isEpisodePlayable(selectedEpisode)}
 											{m.tv_playSelectedEpisode()}
@@ -1133,6 +1146,12 @@
 							</button>
 						{/if}
 					</div>
+
+					{#if familySafeBlocked}
+						<p class="detail-family-safe-note">
+							Playback is blocked for this title while Family safe only is enabled.
+						</p>
+					{/if}
 
 					{#if isAuthenticated && selected.type === 'movie'}
 						<button
@@ -1859,6 +1878,13 @@
 		color: rgba(226, 232, 240, 0.65);
 		cursor: not-allowed;
 		box-shadow: none;
+	}
+
+	.detail-family-safe-note {
+		margin: 0.75rem 0 0;
+		color: rgba(226, 232, 240, 0.76);
+		font-size: 0.88rem;
+		line-height: 1.5;
 	}
 
 	.detail-toggle {

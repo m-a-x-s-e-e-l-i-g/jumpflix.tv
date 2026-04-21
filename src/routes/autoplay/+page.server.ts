@@ -3,6 +3,7 @@ import { fetchEpisodesBySeasonId } from '$lib/server/content-service';
 import { fetchAllContent } from '$lib/server/content-service';
 import { resolveInlinePlaybackSource, resolveMoviePlaybackSource } from '$lib/tv/playback-source';
 import type { ContentItem, Movie, Series, VideoTrack } from '$lib/tv/types';
+import { isFamilySafeContent } from '$lib/tv/utils';
 import { decode } from 'html-entities';
 
 type AutoplayEntry = {
@@ -13,6 +14,7 @@ type AutoplayEntry = {
 	keySeed: string;
 	mediaId: number | null;
 	mediaType: 'movie' | 'series';
+	familySafe: boolean;
 	tracks?: VideoTrack[];
 };
 
@@ -61,6 +63,7 @@ function buildMovieEntry(movie: Movie): AutoplayEntry | null {
 		keySeed: `autoplay:movie:${movie.id}:${playbackSource.keySuffix}`,
 		mediaId: typeof movie.id === 'number' ? movie.id : Number(movie.id) || null,
 		mediaType: 'movie',
+		familySafe: isFamilySafeContent(movie),
 		tracks: movie.tracks
 	};
 }
@@ -96,7 +99,8 @@ async function buildSeriesEntries(series: Series): Promise<AutoplayEntry[]> {
 				src: playbackSource.src,
 				keySeed: `autoplay:series:${series.id}:season:${season.id}:episode:${episodeId}:${playbackSource.keySuffix}`,
 				mediaId: typeof series.id === 'number' ? series.id : Number(series.id) || null,
-				mediaType: 'series'
+				mediaType: 'series',
+				familySafe: isFamilySafeContent(series)
 			});
 		}
 	}

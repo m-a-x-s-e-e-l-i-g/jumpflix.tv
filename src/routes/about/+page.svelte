@@ -245,7 +245,9 @@
 				Get donations, fund creators/athletes to make even higher quality content..
 			</p>
 		</div>
+	</div>
 
+	<div id="autoplay" class="jf-surface mt-6 rounded-3xl p-6 md:mt-8 md:p-8 scroll-mt-24">
 		<div class="max-w-3xl space-y-6 text-sm leading-7 text-foreground md:text-base">
 			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">Autoplay mode</h2>
 			<p>

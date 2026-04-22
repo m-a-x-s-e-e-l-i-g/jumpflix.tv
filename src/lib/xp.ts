@@ -5,6 +5,8 @@ export const USER_XP_WEIGHTS = {
 	contributions: 40
 } as const;
 
+export type UserXpKind = keyof typeof USER_XP_WEIGHTS;
+
 export type UserXpCounts = {
 	watchingCount?: number | null;
 	ratingCount?: number | null;
@@ -55,4 +57,31 @@ export function calculateUserXp(counts: UserXpCounts): UserXpSummary {
 		contributions,
 		counts: normalizedCounts
 	};
+}
+
+export function awardUserXp(
+	summary: UserXpSummary | null | undefined,
+	kind: UserXpKind,
+	count = 1
+): UserXpSummary {
+	const nextCount = normalizeCount(count);
+	if (nextCount === 0) {
+		return (
+			summary ??
+			calculateUserXp({
+				watchingCount: 0,
+				ratingCount: 0,
+				reviewingCount: 0,
+				contributionsCount: 0
+			})
+		);
+	}
+
+	return calculateUserXp({
+		watchingCount: (summary?.counts.watching ?? 0) + (kind === 'watching' ? nextCount : 0),
+		ratingCount: (summary?.counts.rating ?? 0) + (kind === 'rating' ? nextCount : 0),
+		reviewingCount: (summary?.counts.reviewing ?? 0) + (kind === 'reviewing' ? nextCount : 0),
+		contributionsCount:
+			(summary?.counts.contributions ?? 0) + (kind === 'contributions' ? nextCount : 0)
+	});
 }

@@ -47,6 +47,7 @@ export const load = async ({ url, locals }) => {
 					.from('content_suggestions')
 					.select('id', { count: 'exact', head: true })
 					.eq('created_by', user.id)
+					.eq('status', 'approved')
 			]);
 
 			const xpErrors = [watchedRes.error, ratingsRes.error, reviewsRes.error, suggestionsRes.error].filter(

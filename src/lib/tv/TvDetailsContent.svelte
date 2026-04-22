@@ -65,6 +65,7 @@
 		type ReviewUpdatedDetail
 	} from '$lib/review-events';
 	import { isFamilySafeContent } from '$lib/tv/utils';
+	import { dispatchXPopAwarded } from '$lib/xpop-events';
 
 	let isAuthenticated = false;
 
@@ -608,6 +609,7 @@
 
 	async function handleRatingChange(rating: number) {
 		if (!selected) return;
+		const shouldAwardXPop = currentUserRating === null;
 		currentUserRating = rating;
 		// Refresh summary to show updated average
 		const summary = await updateRating(selected.id, rating);
@@ -624,6 +626,10 @@
 
 		if (isAuthenticated) {
 			await openReviewComposer();
+		}
+
+		if (shouldAwardXPop) {
+			dispatchXPopAwarded('rating');
 		}
 	}
 
@@ -724,6 +730,7 @@
 		myReviewSaving = true;
 		myReviewError = null;
 		try {
+			const shouldAwardXPop = myReviewId === null;
 			const saved = await upsertReview({
 				mediaId: selected.id,
 				userId: $authUser.id,
@@ -736,6 +743,9 @@
 				mediaId: Number(saved.media_id),
 				review: saved
 			});
+			if (shouldAwardXPop) {
+				dispatchXPopAwarded('reviewing');
+			}
 			reviewComposerOpen = false;
 			toast.success('Review posted');
 		} catch (error: any) {

@@ -4,6 +4,7 @@ import { get, writable } from 'svelte/store';
 import { supabase } from '$lib/supabaseClient';
 import { user as userStore } from '$lib/stores/authStore';
 import type { Database } from '$lib/supabase/types';
+import { dispatchXPopAwarded } from '$lib/xpop-events';
 
 export interface WatchProgress {
 	mediaId: string;
@@ -255,6 +256,7 @@ export function updateWatchProgress(
 	duration: number
 ): WatchProgress {
 	ensureInitialized();
+	const previousProgress = progressCache.get(mediaId);
 
 	const percent = duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
 	const isWatched = percent >= WATCHED_THRESHOLD;
@@ -276,6 +278,11 @@ export function updateWatchProgress(
 	progressCache.set(mediaId, progress);
 	bumpWatchHistoryVersion();
 	dispatchWatchProgressEvent({ kind: 'update', progress, origin: 'local' });
+	if (!previousProgress?.isWatched && isWatched) {
+		dispatchXPopAwarded('watching', {
+			label: type === 'episode' ? 'Episode watched' : 'Marked watched'
+		});
+	}
 
 	if (!currentUserId) return progress;
 
@@ -309,6 +316,11 @@ export function setWatchedStatus(
 	progressCache.set(mediaId, progress);
 	bumpWatchHistoryVersion();
 	dispatchWatchProgressEvent({ kind: 'update', progress, origin: 'local' });
+	if (!existing?.isWatched && watched) {
+		dispatchXPopAwarded('watching', {
+			label: type === 'episode' ? 'Episode watched' : 'Marked watched'
+		});
+	}
 
 	if (!currentUserId) return progress;
 

@@ -35,15 +35,38 @@
 	import Switch from '$lib/components/ui/Switch.svelte';
 	import { withUtm } from '$lib/utils';
 	import { familySafeOnly, selectedEpisode as selectedEpisodeStore } from '$lib/tv/store';
-	import type { UserXpSummary } from '$lib/xp';
+	import XPopMark from '$lib/components/XPopMark.svelte';
+	import { awardUserXp, type UserXpSummary } from '$lib/xp';
 	import {
 		SCROLL_CONTEXT_KEY,
 		type ScrollSubscriber,
 		type ScrollSubscription
 	} from '$lib/scroll-context';
 	import { initWatchHistory } from '$lib/tv/watchHistory';
+	import { XPOP_AWARDED_EVENT, type XPopAwardDetail } from '$lib/xpop-events';
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
+
+	type XPopOverlayParticle = {
+		id: number;
+		left: number;
+		top: number;
+		size: number;
+		driftX: number;
+		driftY: number;
+		rotate: number;
+		duration: number;
+		delay: number;
+		variant: 'burst' | 'float';
+		opacity: number;
+	};
+
+	type XPopOverlayReward = {
+		id: number;
+		amount: number;
+		label: string;
+		particles: XPopOverlayParticle[];
+	};
 
 	function isStandaloneMode() {
 		if (typeof window === 'undefined') return false;
@@ -94,6 +117,12 @@
 	let reduceMotion = $state(false);
 	let systemReduceMotion = $state(false);
 	let showPopcorn = $state(false);
+	let currentUserXp = $state<UserXpSummary | null>(data.userXp);
+	let xPopQueue = $state<XPopAwardDetail[]>([]);
+	let activeXPopReward = $state<XPopOverlayReward | null>(null);
+	let xPopRewardSeed = 0;
+	let xPopParticleSeed = 0;
+	let xPopTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
 	const isStatsRoute = $derived(
@@ -258,6 +287,72 @@
 	];
 	const activePopcorns = $derived(popcorns);
 
+	$effect(() => {
+		currentUserXp = data.userXp;
+	});
+
+	function clearXPopTimer() {
+		if (!xPopTimer) return;
+		clearTimeout(xPopTimer);
+		xPopTimer = null;
+	}
+
+	function buildXPopParticles(): XPopOverlayParticle[] {
+		const burstParticles = Array.from({ length: 11 }, (_, index) => ({
+			id: ++xPopParticleSeed,
+			left: 76 + Math.random() * 14,
+			top: 36 + Math.random() * 20,
+			size: 10 + Math.random() * 9,
+			driftX: -124 + Math.random() * 72,
+			driftY: -36 - Math.random() * 38,
+			rotate: -34 + Math.random() * 68,
+			duration: 560 + Math.random() * 220,
+			delay: index * 16,
+			variant: 'burst' as const,
+			opacity: 0.78 + Math.random() * 0.18
+		}));
+
+		const floatParticles = Array.from({ length: 5 }, (_, index) => ({
+			id: ++xPopParticleSeed,
+			left: 78 + Math.random() * 12,
+			top: 30 + Math.random() * 24,
+			size: 8 + Math.random() * 6,
+			driftX: -82 + Math.random() * 42,
+			driftY: -58 - Math.random() * 32,
+			rotate: -22 + Math.random() * 44,
+			duration: 840 + Math.random() * 240,
+			delay: 70 + index * 30,
+			variant: 'float' as const,
+			opacity: 0.38 + Math.random() * 0.18
+		}));
+
+		return [...burstParticles, ...floatParticles];
+	}
+
+	function playNextXPopReward() {
+		if (activeXPopReward || xPopQueue.length === 0) return;
+		const [nextReward, ...remaining] = xPopQueue;
+		xPopQueue = remaining;
+		activeXPopReward = {
+			id: ++xPopRewardSeed,
+			amount: nextReward.amount,
+			label: nextReward.label,
+			particles: buildXPopParticles()
+		};
+		clearXPopTimer();
+		xPopTimer = setTimeout(() => {
+			activeXPopReward = null;
+			xPopTimer = null;
+			playNextXPopReward();
+		}, reduceMotion ? 650 : 1100);
+	}
+
+	function queueXPopReward(detail: XPopAwardDetail) {
+		currentUserXp = awardUserXp(currentUserXp, detail.kind, detail.count);
+		xPopQueue = [...xPopQueue, detail];
+		playNextXPopReward();
+	}
+
 	const PARALLAX_STRENGTH = 0.06;
 	const SCROLL_UPDATE_THRESHOLD = 6; // Minimum scroll delta (px) before refreshing parallax to cut down style recalculations
 	type PopcornEntry = {
@@ -321,7 +416,19 @@
 
 	function addEventListeners(): () => void {
 		if (typeof window === 'undefined') return () => {};
-		return () => {};
+
+		const handleXPopAwarded = (event: Event) => {
+			const detail = (event as CustomEvent<XPopAwardDetail>).detail;
+			if (!detail?.amount || detail.amount <= 0) return;
+			queueXPopReward(detail);
+		};
+
+		window.addEventListener(XPOP_AWARDED_EVENT, handleXPopAwarded as EventListener);
+
+		return () => {
+			window.removeEventListener(XPOP_AWARDED_EVENT, handleXPopAwarded as EventListener);
+			clearXPopTimer();
+		};
 	}
 
 	function setupScrollEffects(): () => void {
@@ -754,7 +861,7 @@
 						<AdminMenuButton />
 					{/if}
 
-					<UserProfileButton xp={data.userXp} />
+					<UserProfileButton xp={currentUserXp} />
 				{/if}
 			</div>
 
@@ -951,6 +1058,50 @@
 		</div>
 	{/if}
 
+	{#if activeXPopReward}
+		{#key activeXPopReward.id}
+			<div
+				class="xpop-reward-layer"
+				aria-hidden="true"
+				class:xpop-reduced={reduceMotion}
+			>
+				<div class="xpop-reward-cluster">
+					<div class="xpop-reward-burst">
+						{#each activeXPopReward.particles as particle (particle.id)}
+							<img
+								src="/images/popcorn.svg"
+								alt=""
+								class="xpop-particle"
+								class:xpop-particle-float={particle.variant === 'float'}
+								style:left={`${particle.left}%`}
+								style:top={`${particle.top}%`}
+								style:width={`${particle.size}px`}
+								style:height={`${particle.size}px`}
+								style:opacity={particle.opacity}
+								style={`--xpop-drift-x:${particle.driftX}px; --xpop-drift-y:${particle.driftY}px; --xpop-rotate:${particle.rotate}deg; --xpop-duration:${particle.duration}ms; --xpop-delay:${particle.delay}ms;`}
+								decoding="async"
+								draggable="false"
+							/>
+						{/each}
+					</div>
+
+					<div class="xpop-reward-card">
+						<div class="xpop-reward-amount-row">
+							<span class="xpop-reward-amount">+{activeXPopReward.amount}</span>
+							<XPopMark
+								text="XPop"
+								class="xpop-reward-mark"
+								iconClass="h-5 w-5"
+								textClass="text-[11px] font-semibold tracking-[0.14em] text-white/70"
+								overlayClass="text-[8px]"
+							/>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/key}
+	{/if}
+
 	<!-- Global toast container -->
 	<Toaster richColors position="bottom-center" theme="dark" />
 
@@ -1046,6 +1197,209 @@
 		}
 	}
 
+	.xpop-reward-layer {
+		position: fixed;
+		inset: 0;
+		z-index: calc(var(--z-index-settings) + 20);
+		display: flex;
+		justify-content: flex-end;
+		align-items: flex-start;
+		padding: 4.25rem 1rem 0;
+		pointer-events: none;
+	}
+
+	.xpop-reward-cluster {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: flex-end;
+	}
+
+	.xpop-reward-burst {
+		position: absolute;
+		top: -2.2rem;
+		right: -0.35rem;
+		bottom: -2.2rem;
+		left: -10rem;
+		overflow: visible;
+	}
+
+	.xpop-particle {
+		position: absolute;
+		filter: drop-shadow(0 8px 12px rgba(15, 23, 42, 0.22));
+		opacity: 0;
+		transform: translate3d(0, 0, 0) scale(0.5) rotate(0deg);
+		animation: xpopParticle var(--xpop-duration) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+		animation-delay: var(--xpop-delay);
+		transform-origin: center;
+		will-change: transform, opacity;
+	}
+
+	.xpop-particle-float {
+		filter: drop-shadow(0 6px 10px rgba(15, 23, 42, 0.14));
+		animation-name: xpopParticleFloat;
+	}
+
+	.xpop-reward-card {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		padding: 0.55rem 0.75rem;
+		border: 1px solid rgba(255, 243, 221, 0.08);
+		border-radius: 999px;
+		background:
+			linear-gradient(180deg, rgba(44, 14, 10, 0.72), rgba(23, 9, 8, 0.74));
+		box-shadow:
+			0 12px 24px -18px rgba(0, 0, 0, 0.72),
+			inset 0 1px 0 rgba(255, 244, 226, 0.04);
+		backdrop-filter: blur(8px);
+		transform: translate3d(0, -4px, 0) scale(0.96);
+		opacity: 0;
+		animation: xpopCard 1100ms cubic-bezier(0.16, 1, 0.3, 1) both;
+		overflow: hidden;
+	}
+
+	.xpop-reward-card::after {
+		content: '';
+		position: absolute;
+		inset: -1px;
+		border-radius: inherit;
+		background: linear-gradient(120deg, transparent 22%, rgba(255, 236, 204, 0.22), transparent 64%);
+		opacity: 0;
+		transform: translateX(-55%);
+		animation: xpopSheen 900ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+	}
+
+	.xpop-reward-amount-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.xpop-reward-amount {
+		font-size: clamp(1rem, 2vw, 1.2rem);
+		line-height: 1;
+		font-weight: 800;
+		letter-spacing: -0.03em;
+		color: rgba(255, 244, 228, 0.88);
+	}
+
+	.xpop-reward-mark {
+		padding: 0.22rem 0.45rem;
+		border-radius: 999px;
+		background: rgba(255, 237, 209, 0.05);
+		border: 1px solid rgba(255, 237, 209, 0.08);
+	}
+
+	.xpop-reduced .xpop-reward-card,
+	.xpop-reduced .xpop-particle {
+		animation-duration: 650ms;
+	}
+
+	.xpop-reduced .xpop-particle {
+		display: none;
+	}
+
+	@keyframes xpopCard {
+		0% {
+			opacity: 0;
+			transform: translate3d(0, -8px, 0) scale(0.94);
+		}
+
+		18% {
+			opacity: 1;
+			transform: translate3d(0, 0, 0) scale(1);
+		}
+
+		76% {
+			opacity: 1;
+			transform: translate3d(0, 0, 0) scale(1);
+		}
+
+		100% {
+			opacity: 0;
+			transform: translate3d(0, -6px, 0) scale(0.98);
+		}
+	}
+
+	@keyframes xpopParticle {
+		0% {
+			opacity: 0;
+			transform: translate3d(0, 0, 0) scale(0.42) rotate(0deg);
+		}
+
+		12% {
+			opacity: 1;
+		}
+
+		46% {
+			opacity: 0.88;
+			transform: translate3d(calc(var(--xpop-drift-x) * 0.58), calc(var(--xpop-drift-y) * 0.62), 0)
+				scale(0.96) rotate(calc(var(--xpop-rotate) * 0.7));
+		}
+
+		100% {
+			opacity: 0;
+			transform: translate3d(var(--xpop-drift-x), var(--xpop-drift-y), 0) scale(0.92)
+				rotate(var(--xpop-rotate));
+		}
+	}
+
+	@keyframes xpopParticleFloat {
+		0% {
+			opacity: 0;
+			transform: translate3d(0, 0, 0) scale(0.45) rotate(0deg);
+		}
+
+		20% {
+			opacity: 0.85;
+		}
+
+		50% {
+			opacity: 0.6;
+			transform: translate3d(calc(var(--xpop-drift-x) * 0.45), calc(var(--xpop-drift-y) * 0.5), 0)
+				scale(0.86) rotate(calc(var(--xpop-rotate) * 0.5));
+		}
+
+		100% {
+			opacity: 0;
+			transform: translate3d(var(--xpop-drift-x), var(--xpop-drift-y), 0) scale(0.82)
+				rotate(calc(var(--xpop-rotate) * 0.78));
+		}
+	}
+
+	@keyframes xpopSheen {
+		0% {
+			opacity: 0;
+			transform: translateX(-55%);
+		}
+
+		35% {
+			opacity: 0.85;
+		}
+
+		100% {
+			opacity: 0;
+			transform: translateX(65%);
+		}
+	}
+
+	@media (max-width: 640px) {
+		.xpop-reward-layer {
+			padding-top: 4rem;
+			padding-right: 0.75rem;
+		}
+
+		.xpop-reward-burst {
+			left: -7rem;
+		}
+
+		.xpop-reward-card {
+			padding-inline: 0.65rem;
+		}
+	}
+
 	@media (prefers-reduced-motion: reduce) {
 		.popcorn-layer,
 		.popcorn-item {
@@ -1060,6 +1414,16 @@
 		.popcorn-layer {
 			opacity: 0;
 			visibility: hidden;
+		}
+
+		.xpop-reward-card,
+		.xpop-particle {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+		}
+
+		.xpop-particle {
+			display: none;
 		}
 	}
 </style>

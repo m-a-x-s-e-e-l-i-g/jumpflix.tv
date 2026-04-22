@@ -21,6 +21,7 @@
 	import { dispatchReviewUpdated } from '$lib/review-events';
 	import { fetchUserReview, upsertReview } from '$lib/reviews';
 	import { getPublicUserName } from '$lib/utils';
+	import { dispatchXPopAwarded } from '$lib/xpop-events';
 
 	let { open = $bindable(false), movie = null } = $props<{
 		open?: boolean;
@@ -142,6 +143,7 @@
 	async function handleRatingChange(rating: number) {
 		if (!movie) return;
 		try {
+			const shouldAwardXPop = userRating === null;
 			await saveRating(movie.id, rating);
 			userRating = rating;
 			const updatedSummary = await getMediaRatingSummary(movie.id);
@@ -162,6 +164,9 @@
 				rating,
 				summary: updatedSummary ?? ratingSummary
 			});
+			if (shouldAwardXPop) {
+				dispatchXPopAwarded('rating');
+			}
 
 			if (isAuthenticated) {
 				reviewPromptOpen = true;
@@ -208,6 +213,7 @@
 		reviewSaving = true;
 		reviewError = null;
 		try {
+			const shouldAwardXPop = existingReviewId === null;
 			const saved = await upsertReview({
 				mediaId: movie.id,
 				userId: $authUser.id,
@@ -219,6 +225,9 @@
 				mediaId: Number(saved.media_id),
 				review: saved
 			});
+			if (shouldAwardXPop) {
+				dispatchXPopAwarded('reviewing');
+			}
 			reviewPromptOpen = false;
 		} catch (error: any) {
 			reviewError = error?.message ?? 'Failed to post review';

@@ -129,7 +129,15 @@
 				press play and let it roll. But then I realized… I haven’t watched TV in years. I don’t even
 				own one.
 			</p>
-			<p>What I actually love is streaming films.</p>
+			<p>
+				What I actually love is streaming films. But funnily enough, I still ended up building that
+				lean-back version later as <a
+					href="/autoplay"
+					class="font-medium text-foreground underline decoration-muted-foreground/60 underline-offset-4 transition hover:decoration-foreground"
+				>autoplay mode</a
+				> — perfect for gyms, chill areas, events, and shared spaces where you just want parkour
+				running in the background.
+			</p>
 
 			<p>
 				I’ve always loved the Popcorn Time catalog view. I love Stremio’s interface. I love how
@@ -138,8 +146,8 @@
 			</p>
 			<p>So I rebuilt that feeling — but for parkour.</p>
 			<p>
-				It didn’t start with a plan. It just started existing because I like coding, I like parkour,
-				and I love films.
+				It didn’t start with a plan. It just started existing because I love coding, I love parkour,
+				and I like films.
 			</p>
 			<p>Sometimes that’s enough.</p>
 
@@ -161,8 +169,14 @@
 				What belongs in the catalog?
 			</h2>
 			<p>
-				I just started listing everything I liked and knew about, then expanded it. The rule became
-				simple: if it has quality and hard work, it belongs.
+				Still not so sure. This is open for <a
+					href="https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/discussions"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="font-medium text-foreground underline decoration-muted-foreground/60 underline-offset-4 transition hover:decoration-foreground"
+				>discussion</a
+				>.
+				For now: key moments, influential projects, viral hits, personal favorites, commercial film about parkour, interesting ideas, and everything in between. I want it to be a mix of the important, the fun, and the weird.
 			</p>
 
 			<h2 class="pt-2 text-xl font-semibold tracking-tight md:text-2xl">Why popcorn?</h2>
@@ -181,23 +195,12 @@
 				What’s the bigger vision?
 			</h2>
 
-			<ul class="list-disc space-y-2 pl-5 text-muted-foreground">
-				<li>A structured, permanent archive of parkour films worldwide</li>
-				<li>Projects organized as films + series — not random uploads</li>
-				<li>
-					Discovery feeds that match taste, not trends
-					<div class="mt-2 space-y-1">
-						<div>– You like tech + precision? Click.</div>
-						<div>– You like big sends + street chaos? Click.</div>
-						<div>– You like crews, cities, eras? Click.</div>
-					</div>
-				</li>
-				<li>Watch tracking that respects long-form: progress, rewatches, favorites, lists</li>
-				<li>Curation by people: ratings + short reviews that explain why it matters</li>
-				<li>History + context: timelines, creators, teams/crews, locations, soundtracks</li>
-			</ul>
-			<p class="text-muted-foreground">
-				Not short-form dopamine. Not algorithm chaos. A museum for the work.
+			<p>
+				I want JUMPFLIX to be the go-to place for anyone who loves parkour films — a structured, permanent
+				archive of everything that’s been created worldwide, organized as films and series instead of
+				random uploads, with watch tracking that respects long-form projects, curation by people who
+				explain why it matters. And... context: athletes, creators, teams/crews, spots,
+				soundtracks, and more.
 			</p>
 
 			<p>
@@ -205,34 +208,9 @@
 				watch a movie.
 			</p>
 
-			<h2 class="pt-2 text-xl font-semibold tracking-tight md:text-2xl">
-				What nerdy features should exist?
-			</h2>
-			<ul class="list-disc space-y-2 pl-5 text-muted-foreground">
-				<li>
-					✅ Spot markers on the playback scrubber, so you can see every location used in a video (in
-					collab with <a
-						href={withUtm('https://parkour.spot', { campaign: 'parkour.spot' })}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="text-foreground underline decoration-muted-foreground/60 underline-offset-4 transition hover:decoration-foreground"
-						>Parkour.Spot</a
-					>)
-				</li>
-				<li>
-					✅ Automatic song scraping so you can search videos by song
-					name
-				</li>
-			</ul>
-
 			<p>
 				All code is open source. I’ll publish database backups too, so the project won’t just vanish
 				if I ever get a life sentence for trespassing or breaking walls. I want it to be permanent.
-			</p>
-
-			<p>
-				I’m not building this for vlog-style or short-form scroll content. This is for the hard
-				work.
 			</p>
 
 			<h2 class="pt-2 text-xl font-semibold tracking-tight md:text-2xl">Why does it matter?</h2>
@@ -256,10 +234,18 @@
 			<p class="text-muted-foreground">
 				Not social media. Not algorithm chaos. More like: a cinematic museum for parkour.
 			</p>
-		</div>
-	</div>
 
-	<div id="autoplay" class="jf-surface mt-6 rounded-3xl p-6 md:mt-8 md:p-8 scroll-mt-24">
+			<h2 class="pt-2 text-xl font-semibold tracking-tight md:text-2xl">Is it really just for fun?</h2>
+			<p>
+				Yes. It’s a passion project. I’m not trying to build a business here. I just want to create
+				something cool that I (and other parkour fans) can enjoy.
+			</p>
+			<h2 class="pt-2 text-xl font-semibold tracking-tight md:text-2xl">Dreams?</h2>
+			<p>
+				Get donations, fund creators/athletes to make even higher quality content..
+			</p>
+		</div>
+
 		<div class="max-w-3xl space-y-6 text-sm leading-7 text-foreground md:text-base">
 			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">Autoplay mode</h2>
 			<p>

@@ -60,6 +60,11 @@ export function keyFor(item: ContentItem) {
 	return `${item.type}:${item.id}`;
 }
 
+export function isFamilySafeContent(item: ContentItem | null | undefined) {
+	if (!item) return true;
+	return (item.facets?.contentWarnings?.length ?? 0) === 0;
+}
+
 export function parseYear(item: ContentItem): number {
 	const y = parseInt((item as any).year);
 	return isNaN(y) ? 0 : y;
@@ -165,8 +170,8 @@ export function matchesFacets(
 		if (!facets.type || !selectedFacets.type.includes(facets.type)) return false;
 	}
 
-	if (selectedFacets.mood && selectedFacets.mood.length > 0) {
-		if (!facets.mood || !facets.mood.some((m) => selectedFacets.mood!.includes(m))) return false;
+	if (selectedFacets.focus && selectedFacets.focus.length > 0) {
+		if (!facets.focus || !selectedFacets.focus.includes(facets.focus)) return false;
 	}
 
 	if (selectedFacets.movement && selectedFacets.movement.length > 0) {
@@ -179,12 +184,17 @@ export function matchesFacets(
 			return false;
 	}
 
-	if (selectedFacets.filmStyle && selectedFacets.filmStyle.length > 0) {
-		if (!facets.filmStyle || !selectedFacets.filmStyle.includes(facets.filmStyle)) return false;
+	if (selectedFacets.production && selectedFacets.production.length > 0) {
+		if (!facets.production || !selectedFacets.production.includes(facets.production)) return false;
 	}
 
-	if (selectedFacets.theme && selectedFacets.theme.length > 0) {
-		if (!facets.theme || !selectedFacets.theme.includes(facets.theme)) return false;
+	if (selectedFacets.presentation && selectedFacets.presentation.length > 0) {
+		if (!facets.presentation || !selectedFacets.presentation.includes(facets.presentation))
+			return false;
+	}
+
+	if (selectedFacets.medium && selectedFacets.medium.length > 0) {
+		if (!facets.medium || !selectedFacets.medium.includes(facets.medium)) return false;
 	}
 
 	if (selectedFacets.era && selectedFacets.era.length > 0) {
@@ -240,8 +250,8 @@ export function matchesFeed(item: ContentItem, activeFeedSlug?: string | null): 
 			if (!facets.type || !feedFacets.type.includes(facets.type)) return false;
 		}
 
-		if (feedFacets.mood && feedFacets.mood.length > 0) {
-			if (!facets.mood || !facets.mood.some((mood) => feedFacets.mood!.includes(mood))) return false;
+		if (feedFacets.focus && feedFacets.focus.length > 0) {
+			if (!facets.focus || !feedFacets.focus.includes(facets.focus)) return false;
 		}
 
 		if (feedFacets.movement && feedFacets.movement.length > 0) {
@@ -257,12 +267,17 @@ export function matchesFeed(item: ContentItem, activeFeedSlug?: string | null): 
 			if (!facets.environment || !feedFacets.environment.includes(facets.environment)) return false;
 		}
 
-		if (feedFacets.filmStyle && feedFacets.filmStyle.length > 0) {
-			if (!facets.filmStyle || !feedFacets.filmStyle.includes(facets.filmStyle)) return false;
+		if (feedFacets.production && feedFacets.production.length > 0) {
+			if (!facets.production || !feedFacets.production.includes(facets.production)) return false;
 		}
 
-		if (feedFacets.theme && feedFacets.theme.length > 0) {
-			if (!facets.theme || !feedFacets.theme.includes(facets.theme)) return false;
+		if (feedFacets.presentation && feedFacets.presentation.length > 0) {
+			if (!facets.presentation || !feedFacets.presentation.includes(facets.presentation))
+				return false;
+		}
+
+		if (feedFacets.medium && feedFacets.medium.length > 0) {
+			if (!facets.medium || !feedFacets.medium.includes(facets.medium)) return false;
 		}
 
 		if (feedFacets.era && feedFacets.era.length > 0) {
@@ -282,8 +297,8 @@ export function matchesFeed(item: ContentItem, activeFeedSlug?: string | null): 
 		if (facets.type && excludedFacets.type.includes(facets.type)) return false;
 	}
 
-	if (excludedFacets.mood && excludedFacets.mood.length > 0) {
-		if (facets.mood?.some((mood) => excludedFacets.mood!.includes(mood))) return false;
+	if (excludedFacets.focus && excludedFacets.focus.length > 0) {
+		if (facets.focus && excludedFacets.focus.includes(facets.focus)) return false;
 	}
 
 	if (excludedFacets.movement && excludedFacets.movement.length > 0) {
@@ -294,12 +309,16 @@ export function matchesFeed(item: ContentItem, activeFeedSlug?: string | null): 
 		if (facets.environment && excludedFacets.environment.includes(facets.environment)) return false;
 	}
 
-	if (excludedFacets.filmStyle && excludedFacets.filmStyle.length > 0) {
-		if (facets.filmStyle && excludedFacets.filmStyle.includes(facets.filmStyle)) return false;
+	if (excludedFacets.production && excludedFacets.production.length > 0) {
+		if (facets.production && excludedFacets.production.includes(facets.production)) return false;
 	}
 
-	if (excludedFacets.theme && excludedFacets.theme.length > 0) {
-		if (facets.theme && excludedFacets.theme.includes(facets.theme)) return false;
+	if (excludedFacets.presentation && excludedFacets.presentation.length > 0) {
+		if (facets.presentation && excludedFacets.presentation.includes(facets.presentation)) return false;
+	}
+
+	if (excludedFacets.medium && excludedFacets.medium.length > 0) {
+		if (facets.medium && excludedFacets.medium.includes(facets.medium)) return false;
 	}
 
 	if (excludedFacets.era && excludedFacets.era.length > 0) {

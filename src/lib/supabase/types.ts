@@ -282,20 +282,20 @@ export type Database = {
 						| 'music-video'
 						| 'talk'
 						| null;
-					facet_mood: string[] | null;
+					facet_focus:
+						| 'showreel'
+						| 'competition'
+						| 'jam'
+						| 'conceptual'
+						| 'gear'
+						| 'awards'
+						| null;
 					facet_movement: string[] | null;
 					facet_environment: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
-					facet_film_style: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
-					facet_theme:
-						| 'journey'
-						| 'team'
-						| 'event'
-						| 'competition'
-						| 'educational'
-						| 'travel'
-						| 'creative'
-						| 'entertainment'
-						| null;
+					facet_production: 'raw' | 'casual' | 'produced' | 'premium' | null;
+					facet_presentation: 'standard' | 'pov' | 'vlog' | 'top-down' | 'stylized' | null;
+					facet_medium: 'live-action' | 'animation' | 'mixed-media' | null;
+					content_warnings: string[] | null;
 					created_at: string;
 					updated_at: string;
 				};
@@ -327,20 +327,20 @@ export type Database = {
 						| 'music-video'
 						| 'talk'
 						| null;
-					facet_mood?: string[] | null;
+					facet_focus?:
+						| 'showreel'
+						| 'competition'
+						| 'jam'
+						| 'conceptual'
+						| 'gear'
+						| 'awards'
+						| null;
 					facet_movement?: string[] | null;
 					facet_environment?: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
-					facet_film_style?: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
-					facet_theme?:
-						| 'journey'
-						| 'team'
-						| 'event'
-						| 'competition'
-						| 'educational'
-						| 'travel'
-						| 'creative'
-						| 'entertainment'
-						| null;
+					facet_production?: 'raw' | 'casual' | 'produced' | 'premium' | null;
+					facet_presentation?: 'standard' | 'pov' | 'vlog' | 'top-down' | 'stylized' | null;
+					facet_medium?: 'live-action' | 'animation' | 'mixed-media' | null;
+					content_warnings?: string[] | null;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -372,20 +372,20 @@ export type Database = {
 						| 'music-video'
 						| 'talk'
 						| null;
-					facet_mood?: string[] | null;
+					facet_focus?:
+						| 'showreel'
+						| 'competition'
+						| 'jam'
+						| 'conceptual'
+						| 'gear'
+						| 'awards'
+						| null;
 					facet_movement?: string[] | null;
 					facet_environment?: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
-					facet_film_style?: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
-					facet_theme?:
-						| 'journey'
-						| 'team'
-						| 'event'
-						| 'competition'
-						| 'educational'
-						| 'travel'
-						| 'creative'
-						| 'entertainment'
-						| null;
+					facet_production?: 'raw' | 'casual' | 'produced' | 'premium' | null;
+					facet_presentation?: 'standard' | 'pov' | 'vlog' | 'top-down' | 'stylized' | null;
+					facet_medium?: 'live-action' | 'animation' | 'mixed-media' | null;
+					content_warnings?: string[] | null;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -624,20 +624,20 @@ export type Database = {
 						| 'music-video'
 						| 'talk'
 						| null;
-					facet_mood: string[] | null;
+					facet_focus:
+						| 'showreel'
+						| 'competition'
+						| 'jam'
+						| 'conceptual'
+						| 'gear'
+						| 'awards'
+						| null;
 					facet_movement: string[] | null;
 					facet_environment: 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym' | null;
-					facet_film_style: 'cinematic' | 'skateish' | 'raw' | 'pov' | 'longtakes' | null;
-					facet_theme:
-						| 'journey'
-						| 'team'
-						| 'event'
-						| 'competition'
-						| 'educational'
-						| 'travel'
-						| 'creative'
-						| 'entertainment'
-						| null;
+					facet_production: 'raw' | 'casual' | 'produced' | 'premium' | null;
+					facet_presentation: 'standard' | 'pov' | 'vlog' | 'top-down' | 'stylized' | null;
+					facet_medium: 'live-action' | 'animation' | 'mixed-media' | null;
+					content_warnings: string[] | null;
 					facet_length: 'short-form' | 'medium-form' | 'long-form' | null;
 					facet_era: '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000' | null;
 				};

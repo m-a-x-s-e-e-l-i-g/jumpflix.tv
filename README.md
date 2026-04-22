@@ -106,6 +106,11 @@ SPOTIFY_CLIENT_SECRET=
 
 # Sitemap submission (optional)
 FORCE_SITEMAP_SUBMISSION=false
+
+# Funding sync (optional - for daily import of external cost data into project_costs)
+BUNNYNET_API_KEY=
+OPENAI_ADMIN_KEY=
+OPENAI_COSTS_START_DATE=2024-01-01
 ```
 
 See [Supabase Setup](#-supabase-setup) below for details.
@@ -128,6 +133,8 @@ Type safety & linting:
 npm run check      # svelte-check + TS
 npm run lint       # eslint + prettier check
 npm run format     # auto-format
+npm run sync:funding  # import external funding data into Supabase
+npm run sync:funding:debug:bunny  # print Bunny payload shape and mapped rows
 ```
 
 Build production bundle:
@@ -215,9 +222,40 @@ SUPABASE_SERVICE_ROLE_KEY="service-role-key" # server-only
 ADMIN_EMAILS="you@example.com" # server-only (comma-separated)
 ADMIN_USER_IDS="" # server-only (comma-separated)
 PARKOUR_SPOT_API_KEY="" # server-only (used by /api/parkour-spot/* proxy)
+BUNNYNET_API_KEY="" # scripts/workflows only, used for Bunny.net billing import
+OPENAI_ADMIN_KEY="" # scripts/workflows only, used for external funding cost import
+OPENAI_COSTS_START_DATE="2024-01-01" # scripts/workflows only
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` must never ship to the browser—it's reserved for privileged server-side operations.
+
+## Funding Sync
+
+Funding pages now read only from Supabase. External funding data should be imported into `project_costs` ahead of time.
+
+Run the importer locally:
+
+```bash
+npm run sync:funding
+```
+
+Debug only the Bunny import mapping:
+
+```bash
+npm run sync:funding:debug:bunny
+```
+
+You can also use `DEBUG_BUNNY_SYNC=1` when running the sync script manually.
+
+The repo also includes a daily GitHub Actions workflow at `.github/workflows/sync-funding.yml`. Configure these repository secrets before enabling it:
+
+- `PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `BUNNYNET_API_KEY`
+- `OPENAI_ADMIN_KEY`
+- `OPENAI_COSTS_START_DATE` (optional)
+
+The importer is idempotent for API-sourced records and updates existing imported rows by `source_system` + `source_reference`.
 
 ## 🎵 Music / Spotify-backed Tracklists
 

@@ -3,8 +3,9 @@
 	import { dev } from '$app/environment';
 	import { Image } from '@unpic/svelte';
 	import * as m from '$lib/paraglide/messages';
+	import { familySafeOnly } from '$lib/tv/store';
 	import type { ContentItem, Movie, Series } from '$lib/tv/types';
-	import { isImage, keyFor } from '$lib/tv/utils';
+	import { isFamilySafeContent, isImage, keyFor } from '$lib/tv/utils';
 	import {
 		getLatestWatchProgressByBaseId,
 		getSeriesProgressSummary,
@@ -80,6 +81,7 @@
 		const parts = [item.title, ...metaParts(item)];
 		if (watchState.isWatched) parts.push(m.tv_showWatched());
 		if (watchState.hasProgress) parts.push(`${m.tv_continue()} ${watchState.progressPercent}%`);
+		if (familySafeOnlyEnabled && !isFamilySafeContent(item)) parts.push('Family safe only blocked');
 		parts.push(ratingText(rating));
 		return parts.join(' • ');
 	}
@@ -138,6 +140,7 @@
 	const watchStates = $derived(
 		new Map(visibleContent.map((item) => [keyFor(item), getWatchState(item, $watchHistoryVersion)]))
 	);
+	const familySafeOnlyEnabled = $derived($familySafeOnly);
 </script>
 
 <div id="catalog" class="catalog-shell">
@@ -167,11 +170,14 @@
 				{@const hasRating = itemRating !== UNRATED}
 				{@const peopleSummary = peopleLine(item)}
 				{@const rowSelected = !!(selectedContent && selectedContent.id === item.id && selectedContent.type === item.type)}
+				{@const familySafeBlocked = familySafeOnlyEnabled && !isFamilySafeContent(item)}
 				<button
 					type="button"
 					class:selected={rowSelected}
 					class="catalog-row"
 					aria-pressed={rowSelected}
+					aria-disabled={familySafeBlocked}
+					data-family-safe-blocked={familySafeBlocked ? '' : undefined}
 					aria-label={rowAriaLabel(item, watchState, itemRating)}
 					data-item-key={itemKey}
 					onclick={() => onSelect(item)}
@@ -212,6 +218,9 @@
 								<span class="catalog-badge catalog-badge--progress">
 									{m.tv_continue()} {watchState.progressPercent}%
 								</span>
+							{/if}
+							{#if familySafeBlocked}
+								<span class="catalog-badge catalog-badge--family-safe">Family safe only</span>
 							{/if}
 						</div>
 
@@ -273,6 +282,16 @@
 		z-index: 20;
 		margin: 0;
 		padding: 2.5rem clamp(1.5rem, 3vw, 3.75rem) 6rem;
+	}
+
+	.catalog-row[data-family-safe-blocked] {
+		opacity: 0.88;
+	}
+
+	.catalog-badge--family-safe {
+		background: rgba(8, 12, 24, 0.82);
+		border-color: rgba(248, 250, 252, 0.18);
+		color: rgba(248, 250, 252, 0.92);
 	}
 
 	.catalog-list {

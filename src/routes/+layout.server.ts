@@ -2,13 +2,29 @@ import { fetchAllContent } from '$lib/server/content-service';
 import type { ContentItem, Series } from '$lib/tv/types';
 import { isAdminUser } from '$lib/server/admin';
 
+function shouldLoadTvCatalog(pathname: string): boolean {
+	return !(
+		pathname === '/about' ||
+		pathname === '/autoplay' ||
+		pathname === '/costs' ||
+		pathname === '/stats' ||
+		pathname.startsWith('/stats/') ||
+		pathname.startsWith('/admin')
+	);
+}
+
 export const load = async ({ url, locals }) => {
-	// Get the authenticated session using safe method that validates JWT
-	const { session, user } = await locals.safeGetSession();
+	const tvCatalogPromise = shouldLoadTvCatalog(url.pathname)
+		? fetchAllContent()
+		: Promise.resolve<ContentItem[]>([]);
+
+	const [auth, content] = await Promise.all([
+		locals.safeGetSession(),
+		tvCatalogPromise
+	]);
+	const { session, user } = auth;
 
 	try {
-		const content = await fetchAllContent();
-
 		// Ensure content is JSON serializable by using JSON.parse(JSON.stringify())
 		const serializedContent = JSON.parse(JSON.stringify(content));
 

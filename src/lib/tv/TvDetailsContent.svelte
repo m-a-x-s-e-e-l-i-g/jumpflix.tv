@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ContentItem, Episode } from './types';
+	import type { ContentItem, ContentWarning, Episode, Movie } from './types';
 	import { isInlinePlayable } from './utils';
 	import { getUrlForItem, getEpisodeUrl } from './slug';
 	import { browser } from '$app/environment';
@@ -7,13 +7,18 @@
 	import { toast } from 'svelte-sonner';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import Link2Icon from '@lucide/svelte/icons/link-2';
+	import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import * as m from '$lib/paraglide/messages';
 	import { fade } from 'svelte/transition';
 	import { decode } from 'html-entities';
-	import { showPlayer, selectEpisode as updateSelectedEpisode } from '$lib/tv/store';
+	import {
+		familySafeOnly,
+		showPlayer,
+		selectEpisode as updateSelectedEpisode
+	} from '$lib/tv/store';
 	import Tracklist from '$lib/tv/Tracklist.svelte';
 	import { getProviderLink, type ProviderLink } from '$lib/tv/provider-links';
 	import { getCountryFlagEmoji, getParkourSpotUrl, withUtm } from '$lib/utils';
@@ -44,11 +49,22 @@
 	import { getPublicUserName, getPublicUserNameOrFallback } from '$lib/utils';
 	import { slugify } from '$lib/tv/slug';
 	import FacetChips from '$lib/components/FacetChips.svelte';
+	import ContentWarningIcon from '$lib/components/ContentWarningIcon.svelte';
+	import {
+		CONTENT_WARNING_DESCRIPTIONS,
+		CONTENT_WARNING_LABELS
+	} from '$lib/tv/facet-options';
 	import {
 		dispatchRatingUpdated,
 		RATING_UPDATED_EVENT,
 		type RatingUpdatedDetail
 	} from '$lib/rating-events';
+	import {
+		dispatchReviewUpdated,
+		REVIEW_UPDATED_EVENT,
+		type ReviewUpdatedDetail
+	} from '$lib/review-events';
+	import { isFamilySafeContent } from '$lib/tv/utils';
 
 	let isAuthenticated = false;
 
@@ -92,6 +108,8 @@
 	let spotChaptersMediaId: number | null = null;
 	let spotChaptersPlaybackKey: string | null = null;
 	let spotChaptersMediaType: 'movie' | 'series' | null = null;
+	let familySafeOnlyEnabled = false;
+	$: familySafeOnlyEnabled = $familySafeOnly;
 
 	function buildSeriesEpisodePlaybackKey(seriesId: number, episodeId: string): string {
 		return `series:${seriesId}:ep:${episodeId}`;
@@ -257,6 +275,10 @@
 	let playObserver: IntersectionObserver | null = null;
 	let showStickyPlay = false;
 	let isSmallScreen = false;
+	let regeneratingPoster = false;
+	let posterOverrideUrl: string | null = null;
+	let posterRefreshVersion = 0;
+	let lastPosterSelectionKey = '';
 
 	function setupStickyPlayObserver() {
 		if (!browser) return;
@@ -278,6 +300,70 @@
 		playObserver.observe(playObserverEl);
 	}
 
+	function appendCacheBust(url: string, version: number): string {
+		if (!version) return url;
+		return `${url}${url.includes('?') ? '&' : '?'}v=${version}`;
+	}
+
+	$: movieForPoster = selected?.type === 'movie' ? (selected as Movie) : null;
+	$: posterSelectionKey = selected
+		? `${selected.type}:${selected.id}:${selected.thumbnail ?? ''}`
+		: '';
+	$: if (posterSelectionKey !== lastPosterSelectionKey) {
+		lastPosterSelectionKey = posterSelectionKey;
+		posterOverrideUrl = null;
+		posterRefreshVersion = 0;
+		regeneratingPoster = false;
+	}
+	$: isLocalPosterRegenerationEnabled = Boolean(
+		browser &&
+			$page.data?.isAdmin === true &&
+			window.location.hostname === 'localhost' &&
+			movieForPoster?.slug?.trim() &&
+			movieForPoster?.videoId?.trim()
+	);
+	$: resolvedPosterUrl = posterOverrideUrl ?? selected?.thumbnail ?? '';
+	$: displayPosterUrl = resolvedPosterUrl
+		? appendCacheBust(resolvedPosterUrl, posterRefreshVersion)
+		: '';
+
+	async function regeneratePoster() {
+		if (!movieForPoster || regeneratingPoster) return;
+
+		regeneratingPoster = true;
+
+		try {
+			const res = await fetch('/api/admin/generate-poster', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					videoId: movieForPoster.videoId?.trim(),
+					slug: movieForPoster.slug.trim(),
+					title: movieForPoster.title.trim(),
+					includeTitle: false
+				})
+			});
+
+			if (!res.ok) {
+				const body: unknown = await res.json().catch(() => ({}));
+				const message =
+					body !== null && typeof body === 'object' && 'message' in body
+						? String((body as { message: unknown }).message)
+						: '';
+				throw new Error(message || `HTTP ${res.status}`);
+			}
+
+			const data = (await res.json()) as { posterUrl?: string };
+			posterOverrideUrl = data.posterUrl?.trim() || movieForPoster.thumbnail || null;
+			posterRefreshVersion = Date.now();
+			toast.success('Poster regenerated');
+		} catch (err: unknown) {
+			toast.error(err instanceof Error ? err.message : 'Failed to regenerate poster');
+		} finally {
+			regeneratingPoster = false;
+		}
+	}
+
 	$: if (browser) {
 		// Re-evaluate when mobile breakpoint or target element changes.
 		isSmallScreen;
@@ -287,6 +373,7 @@
 
 	function handlePlayClick() {
 		if (!selected) return;
+		if (familySafeOnlyEnabled && !isFamilySafeContent(selected)) return;
 
 		if (selected?.type === 'series' && !selectedEpisode) {
 			// No episode selected/available: open series external source if present.
@@ -409,12 +496,19 @@
 			syncRatingFromEvent(detail);
 		};
 
+		const handleReviewUpdated = (event: Event) => {
+			const detail = (event as CustomEvent<ReviewUpdatedDetail>).detail;
+			syncReviewFromEvent(detail);
+		};
+
 		window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
 		window.addEventListener(RATING_UPDATED_EVENT, handleRatingUpdated as EventListener);
+		window.addEventListener(REVIEW_UPDATED_EVENT, handleReviewUpdated as EventListener);
 
 		return () => {
 			window.removeEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
 			window.removeEventListener(RATING_UPDATED_EVENT, handleRatingUpdated as EventListener);
+			window.removeEventListener(REVIEW_UPDATED_EVENT, handleReviewUpdated as EventListener);
 
 			playObserver?.disconnect();
 			playObserver = null;
@@ -573,6 +667,19 @@
 		});
 	}
 
+	function getReviewTimestamp(review: ReviewRow): number {
+		const updatedAt = Date.parse(review.updated_at || review.created_at || '');
+		if (Number.isFinite(updatedAt)) return updatedAt;
+		const createdAt = Date.parse(review.created_at || '');
+		return Number.isFinite(createdAt) ? createdAt : 0;
+	}
+
+	function mergeReview(review: ReviewRow) {
+		reviews = [...reviews.filter((entry) => entry.id !== review.id), review].sort(
+			(a, b) => getReviewTimestamp(b) - getReviewTimestamp(a)
+		);
+	}
+
 	async function loadReviewsForSelected() {
 		if (!browser || !selected) return;
 
@@ -624,8 +731,12 @@
 			});
 			myReviewId = saved.id;
 			myReviewText = saved.body;
+			mergeReview(saved);
+			dispatchReviewUpdated({
+				mediaId: Number(saved.media_id),
+				review: saved
+			});
 			reviewComposerOpen = false;
-			void loadReviewsForSelected();
 			toast.success('Review posted');
 		} catch (error: any) {
 			myReviewError = error?.message ?? 'Failed to post review';
@@ -647,6 +758,18 @@
 			ratingsSummary = update.summary;
 		} else if (update.shouldReload) {
 			void loadRatingData();
+		}
+	}
+
+	function syncReviewFromEvent(detail?: ReviewUpdatedDetail) {
+		if (!selected || !detail) return;
+		const numericId = Number(selected.id);
+		if (!Number.isFinite(numericId) || detail.mediaId !== numericId) return;
+		mergeReview(detail.review);
+		if ($authUser?.id && detail.review.user_id === $authUser.id) {
+			myReviewId = detail.review.id;
+			myReviewText = detail.review.body;
+			myReviewError = null;
 		}
 	}
 
@@ -797,6 +920,13 @@
 
 	let providerLink: ProviderLink | null = null;
 	$: providerLink = selected ? getProviderLink(selected, selectedEpisode) : null;
+	$: detailContentWarnings = ((selected?.facets?.contentWarnings ?? []) as ContentWarning[]).map(
+		(key) => ({
+			key,
+			label: CONTENT_WARNING_LABELS[key],
+			description: CONTENT_WARNING_DESCRIPTIONS[key]
+		})
+	);
 
 	// Fallback external source for series when no inline player is available.
 	// Prefer explicit externalUrl, then trakt metadata link.
@@ -804,6 +934,7 @@
 		selected?.type === 'series'
 			? selected.externalUrl || (selected as any).trakt || undefined
 			: undefined;
+	$: familySafeBlocked = familySafeOnlyEnabled && selected ? !isFamilySafeContent(selected) : false;
 </script>
 
 {#if selected}
@@ -815,14 +946,16 @@
 			<div class="detail-play-fixedbar">
 				<div class="detail-play-fixedinner">
 					<button
-						disabled={isSeriesWithoutEpisode && !seriesExternalSourceUrl}
+						disabled={familySafeBlocked || (isSeriesWithoutEpisode && !seriesExternalSourceUrl)}
 						on:click={handlePlayClick}
 						class="detail-play"
 					>
 						<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"
 							><path d="M8 5v10l8-5-8-5z" /></svg
 						>
-						{#if selected?.type === 'series'}
+						{#if familySafeBlocked}
+							Family safe only
+						{:else if selected?.type === 'series'}
 							{#if selectedEpisode}
 								{#if isEpisodePlayable(selectedEpisode)}
 									{m.tv_playSelectedEpisode()}
@@ -905,7 +1038,7 @@
 					>
 						<Link2Icon class="h-4 w-4" />
 					</button>
-					{#if providerLink}
+					{#if providerLink && !familySafeBlocked}
 						<a
 							href={providerLink.url}
 							target="_blank"
@@ -921,6 +1054,20 @@
 							{/if}
 						</a>
 					{/if}
+					{#if detailContentWarnings.length}
+						<div class="detail-warning-list" aria-label="Content warnings">
+							{#each detailContentWarnings as warning (warning.key)}
+								<span
+									class={`detail-warning-badge detail-warning-badge--${warning.key}`}
+									title={`${warning.label}: ${warning.description}`}
+									aria-label={`${warning.label}: ${warning.description}`}
+								>
+									<span class="sr-only">{warning.label}</span>
+									<ContentWarningIcon warning={warning.key} className="h-[0.9rem] w-[0.9rem]" />
+								</span>
+							{/each}
+						</div>
+					{/if}
 				</div>
 			</div>
 		</header>
@@ -932,8 +1079,24 @@
 						? 'detail-poster detail-poster--series'
 						: 'detail-poster'}
 				>
-					{#if selected.thumbnail}
-						<img src={selected.thumbnail} alt={selected.title} loading="lazy" decoding="async" />
+					{#if isLocalPosterRegenerationEnabled}
+						<div class="detail-poster-tools">
+							<button
+								type="button"
+								class="detail-poster-refresh"
+								on:click|stopPropagation={regeneratePoster}
+								disabled={regeneratingPoster}
+								data-busy={regeneratingPoster}
+								aria-label={regeneratingPoster ? 'Regenerating poster' : 'Regenerate poster'}
+								title={regeneratingPoster ? 'Regenerating poster' : 'Regenerate poster'}
+							>
+								<RefreshCwIcon class="h-4 w-4" />
+								<span>{regeneratingPoster ? 'Refreshing…' : 'Refresh poster'}</span>
+							</button>
+						</div>
+					{/if}
+					{#if resolvedPosterUrl}
+						<img src={displayPosterUrl} alt={selected.title} loading="lazy" decoding="async" />
 					{:else}
 						<div class="detail-poster-fallback"></div>
 					{/if}
@@ -950,14 +1113,16 @@
 					<div class="detail-play-observer" bind:this={playObserverEl}>
 						{#if !$showPlayer}
 							<button
-								disabled={isSeriesWithoutEpisode && !seriesExternalSourceUrl}
+								disabled={familySafeBlocked || (isSeriesWithoutEpisode && !seriesExternalSourceUrl)}
 								on:click={handlePlayClick}
 								class="detail-play"
 							>
 								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"
 									><path d="M8 5v10l8-5-8-5z" /></svg
 								>
-								{#if selected?.type === 'series'}
+								{#if familySafeBlocked}
+									Family safe only
+								{:else if selected?.type === 'series'}
 									{#if selectedEpisode}
 										{#if isEpisodePlayable(selectedEpisode)}
 											{m.tv_playSelectedEpisode()}
@@ -981,6 +1146,12 @@
 							</button>
 						{/if}
 					</div>
+
+					{#if familySafeBlocked}
+						<p class="detail-family-safe-note">
+							Playback is blocked for this title while Family safe only is enabled.
+						</p>
+					{/if}
 
 					{#if isAuthenticated && selected.type === 'movie'}
 						<button
@@ -1497,6 +1668,27 @@
 		align-items: center;
 	}
 
+	.detail-warning-list {
+		display: inline-flex;
+		flex-wrap: wrap;
+		gap: 0.45rem;
+		align-items: center;
+	}
+
+	.detail-warning-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		height: 30px;
+		color: rgba(248, 250, 252, 0.82);
+	}
+
+	.detail-warning-badge :global(svg) {
+		width: 22px;
+		height: 22px;
+	}
+
 	.detail-pill {
 		padding: 0.3rem 0.6rem;
 		border-radius: 999px;
@@ -1551,6 +1743,7 @@
 	}
 
 	.detail-poster {
+		position: relative;
 		border-radius: 24px;
 		overflow: hidden;
 		border: 1px solid rgba(248, 250, 252, 0.2);
@@ -1559,6 +1752,73 @@
 		aspect-ratio: 2 / 3;
 		width: clamp(220px, 30vw, 300px);
 		max-width: 100%;
+	}
+
+	.detail-poster-tools {
+		position: absolute;
+		top: 0.7rem;
+		right: 0.7rem;
+		z-index: 2;
+		opacity: 0;
+		transform: translateY(-0.2rem);
+		pointer-events: none;
+		transition:
+			opacity 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	.detail-poster:hover .detail-poster-tools,
+	.detail-poster:focus-within .detail-poster-tools {
+		opacity: 1;
+		transform: translateY(0);
+		pointer-events: auto;
+	}
+
+	.detail-poster-refresh {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		border-radius: 999px;
+		border: 1px solid rgba(248, 250, 252, 0.22);
+		background:
+			linear-gradient(145deg, rgba(229, 9, 20, 0.82), rgba(102, 12, 18, 0.88)),
+			rgba(15, 23, 42, 0.78);
+		color: rgba(255, 248, 248, 0.96);
+		padding: 0.44rem 0.68rem;
+		font-size: 0.58rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		backdrop-filter: blur(16px) saturate(125%);
+		-webkit-backdrop-filter: blur(16px) saturate(125%);
+		box-shadow: 0 12px 24px -20px rgba(0, 0, 0, 0.75);
+		transition:
+			transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+			opacity 180ms cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	.detail-poster-refresh :global(svg) {
+		height: 0.8rem;
+		width: 0.8rem;
+	}
+
+	.detail-poster-refresh:hover:not(:disabled),
+	.detail-poster-refresh:focus-visible {
+		transform: translateY(-1px);
+		border-color: rgba(255, 237, 237, 0.38);
+		box-shadow: 0 16px 32px -24px rgba(122, 10, 20, 0.85);
+		outline: none;
+	}
+
+	.detail-poster-refresh:disabled {
+		cursor: wait;
+		opacity: 0.88;
+	}
+
+	.detail-poster-refresh[data-busy='true'] :global(svg) {
+		animation: detail-poster-spin 1s linear infinite;
 	}
 
 	.detail-poster img {
@@ -1575,6 +1835,16 @@
 	.detail-poster-fallback {
 		height: 100%;
 		background: linear-gradient(160deg, rgba(229, 9, 20, 0.4), rgba(37, 99, 235, 0.3));
+	}
+
+	@keyframes detail-poster-spin {
+		from {
+			transform: rotate(0deg);
+		}
+
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.detail-actions {
@@ -1608,6 +1878,13 @@
 		color: rgba(226, 232, 240, 0.65);
 		cursor: not-allowed;
 		box-shadow: none;
+	}
+
+	.detail-family-safe-note {
+		margin: 0.75rem 0 0;
+		color: rgba(226, 232, 240, 0.76);
+		font-size: 0.88rem;
+		line-height: 1.5;
 	}
 
 	.detail-toggle {

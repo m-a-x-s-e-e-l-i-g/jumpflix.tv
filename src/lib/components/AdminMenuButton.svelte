@@ -58,6 +58,15 @@
 			</a>
 
 			<a
+				href="/admin/missing-type-facets"
+				onclick={() => (showAdminMenu = false)}
+				class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
+			>
+				<WrenchIcon class="size-4" />
+				<span>Missing Facets</span>
+			</a>
+
+			<a
 				href="/admin/instagram"
 				onclick={() => (showAdminMenu = false)}
 				class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"

@@ -318,8 +318,8 @@
 			</div>
 			<p class="text-muted-foreground">
 				Netlify hosting is currently on a sponsored open source plan, and Supabase is still on the free
-				tier. OpenAI usage now imports from billing automatically when server access is configured, and
-				Bunny usage is still planned next.
+				tier. OpenAI usage and Bunny.net bills now import from billing automatically when server access is
+				configured.
 			</p>
 			<p>
 				<a

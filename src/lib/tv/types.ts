@@ -9,7 +9,7 @@ export type FacetType =
 	| 'tutorial'
 	| 'music-video'
 	| 'talk';
-export type FacetMood = 'energetic' | 'chill' | 'gritty' | 'wholesome' | 'artistic';
+export type FacetFocus = 'showreel' | 'competition' | 'jam' | 'conceptual' | 'gear' | 'awards';
 export type FacetMovement =
 	| 'flow'
 	| 'big-sends'
@@ -20,39 +20,27 @@ export type FacetMovement =
 	| 'oldskool'
 	| 'contemporary';
 export type FacetEnvironment = 'street' | 'rooftops' | 'nature' | 'urbex' | 'gym';
-export type FacetFilmStyle =
-	| 'cinematic'
-	| 'street-cinematic'
-	| 'skateish'
-	| 'raw'
-	| 'pov'
-	| 'longtakes'
-	| 'music-driven'
-	| 'montage'
-	| 'slowmo'
-	| 'gonzo'
-	| 'vintage'
-	| 'minimalist'
-	| 'experimental';
-export type FacetTheme =
-	| 'journey'
-	| 'team'
-	| 'event'
-	| 'competition'
-	| 'educational'
-	| 'travel'
-	| 'creative'
-	| 'entertainment';
+export type FacetProduction = 'raw' | 'casual' | 'produced' | 'premium';
+export type FacetPresentation = 'standard' | 'pov' | 'vlog' | 'top-down' | 'stylized';
+export type FacetMedium = 'live-action' | 'animation' | 'mixed-media';
+export type ContentWarning =
+	| 'violence'
+	| 'substances'
+	| 'strong-language'
+	| 'sexual-content'
+	| 'intense-themes';
 export type FacetEra = '2000s' | '2010s' | '2020s' | '2030s' | 'pre-2000';
 export type FacetLength = 'short-form' | 'medium-form' | 'long-form';
 
 export interface Facets {
 	type?: FacetType;
-	mood?: FacetMood[];
+	focus?: FacetFocus;
 	movement?: FacetMovement[];
 	environment?: FacetEnvironment;
-	filmStyle?: FacetFilmStyle;
-	theme?: FacetTheme;
+	production?: FacetProduction;
+	presentation?: FacetPresentation;
+	medium?: FacetMedium;
+	contentWarnings?: ContentWarning[];
 	era?: FacetEra; // Auto-calculated from year
 	length?: FacetLength; // Auto-calculated from duration
 }
@@ -152,11 +140,12 @@ export type CatalogView = 'grid' | 'list';
 // Selected facets for filtering content
 export interface SelectedFacets {
 	type?: FacetType[];
-	mood?: FacetMood[];
+	focus?: FacetFocus[];
 	movement?: FacetMovement[];
 	environment?: FacetEnvironment[];
-	filmStyle?: FacetFilmStyle[];
-	theme?: FacetTheme[];
+	production?: FacetProduction[];
+	presentation?: FacetPresentation[];
+	medium?: FacetMedium[];
 	era?: FacetEra[];
 	length?: FacetLength[];
 }

@@ -1794,7 +1794,7 @@ async function editFacets() {
 	const { data: items, error } = await supabase
 		.from('media_items')
 		.select(
-			'id, title, slug, type, facet_type, facet_mood, facet_movement, facet_environment, facet_film_style, facet_theme'
+			'id, title, slug, type, facet_type, facet_focus, facet_movement, facet_environment, facet_production, facet_presentation, facet_medium, content_warnings'
 		)
 		.order('title')
 		.returns<
@@ -1804,11 +1804,13 @@ async function editFacets() {
 				slug: string;
 				type: 'movie' | 'series';
 				facet_type: string | null;
-				facet_mood: string[] | null;
+				facet_focus: string | null;
 				facet_movement: string[] | null;
 				facet_environment: string | null;
-				facet_film_style: string | null;
-				facet_theme: string | null;
+				facet_production: string | null;
+				facet_presentation: string | null;
+				facet_medium: string | null;
+				content_warnings: string[] | null;
 			}>
 		>();
 
@@ -1826,11 +1828,12 @@ async function editFacets() {
 				// Check if any facets are set
 				const hasFacets =
 					item.facet_type ||
-					(item.facet_mood && item.facet_mood.length > 0) ||
+					item.facet_focus ||
 					(item.facet_movement && item.facet_movement.length > 0) ||
 					item.facet_environment ||
-					item.facet_film_style ||
-					item.facet_theme;
+					item.facet_production ||
+					item.facet_presentation ||
+					item.facet_medium;
 
 				const facetIndicator = hasFacets ? '[x]' : '[ ]';
 				const typeIcon = item.type === 'movie' ? 'MOV' : 'SER';
@@ -1867,41 +1870,24 @@ async function editFacets() {
 			{ name: 'Event / Jam / Competition', value: 'event' },
 			{ name: 'Tutorial / Educational', value: 'tutorial' },
 			{ name: 'Music Video', value: 'music-video' },
-			{ name: 'Talk', value: 'talk' }
+			{ name: 'Talk / Interview / Lecture', value: 'talk' }
 		],
 		default: item.facet_type || null
 	});
 
-	// Mood (multi-select)
-	const facetMood = await prompts.checkbox({
-		message: 'Mood / Vibe (select all that apply):',
+	// Focus (single-select)
+	const facetFocus = await prompts.select({
+		message: 'Focus (what the video is about / special angle):',
 		choices: [
-			{
-				name: 'Energetic ⚡ - High-energy vibe with intense action',
-				value: 'energetic',
-				checked: item.facet_mood?.includes('energetic')
-			},
-			{
-				name: 'Chill 😌 - Relaxed and laid-back atmosphere',
-				value: 'chill',
-				checked: item.facet_mood?.includes('chill')
-			},
-			{
-				name: 'Gritty 🔥 - Raw, rough, and unpolished street vibe',
-				value: 'gritty',
-				checked: item.facet_mood?.includes('gritty')
-			},
-			{
-				name: 'Wholesome 💚 - Positive, uplifting, and feel-good content',
-				value: 'wholesome',
-				checked: item.facet_mood?.includes('wholesome')
-			},
-			{
-				name: 'Artistic 🎨 - Creative expression and aesthetic focus',
-				value: 'artistic',
-				checked: item.facet_mood?.includes('artistic')
-			}
-		]
+			{ name: 'None', value: null },
+			{ name: 'Showreel (best-of reel, athlete profile)', value: 'showreel' },
+			{ name: 'Competition (contest, battle, speed)', value: 'competition' },
+			{ name: 'Jam (community gathering recap)', value: 'jam' },
+			{ name: 'Conceptual (mindset, personal journey, reflective)', value: 'conceptual' },
+			{ name: 'Gear (equipment, setup, training tools)', value: 'gear' },
+			{ name: 'Awards (ceremony, annual awards)', value: 'awards' }
+		],
+		default: item.facet_focus || null
 	});
 
 	// Movement Style (multi-select)
@@ -1949,7 +1935,7 @@ async function editFacets() {
 
 	// Environment (single-select)
 	const facetEnvironment = await prompts.select({
-		message: 'Environment (primary setting):',
+		message: 'Environment (dominant setting — choose the primary one):',
 		choices: [
 			{ name: 'None', value: null },
 			{ name: 'Street / Urban', value: 'street' },
@@ -1961,53 +1947,87 @@ async function editFacets() {
 		default: item.facet_environment || null
 	});
 
-	// Film Style (single-select)
-	const facetFilmStyle = await prompts.select({
-		message: 'Film Style / Editing:',
+	// Production Level (single-select)
+	const facetProduction = await prompts.select({
+		message: 'Production Level (how polished is this?):',
 		choices: [
 			{ name: 'None', value: null },
-			{ name: 'Cinematic (smooth camera, color grade)', value: 'cinematic' },
-			{ name: 'Street-Cinematic (DSLR + fisheye inserts)', value: 'street-cinematic' },
-			{ name: 'Skate-ish (VX/handcam, fisheye, rough)', value: 'skateish' },
-			{ name: 'Raw Session (no polish, real sound)', value: 'raw' },
-			{ name: 'POV / Chasecam (first-person)', value: 'pov' },
-			{ name: 'Long Takes (minimal cuts, flow)', value: 'longtakes' },
-			{ name: 'Music-Driven (beat-matched editing)', value: 'music-driven' },
-			{ name: 'Montage (quick cuts, highlights)', value: 'montage' },
-			{ name: 'Slowmo (slow motion heavy)', value: 'slowmo' },
-			{ name: 'Gonzo (handheld chaos, "in the middle of it")', value: 'gonzo' },
-			{ name: 'Vintage (MiniDV, Hi8, nostalgic)', value: 'vintage' },
-			{ name: 'Minimalist (calm framing, quiet)', value: 'minimalist' },
-			{ name: 'Experimental (non-linear, surreal)', value: 'experimental' }
+			{ name: 'Raw (phone clips, no polish, real sound)', value: 'raw' },
+			{ name: 'Casual (vlog-ish, lightly edited, creator-made)', value: 'casual' },
+			{ name: 'Produced (deliberate edit/film, semi-pro to strong indie)', value: 'produced' },
+			{ name: 'Premium (standout high-end production, exceptional quality)', value: 'premium' }
 		],
-		default: item.facet_film_style || null
+		default: item.facet_production || null
 	});
 
-	// Theme (single-select)
-	const facetTheme = await prompts.select({
-		message: 'Theme / Purpose:',
+	// Presentation Format (single-select)
+	const facetPresentation = await prompts.select({
+		message: 'Presentation Format (how is it packaged?):',
 		choices: [
 			{ name: 'None', value: null },
-			{ name: 'Journey (personal growth)', value: 'journey' },
-			{ name: 'Team Film (group identity)', value: 'team' },
-			{ name: 'Event Highlight', value: 'event' },
-			{ name: 'Competition', value: 'competition' },
-			{ name: 'Educational', value: 'educational' },
-			{ name: 'Travel (exploring spots)', value: 'travel' },
-			{ name: 'Creative / Expression', value: 'creative' },
-			{ name: 'Showcase / Entertainment', value: 'entertainment' }
+			{ name: 'Standard (traditional edited format)', value: 'standard' },
+			{ name: 'POV (first-person / follow-cam is central)', value: 'pov' },
+			{ name: 'Vlog (personality-led, diary/travel/creator format)', value: 'vlog' },
+			{ name: 'Top-Down (bird\'s-eye drone angle used as primary style)', value: 'top-down' },
+			{ name: 'Stylized (gameplay imitation, surreal, intentional visual gimmick)', value: 'stylized' }
 		],
-		default: item.facet_theme || null
+		default: item.facet_presentation || null
+	});
+
+	// Medium (single-select)
+	const facetMedium = await prompts.select({
+		message: 'Medium (what type of content is it?):',
+		choices: [
+			{ name: 'None', value: null },
+			{ name: 'Live Action (standard filmed footage)', value: 'live-action' },
+			{ name: 'Animation (animated or illustrated)', value: 'animation' },
+			{ name: 'Mixed Media (live + animated/graphic elements)', value: 'mixed-media' }
+		],
+		default: item.facet_medium || null
+	});
+
+	// Content Warnings (multi-select)
+	const contentWarnings = await prompts.checkbox({
+		message: 'Content Warnings (select all that apply):',
+		choices: [
+			{
+				name: 'Violence',
+				value: 'violence',
+				checked: item.content_warnings?.includes('violence')
+			},
+			{
+				name: 'Substances (alcohol, drugs)',
+				value: 'substances',
+				checked: item.content_warnings?.includes('substances')
+			},
+			{
+				name: 'Strong Language',
+				value: 'strong-language',
+				checked: item.content_warnings?.includes('strong-language')
+			},
+			{
+				name: 'Sexual Content',
+				value: 'sexual-content',
+				checked: item.content_warnings?.includes('sexual-content')
+			},
+			{
+				name: 'Intense Themes',
+				value: 'intense-themes',
+				checked: item.content_warnings?.includes('intense-themes')
+			}
+		]
 	});
 
 	// Preview
 	console.log('\n📋 Facet Summary:');
 	console.log(`   Type: ${facetType || '(none)'}`);
-	console.log(`   Mood: ${facetMood.length > 0 ? facetMood.join(', ') : '(none)'}`);
+	console.log(`   Focus: ${facetFocus || '(none)'}`);
 	console.log(`   Movement: ${facetMovement.length > 0 ? facetMovement.join(', ') : '(none)'}`);
 	console.log(`   Environment: ${facetEnvironment || '(none)'}`);
-	console.log(`   Film Style: ${facetFilmStyle || '(none)'}`);
-	console.log(`   Theme: ${facetTheme || '(none)'}`);
+	console.log(`   Production: ${facetProduction || '(none)'}`);
+	console.log(`   Presentation: ${facetPresentation || '(none)'}`);
+	console.log(`   Medium: ${facetMedium || '(none)'}`);
+	console.log(`   Content Warnings: ${contentWarnings.length > 0 ? contentWarnings.join(', ') : '(none)'}`);
 
 	const confirm = await prompts.confirm({
 		message: '\nSave facets?',
@@ -2023,11 +2043,13 @@ async function editFacets() {
 		.from('media_items')
 		.update({
 			facet_type: facetType,
-			facet_mood: facetMood.length > 0 ? facetMood : [],
+			facet_focus: facetFocus,
 			facet_movement: facetMovement.length > 0 ? facetMovement : [],
 			facet_environment: facetEnvironment,
-			facet_film_style: facetFilmStyle,
-			facet_theme: facetTheme,
+			facet_production: facetProduction,
+			facet_presentation: facetPresentation,
+			facet_medium: facetMedium,
+			content_warnings: contentWarnings.length > 0 ? contentWarnings : [],
 			updated_at: new Date().toISOString()
 		})
 		.eq('id', Number(itemId));

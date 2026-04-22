@@ -18,6 +18,7 @@
 		RATING_UPDATED_EVENT,
 		type RatingUpdatedDetail
 	} from '$lib/rating-events';
+	import { dispatchReviewUpdated } from '$lib/review-events';
 	import { fetchUserReview, upsertReview } from '$lib/reviews';
 	import { getPublicUserName } from '$lib/utils';
 
@@ -214,6 +215,10 @@
 			});
 			existingReviewId = saved.id;
 			reviewText = saved.body;
+			dispatchReviewUpdated({
+				mediaId: Number(saved.media_id),
+				review: saved
+			});
 			reviewPromptOpen = false;
 		} catch (error: any) {
 			reviewError = error?.message ?? 'Failed to post review';

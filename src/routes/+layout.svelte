@@ -32,8 +32,9 @@
 	import AdminMenuButton from '$lib/components/AdminMenuButton.svelte';
 	import HelpTipsButton from '$lib/components/HelpTipsButton.svelte';
 	import ContentSuggestionDialog from '$lib/components/ContentSuggestionDialog.svelte';
+	import Switch from '$lib/components/ui/Switch.svelte';
 	import { withUtm } from '$lib/utils';
-	import { selectedEpisode as selectedEpisodeStore } from '$lib/tv/store';
+	import { familySafeOnly, selectedEpisode as selectedEpisodeStore } from '$lib/tv/store';
 	import {
 		SCROLL_CONTEXT_KEY,
 		type ScrollSubscriber,
@@ -794,6 +795,24 @@
 							>
 						</button>
 					{/each}
+				</div>
+				<div class="mt-6">
+					<p class="mb-2 text-sm text-muted-foreground">Playback</p>
+					<div class="rounded-xl border border-border bg-background/80 p-3">
+						<div class="flex items-start justify-between gap-4">
+							<div>
+								<p class="text-sm font-medium text-foreground">Family safe only</p>
+								<p class="mt-1 text-xs text-muted-foreground">
+									Blocks titles with content warnings from playing in autoplay and the catalog.
+								</p>
+							</div>
+							<Switch
+								checked={$familySafeOnly}
+								ariaLabel="Enable family safe only playback"
+								on:change={(event) => familySafeOnly.set(event.detail)}
+							/>
+						</div>
+					</div>
 				</div>
 				<div class="mt-6">
 					<p class="mb-2 text-sm text-muted-foreground">{m.settings_install()}</p>

@@ -1,266 +1,241 @@
-# Jumpflix.tv Facets Documentation
+# JUMPFLIX Facet System
+
+This document describes the facet taxonomy used across Jumpflix for browsing, filtering, and tagging media.
+
+---
 
 ## Overview
 
-Facets are a structured tagging system for categorizing parkour videos on Jumpflix.tv. They enable users to filter and discover content based on specific attributes like movement style, mood, filming technique, and more.
+Facets are structured metadata dimensions that make the catalog browsable and filterable. The system is split into:
 
-**Related Issue:** [#38](https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/issues/38)
-
-## Facet Types
-
-### 1. Content Type (`facet_type`)
-
-**Selection Mode:** Single-select  
-**Field Type:** Text (enum)
-
-Defines the fundamental content format of the video.
-
-| Value         | Description                                                             |
-| ------------- | ----------------------------------------------------------------------- |
-| `fiction`     | Fiction / Parkour Film - Narrative stories with plot and characters     |
-| `documentary` | Documentary - Real people, interviews, behind-the-scenes                |
-| `session`     | Session / Edit / Team Film - Classic parkour videos showing training    |
-| `event`       | Event / Jam / Competition - Coverage of gatherings and competitions     |
-| `tutorial`    | Tutorial / Educational - Instructional content and technique breakdowns |
-| `music-video` | Music Video - Music-driven edit with a track-focused structure          |
-| `talk`        | Talk - Talk/presentation format (ideas, interviews, lectures)           |
+- **Manual creative facets** — tagged by editors per media item
+- **Computed helper facets** — automatically derived from other fields (year, duration)
+- **Content warnings** — separate advisory field, not a browse facet
 
 ---
 
-### 2. Mood (`facet_mood`)
+## Manual Creative Facets
 
-**Selection Mode:** Multi-select  
-**Field Type:** Text array
+### 1. `facet_type` — Single-select
 
-Captures the emotional tone and vibe of the video.
+_What kind of content is this?_
 
-| Value       | Description                          |
-| ----------- | ------------------------------------ |
-| `energetic` | High energy, intense, pumped up      |
-| `chill`     | Relaxed, laid-back atmosphere        |
-| `gritty`    | Raw, edgy, underground feel          |
-| `wholesome` | Positive, uplifting, feel-good       |
-| `intense`   | Serious, focused, high-stakes        |
-| `artistic`  | Creative expression, aesthetic focus |
+| Value | Description |
+|-------|-------------|
+| `session` | Team edit or session footage from training; includes showreels |
+| `event` | Jam, competition, or organized gathering |
+| `documentary` | Real stories and insights into parkour culture |
+| `fiction` | Narrative-driven parkour film with storyline |
+| `talk` | Talk/presentation format — ideas, interviews, personal journeys, mindset pieces |
+| `tutorial` | Educational content teaching techniques; includes gear/setup tutorials |
+| `music-video` | Music-driven edit with a track-focused structure |
 
----
-
-### 3. Movement Style (`facet_movement`)
-
-**Selection Mode:** Multi-select  
-**Field Type:** Text array
-
-Describes the parkour movement characteristics featured in the video.
-
-| Value          | Description                                                                |
-| -------------- | -------------------------------------------------------------------------- |
-| `flow`         | Smooth, continuous movement with rhythm                                    |
-| `big-sends`    | Large, impressive jumps and drops                                          |
-| `style`        | Flips, twists, creative variations (formerly "tricking")                   |
-| `descents`     | Drops, downclimbs, descending lines and controlled landings                |
-| `technical`    | Precise, difficult movements requiring high skill                          |
-| `speed`        | Fast-paced movement, chase sequences                                       |
-| `oldskool`     | Traditional parkour style, foundational techniques                         |
-| `contemporary` | Modern movement blending parkour with other disciplines (formerly "dance") |
-
-**Note:** "tricking" was renamed to "style" and "dance" was renamed to "contemporary" in recent migrations.
+> **Rule:** Tag the dominant content identity. A narrative film with more story than movement still fits `fiction`.
 
 ---
 
-### 4. Environment (`facet_environment`)
+### 2. `facet_focus` — Single-select
 
-**Selection Mode:** Single-select  
-**Field Type:** Text (enum)
+_What is the creative angle or special intent of this video?_
 
-The primary location or setting where the video takes place.
+| Value | Description |
+|-------|-------------|
+| `showreel` | Best-of reel, athlete profile, or year compilation (e.g. athlete/year edits) |
+| `competition` | Contest, battle, speed run, or style competition |
+| `jam` | Jam or community gathering recap |
+| `conceptual` | Reflective, mindset-driven, or personal journey (e.g. "fear and growth" pieces) |
+| `gear` | Equipment, setup, or training tool focused |
+| `awards` | Annual ceremony or awards format (e.g. STORROR Awards) |
 
-| Value      | Description                                     |
-| ---------- | ----------------------------------------------- |
-| `street`   | Street / Urban - Typical city environment       |
-| `rooftops` | Rooftops - Elevated urban locations             |
-| `nature`   | Nature - Outdoor natural environments           |
-| `urbex`    | Urbex (Urban Exploration) - Abandoned buildings |
-| `gym`      | Gym - Indoor training facilities                |
+> **Example:** A showreel = `facet_type=session` + `facet_focus=showreel`
 
----
-
-### 5. Film Style (`facet_film_style`)
-
-**Selection Mode:** Single-select  
-**Field Type:** Text (enum)
-
-The cinematographic and editing approach used in the video.
-
-| Value              | Description                                                               |
-| ------------------ | ------------------------------------------------------------------------- |
-| `cinematic`        | Smooth camera work, controlled shots, strong color grade, polished feel   |
-| `street-cinematic` | DSLR stability + fisheye inserts. Clean composition but still street grit |
-| `skateish`         | VX/handcam energy, fisheye close-ups, sidewalk culture, rough and fast    |
-| `raw`              | No polish. Real sound, breathing, slips, banter. Training as-is           |
-| `pov`              | First-person or tight follow angle. Immersive, fast, physical             |
-| `longtakes`        | Minimal cuts. Continuous routes. Flow and timing are the edit             |
-| `music-driven`     | Editing rhythms follow the soundtrack. Beat-matched cuts and pacing       |
-| `montage`          | Quick cuts, hype, best moments stacked. Energy > continuity               |
-| `slowmo`           | Slow motion used deliberately to show form, weight shift, control         |
-| `gonzo`            | Handheld chaos. Shaky, crowd energy, "in the middle of it"                |
-| `vintage`          | MiniDV, Hi8, 4:3, film grain, color decay. Nostalgic skate-era vibes      |
-| `minimalist`       | Calm framing, few edits, open space. Quiet mood, clean pacing             |
-| `experimental`     | Non-linear, surreal cuts, visual abstraction, intentionally weird         |
-
-**Note:** The film style options were significantly expanded in migration `20251109000000_expand_film_styles.sql`.
+> **Example:** STORROR Awards = `facet_type=talk` + `facet_focus=awards`
 
 ---
 
-### 6. Theme (`facet_theme`)
+### 3. `facet_movement` — Multi-select
 
-**Selection Mode:** Single-select  
-**Field Type:** Text (enum)
+_What style of movement is featured?_
 
-The underlying purpose or narrative focus of the content.
+| Value | Description |
+|-------|-------------|
+| `flow` | Continuous, fluid movement lines |
+| `big-sends` | Commitment-heavy moves, gaps, and larger consequences |
+| `style` | Distinct personal expression, shape, and movement flavor |
+| `descents` | Drops, downclimbs, and vertical movement |
+| `technical` | Precision, problem-solving, and dense movement detail |
+| `speed` | Chase energy, fast lines, and momentum-focused movement |
+| `oldskool` | Earlier-school movement language and classic parkour feel |
+| `contemporary` | Modern movement vocabulary and newer stylistic cues |
 
-| Value           | Description                                           |
-| --------------- | ----------------------------------------------------- |
-| `journey`       | Journey - Personal growth, reflection, development    |
-| `team`          | Team Film - Group identity, collective style          |
-| `event`         | Event Highlight - Jam or gathering recap              |
-| `competition`   | Competition - Speed/skill battles                     |
-| `educational`   | Educational - Tutorials, technique breakdowns         |
-| `travel`        | Travel - City hopping, exploring new spots            |
-| `creative`      | Creative / Expression - Artistic intent, experimental |
-| `entertainment` | Showcase / Entertainment - Fun, hype, performance     |
-
----
-
-### 7. Era (`facet_era`)
-
-**Selection Mode:** Auto-calculated  
-**Field Type:** Computed from `year` field
-
-Automatically determined from the video's release year.
-
-| Value      | Year Range      |
-| ---------- | --------------- |
-| `pre-2000` | Before 2000     |
-| `2000s`    | 2000-2009       |
-| `2010s`    | 2010-2019       |
-| `2020s`    | 2020-2029       |
-| `2030s`    | 2030 and beyond |
-
-**Note:** This facet is computed in the `media_facets_view` view, not stored directly in the database.
+> **Multi-select:** Tag all movement styles that are meaningfully present in the video.
 
 ---
 
-### 8. Length (`facet_length`)
+### 4. `facet_environment` — Single-select
 
-**Selection Mode:** Auto-calculated  
-**Field Type:** Computed from `duration` field
+_What is the dominant setting?_
 
-Automatically determined from the content duration.
+| Value | Description |
+|-------|-------------|
+| `street` | Urban streets, plazas, rails, and public architecture |
+| `rooftops` | Movement across roofs, ledges, and elevated city spaces |
+| `nature` | Forests, rocks, trails, or natural terrain |
+| `urbex` | Abandoned, decayed, or industrial explored locations |
+| `gym` | Indoor training spaces, setups, and gym-built lines |
 
-| Value         | Duration Range |
-| ------------ | -------------- |
-| `short-form`  | Under 15 minutes |
+> **Rule:** Tag the **dominant** setting — the one that best defines the visual identity of the video. Do not use for incidental appearances of a setting. A video that is primarily rooftop content but passes through a street is still `rooftops`.
+
+---
+
+### 5. `facet_production` — Single-select
+
+_How polished is this production?_
+
+| Value | Description |
+|-------|-------------|
+| `raw` | Minimally edited — phone clips, rough capture, real sound, little polish |
+| `casual` | Creator-made with light editing — vlog-ish or lightly structured, clear intent but not highly polished |
+| `produced` | Clearly crafted edit or film with deliberate shooting, editing, and post-production |
+| `premium` | Standout high-end production with exceptional cinematography, editing, sound, and design |
+
+> **Example:** Phone session clips with real sound = `raw`
+> **Example:** GoPro vlog with some B-roll = `casual`
+> **Example:** Intentional edit with color grade = `produced`
+> **Example:** Major team film with a full crew = `premium`
+
+---
+
+### 6. `facet_presentation` — Single-select
+
+_How is this video packaged and presented?_
+
+| Value | Description |
+|-------|-------------|
+| `standard` | Traditional edited format — neither POV-led nor vlog-led |
+| `pov` | First-person or tight follow-cam perspective is central to the experience |
+| `vlog` | Personality-led, diary or travel format with direct-to-camera or creator framing |
+| `top-down` | Bird's-eye drone or overhead angle used as a primary visual style |
+| `stylized` | Unconventional format — gameplay imitation, surreal framing, or intentional visual gimmick |
+
+> **Note:** `presentation` is independent of `production`. A POV video can be `raw` or `produced`.
+
+> **Example:** 16mm Bolex experimental = `facet_presentation=stylized` + `facet_production=produced`
+
+> **Example:** Top-down 2D parkour from drone = `facet_presentation=top-down`
+
+---
+
+### 7. `facet_medium` — Single-select
+
+_What medium is this content in?_
+
+| Value | Description |
+|-------|-------------|
+| `live-action` | Standard filmed real-world footage (default for most content) |
+| `animation` | Animated or illustrated content — traditional, 3D, or digital |
+| `mixed-media` | Combination of live footage and animated or graphical elements |
+
+> **Note:** Most videos will not need this tag — `live-action` is the default. Only tag `animation` or `mixed-media` when it's meaningfully defining the video.
+
+---
+
+## Computed Helper Facets
+
+These are **automatically calculated** from other fields and do not require manual tagging.
+
+### 8. `facet_era` — Computed from `year`
+
+| Value | Range |
+|-------|-------|
+| `pre-2000` | Before 2000 |
+| `2000s` | 2000–2009 |
+| `2010s` | 2010–2019 |
+| `2020s` | 2020–2029 |
+| `2030s` | 2030+ |
+
+### 9. `facet_length` — Computed from `duration`
+
+| Value | Range |
+|-------|-------|
+| `short-form` | Under 15 minutes |
 | `medium-form` | 15–45 minutes |
-| `long-form`   | 45+ minutes |
-
-**Note:** This facet is computed in the `media_facets_view` view, not stored directly in the database.
+| `long-form` | 45+ minutes |
 
 ---
 
-## Database Implementation
+## Content Warnings
 
-### Tables & Columns
+`content_warnings` is a **multi-select advisory field** — separate from the browse facets.
 
-Facets are stored in the `public.media_items` table:
+It is used for viewer advisories and should not be treated as a creative browse dimension.
 
-- `facet_type` - TEXT with CHECK constraint
-- `facet_mood` - TEXT[] (array)
-- `facet_movement` - TEXT[] (array)
-- `facet_environment` - TEXT with CHECK constraint
-- `facet_film_style` - TEXT with CHECK constraint
-- `facet_theme` - TEXT with CHECK constraint
-
-### Views
-
-**`public.media_facets_view`** - Provides access to all facets including auto-calculated fields like `facet_era` and `facet_length`.
-
-### Indexes
-
-For efficient filtering:
-
-- `media_items_facet_type_idx` - B-tree index on `facet_type`
-- `media_items_facet_environment_idx` - B-tree index on `facet_environment`
-- `media_items_facet_film_style_idx` - B-tree index on `facet_film_style`
-- `media_items_facet_theme_idx` - B-tree index on `facet_theme`
-- `media_items_facet_mood_idx` - GIN index on `facet_mood` (array)
-- `media_items_facet_movement_idx` - GIN index on `facet_movement` (array)
-
-GIN indexes are used for array columns to support efficient queries using array operators.
+| Value | Description |
+|-------|-------------|
+| `violence` | Contains depictions of violence or injury |
+| `substances` | Contains references to alcohol, drugs, or other substances |
+| `strong-language` | Contains explicit or strong language |
+| `sexual-content` | Contains sexual or adult content |
+| `intense-themes` | Contains emotionally intense or distressing themes |
 
 ---
 
-## Migration History
+## Classification Examples
 
-1. **20251106000000_add_facets.sql** - Initial facets implementation
-2. **20251107000000_remove_facet_modifiers.sql** - Removed `facet_modifiers` column (simplified model)
-3. **20251107000001_fix_media_facets_view_security.sql** - Fixed view security properties
-4. **20251108000000_remove_length_facet.sql** - Removed buggy auto-calculated length facet
-5. **20251109000000_expand_film_styles.sql** - Expanded film style options from 5 to 13 values
-6. **20251109000002_replace_tricking_with_style.sql** - Renamed "tricking" → "style" in movement facets, "dance" → "contemporary"
-7. **20260218000001_add_length_facet.sql** - Re-added length facet with improved `short-form`/`medium-form`/`long-form` categorization
-
----
-
-## Usage Examples
-
-### Filtering by Single Facet
-
-```sql
-SELECT * FROM media_items WHERE facet_type = 'session';
-```
-
-### Filtering by Array Facet
-
-```sql
-SELECT * FROM media_items WHERE 'flow' = ANY(facet_movement);
-```
-
-### Multiple Facet Filters
-
-```sql
-SELECT * FROM media_facets_view
-WHERE facet_type = 'session'
-  AND facet_environment = 'street'
-  AND 'energetic' = ANY(facet_mood)
-  AND facet_era = '2020s';
-```
-
-### Finding Videos with Multiple Movement Styles
-
-```sql
-SELECT * FROM media_items
-WHERE facet_movement @> ARRAY['flow', 'technical'];
-```
+| Video | `type` | `focus` | `presentation` | `production` | `medium` |
+|-------|--------|---------|----------------|--------------|---------|
+| Year-end athlete edit (showreel) | `session` | `showreel` | `standard` | `produced` | — |
+| STORROR Awards ceremony | `talk` | `awards` | `standard` | `produced` | — |
+| Chase Tag competition | `event` | `competition` | `standard` | `produced` | — |
+| Community jam recap | `event` | `jam` | `standard` | `casual` | — |
+| Fear and mindset piece | `talk` | `conceptual` | `vlog` | `casual` | — |
+| Gear/rig setup tutorial | `tutorial` | `gear` | `standard` | `casual` | — |
+| GoPro POV session | `session` | — | `pov` | `raw` | — |
+| Drone top-down parkour | `session` | — | `top-down` | `produced` | — |
+| Gameplay-style stylized video | `session` | — | `stylized` | `produced` | — |
+| 16mm Bolex experimental film | `fiction` | — | `stylized` | `produced` | — |
+| Animated parkour short | — | — | — | — | `animation` |
+| Music video with animation | `music-video` | — | — | `produced` | `mixed-media` |
+| Personal vlog series | `session` | — | `vlog` | `casual` | — |
 
 ---
 
-## Design Principles
+## Migration from Previous System
 
-1. **Single-select vs Multi-select**: Facets use single-select (text) for mutually exclusive categories and multi-select (text array) for complementary attributes.
+The following old facets were removed or replaced:
 
-2. **Performance**: Indexes are carefully chosen - B-tree for single values, GIN for arrays.
+| Old | Status | Destination |
+|-----|--------|-------------|
+| `facet_mood` | **Removed** | Not replaced — no clean destination |
+| `facet_film_style` | **Replaced** | → `facet_production` (quality level) + `facet_presentation` (format) |
+| `facet_theme` | **Replaced** | → `facet_focus` (narrowed to actionable browse values) |
+| `facet_type=vlog` | **Removed** | → `facet_type=session` + `facet_presentation=vlog` |
 
-3. **Flexibility**: The system allows null values for optional categorization.
+### Legacy value mappings used in the database migration
 
-4. **Auto-calculation**: Some facets (like era) are computed from existing data to ensure consistency.
+| Old value | New value |
+|-----------|-----------|
+| `facet_theme=showcase` | `facet_focus=showreel` |
+| `facet_theme=competition` | `facet_focus=competition` |
+| `facet_theme=event` | `facet_focus=jam` |
+| `facet_theme=journey` | `facet_focus=conceptual` |
+| `facet_theme=educational` | null (type already handles via `tutorial`/`talk`) |
+| `facet_theme=team`, `travel`, `creative`, `entertainment` | null (no clean destination) |
+| `facet_film_style=pov` | `facet_presentation=pov` |
+| `facet_film_style=raw` | `facet_production=raw` |
+| `facet_film_style=cinematic`, `street-cinematic`, `minimalist`, `experimental`, `longtakes`, `music-driven`, `montage`, `slowmo` | `facet_production=produced` |
+| `facet_film_style=skateish`, `gonzo`, `vintage` | `facet_production=casual` |
+| `facet_type=vlog` | `facet_type=session` + `facet_presentation=vlog` |
 
-5. **Evolution**: The facet system has been refined based on real-world usage, removing complexity (modifiers, length) while expanding useful categories (film styles).
+> **Note on lossy mappings:** Some old film style values (e.g. `longtakes`, `music-driven`, `montage`) describe editing technique rather than production quality. These are mapped to `produced` as a best-effort default. Review individual items if precision matters.
 
 ---
 
-## Future Considerations
+## Tagging Rules
 
-- Additional facet types could be added as the content library grows
-- Machine learning could assist in auto-tagging videos with facets
-- User-contributed facet suggestions could improve categorization accuracy
-- Analytics on facet usage could guide UX improvements for filtering
+1. **Dominant identity rule:** Always tag based on what the video _primarily_ is, not what appears in it incidentally.
+2. **Environment is single-select:** Choose the one dominant setting. A video with brief rooftop moments that is primarily street is `street`.
+3. **Presentation is separate from production:** A `raw` session can still be `pov`. A `premium` film can be `standard` presentation.
+4. **`facet_focus` is optional:** Only tag when a specific angle meaningfully defines the video and helps browsing. Most `session` videos don't need a focus.
+5. **`facet_medium` is optional:** Default is `live-action`. Only tag `animation` or `mixed-media` when it's the defining characteristic.
+6. **Content warnings are non-browse:** Don't use them for navigation. They're advisory only.

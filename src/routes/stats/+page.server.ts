@@ -4,11 +4,10 @@ import { error } from '@sveltejs/kit';
 
 export const load = async ({ parent, setHeaders }) => {
 	const parentData = await parent();
-	const isAuthenticated = Boolean((parentData as any)?.session || (parentData as any)?.user);
 	setHeaders({
-		'Cache-Control': isAuthenticated
-			? 'private, no-store'
-			: 'public, max-age=43200, s-maxage=43200, stale-while-revalidate=86400',
+		'Cache-Control': 'private, no-store',
+		'CDN-Cache-Control': 'no-store',
+		'Netlify-CDN-Cache-Control': 'no-store',
 		Vary: 'Cookie'
 	});
 

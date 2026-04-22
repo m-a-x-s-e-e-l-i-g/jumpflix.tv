@@ -15,6 +15,7 @@
 		IconStar,
 		IconUsersGroup
 	} from '@tabler/icons-svelte';
+	import XPopMark from '$lib/components/XPopMark.svelte';
 
 	type Overview = {
 		total_users: number;
@@ -56,11 +57,11 @@
 	type TopContributorRow = {
 		user_id: string;
 		username: string;
+		watched_count: number;
 		ratings_count: number;
 		reviews_count: number;
-		approved_suggestions_count: number;
-		approved_spot_suggestions_count: number;
-		score: number;
+		suggestions_count: number;
+		xp_total: number;
 	};
 
 	type CatalogCounts = {
@@ -516,7 +517,9 @@
 	<section class="stats-panel mt-8 rounded-3xl p-5 md:p-6">
 		<div class="stats-panel__header flex items-baseline justify-between gap-3">
 			<h2 class="text-base font-semibold tracking-tight md:text-lg">{m.stats_topContributors()}</h2>
-			<div class="text-xs text-muted-foreground">{m.stats_byRatingsAndReviews()}</div>
+			<div class="text-xs text-muted-foreground">
+				<XPopMark text={m.stats_byXpSystem()} iconClass="size-3.5" textClass="normal-case" />
+			</div>
 		</div>
 
 		{#if (data.topContributors ?? []).length === 0}
@@ -527,11 +530,13 @@
 					<thead class="text-left text-xs text-muted-foreground">
 						<tr>
 							<th class="py-2 pr-4">{m.stats_tableUser()}</th>
+							<th class="py-2 pr-4">{m.stats_watchedItems()}</th>
 							<th class="py-2 pr-4">{m.stats_tableRatings()}</th>
 							<th class="py-2 pr-4">{m.stats_tableReviews()}</th>
 							<th class="py-2 pr-4">{m.stats_suggestionsSubmitted()}</th>
-							<th class="py-2 pr-4">{m.tv_approvedSpotChapters()}</th>
-							<th class="py-2 pr-4">{m.stats_tableTotal()}</th>
+							<th class="py-2 pr-4">
+								<XPopMark text={m.stats_totalXp()} iconClass="size-3.5" textClass="normal-case" />
+							</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -542,15 +547,13 @@
 										{row.username}
 									</a>
 								</td>
+								<td class="py-2 pr-4 tabular-nums">{formatNumber(row.watched_count ?? 0)}</td>
 								<td class="py-2 pr-4 tabular-nums">{formatNumber(row.ratings_count ?? 0)}</td>
 								<td class="py-2 pr-4 tabular-nums">{formatNumber(row.reviews_count ?? 0)}</td>
 								<td class="py-2 pr-4 tabular-nums">
-									{formatNumber(row.approved_suggestions_count ?? 0)}
+									{formatNumber(row.suggestions_count ?? 0)}
 								</td>
-								<td class="py-2 pr-4 tabular-nums">
-									{formatNumber(row.approved_spot_suggestions_count ?? 0)}
-								</td>
-								<td class="py-2 pr-4 tabular-nums">{formatNumber(row.score ?? 0)}</td>
+								<td class="py-2 pr-4 tabular-nums">{formatNumber(row.xp_total ?? 0)}</td>
 							</tr>
 						{/each}
 					</tbody>

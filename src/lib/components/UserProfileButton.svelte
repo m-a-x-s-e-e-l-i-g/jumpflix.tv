@@ -13,6 +13,10 @@
 	import * as m from '$lib/paraglide/messages';
 	import { toast } from 'svelte-sonner';
 	import { onMount } from 'svelte';
+	import type { UserXpSummary } from '$lib/xp';
+	import XPopMark from '$lib/components/XPopMark.svelte';
+
+	let { xp = null }: { xp?: UserXpSummary | null } = $props();
 
 	let authDialogOpen = $state(false);
 	let settingsDialogOpen = $state(false);
@@ -74,6 +78,13 @@
 			document.removeEventListener('click', handleClickOutside);
 		};
 	});
+
+	const formatNumber = (value: number) => new Intl.NumberFormat().format(value);
+	const formatCompactNumber = (value: number) =>
+		new Intl.NumberFormat(undefined, {
+			notation: 'compact',
+			maximumFractionDigits: value >= 1000 ? 1 : 0
+		}).format(value);
 </script>
 
 {#if $loading}
@@ -87,21 +98,39 @@
 		<button
 			bind:this={buttonRef}
 			onclick={() => (showUserMenu = !showUserMenu)}
-			class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-			aria-label="User menu"
+			class="group relative inline-flex h-9 cursor-pointer items-center gap-0.75 overflow-visible rounded-full border border-border/85 bg-background/88 pl-0.5 pr-1.5 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/55 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+			aria-label={xp ? `User menu, ${formatNumber(xp.total)} XPop` : 'User menu'}
+			title={xp ? m.stats_xpEarned({ xp: formatNumber(xp.total) }) : undefined}
 		>
-			{#if $user.user_metadata?.avatar_url}
-				<img
-					src={$user.user_metadata.avatar_url}
-					alt={$user.user_metadata?.name ?? 'User'}
-					class="h-full w-full rounded-md object-cover"
-				/>
-			{:else if $user.user_metadata?.name}
-				<span class="text-xs font-semibold">
-					{getInitials($user.user_metadata.name)}
+			<span class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-foreground/5 ring-1 ring-foreground/6 transition-colors group-hover:bg-foreground/8">
+				{#if $user.user_metadata?.avatar_url}
+					<img
+						src={$user.user_metadata.avatar_url}
+						alt={$user.user_metadata?.name ?? 'User'}
+						class="h-full w-full rounded-full object-cover"
+					/>
+				{:else if $user.user_metadata?.name}
+					<span class="text-xs font-semibold">
+						{getInitials($user.user_metadata.name)}
+					</span>
+				{:else}
+					<UserCheckIcon class="size-5" />
+				{/if}
+			</span>
+
+			{#if xp}
+				<span
+					class="pointer-events-none inline-flex h-7 items-center gap-1 rounded-full bg-primary px-1.25 pr-1.5 text-primary-foreground shadow-[0_10px_18px_-10px_rgba(0,0,0,0.8)]"
+				>
+					<XPopMark
+						text="XPop"
+						iconClass="h-[1.05rem] w-[1.05rem]"
+						textClass="text-[9px] leading-none font-semibold tracking-[0.14em] normal-case text-primary-foreground/78"
+					/>
+					<span class="inline-flex min-w-8 items-center justify-center rounded-full bg-primary-foreground/14 px-1.5 py-0.5 text-[10px] leading-none font-semibold tabular-nums text-primary-foreground">
+						{formatCompactNumber(xp.total)}
+					</span>
 				</span>
-			{:else}
-				<UserCheckIcon class="size-5" />
 			{/if}
 		</button>
 
@@ -110,14 +139,18 @@
 				bind:this={menuRef}
 				class="absolute top-full left-0 z-50 mt-2 w-56 overflow-hidden rounded-lg border border-border bg-background shadow-lg"
 			>
-				<div class="border-b border-border px-4 py-3">
+				<a
+					href={`/stats/${$user.id}`}
+					onclick={() => (showUserMenu = false)}
+					class="block border-b border-border px-4 py-3 transition hover:bg-muted/70"
+				>
 					<p class="truncate text-sm font-medium text-foreground">
 						{$user.user_metadata?.name ?? $user.email ?? 'User'}
 					</p>
 					{#if $user.email}
 						<p class="truncate text-xs text-muted-foreground">{$user.email}</p>
 					{/if}
-				</div>
+				</a>
 
 				<button
 					onclick={() => {

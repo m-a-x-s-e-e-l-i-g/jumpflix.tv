@@ -1,4 +1,6 @@
+import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { error } from '@sveltejs/kit';
+import { calculateUserXp } from '$lib/xp';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -9,6 +11,23 @@ type WatchedButNotRatedItem = {
 	href: string;
 	lastWatched: string;
 };
+
+function firstNonEmptyString(...values: unknown[]): string {
+	for (const value of values) {
+		if (typeof value === 'string' && value.trim()) {
+			return value.trim();
+		}
+	}
+
+	return '';
+}
+
+function getEmailPrefix(email: unknown): string {
+	const normalizedEmail = firstNonEmptyString(email);
+	if (!normalizedEmail) return '';
+
+	return normalizedEmail.split('@')[0]?.trim() || '';
+}
 
 function parseWatchedItemId(mediaId: unknown, mediaType: unknown): number | null {
 	if (mediaType !== 'movie' && mediaType !== 'series') return null;
@@ -117,12 +136,13 @@ export const load = async ({ params, locals, setHeaders }) => {
 	});
 
 	const supabase = locals.supabase;
+	const serviceSupabase = createSupabaseServiceClient();
 
 	const [overviewRes, distRes, ratedRes, watchedNotRatedRes, reviewsRes] = await Promise.all([
 		supabase.rpc('user_stats_overview', { target_user: userId }),
 		supabase.rpc('user_ratings_distribution', { target_user: userId }),
 		supabase.rpc('user_rated_media', { target_user: userId }),
-		loadWatchedButNotRated(supabase, userId),
+		loadWatchedButNotRated(serviceSupabase, userId),
 		(supabase as any)
 			.from('reviews')
 			.select('id, media_id, body, created_at, updated_at')
@@ -157,16 +177,36 @@ export const load = async ({ params, locals, setHeaders }) => {
 	const overview = (overviewRes.data ?? null) as any;
 	if (!overview?.found) throw error(404, 'User not found');
 
-	const username: string = String(overview.username ?? 'User');
+	let username = firstNonEmptyString(overview.username);
+	try {
+		const { data: authUserData, error: authUserError } = await (serviceSupabase as any).auth.admin.getUserById(userId);
+		if (authUserError) {
+			console.error('[stats:user] Failed to load auth user for username fallback:', authUserError.message);
+		} else {
+			const authUser = authUserData?.user;
+			username =
+				firstNonEmptyString(
+					authUser?.user_metadata?.name,
+					authUser?.user_metadata?.username,
+					getEmailPrefix(authUser?.email),
+					username
+				) || 'User';
+		}
+	} catch (authUserError) {
+		console.error('[stats:user] Failed to resolve username fallback:', authUserError);
+	}
+
+	username ||= 'User';
+	const isOwnProfile = viewer?.id === userId;
 
 	type RatingDistRow = { rating: number; count: number };
-	const distRows = ((distRes.data ?? []) as any[]) ?? [];
+	const distRows = (distRes.data ?? []) as any[];
 	const ratingDistribution: RatingDistRow[] = distRows.map((row) => ({
 		rating: Number(row.rating) || 0,
 		count: Number(row.count) || 0
 	}));
 
-	const ratedRows = ((ratedRes.data ?? []) as any[]) ?? [];
+	const ratedRows = (ratedRes.data ?? []) as any[];
 	const ratedItems = (
 		ratedRows as Array<{
 			media_id: number;
@@ -192,7 +232,7 @@ export const load = async ({ params, locals, setHeaders }) => {
 		href: String(item.href ?? '')
 	}));
 
-	const reviewRows = ((reviewsRes.data ?? []) as any[]) ?? [];
+	const reviewRows = (reviewsRes.data ?? []) as any[];
 	const reviewMediaIds = Array.from(
 		new Set(reviewRows.map((r) => Number(r.media_id)).filter((id) => Number.isFinite(id)))
 	);
@@ -239,10 +279,19 @@ export const load = async ({ params, locals, setHeaders }) => {
 		}
 	}
 
+	const xp = calculateUserXp({
+		watchingCount: Number(overview.watched_items) || 0,
+		ratingCount: Number(overview.ratings_count) || 0,
+		reviewingCount: Number(overview.reviews_count) || 0,
+		contributionsCount: suggestionsCount ?? 0
+	});
+
 	return {
 		username,
 		userId,
+		isOwnProfile,
 		stats: {
+			xp,
 			averageRating: Number(overview.average_rating) || 0,
 			ratingCount: Number(overview.ratings_count) || 0,
 			reviewsCount: Number(overview.reviews_count) || 0,

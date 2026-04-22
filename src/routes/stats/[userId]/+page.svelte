@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { countUp } from '$lib/actions/countUp';
+	import XPopMark from '$lib/components/XPopMark.svelte';
 	import * as m from '$lib/paraglide/messages';
 	import {
 		IconCalendarStats,
@@ -26,11 +27,25 @@
 		href: string;
 		updated_at: string;
 	};
+	type StatsMessagesWithOwnProfile = typeof m & {
+		stats_yourTitle: () => string;
+		stats_yourDescription: () => string;
+	};
+	const statsMessages = m as StatsMessagesWithOwnProfile;
+
 	let { data } = $props<{
 		data: {
 			username: string;
 			userId: string;
+			isOwnProfile: boolean;
 			stats: {
+				xp: {
+					total: number;
+					watching: number;
+					rating: number;
+					reviewing: number;
+					contributions: number;
+				};
 				averageRating: number;
 				ratingCount: number;
 				reviewsCount: number;
@@ -139,10 +154,55 @@
 	const hasRatings: boolean = $derived(
 		data.stats.ratingDistribution.some((row: RatingDistRow) => (row.count ?? 0) > 0)
 	);
+
+	const progressSectionTitle: string = $derived(
+		data.isOwnProfile ? m.stats_userSectionProgress() : m.stats_catalogProgress()
+	);
+	const progressSectionDescription: string = $derived(
+		data.isOwnProfile
+			? m.stats_userSectionProgressDescription()
+			: `${m.stats_watchedItems()} · ${m.stats_timeWatchedProgress()} · ${m.stats_catalogProgress()}`
+	);
+	const contributionsSectionTitle: string = $derived(
+		data.isOwnProfile
+			? m.stats_userSectionContributions()
+			: `${m.stats_reviewsPlaced()} · ${m.stats_suggestionsSubmitted()}`
+	);
+	const contributionsSectionDescription: string = $derived(
+		data.isOwnProfile
+			? m.stats_userSectionContributionsDescription()
+			: `${m.stats_reviewsPlaced()} · ${m.stats_suggestionsSubmitted()} · ${m.stats_recentEntriesShownBelow()}`
+	);
+	const ratingsSectionTitle: string = $derived(
+		data.isOwnProfile ? m.stats_userSectionHowYouRate() : m.stats_ratingsDistribution()
+	);
+	const ratingsSectionDescription: string = $derived(
+		data.isOwnProfile
+			? m.stats_userSectionHowYouRateDescription()
+			: `${m.stats_averageRating()} · ${m.stats_rankedRatings()} · ${m.stats_ratingsDistribution()}`
+	);
+	const todoSectionTitle: string = $derived(
+		data.isOwnProfile ? m.stats_userSectionTodo() : m.stats_watchedButNotRated()
+	);
+	const todoSectionDescription: string = $derived(
+		data.isOwnProfile
+			? m.stats_userSectionTodoDescription()
+			: `${m.stats_watchedButNotRated()} · ${m.stats_upTo50()}`
+	);
+	const profileTitle: string = $derived(
+		data.isOwnProfile
+			? statsMessages.stats_yourTitle()
+			: m.stats_userTitle({ username: data.username })
+	);
+	const profileDescription: string = $derived(
+		data.isOwnProfile
+			? statsMessages.stats_yourDescription()
+			: m.stats_userDescription({ username: data.username })
+	);
 </script>
 
 <svelte:head>
-	<title>{m.stats_userTitle({ username: data.username })}</title>
+	<title>{profileTitle}</title>
 	<meta name="robots" content="noindex, nofollow" />
 	<link rel="canonical" href={`https://www.jumpflix.tv/stats/${data.userId}`} />
 </svelte:head>
@@ -157,26 +217,61 @@
 			<span>{m.stats_backToPublicStats()}</span>
 		</a>
 		<h1 class="jf-display mt-4 max-w-4xl text-[clamp(2.5rem,6vw,4.75rem)] leading-none text-balance">
-			{m.stats_userTitle({ username: data.username })}
+			{profileTitle}
 		</h1>
 		<p class="mt-2 max-w-2xl text-sm text-muted-foreground md:text-base">
-			{m.stats_userDescription({ username: data.username })}
+			{profileDescription}
 		</p>
 		<div class="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
 			<span class="stats-pill">{m.stats_badge_notIndexed()}</span>
 			<span class="stats-pill">
 				{m.stats_badge_basedOnWatchHistoryAndRatings()}
 			</span>
+			<span class="stats-pill">
+				<XPopMark
+					text={m.stats_xpEarned({ xp: formatNumber(data.stats.xp.total) })}
+					iconClass="size-3.5"
+					textClass="normal-case"
+				/>
+			</span>
 			<span class="stats-pill">{m.stats_itemsCount({ count: formatNumber(data.stats.watchedCount) })}</span>
 		</div>
 	</div>
 
+	<section class="mb-6">
+		<div class="jf-surface-soft rounded-3xl p-5 md:p-6">
+			<div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+				<div>
+					<div class="text-xs tracking-[0.24em] text-muted-foreground">{m.stats_totalXp()}</div>
+					<div class="mt-2 flex items-center gap-3">
+						<div class="stats-kpi__icon-shell" aria-hidden="true">
+							<XPopMark text="" iconClass="size-10 md:size-12" overlayClass="text-[10px] md:text-xs" />
+						</div>
+						<p class="text-3xl font-semibold tracking-tight tabular-nums md:text-4xl">
+							<span use:countUp={{ value: data.stats.xp.total }}>{formatNumber(data.stats.xp.total)}</span>
+							<span class="ml-2 text-base font-medium text-muted-foreground">XPop</span>
+						</p>
+					</div>
+				</div>
+				<div class="max-w-2xl text-sm text-muted-foreground md:text-right md:text-base">
+					{m.stats_xpDescription()}
+				</div>
+			</div>
+			<div class="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+				<span class="stats-pill">{m.stats_watchedItems()} · {m.stats_xpEarned({ xp: formatNumber(data.stats.xp.watching) })}</span>
+				<span class="stats-pill">{m.stats_ratingsGiven()} · {m.stats_xpEarned({ xp: formatNumber(data.stats.xp.rating) })}</span>
+				<span class="stats-pill">{m.stats_reviewsPlaced()} · {m.stats_xpEarned({ xp: formatNumber(data.stats.xp.reviewing) })}</span>
+				<span class="stats-pill">{m.stats_suggestionsSubmitted()} · {m.stats_xpEarned({ xp: formatNumber(data.stats.xp.contributions) })}</span>
+			</div>
+		</div>
+	</section>
+
 	<section class="user-section" style="--section-index: 0">
 		<div class="user-section__header">
-			<p class="user-section__eyebrow">{m.stats_userSectionProgress()}</p>
-			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{m.stats_userSectionProgress()}</h2>
+			<p class="user-section__eyebrow">{progressSectionTitle}</p>
+			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{progressSectionTitle}</h2>
 			<p class="max-w-3xl text-sm text-muted-foreground md:text-base">
-				{m.stats_userSectionProgressDescription()}
+				{progressSectionDescription}
 			</p>
 		</div>
 		<div class="motion-kpi-grid grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -238,10 +333,10 @@
 
 	<section class="user-section" style="--section-index: 1">
 		<div class="user-section__header">
-			<p class="user-section__eyebrow">{m.stats_userSectionContributions()}</p>
-			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{m.stats_userSectionContributions()}</h2>
+			<p class="user-section__eyebrow">{contributionsSectionTitle}</p>
+			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{contributionsSectionTitle}</h2>
 			<p class="max-w-3xl text-sm text-muted-foreground md:text-base">
-				{m.stats_userSectionContributionsDescription()}
+				{contributionsSectionDescription}
 			</p>
 		</div>
 		<div class="motion-kpi-grid grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -353,14 +448,14 @@
 
 	<section class="user-section" style="--section-index: 2">
 		<div class="user-section__header">
-			<p class="user-section__eyebrow">{m.stats_userSectionHowYouRate()}</p>
-			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{m.stats_userSectionHowYouRate()}</h2>
+			<p class="user-section__eyebrow">{ratingsSectionTitle}</p>
+			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{ratingsSectionTitle}</h2>
 			<p class="max-w-3xl text-sm text-muted-foreground md:text-base">
-				{m.stats_userSectionHowYouRateDescription()}
+				{ratingsSectionDescription}
 			</p>
 		</div>
-		<div class="motion-kpi-grid grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-			<div class="stats-kpi stats-kpi--community jf-surface-soft rounded-2xl p-4 md:p-5 xl:col-span-2">
+		<div class="motion-kpi-grid grid grid-cols-1 gap-3">
+			<div class="stats-kpi stats-kpi--community jf-surface-soft rounded-2xl p-4 md:p-5">
 				<div class="stats-kpi__head">
 					<div class="text-xs text-muted-foreground">{m.stats_averageRating()}</div>
 					<div class="stats-kpi__icon-shell" aria-hidden="true">
@@ -373,28 +468,6 @@
 				<div class="mt-1 text-xs text-muted-foreground">
 					{m.stats_ratingsCount({ count: formatNumber(data.stats.ratingCount) })}
 				</div>
-			</div>
-			<div class="stats-kpi stats-kpi--community jf-surface-soft rounded-2xl p-4 md:p-5">
-				<div class="stats-kpi__head">
-					<div class="text-xs text-muted-foreground">{m.stats_rankedRatings()}</div>
-					<div class="stats-kpi__icon-shell" aria-hidden="true">
-						<IconListDetails class="stats-kpi__icon" />
-					</div>
-				</div>
-				<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-					<span use:countUp={{ value: ratedSorted.length }}>{formatNumber(ratedSorted.length)}</span>
-				</div>
-				<div class="mt-1 text-xs text-muted-foreground">{m.stats_itemsCount({ count: formatNumber(ratedSorted.length) })}</div>
-			</div>
-			<div class="stats-kpi stats-kpi--community jf-surface-soft rounded-2xl p-4 md:p-5">
-				<div class="stats-kpi__head">
-					<div class="text-xs text-muted-foreground">{m.stats_ratingsDistribution()}</div>
-					<div class="stats-kpi__icon-shell" aria-hidden="true">
-						<IconStar class="stats-kpi__icon" />
-					</div>
-				</div>
-				<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">1–10</div>
-				<div class="mt-1 text-xs text-muted-foreground">{hasRatings ? m.stats_ratingsDistribution() : m.stats_noRatingsYet()}</div>
 			</div>
 		</div>
 
@@ -465,10 +538,10 @@
 
 	<section class="user-section" style="--section-index: 3">
 		<div class="user-section__header">
-			<p class="user-section__eyebrow">{m.stats_userSectionTodo()}</p>
-			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{m.stats_userSectionTodo()}</h2>
+			<p class="user-section__eyebrow">{todoSectionTitle}</p>
+			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">{todoSectionTitle}</h2>
 			<p class="max-w-3xl text-sm text-muted-foreground md:text-base">
-				{m.stats_userSectionTodoDescription()}
+				{todoSectionDescription}
 			</p>
 		</div>
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">

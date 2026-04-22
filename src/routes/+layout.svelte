@@ -35,6 +35,7 @@
 	import Switch from '$lib/components/ui/Switch.svelte';
 	import { withUtm } from '$lib/utils';
 	import { familySafeOnly, selectedEpisode as selectedEpisodeStore } from '$lib/tv/store';
+	import type { UserXpSummary } from '$lib/xp';
 	import {
 		SCROLL_CONTEXT_KEY,
 		type ScrollSubscriber,
@@ -80,6 +81,7 @@
 			item: ContentItem | null;
 			initialEpisodeNumber: number | null;
 			initialSeasonNumber: number | null;
+			userXp: UserXpSummary | null;
 			session: any;
 			user: any;
 			isAdmin?: boolean;
@@ -752,7 +754,7 @@
 						<AdminMenuButton />
 					{/if}
 
-					<UserProfileButton />
+					<UserProfileButton xp={data.userXp} />
 				{/if}
 			</div>
 

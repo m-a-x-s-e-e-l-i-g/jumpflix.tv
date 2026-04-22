@@ -1,5 +1,6 @@
 import { loadPublicFundingData } from '$lib/server/funding';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
+import { calculateUserXp } from '$lib/xp';
 import { error } from '@sveltejs/kit';
 
 export const load = async ({ parent, setHeaders }) => {
@@ -70,7 +71,19 @@ export const load = async ({ parent, setHeaders }) => {
 			.from('watch_history')
 			.select('user_id, media_id, media_type, percent_watched')
 			.eq('status', 'active'),
-		(supabase as any).rpc('admin_top_contributors', { limit_n: 10 })
+		(supabase as any)
+			.from('watch_history')
+			.select('user_id')
+			.eq('status', 'active')
+			.eq('is_watched', true)
+	]);
+	const [ratingsByUserRes, reviewsByUserRes, suggestionsByUserRes] = await Promise.all([
+		(supabase as any).from('ratings').select('user_id'),
+		(supabase as any).from('reviews').select('user_id'),
+		(supabase as any)
+			.from('content_suggestions')
+			.select('created_by')
+			.not('created_by', 'is', null)
 	]);
 	const funding = await loadPublicFundingData();
 
@@ -78,14 +91,17 @@ export const load = async ({ parent, setHeaders }) => {
 		overviewRes.error,
 		activityRes.error,
 		ratingsDistRes.error,
-		topContributorsRes.error
+		topContributorsRes.error,
+		ratingsByUserRes.error,
+		reviewsByUserRes.error,
+		suggestionsByUserRes.error
 	].filter((e): e is NonNullable<typeof e> => Boolean(e));
 	if (rpcErrors.length > 0) {
 		const message = rpcErrors.map((e) => e.message).join(' | ');
 		if (message.includes('Could not find the function')) {
 			throw error(
 				500,
-				'Missing stats SQL functions in Supabase. Apply these migrations to your Supabase project: supabase/migrations/20260128000000_add_admin_stats_functions.sql, supabase/migrations/20260213000001_add_review_stats.sql, supabase/migrations/20260226000000_add_admin_top_contributors.sql, supabase/migrations/20260226000001_update_admin_top_contributors_include_suggestions.sql.'
+				'Missing stats SQL functions in Supabase. Apply these migrations to your Supabase project: supabase/migrations/20260128000000_add_admin_stats_functions.sql and supabase/migrations/20260213000001_add_review_stats.sql.'
 			);
 		}
 		throw error(500, message);
@@ -372,27 +388,123 @@ export const load = async ({ parent, setHeaders }) => {
 		};
 	});
 
-	type TopContributorRpcRow = {
-		user_id: string;
-		username: string;
-		ratings_count: number;
-		reviews_count: number;
-		approved_suggestions_count: number;
-		approved_spot_suggestions_count: number;
-		score: number;
+	type UserCountMap = Map<string, number>;
+	const incrementUserCount = (map: UserCountMap, userId: unknown) => {
+		if (typeof userId !== 'string') return;
+		const normalized = userId.trim();
+		if (!normalized) return;
+		map.set(normalized, (map.get(normalized) ?? 0) + 1);
 	};
 
-	const topContributors = (
-		((topContributorsRes.data as any[]) ?? []) as TopContributorRpcRow[]
-	).map((row) => ({
-		user_id: String(row.user_id ?? ''),
-		username: String(row.username ?? 'User'),
-		ratings_count: Number(row.ratings_count) || 0,
-		reviews_count: Number(row.reviews_count) || 0,
-		approved_suggestions_count: Number(row.approved_suggestions_count) || 0,
-		approved_spot_suggestions_count: Number(row.approved_spot_suggestions_count) || 0,
-		score: Number(row.score) || 0
-	}));
+	const watchedCounts = new Map<string, number>();
+	for (const row of (topContributorsRes.data as Array<{ user_id: unknown }> | null) ?? []) {
+		incrementUserCount(watchedCounts, row.user_id);
+	}
+
+	const ratingsCounts = new Map<string, number>();
+	for (const row of (ratingsByUserRes.data as Array<{ user_id: unknown }> | null) ?? []) {
+		incrementUserCount(ratingsCounts, row.user_id);
+	}
+
+	const reviewsCounts = new Map<string, number>();
+	for (const row of (reviewsByUserRes.data as Array<{ user_id: unknown }> | null) ?? []) {
+		incrementUserCount(reviewsCounts, row.user_id);
+	}
+
+	const suggestionCounts = new Map<string, number>();
+	for (const row of (suggestionsByUserRes.data as Array<{ created_by: unknown }> | null) ?? []) {
+		incrementUserCount(suggestionCounts, row.created_by);
+	}
+
+	const contributorUserIds = Array.from(
+		new Set([
+			...watchedCounts.keys(),
+			...ratingsCounts.keys(),
+			...reviewsCounts.keys(),
+			...suggestionCounts.keys()
+		])
+	);
+
+	const usernameById = new Map<string, string>();
+	if (contributorUserIds.length > 0) {
+		try {
+			const unresolvedIds = new Set(contributorUserIds);
+			const perPage = 1000;
+			let page = 1;
+
+			while (unresolvedIds.size > 0) {
+				const { data, error: listUsersError } = await (supabase as any).auth.admin.listUsers({
+					page,
+					perPage
+				});
+				if (listUsersError) {
+					console.error('[stats] Failed to list users for XP leaderboard:', listUsersError.message);
+					break;
+				}
+
+				const users = data?.users ?? [];
+				if (users.length === 0) break;
+
+				for (const listedUser of users) {
+					const listedUserId = String(listedUser.id ?? '');
+					if (!unresolvedIds.has(listedUserId)) continue;
+					const emailLocalPart =
+						typeof listedUser.email === 'string' && listedUser.email.trim()
+							? listedUser.email.trim().split('@')[0]?.trim() || ''
+							: '';
+					const username =
+						typeof listedUser.user_metadata?.name === 'string' && listedUser.user_metadata.name.trim()
+							? listedUser.user_metadata.name.trim()
+							: typeof listedUser.user_metadata?.username === 'string' && listedUser.user_metadata.username.trim()
+								? listedUser.user_metadata.username.trim()
+								: emailLocalPart
+									? emailLocalPart
+									: 'User';
+					usernameById.set(listedUserId, username);
+					unresolvedIds.delete(listedUserId);
+				}
+
+				if (users.length < perPage) break;
+				page += 1;
+			}
+		} catch (listUsersError) {
+			console.error('[stats] Failed to build XP leaderboard usernames:', listUsersError);
+		}
+	}
+
+	const topContributors = contributorUserIds
+		.map((userId) => {
+			const watched_count = watchedCounts.get(userId) ?? 0;
+			const ratings_count = ratingsCounts.get(userId) ?? 0;
+			const reviews_count = reviewsCounts.get(userId) ?? 0;
+			const suggestions_count = suggestionCounts.get(userId) ?? 0;
+			const xp = calculateUserXp({
+				watchingCount: watched_count,
+				ratingCount: ratings_count,
+				reviewingCount: reviews_count,
+				contributionsCount: suggestions_count
+			});
+
+			return {
+				user_id: userId,
+				username: usernameById.get(userId) ?? 'User',
+				watched_count,
+				ratings_count,
+				reviews_count,
+				suggestions_count,
+				xp_total: xp.total
+			};
+		})
+		.filter((row) => row.xp_total > 0)
+		.sort(
+			(a, b) =>
+				b.xp_total - a.xp_total ||
+				b.suggestions_count - a.suggestions_count ||
+				b.reviews_count - a.reviews_count ||
+				b.ratings_count - a.ratings_count ||
+				b.watched_count - a.watched_count
+		)
+		.slice(0, 10);
 
 	return {
 		overview: overviewRes.data as any,

@@ -1,6 +1,7 @@
 import { fetchAllContent } from '$lib/server/content-service';
 import type { ContentItem, Series } from '$lib/tv/types';
 import { isAdminUser } from '$lib/server/admin';
+import { calculateUserXp } from '$lib/xp';
 
 function shouldLoadTvCatalog(pathname: string): boolean {
 	return !(
@@ -23,6 +24,49 @@ export const load = async ({ url, locals }) => {
 		tvCatalogPromise
 	]);
 	const { session, user } = auth;
+
+	let userXp = null;
+	if (user?.id) {
+		try {
+			const [watchedRes, ratingsRes, reviewsRes, suggestionsRes] = await Promise.all([
+				(locals.supabase as any)
+					.from('watch_history')
+					.select('media_id', { count: 'exact', head: true })
+					.eq('user_id', user.id)
+					.eq('status', 'active')
+					.eq('is_watched', true),
+				(locals.supabase as any)
+					.from('ratings')
+					.select('id', { count: 'exact', head: true })
+					.eq('user_id', user.id),
+				(locals.supabase as any)
+					.from('reviews')
+					.select('id', { count: 'exact', head: true })
+					.eq('user_id', user.id),
+				(locals.supabase as any)
+					.from('content_suggestions')
+					.select('id', { count: 'exact', head: true })
+					.eq('created_by', user.id)
+			]);
+
+			const xpErrors = [watchedRes.error, ratingsRes.error, reviewsRes.error, suggestionsRes.error].filter(
+				(e): e is NonNullable<typeof e> => Boolean(e)
+			);
+
+			if (xpErrors.length === 0) {
+				userXp = calculateUserXp({
+					watchingCount: watchedRes.count ?? 0,
+					ratingCount: ratingsRes.count ?? 0,
+					reviewingCount: reviewsRes.count ?? 0,
+					contributionsCount: suggestionsRes.count ?? 0
+				});
+			} else {
+				console.error('[+layout.server] Failed to load user XP:', xpErrors.map((e) => e.message).join(' | '));
+			}
+		} catch (error) {
+			console.error('[+layout.server] Failed to load user XP:', error);
+		}
+	}
 
 	try {
 		// Ensure content is JSON serializable by using JSON.parse(JSON.stringify())
@@ -67,6 +111,7 @@ export const load = async ({ url, locals }) => {
 			item,
 			initialEpisodeNumber,
 			initialSeasonNumber,
+			userXp,
 			// Pass session and user to all pages for auth state
 			session,
 			user,
@@ -79,6 +124,7 @@ export const load = async ({ url, locals }) => {
 			item: null,
 			initialEpisodeNumber: null,
 			initialSeasonNumber: null,
+			userXp,
 			session,
 			user,
 			isAdmin: isAdminUser(user)

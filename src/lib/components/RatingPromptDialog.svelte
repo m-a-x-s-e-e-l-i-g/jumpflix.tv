@@ -260,6 +260,7 @@
 			void loadRatingState(movie.id);
 		}
 	}
+
 </script>
 
 <DialogRoot bind:open>

@@ -11,6 +11,7 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
+	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import * as m from '$lib/paraglide/messages';
 	import { fade } from 'svelte/transition';
 	import { decode } from 'html-entities';
@@ -32,7 +33,13 @@
 	import { onMount, tick } from 'svelte';
 	import { user as authUser } from '$lib/stores/authStore';
 	import BangerMeter from '$lib/components/Bangerometer.svelte';
-	import { fetchMediaReviews, fetchUserReview, upsertReview, type ReviewRow } from '$lib/reviews';
+	import {
+		deleteReview,
+		fetchMediaReviews,
+		fetchUserReview,
+		upsertReview,
+		type ReviewRow
+	} from '$lib/reviews';
 	import {
 		applyRatingEventUpdate,
 		buildBaseId,
@@ -60,7 +67,10 @@
 		type RatingUpdatedDetail
 	} from '$lib/rating-events';
 	import {
+		dispatchReviewDeleted,
 		dispatchReviewUpdated,
+		REVIEW_DELETED_EVENT,
+		type ReviewDeletedDetail,
 		REVIEW_UPDATED_EVENT,
 		type ReviewUpdatedDetail
 	} from '$lib/review-events';
@@ -502,14 +512,21 @@
 			syncReviewFromEvent(detail);
 		};
 
+		const handleReviewDeleted = (event: Event) => {
+			const detail = (event as CustomEvent<ReviewDeletedDetail>).detail;
+			syncReviewDeletedEvent(detail);
+		};
+
 		window.addEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
 		window.addEventListener(RATING_UPDATED_EVENT, handleRatingUpdated as EventListener);
 		window.addEventListener(REVIEW_UPDATED_EVENT, handleReviewUpdated as EventListener);
+		window.addEventListener(REVIEW_DELETED_EVENT, handleReviewDeleted as EventListener);
 
 		return () => {
 			window.removeEventListener(PROGRESS_CHANGE_EVENT, handleProgressChange);
 			window.removeEventListener(RATING_UPDATED_EVENT, handleRatingUpdated as EventListener);
 			window.removeEventListener(REVIEW_UPDATED_EVENT, handleReviewUpdated as EventListener);
+			window.removeEventListener(REVIEW_DELETED_EVENT, handleReviewDeleted as EventListener);
 
 			playObserver?.disconnect();
 			playObserver = null;
@@ -686,6 +703,10 @@
 		);
 	}
 
+	function removeReview(reviewId: number) {
+		reviews = reviews.filter((entry) => entry.id !== reviewId);
+	}
+
 	async function loadReviewsForSelected() {
 		if (!browser || !selected) return;
 
@@ -755,6 +776,29 @@
 		}
 	}
 
+	async function handleReviewDelete(reviewId = myReviewId) {
+		if (!selected || !reviewId) return;
+		myReviewSaving = true;
+		myReviewError = null;
+		try {
+			await deleteReview(reviewId);
+			removeReview(reviewId);
+			dispatchReviewDeleted({
+				mediaId: Number(selected.id),
+				reviewId,
+				userId: $authUser?.id
+			});
+			myReviewId = null;
+			myReviewText = '';
+			reviewComposerOpen = false;
+			toast.success('Review deleted');
+		} catch (error: any) {
+			myReviewError = error?.message ?? 'Failed to delete review';
+		} finally {
+			myReviewSaving = false;
+		}
+	}
+
 	function handleAuthRequired() {
 		showAuthDialog = true;
 	}
@@ -779,6 +823,18 @@
 		if ($authUser?.id && detail.review.user_id === $authUser.id) {
 			myReviewId = detail.review.id;
 			myReviewText = detail.review.body;
+			myReviewError = null;
+		}
+	}
+
+	function syncReviewDeletedEvent(detail?: ReviewDeletedDetail) {
+		if (!selected || !detail) return;
+		const numericId = Number(selected.id);
+		if (!Number.isFinite(numericId) || detail.mediaId !== numericId) return;
+		removeReview(detail.reviewId);
+		if ($authUser?.id && detail.userId === $authUser.id) {
+			myReviewId = null;
+			myReviewText = '';
 			myReviewError = null;
 		}
 	}
@@ -1551,15 +1607,30 @@
 							{#each reviews as r (r.id)}
 								{@const authorName = (r.author_name ?? '').trim()}
 								{@const authorLabel = getPublicUserNameOrFallback({ name: authorName || null }, 'Anonymous')}
+								{@const isMyReview = Boolean($authUser?.id && r.user_id === $authUser.id)}
 								<article class="detail-review-item">
 									<div class="detail-review-meta">
-										{#if authorName}
-											<a href={`/stats/${r.user_id}`} class="detail-review-author-link">{authorLabel}</a>
-										{:else}
-											<span>{authorLabel}</span>
+										<div class="detail-review-meta-main">
+											{#if authorName}
+												<a href={`/stats/${r.user_id}`} class="detail-review-author-link">{authorLabel}</a>
+											{:else}
+												<span>{authorLabel}</span>
+											{/if}
+											<span aria-hidden="true">·</span>
+											<span>{fmtReviewDate(r.created_at)}</span>
+										</div>
+										{#if isMyReview}
+											<button
+												type="button"
+												class="detail-review-trash"
+												aria-label="Delete review"
+												title="Delete review"
+												disabled={myReviewSaving}
+												on:click={() => handleReviewDelete(r.id)}
+											>
+												<Trash2Icon class="size-3.5" />
+											</button>
 										{/if}
-										<span aria-hidden="true">·</span>
-										<span>{fmtReviewDate(r.created_at)}</span>
 									</div>
 									<div class="detail-review-body">{r.body}</div>
 								</article>
@@ -2113,6 +2184,36 @@
 		background: rgba(229, 9, 20, 0.24);
 	}
 
+	.detail-review-trash {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		border-radius: 999px;
+		border: 1px solid rgba(248, 250, 252, 0.1);
+		background: rgba(255, 255, 255, 0.03);
+		color: rgba(248, 113, 113, 0.76);
+		cursor: pointer;
+		flex-shrink: 0;
+		transition:
+			background 0.2s ease,
+			transform 0.2s ease,
+			color 0.2s ease;
+	}
+
+	.detail-review-trash:hover {
+		background: rgba(127, 29, 29, 0.24);
+		color: rgba(254, 202, 202, 0.96);
+		transform: translateY(-1px);
+	}
+
+	.detail-review-trash:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		transform: none;
+	}
+
 	.detail-review-error {
 		font-size: 0.75rem;
 		color: rgba(254, 202, 202, 0.92);
@@ -2144,13 +2245,22 @@
 	}
 
 	.detail-review-meta {
-		display: inline-flex;
-		gap: 0.45rem;
-		align-items: baseline;
+		display: flex;
+		justify-content: space-between;
+		gap: 0.75rem;
+		align-items: center;
 		font-size: 0.65rem;
 		letter-spacing: 0.16em;
 		text-transform: uppercase;
 		color: rgba(226, 232, 240, 0.55);
+	}
+
+	.detail-review-meta-main {
+		display: inline-flex;
+		gap: 0.45rem;
+		align-items: baseline;
+		min-width: 0;
+		flex-wrap: wrap;
 	}
 
 	.detail-review-author-link {

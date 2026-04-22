@@ -336,6 +336,22 @@
 			<p>
 				Submitting missing films is also super valuable. However this backlog is still huge, and I like to add stuff gradually.
 			</p>
+
+			<div class="rounded-2xl border border-border bg-background/40 p-5">
+				<h3 class="text-lg font-semibold tracking-tight text-foreground md:text-xl">How the XPop system works</h3>
+				<p class="mt-2 text-sm leading-6 text-muted-foreground md:text-base">
+					XPop is a lightweight reward layer to make archive work feel more fun without turning JUMPFLIX into social media. It tracks meaningful actions that improve discovery and preservation.
+				</p>
+				<ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground md:text-base">
+					<li>Watching items marks progress and earns XPop.</li>
+					<li>Rating and reviewing items earns additional XPop.</li>
+					<li>Content suggestions only add XPop once they are approved.</li>
+				</ul>
+				<p class="mt-3 text-sm leading-6 text-muted-foreground md:text-base">
+					That keeps the score focused on contributions that are verified and useful to the catalog.
+				</p>
+			</div>
+
 			<ul class="list-disc space-y-2 pl-5 text-muted-foreground">
 				<li>
 					For structure ideas, feature requests, new facets, tools, random thoughts, or questions:

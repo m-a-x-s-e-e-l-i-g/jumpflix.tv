@@ -269,14 +269,33 @@ export const load = async ({ params, locals, setHeaders }) => {
 	});
 
 	let suggestionsCount: number | null = null;
+	let suggestionStatusCounts: { approved: number; pending: number; rejected: number } | null = null;
 	if (viewer?.id && viewer.id === userId) {
-		const { count, error: suggestionsError } = await (supabase as any)
-			.from('content_suggestions')
-			.select('id', { count: 'exact', head: true })
-			.eq('created_by', userId)
-			.eq('status', 'approved');
-		if (!suggestionsError) {
-			suggestionsCount = count ?? 0;
+		const [approvedRes, pendingRes, rejectedRes] = await Promise.all([
+			(supabase as any)
+				.from('content_suggestions')
+				.select('id', { count: 'exact', head: true })
+				.eq('created_by', userId)
+				.eq('status', 'approved'),
+			(supabase as any)
+				.from('content_suggestions')
+				.select('id', { count: 'exact', head: true })
+				.eq('created_by', userId)
+				.eq('status', 'pending'),
+			(supabase as any)
+				.from('content_suggestions')
+				.select('id', { count: 'exact', head: true })
+				.eq('created_by', userId)
+				.eq('status', 'rejected')
+		]);
+
+		if (!approvedRes.error && !pendingRes.error && !rejectedRes.error) {
+			suggestionStatusCounts = {
+				approved: approvedRes.count ?? 0,
+				pending: pendingRes.count ?? 0,
+				rejected: rejectedRes.count ?? 0
+			};
+			suggestionsCount = suggestionStatusCounts.approved;
 		}
 	}
 
@@ -297,6 +316,7 @@ export const load = async ({ params, locals, setHeaders }) => {
 			ratingCount: Number(overview.ratings_count) || 0,
 			reviewsCount: Number(overview.reviews_count) || 0,
 			suggestionsCount,
+			suggestionStatusCounts,
 			watchedCount: Number(overview.watched_items) || 0,
 			watchedEpisodesCount: Number(overview.watched_episodes) || 0,
 			watchedMoviesCount: Number(overview.watched_movies) || 0,

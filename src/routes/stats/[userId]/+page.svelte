@@ -50,6 +50,11 @@
 				ratingCount: number;
 				reviewsCount: number;
 				suggestionsCount: number | null;
+				suggestionStatusCounts: {
+					approved: number;
+					pending: number;
+					rejected: number;
+				} | null;
 				watchedCount: number;
 				watchedEpisodesCount: number;
 				watchedMoviesCount: number;
@@ -354,7 +359,7 @@
 			</div>
 			<div class="stats-kpi stats-kpi--community jf-surface-soft rounded-2xl p-4 md:p-5">
 				<div class="stats-kpi__head">
-					<div class="text-xs text-muted-foreground">{m.stats_suggestionsSubmitted()}</div>
+					<div class="text-xs text-muted-foreground">{m.stats_approvedSuggestions()}</div>
 					<div class="stats-kpi__icon-shell" aria-hidden="true">
 						<IconListDetails class="stats-kpi__icon" />
 					</div>
@@ -366,7 +371,13 @@
 						<span use:countUp={{ value: data.stats.suggestionsCount }}>{formatNumber(data.stats.suggestionsCount)}</span>
 					{/if}
 				</div>
-				<div class="mt-1 text-xs text-muted-foreground">{m.stats_contentChangeReports()}</div>
+				<div class="mt-1 text-xs text-muted-foreground">
+					{#if data.stats.suggestionStatusCounts}
+						{m.stats_suggestionsApproved()} {formatNumber(data.stats.suggestionStatusCounts.approved)} · {m.stats_suggestionsPending()} {formatNumber(data.stats.suggestionStatusCounts.pending)} · {m.stats_suggestionsRejected()} {formatNumber(data.stats.suggestionStatusCounts.rejected)}
+					{:else}
+						{m.stats_contentChangeReports()}
+					{/if}
+				</div>
 			</div>
 			<div class="stats-kpi stats-kpi--community jf-surface-soft rounded-2xl p-4 md:p-5">
 				<div class="stats-kpi__head">

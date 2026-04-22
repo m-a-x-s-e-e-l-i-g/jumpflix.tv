@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { countUp } from '$lib/actions/countUp';
 	import * as m from '$lib/paraglide/messages';
 	import {
 		IconCalendarStats,
@@ -244,7 +245,7 @@
 				</div>
 			</div>
 			<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-				{formatNumber(data.catalog.movies ?? 0)}
+				<span use:countUp={{ value: data.catalog.movies ?? 0 }}>{formatNumber(data.catalog.movies ?? 0)}</span>
 			</div>
 		</div>
 		<div class="stats-kpi stats-kpi--catalog jf-surface-soft rounded-2xl p-4 md:p-5">
@@ -255,7 +256,7 @@
 				</div>
 			</div>
 			<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-				{formatNumber(data.catalog.series ?? 0)}
+				<span use:countUp={{ value: data.catalog.series ?? 0 }}>{formatNumber(data.catalog.series ?? 0)}</span>
 			</div>
 		</div>
 		<div class="stats-kpi stats-kpi--catalog jf-surface-soft rounded-2xl p-4 md:p-5">
@@ -266,7 +267,7 @@
 				</div>
 			</div>
 			<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-				{formatNumber(data.catalog.episodes ?? 0)}
+				<span use:countUp={{ value: data.catalog.episodes ?? 0 }}>{formatNumber(data.catalog.episodes ?? 0)}</span>
 			</div>
 			<div class="mt-1 text-xs text-muted-foreground">{m.stats_acrossFilmsAndSeries()}</div>
 		</div>
@@ -278,7 +279,7 @@
 				</div>
 			</div>
 			<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-				{formatNumber(data.music.tracks ?? 0)}
+				<span use:countUp={{ value: data.music.tracks ?? 0 }}>{formatNumber(data.music.tracks ?? 0)}</span>
 			</div>
 			<div class="mt-1 text-xs text-muted-foreground">
 				{m.stats_videoTrackLinksCount({ count: formatNumber(data.music.trackLinks ?? 0) })}
@@ -292,7 +293,7 @@
 				</div>
 			</div>
 			<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-				{formatNumber(data.spots.approvedSpotChapters ?? 0)}
+				<span use:countUp={{ value: data.spots.approvedSpotChapters ?? 0 }}>{formatNumber(data.spots.approvedSpotChapters ?? 0)}</span>
 			</div>
 			<div class="mt-1 text-xs text-muted-foreground">{m.tv_approvedSpotChapters()}</div>
 		</div>
@@ -304,7 +305,7 @@
 				</div>
 			</div>
 			<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-				{formatNumber(data.overview.total_users ?? 0)}
+				<span use:countUp={{ value: data.overview.total_users ?? 0 }}>{formatNumber(data.overview.total_users ?? 0)}</span>
 			</div>
 		</div>
 		<div class="stats-kpi stats-kpi--community jf-surface-soft rounded-2xl p-4 md:p-5">
@@ -315,7 +316,7 @@
 				</div>
 			</div>
 			<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-				{(data.overview.average_rating ?? 0).toFixed(2)}
+				<span use:countUp={{ value: data.overview.average_rating ?? 0, options: { decimalPlaces: 2 } }}>{(data.overview.average_rating ?? 0).toFixed(2)}</span>
 			</div>
 			<div class="mt-1 text-xs text-muted-foreground">
 				{m.stats_ratingsCount({ count: formatNumber(data.overview.ratings_count ?? 0) })}
@@ -329,7 +330,7 @@
 				</div>
 			</div>
 			<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-				{formatNumber(data.overview.reviews_count ?? 0)}
+				<span use:countUp={{ value: data.overview.reviews_count ?? 0 }}>{formatNumber(data.overview.reviews_count ?? 0)}</span>
 			</div>
 			<div class="mt-1 text-xs text-muted-foreground">{m.stats_acrossFilmsAndSeries()}</div>
 		</div>
@@ -341,7 +342,7 @@
 				</div>
 			</div>
 			<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-				{formatNumber(data.peopleStats.creators ?? 0)}
+				<span use:countUp={{ value: data.peopleStats.creators ?? 0 }}>{formatNumber(data.peopleStats.creators ?? 0)}</span>
 			</div>
 			<div class="mt-1 text-xs text-muted-foreground">{m.stats_uniqueNamesInCredits()}</div>
 		</div>
@@ -353,7 +354,7 @@
 				</div>
 			</div>
 			<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-				{formatNumber(data.peopleStats.athletes ?? 0)}
+				<span use:countUp={{ value: data.peopleStats.athletes ?? 0 }}>{formatNumber(data.peopleStats.athletes ?? 0)}</span>
 			</div>
 			<div class="mt-1 text-xs text-muted-foreground">{m.stats_uniqueNamesInStarring()}</div>
 		</div>

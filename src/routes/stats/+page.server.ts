@@ -83,6 +83,7 @@ export const load = async ({ parent, setHeaders }) => {
 		(supabase as any)
 			.from('content_suggestions')
 			.select('created_by')
+			.eq('status', 'approved')
 			.not('created_by', 'is', null)
 	]);
 	const funding = await loadPublicFundingData();

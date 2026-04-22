@@ -273,7 +273,8 @@ export const load = async ({ params, locals, setHeaders }) => {
 		const { count, error: suggestionsError } = await (supabase as any)
 			.from('content_suggestions')
 			.select('id', { count: 'exact', head: true })
-			.eq('created_by', userId);
+			.eq('created_by', userId)
+			.eq('status', 'approved');
 		if (!suggestionsError) {
 			suggestionsCount = count ?? 0;
 		}

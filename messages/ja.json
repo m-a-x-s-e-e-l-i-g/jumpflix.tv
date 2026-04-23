@@ -375,7 +375,7 @@
 	"stats_totalXp": "合計XPop",
 	"stats_xpDescription": "視聴、評価、レビュー、アーカイブへの貢献で獲得したXPop。",
 	"stats_xpEarned": "{xp} XPop",
-	"stats_timeWatchedProgress": "視聴時間（進捗）",
+	"stats_timeWatchedProgress": "総視聴時間",
 	"stats_avgCompletion": "平均完了率 {percent}%",
 	"stats_catalogProgress": "カタログ進捗",
 	"stats_acrossYourWatchedHistory": "あなたの視聴履歴全体",

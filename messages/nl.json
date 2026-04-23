@@ -373,7 +373,7 @@
 	"stats_totalXp": "Totale XPop",
 	"stats_xpDescription": "XPop verdiend met kijken, beoordelen, reviewen en bijdragen aan het archief.",
 	"stats_xpEarned": "{xp} XPop",
-	"stats_timeWatchedProgress": "Kijktijd (voortgang)",
+	"stats_timeWatchedProgress": "Totale kijktijd",
 	"stats_avgCompletion": "Gem. voltooiing {percent}%",
 	"stats_catalogProgress": "Catalogusvoortgang",
 	"stats_acrossYourWatchedHistory": "Over je kijkgeschiedenis",

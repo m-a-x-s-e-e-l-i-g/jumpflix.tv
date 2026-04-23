@@ -43,7 +43,8 @@ export async function importSpotifyTracklistFromYouTube(params: {
 						spotify_url: result.url,
 						title: result.title,
 						artist: result.artist,
-						duration_ms: result.durationMs ?? null
+						duration_ms: result.durationMs ?? null,
+						explicit: result.explicit ?? false
 					},
 					{ onConflict: 'spotify_track_id' }
 				)

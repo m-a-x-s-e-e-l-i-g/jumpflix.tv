@@ -14,7 +14,8 @@ export async function upsertSongFromSpotify(
 				spotify_url: track.url,
 				title: track.title,
 				artist: track.artist,
-				duration_ms: track.durationMs ?? null
+				duration_ms: track.durationMs ?? null,
+				explicit: track.explicit ?? false
 			},
 			{ onConflict: 'spotify_track_id' }
 		)

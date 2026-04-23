@@ -1,5 +1,6 @@
 import { parseTimecodeToSeconds } from '$lib/utils/timecode';
 import type { createSupabaseServiceClient } from '$lib/server/supabaseClient';
+import { fetchSpotifyTrack, hasSpotifyCredentials } from '$lib/server/spotify.server';
 
 function uniqStrings(values: string[]): string[] {
 	const out: string[] = [];
@@ -335,6 +336,17 @@ export async function applyMediaPatch(
 			let targetSongId = songId;
 			if (!targetSongId) {
 				if (spotifyTrackId) {
+					let spotifyExplicit = false;
+					if (hasSpotifyCredentials()) {
+						try {
+							const spotifyTrack = await fetchSpotifyTrack(spotifyTrackId);
+							spotifyUrl = spotifyTrack.url || spotifyUrl;
+							spotifyExplicit = spotifyTrack.explicit ?? false;
+						} catch {
+							// Keep workflow resilient if Spotify lookup fails.
+						}
+					}
+
 					// Spotify-backed: upsert by track id.
 					// NOTE: we intentionally avoid best-effort Spotify searching here; if the user
 					// didn't provide a URL/ID, we treat it as a manual (no-link) track.
@@ -344,7 +356,8 @@ export async function applyMediaPatch(
 							spotify_url: spotifyUrl || `https://open.spotify.com/track/${spotifyTrackId}`,
 							title,
 							artist,
-							duration_ms: null
+							duration_ms: null,
+							explicit: spotifyExplicit
 						} as any,
 						{ onConflict: 'spotify_track_id' }
 					);

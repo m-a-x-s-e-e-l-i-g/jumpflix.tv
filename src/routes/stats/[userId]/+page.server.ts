@@ -274,7 +274,7 @@ export const load = async ({ params, locals, setHeaders }) => {
 		const [approvedRes, pendingRes, rejectedRes] = await Promise.all([
 			(supabase as any)
 				.from('content_suggestions')
-				.select('id', { count: 'exact', head: true })
+				.select('xp_units')
 				.eq('created_by', userId)
 				.eq('status', 'approved'),
 			(supabase as any)
@@ -290,12 +290,18 @@ export const load = async ({ params, locals, setHeaders }) => {
 		]);
 
 		if (!approvedRes.error && !pendingRes.error && !rejectedRes.error) {
+			const approvedCount = Array.isArray(approvedRes.data) ? approvedRes.data.length : 0;
+			const contributionXpUnits = ((approvedRes.data as Array<{ xp_units?: unknown }> | null) ?? [])
+				.reduce((sum, row) => {
+					const units = typeof row.xp_units === 'number' && row.xp_units >= 1 ? Math.floor(row.xp_units) : 1;
+					return sum + units;
+				}, 0);
 			suggestionStatusCounts = {
-				approved: approvedRes.count ?? 0,
+				approved: approvedCount,
 				pending: pendingRes.count ?? 0,
 				rejected: rejectedRes.count ?? 0
 			};
-			suggestionsCount = suggestionStatusCounts.approved;
+			suggestionsCount = contributionXpUnits;
 		}
 	}
 

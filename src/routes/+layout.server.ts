@@ -45,7 +45,7 @@ export const load = async ({ url, locals }) => {
 					.eq('user_id', user.id),
 				(locals.supabase as any)
 					.from('content_suggestions')
-					.select('id', { count: 'exact', head: true })
+					.select('xp_units')
 					.eq('created_by', user.id)
 					.eq('status', 'approved')
 			]);
@@ -55,11 +55,13 @@ export const load = async ({ url, locals }) => {
 			);
 
 			if (xpErrors.length === 0) {
+				const contributionsCount = ((suggestionsRes.data as Array<{ xp_units: number }> | null) ?? [])
+					.reduce((sum, row) => sum + (row.xp_units ?? 1), 0);
 				userXp = calculateUserXp({
 					watchingCount: watchedRes.count ?? 0,
 					ratingCount: ratingsRes.count ?? 0,
 					reviewingCount: reviewsRes.count ?? 0,
-					contributionsCount: suggestionsRes.count ?? 0
+					contributionsCount
 				});
 			} else {
 				console.error('[+layout.server] Failed to load user XP:', xpErrors.map((e) => e.message).join(' | '));

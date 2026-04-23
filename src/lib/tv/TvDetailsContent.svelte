@@ -57,6 +57,7 @@
 	import { slugify } from '$lib/tv/slug';
 	import FacetChips from '$lib/components/FacetChips.svelte';
 	import ContentWarningIcon from '$lib/components/ContentWarningIcon.svelte';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import {
 		CONTENT_WARNING_DESCRIPTIONS,
 		CONTENT_WARNING_LABELS
@@ -1121,18 +1122,29 @@
 						</a>
 					{/if}
 					{#if detailContentWarnings.length}
-						<div class="detail-warning-list" aria-label="Content warnings">
-							{#each detailContentWarnings as warning (warning.key)}
-								<span
-									class={`detail-warning-badge detail-warning-badge--${warning.key}`}
-									title={`${warning.label}: ${warning.description}`}
-									aria-label={`${warning.label}: ${warning.description}`}
-								>
-									<span class="sr-only">{warning.label}</span>
-									<ContentWarningIcon warning={warning.key} className="h-[0.9rem] w-[0.9rem]" />
-								</span>
-							{/each}
-						</div>
+						<Tooltip.Provider disableCloseOnTriggerClick={true}>
+							<div class="detail-warning-list" aria-label="Content warnings">
+								{#each detailContentWarnings as warning (warning.key)}
+									<Tooltip.Root>
+										<Tooltip.Trigger>
+											<span
+												class={`detail-warning-badge detail-warning-badge--${warning.key}`}
+												aria-label={`${warning.label}: ${warning.description}`}
+											>
+												<span class="sr-only">{warning.label}</span>
+												<ContentWarningIcon warning={warning.key} className="h-[0.9rem] w-[0.9rem]" />
+											</span>
+										</Tooltip.Trigger>
+										<Tooltip.Content class="border border-gray-700 bg-gray-900 text-white" arrowClasses="bg-gray-900">
+											{#snippet children()}
+												<p class="font-medium">{warning.label}</p>
+												<p class="detail-warning-tooltip-text">{warning.description}</p>
+											{/snippet}
+										</Tooltip.Content>
+									</Tooltip.Root>
+								{/each}
+							</div>
+						</Tooltip.Provider>
 					{/if}
 				</div>
 			</div>
@@ -1768,6 +1780,12 @@
 	.detail-warning-badge :global(svg) {
 		width: 22px;
 		height: 22px;
+	}
+
+	.detail-warning-tooltip-text {
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		max-width: 16rem;
 	}
 
 	.detail-pill {

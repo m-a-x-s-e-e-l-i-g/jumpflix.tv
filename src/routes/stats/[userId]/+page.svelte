@@ -49,7 +49,7 @@
 				averageRating: number;
 				ratingCount: number;
 				reviewsCount: number;
-				suggestionsCount: number | null;
+				approvedSuggestionsCount: number | null;
 				suggestionStatusCounts: {
 					approved: number;
 					pending: number;
@@ -309,7 +309,7 @@
 					{formatDuration(data.stats.totalPositionSeconds)}
 				</div>
 				<div class="mt-1 text-xs text-muted-foreground">
-					{m.stats_avgCompletion({ percent: String(Math.round(data.stats.avgPercentWatched)) })}
+					{m.stats_acrossYourWatchedHistory()}
 				</div>
 			</div>
 			<div class="stats-kpi stats-kpi--catalog jf-surface-soft rounded-2xl p-4 md:p-5">
@@ -365,10 +365,10 @@
 					</div>
 				</div>
 				<div class="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-					{#if data.stats.suggestionsCount === null}
+					{#if data.stats.approvedSuggestionsCount === null}
 						—
 					{:else}
-						<span use:countUp={{ value: data.stats.suggestionsCount }}>{formatNumber(data.stats.suggestionsCount)}</span>
+						<span use:countUp={{ value: data.stats.approvedSuggestionsCount }}>{formatNumber(data.stats.approvedSuggestionsCount)}</span>
 					{/if}
 				</div>
 				<div class="mt-1 text-xs text-muted-foreground">

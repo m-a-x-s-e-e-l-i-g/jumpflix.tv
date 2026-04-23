@@ -375,7 +375,7 @@
 	"stats_totalXp": "Total XPop",
 	"stats_xpDescription": "XPop earned from watching, rating, reviewing, and contributing to the archive.",
 	"stats_xpEarned": "{xp} XPop",
-	"stats_timeWatchedProgress": "Time watched (progress)",
+	"stats_timeWatchedProgress": "Total watch time",
 	"stats_avgCompletion": "Avg completion {percent}%",
 	"stats_catalogProgress": "Catalog progress",
 	"stats_acrossYourWatchedHistory": "Across your watched history",

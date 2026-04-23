@@ -268,48 +268,50 @@ export const load = async ({ params, locals, setHeaders }) => {
 		};
 	});
 
-	let suggestionsCount: number | null = null;
+	let approvedSuggestionsCount: number | null = null;
+	let contributionXpUnits = 0;
 	let suggestionStatusCounts: { approved: number; pending: number; rejected: number } | null = null;
-	if (viewer?.id && viewer.id === userId) {
-		const [approvedRes, pendingRes, rejectedRes] = await Promise.all([
-			(supabase as any)
-				.from('content_suggestions')
-				.select('xp_units')
-				.eq('created_by', userId)
-				.eq('status', 'approved'),
-			(supabase as any)
-				.from('content_suggestions')
-				.select('id', { count: 'exact', head: true })
-				.eq('created_by', userId)
-				.eq('status', 'pending'),
-			(supabase as any)
-				.from('content_suggestions')
-				.select('id', { count: 'exact', head: true })
-				.eq('created_by', userId)
-				.eq('status', 'rejected')
-		]);
+	const [approvedRes, pendingRes, rejectedRes] = await Promise.all([
+		(serviceSupabase as any)
+			.from('content_suggestions')
+			.select('xp_units')
+			.eq('created_by', userId)
+			.eq('status', 'approved'),
+		(serviceSupabase as any)
+			.from('content_suggestions')
+			.select('id', { count: 'exact', head: true })
+			.eq('created_by', userId)
+			.eq('status', 'pending'),
+		(serviceSupabase as any)
+			.from('content_suggestions')
+			.select('id', { count: 'exact', head: true })
+			.eq('created_by', userId)
+			.eq('status', 'rejected')
+	]);
 
-		if (!approvedRes.error && !pendingRes.error && !rejectedRes.error) {
-			const approvedCount = Array.isArray(approvedRes.data) ? approvedRes.data.length : 0;
-			const contributionXpUnits = ((approvedRes.data as Array<{ xp_units?: unknown }> | null) ?? [])
-				.reduce((sum, row) => {
-					const units = typeof row.xp_units === 'number' && row.xp_units >= 1 ? Math.floor(row.xp_units) : 1;
-					return sum + units;
-				}, 0);
-			suggestionStatusCounts = {
-				approved: approvedCount,
-				pending: pendingRes.count ?? 0,
-				rejected: rejectedRes.count ?? 0
-			};
-			suggestionsCount = contributionXpUnits;
-		}
+	if (!approvedRes.error && !pendingRes.error && !rejectedRes.error) {
+		const approvedCount = Array.isArray(approvedRes.data) ? approvedRes.data.length : 0;
+		approvedSuggestionsCount = approvedCount;
+		contributionXpUnits = ((approvedRes.data as Array<{ xp_units?: unknown }> | null) ?? []).reduce(
+			(sum, row) => {
+				const units =
+					typeof row.xp_units === 'number' && row.xp_units >= 1 ? Math.floor(row.xp_units) : 1;
+				return sum + units;
+			},
+			0
+		);
+		suggestionStatusCounts = {
+			approved: approvedCount,
+			pending: pendingRes.count ?? 0,
+			rejected: rejectedRes.count ?? 0
+		};
 	}
 
 	const xp = calculateUserXp({
 		watchingCount: Number(overview.watched_items) || 0,
 		ratingCount: Number(overview.ratings_count) || 0,
 		reviewingCount: Number(overview.reviews_count) || 0,
-		contributionsCount: suggestionsCount ?? 0
+		contributionsCount: contributionXpUnits
 	});
 
 	return {
@@ -321,7 +323,7 @@ export const load = async ({ params, locals, setHeaders }) => {
 			averageRating: Number(overview.average_rating) || 0,
 			ratingCount: Number(overview.ratings_count) || 0,
 			reviewsCount: Number(overview.reviews_count) || 0,
-			suggestionsCount,
+			approvedSuggestionsCount,
 			suggestionStatusCounts,
 			watchedCount: Number(overview.watched_items) || 0,
 			watchedEpisodesCount: Number(overview.watched_episodes) || 0,

@@ -106,6 +106,10 @@ export function computeSuggestionXpUnits(kind: string, payload: unknown): number
 	}
 
 	if (kind === 'spot_chapter') {
+		// The suggestions API only allows one spot per submission (one spot_chapter
+		// per request), so every spot_chapter suggestion always has exactly 1 unit.
+		// Submitting N spots requires N separate API calls, giving N × 1 = N units
+		// total — which is the "more spots → more XP" behaviour described in the docs.
 		return 1;
 	}
 

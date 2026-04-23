@@ -347,7 +347,7 @@
 					<li>Rating and reviewing items earns additional XPop.</li>
 					<li>Content suggestions only add XPop once they are approved.</li>
 					<li>Facet suggestions award XPop per facet type changed (e.g. setting the type and the environment in one submission earns the same as two separate submissions).</li>
-					<li>Spot suggestions award XPop per spot — adding more spots to a video earns more.</li>
+					<li>Spot suggestions award XPop per spot — each spot submission earns XPop, so adding more spots to a video earns more in total.</li>
 					<li>Track suggestions award XPop per song added, edited, or removed.</li>
 				</ul>
 				<p class="mt-3 text-sm leading-6 text-muted-foreground md:text-base">

@@ -412,12 +412,12 @@ export const load = async ({ parent, setHeaders }) => {
 		incrementUserCount(reviewsCounts, row.user_id);
 	}
 
-	const suggestionXpUnits = new Map<string, number>();
+	const userSuggestionXpUnits = new Map<string, number>();
 	for (const row of (suggestionsByUserRes.data as Array<{ created_by: unknown; xp_units?: unknown }> | null) ?? []) {
 		const userId = typeof row.created_by === 'string' ? row.created_by.trim() : '';
 		if (!userId) continue;
 		const units = typeof row.xp_units === 'number' && row.xp_units >= 1 ? Math.floor(row.xp_units) : 1;
-		suggestionXpUnits.set(userId, (suggestionXpUnits.get(userId) ?? 0) + units);
+		userSuggestionXpUnits.set(userId, (userSuggestionXpUnits.get(userId) ?? 0) + units);
 	}
 
 	const contributorUserIds = Array.from(
@@ -425,7 +425,7 @@ export const load = async ({ parent, setHeaders }) => {
 			...watchedCounts.keys(),
 			...ratingsCounts.keys(),
 			...reviewsCounts.keys(),
-			...suggestionXpUnits.keys()
+			...userSuggestionXpUnits.keys()
 		])
 	);
 
@@ -481,7 +481,7 @@ export const load = async ({ parent, setHeaders }) => {
 			const watched_count = watchedCounts.get(userId) ?? 0;
 			const ratings_count = ratingsCounts.get(userId) ?? 0;
 			const reviews_count = reviewsCounts.get(userId) ?? 0;
-			const suggestions_count = suggestionXpUnits.get(userId) ?? 0;
+			const suggestions_count = userSuggestionXpUnits.get(userId) ?? 0;
 			const xp = calculateUserXp({
 				watchingCount: watched_count,
 				ratingCount: ratings_count,

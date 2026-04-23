@@ -55,8 +55,11 @@ export const load = async ({ url, locals }) => {
 			);
 
 			if (xpErrors.length === 0) {
-				const contributionsCount = ((suggestionsRes.data as Array<{ xp_units: number }> | null) ?? [])
-					.reduce((sum, row) => sum + (row.xp_units ?? 1), 0);
+				const contributionsCount = ((suggestionsRes.data as Array<{ xp_units?: unknown }> | null) ?? [])
+					.reduce((sum, row) => {
+						const units = typeof row.xp_units === 'number' && row.xp_units >= 1 ? Math.floor(row.xp_units) : 1;
+						return sum + units;
+					}, 0);
 				userXp = calculateUserXp({
 					watchingCount: watchedRes.count ?? 0,
 					ratingCount: ratingsRes.count ?? 0,

@@ -7,6 +7,7 @@ import {
 	applyMediaPatch,
 	applyNewEpisode,
 	applyNewSeason,
+	computeSuggestionXpUnits,
 	type MediaPatch
 } from '$lib/server/content-suggestions';
 import { resolveSpotId } from '$lib/server/parkourSpot';
@@ -80,7 +81,8 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 		contact_email: contactEmail ?? null,
 		source_path: url.pathname,
 		status: 'pending',
-		created_by: user.id
+		created_by: user.id,
+		xp_units: computeSuggestionXpUnits(kind ?? '', payload)
 	};
 
 	const isAdmin = isAdminUser(user);

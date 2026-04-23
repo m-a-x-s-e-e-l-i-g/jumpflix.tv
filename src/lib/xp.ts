@@ -2,7 +2,7 @@ export const USER_XP_WEIGHTS = {
 	watching: 5,
 	rating: 15,
 	reviewing: 25,
-	contributions: 40
+	contributions: 10
 } as const;
 
 export type UserXpKind = keyof typeof USER_XP_WEIGHTS;

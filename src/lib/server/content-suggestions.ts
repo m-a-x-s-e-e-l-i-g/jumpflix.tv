@@ -34,6 +34,103 @@ function extractSpotifyTrackId(urlOrId: string): string | null {
 	return match?.[1] ?? null;
 }
 
+// ---------------------------------------------------------------------------
+// XP unit computation
+// ---------------------------------------------------------------------------
+
+// Facet-type fields that each count as a separate XP unit when changed.
+// Note: content_warnings is intentionally NOT in this list — it is handled
+// separately and always contributes at most 1 unit regardless of how many
+// warnings are included (see computeSuggestionXpUnits).
+const FACET_SET_FIELDS = [
+	'facet_type',
+	'facet_environment',
+	'facet_focus',
+	'facet_production',
+	'facet_presentation',
+	'facet_medium'
+] as const;
+
+// Array-type facet fields (live under add/remove).
+const FACET_ARRAY_FIELDS = ['facet_movement'] as const;
+
+/**
+ * Compute the number of XP units for a single content suggestion.
+ *
+ * Rules:
+ *  - `facets` kind: 1 unit per distinct facet-type field being set/modified,
+ *    with `content_warnings` (content ratings) capped at 1 unit total.
+ *  - `spot_chapter` kind: 1 unit (one spot per suggestion).
+ *  - `tracks` kind: 1 unit per song affected
+ *    (`track` + `tracks_add` entries + `tracks_remove` entries).
+ *  - All other kinds (`description`, `people`, `new_season`, `new_episode`,
+ *    etc.): 1 unit.
+ *
+ * Minimum returned value is 1 so that every approved suggestion always
+ * contributes at least some XP.
+ */
+export function computeSuggestionXpUnits(kind: string, payload: unknown): number {
+	if (kind === 'facets') {
+		const p = payload && typeof payload === 'object' ? (payload as Record<string, any>) : {};
+		const set = p.set && typeof p.set === 'object' ? (p.set as Record<string, any>) : {};
+		const add = p.add && typeof p.add === 'object' ? (p.add as Record<string, any>) : {};
+		const remove = p.remove && typeof p.remove === 'object' ? (p.remove as Record<string, any>) : {};
+
+		let units = 0;
+
+		// Single-value facet fields (from `set`).
+		for (const field of FACET_SET_FIELDS) {
+			if (field in set) units += 1;
+		}
+
+		// Array facet fields (from `add` or `remove`).
+		for (const field of FACET_ARRAY_FIELDS) {
+			const inAdd = field in add && Array.isArray(add[field]) && (add[field] as unknown[]).length > 0;
+			const inRemove =
+				field in remove && Array.isArray(remove[field]) && (remove[field] as unknown[]).length > 0;
+			if (inAdd || inRemove) units += 1;
+		}
+
+		// Content ratings (content_warnings) count as at most 1 unit.
+		const warningsInAdd =
+			'content_warnings' in add &&
+			Array.isArray(add['content_warnings']) &&
+			(add['content_warnings'] as unknown[]).length > 0;
+		const warningsInRemove =
+			'content_warnings' in remove &&
+			Array.isArray(remove['content_warnings']) &&
+			(remove['content_warnings'] as unknown[]).length > 0;
+		if (warningsInAdd || warningsInRemove) units += 1;
+
+		return Math.max(1, units);
+	}
+
+	if (kind === 'spot_chapter') {
+		// The suggestions API only allows one spot per submission (one spot_chapter
+		// per request), so every spot_chapter suggestion always has exactly 1 unit.
+		// Submitting N spots requires N separate API calls, giving N × 1 = N units
+		// total — which is the "more spots → more XP" behaviour described in the docs.
+		return 1;
+	}
+
+	if (kind === 'tracks') {
+		const p = payload && typeof payload === 'object' ? (payload as Record<string, any>) : {};
+		let songs = 0;
+
+		// Single-track shorthand (action: add | remove | edit).
+		if (p.track && typeof p.track === 'object') songs += 1;
+
+		// Bulk add / remove arrays.
+		if (Array.isArray(p.tracks_add)) songs += (p.tracks_add as unknown[]).length;
+		if (Array.isArray(p.tracks_remove)) songs += (p.tracks_remove as unknown[]).length;
+
+		return Math.max(1, songs);
+	}
+
+	// description, people, new_season, new_episode, and any future kinds.
+	return 1;
+}
+
 export type MediaPatch = {
 	set?: Record<string, any>;
 	add?: Record<string, any>;

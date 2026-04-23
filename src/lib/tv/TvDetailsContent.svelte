@@ -1668,6 +1668,7 @@
 	.detail-wrap {
 		display: grid;
 		gap: 2rem;
+		overflow-x: hidden;
 	}
 
 	.detail-header {
@@ -1831,6 +1832,7 @@
 	.detail-grid {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
+			overflow-x: hidden;
 		gap: 2rem;
 	}
 
@@ -2042,6 +2044,7 @@
 		display: grid;
 		gap: 1.6rem;
 		align-items: start;
+			overflow-x: hidden;
 		min-width: 0;
 	}
 
@@ -2724,24 +2727,94 @@
 	}
 
 	@media (orientation: landscape) and (max-height: 500px) {
-		.detail-aside {
-			grid-template-columns: auto minmax(0, 1fr);
-			align-items: start;
-			justify-items: stretch;
+		.detail-wrap {
+			display: grid;
 			gap: 1rem;
+			grid-template-rows: auto 1fr;
 		}
 
-		.detail-poster {
-			width: clamp(160px, 46vh, 240px);
-			justify-self: start;
+		.detail-header {
+			position: relative;
+			padding-top: 1rem;
+			padding-bottom: 0.5rem;
+			grid-row: 1;
+		}
+
+		.detail-header-top {
+			flex-direction: row;
+			align-items: center;
+			gap: 0.75rem;
+			justify-content: space-between;
+		}
+
+		.detail-back {
+			margin: 0;
+			flex-shrink: 0;
+		}
+
+		.detail-title {
+			margin-bottom: 0.25rem;
+		}
+
+		.detail-meta {
+			letter-spacing: 0.12em;
+			gap: 0.5rem;
+			flex-wrap: wrap;
+		}
+
+		:global(.detail-suggest) {
+			position: static;
+			flex-shrink: 0;
+			z-index: auto;
+			margin: 0;
+			transform: none;
+			width: 32px;
+			height: 32px;
+		}
+
+		.detail-grid {
+			grid-template-columns: auto 1fr;
+			gap: 1rem;
+			align-items: start;
+			grid-row: 2;
+			overflow-y: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+
+		.detail-aside {
+			display: grid;
+			grid-template-columns: 1fr;
+			grid-template-rows: auto auto auto;
+			gap: 0.6rem;
+			align-items: start;
+			justify-items: stretch;
+			min-width: 0;
 			grid-column: 1;
 			grid-row: 1 / span 2;
 		}
 
+		.detail-poster {
+			width: clamp(140px, 35vh, 180px);
+			justify-self: center;
+			grid-column: 1;
+			grid-row: 1;
+			aspect-ratio: 2 / 3;
+		}
+
 		.detail-overview--aside {
 			display: block;
-			grid-column: 2;
-			grid-row: 1;
+			grid-column: 1;
+			grid-row: 2;
+			min-width: 0;
+		}
+
+		.detail-overview--aside h2 {
+			margin-bottom: 0.3rem;
+		}
+
+		.detail-overview--aside p {
+			line-height: 1.3;
+			margin-top: 0.3rem;
 		}
 
 		.detail-main .detail-section.detail-overview {
@@ -2749,11 +2822,127 @@
 		}
 
 		.detail-actions {
+			width: 100%;
 			max-width: none;
 			margin: 0;
 			align-self: start;
+			grid-column: 1;
+			grid-row: 3;
+			display: flex;
+			gap: 0.4rem;
+			flex-direction: column;
+		}
+
+		.detail-play {
+			width: 100%;
+			padding: 0.5rem 0.6rem;
+		}
+
+		.detail-main {
 			grid-column: 2;
+			grid-row: 1 / span 2;
+			min-width: 0;
+			gap: 1rem;
+		}
+
+		.detail-review-sidebar {
+			grid-column: 1 / -1;
+			grid-row: 3;
+			min-width: 0;
+			max-width: 100%;
+			min-height: 0;
+			margin-top: 0;
+			gap: 0.5rem;
+		}
+
+		.detail-section p {
+			line-height: 1.4;
+			margin-top: 0.5rem;
+		}
+
+		.detail-episodes {
+			max-height: 280px;
+		}
+	}
+
+	@media (max-width: 844px) and (orientation: landscape) and (max-height: 550px) {
+		.detail-wrap {
+			display: grid;
+			gap: 0.75rem;
+			grid-template-rows: auto 1fr;
+		}
+
+		.detail-header {
+			padding-top: 0.75rem;
+			padding-bottom: 0.4rem;
+		}
+
+		.detail-meta {
+			gap: 0.35rem;
+		}
+
+		:global(.detail-suggest) {
+			width: 28px;
+			height: 28px;
+		}
+
+		.detail-grid {
+			grid-template-columns: clamp(120px, 30vh, 160px) minmax(0, 1fr);
+			gap: 0.75rem;
+		}
+
+		.detail-aside {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: auto auto;
+			gap: 0.5rem;
+			grid-column: 1;
+			grid-row: 1;
+			align-content: start;
+		}
+
+		.detail-poster {
+			width: 100%;
+			grid-column: 1;
+			grid-row: 1;
+			justify-self: stretch;
+		}
+
+		.detail-overview--aside {
+			display: none;
+		}
+
+		.detail-actions {
+			grid-column: 1;
 			grid-row: 2;
+			gap: 0.35rem;
+		}
+
+		.detail-play {
+			padding: 0.35rem 0.5rem;
+		}
+
+		.detail-main {
+			grid-column: 2;
+			grid-row: 1;
+			gap: 0.8rem;
+		}
+
+		.detail-main .detail-section.detail-overview {
+			display: block;
+		}
+
+		.detail-review-sidebar {
+			grid-column: 1;
+			grid-row: 2;
+		}
+
+		.detail-review-sidebar {
+			grid-column: 1 / -1;
+		}
+
+		.detail-section p {
+			margin-top: 0.4rem;
 		}
 	}
 

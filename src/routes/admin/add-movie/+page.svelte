@@ -9,8 +9,8 @@
 
 	let { form }: { form: ActionData } = $props();
 
-	// YouTube URL state
-	let youtubeUrl = $state('');
+	// Source URL state (YouTube or Vimeo)
+	let sourceUrl = $state('');
 	let fetchingMeta = $state(false);
 	let metaError = $state('');
 	let metaFetched = $state(false);
@@ -23,7 +23,9 @@
 	let year = $state('');
 	let duration = $state('');
 	let videoId = $state('');
+	let vimeoId = $state('');
 	let posterUrl = $state('');
+	let posterFilename = $state('');
 	let posterTouched = $state(false);
 	let blurhash = $state('');
 	let externalUrl = $state('');
@@ -57,6 +59,10 @@
 	let youtubeThumbIndex = $state(0);
 	let youtubeThumbFailed = $state(false);
 	let lastThumbVideoId = $state('');
+
+	// Vimeo thumbnail preview
+	let vimeoThumbUrl = $state('');
+	let vimeoThumbFailed = $state(false);
 
 	// Blurhash state
 	let generatingBlurhash = $state(false);
@@ -121,7 +127,17 @@
 	function updatePosterUrlFromSlug() {
 		if (posterTouched) return;
 		const s = slug.trim();
+		posterFilename = s ? `${s}.webp` : '';
 		posterUrl = s ? `/images/posters/${s}.webp` : '';
+	}
+
+	function updatePosterUrlFromFilename() {
+		const fn = posterFilename.trim();
+		posterUrl = fn ? `/images/posters/${fn}` : '';
+	}
+
+	function isHttpUrl(value: string): boolean {
+		return /^https?:\/\//i.test(value.trim());
 	}
 
 	function updateYouTubeThumbFromVideoId(idRaw: string) {
@@ -206,30 +222,108 @@
 		return null;
 	}
 
+	function extractVimeoId(url: string): string | null {
+		const trimmed = url.trim();
+		if (!trimmed) return null;
+
+		if (/^\d+$/.test(trimmed)) return trimmed;
+
+		const rawInput = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(trimmed)
+			? trimmed
+			: /^([\w-]+\.)+vimeo\.com/i.test(trimmed)
+				? `https://${trimmed}`
+				: trimmed;
+
+		try {
+			const u = new URL(rawInput);
+			const host = u.hostname.toLowerCase();
+			if (!host.endsWith('vimeo.com')) return null;
+
+			const clipId = u.searchParams.get('clip_id')?.trim();
+			if (clipId && /^\d+$/.test(clipId)) return clipId;
+
+			const parts = u.pathname.split('/').filter(Boolean);
+			for (let i = parts.length - 1; i >= 0; i--) {
+				const segment = parts[i] ?? '';
+				if (/^\d+$/.test(segment)) return segment;
+			}
+		} catch {
+			// not a URL
+		}
+
+		return null;
+	}
+
+	type ParsedSource = {
+		provider: 'youtube' | 'vimeo';
+		id: string;
+		externalUrl: string;
+	};
+
+	function parseSource(url: string): ParsedSource | null {
+		const ytId = extractVideoId(url);
+		if (ytId) {
+			return {
+				provider: 'youtube',
+				id: ytId,
+				externalUrl: `https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}`
+			};
+		}
+
+		const vmId = extractVimeoId(url);
+		if (vmId) {
+			return {
+				provider: 'vimeo',
+				id: vmId,
+				externalUrl: `https://vimeo.com/${encodeURIComponent(vmId)}`
+			};
+		}
+
+		return null;
+	}
+
 	async function generatePosterFromThumbnail() {
-		if (!isYouTubeVideoId(videoId)) {
-			posterGenerationError = 'Set a valid YouTube video ID first.';
+		const hasYouTube = isYouTubeVideoId(videoId);
+		const hasVimeo = vimeoId.trim().length > 0;
+
+		if (!hasYouTube && !hasVimeo) {
+			posterGenerationError = 'Set a valid YouTube or Vimeo video ID first.';
 			return;
 		}
-		if (!slug.trim()) {
-			posterGenerationError = 'Set a slug before generating a poster.';
+
+		const filename = posterFilename.trim() || slug.trim();
+		if (!filename) {
+			posterGenerationError = 'Set a poster filename or slug before generating a poster.';
 			return;
 		}
+
+		const filenameNoExtension = filename.replace(/\.webp$/i, '');
 
 		generatingPoster = true;
 		posterGenerationError = '';
 		generatedPosterSourceLabel = '';
 
 		try {
+			const requestBody: Record<string, unknown> = {
+				slug: filenameNoExtension,
+				title: title.trim(),
+				includeTitle: includeTitleInPosterPrompt
+			};
+
+			if (hasYouTube) {
+				requestBody.videoId = videoId.trim();
+			} else if (hasVimeo) {
+				const sourceThumb = vimeoThumbUrl.trim() || (isHttpUrl(posterUrl) ? posterUrl.trim() : '');
+				if (!sourceThumb) {
+					throw new Error('Load Vimeo metadata first so a thumbnail can be used for poster generation.');
+				}
+				requestBody.thumbnailUrl = sourceThumb;
+			}
+
 			const res = await fetch('/api/admin/generate-poster', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({
-					videoId: videoId.trim(),
-					slug: slug.trim(),
-					title: title.trim(),
-					includeTitle: includeTitleInPosterPrompt
-				})
+				body: JSON.stringify(requestBody)
 			});
 
 			if (!res.ok) {
@@ -249,8 +343,10 @@
 				sourceHeight?: number;
 			};
 
-			posterUrl = data.posterUrl || posterUrl;
-			posterTouched = true;
+			posterUrl = data.posterUrl || posterUrl;				if (data.posterUrl) {
+					const match = data.posterUrl.match(/\/([^\/]+)$/);
+					if (match?.[1]) posterFilename = match[1];
+				}			posterTouched = true;
 			generatedPosterPreviewUrl = data.previewUrl || '';
 			if (data.sourceThumbnailUrl && data.sourceWidth && data.sourceHeight) {
 				generatedPosterSourceLabel = `${data.sourceWidth}×${data.sourceHeight} thumbnail used`;
@@ -264,15 +360,17 @@
 	}
 
 	async function fetchMetadata() {
-		const vid = extractVideoId(youtubeUrl);
-		if (!vid) {
-			metaError = 'Could not extract a valid YouTube video ID from this URL.';
+		const source = parseSource(sourceUrl);
+		if (!source) {
+			metaError = 'Could not extract a valid YouTube or Vimeo video ID from this URL.';
 			return;
 		}
 		fetchingMeta = true;
 		metaError = '';
 		try {
-			const res = await fetch(`/api/admin/youtube-metadata?videoId=${encodeURIComponent(vid)}`);
+			const endpoint =
+				source.provider === 'youtube' ? '/api/admin/youtube-metadata' : '/api/admin/vimeo-metadata';
+			const res = await fetch(`${endpoint}?videoId=${encodeURIComponent(source.id)}`);
 			if (!res.ok) {
 				const body: unknown = await res.json().catch(() => ({}));
 				const msg =
@@ -287,7 +385,22 @@
 			year = data.year || '';
 			duration = data.duration || '';
 			creators = data.author || '';
-			videoId = data.videoId || vid;
+			if (source.provider === 'youtube') {
+				provider = source.provider;
+				externalUrl = source.externalUrl;
+				videoId = data.videoId || source.id;
+				vimeoId = '';
+				vimeoThumbUrl = '';
+				vimeoThumbFailed = false;
+			} else {
+				provider = '';
+				externalUrl = '';
+				vimeoId = data.videoId || source.id;
+				videoId = '';
+				const thumbUrl = typeof data.thumbnailUrl === 'string' ? data.thumbnailUrl.trim() : '';
+				vimeoThumbUrl = thumbUrl;
+				vimeoThumbFailed = false;
+			}
 			if (!slugTouched) {
 				slug = year ? `${slugify(title)}-${year}` : slugify(title);
 			}
@@ -430,7 +543,7 @@
 		<p class="jf-label">Admin desk</p>
 		<h1 class="mt-2 text-3xl font-semibold text-white">Add New Film</h1>
 		<p class="mt-2 text-sm text-white/60">
-			Paste a YouTube URL to auto-populate metadata, then review and save.
+			Paste a YouTube or Vimeo URL to auto-populate metadata, then review and save.
 		</p>
 	</div>
 
@@ -441,21 +554,21 @@
 		</div>
 	{/if}
 
-	<!-- Step 1: YouTube URL -->
+	<!-- Step 1: Source URL -->
 	<div class="jf-surface-soft mt-6 rounded-2xl p-5">
-		<div class="mb-4 text-sm font-medium text-white/80">Step 1 — Paste a YouTube URL</div>
+		<div class="mb-4 text-sm font-medium text-white/80">Step 1 — Paste a YouTube or Vimeo URL</div>
 		<div class="flex gap-2">
 			<input
 				type="url"
-				placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
-				bind:value={youtubeUrl}
+				placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+				bind:value={sourceUrl}
 				onkeydown={(e) => e.key === 'Enter' && fetchMetadata()}
 				class="min-w-0 flex-1 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
 			/>
 			<button
 				type="button"
 				onclick={fetchMetadata}
-				disabled={fetchingMeta || !youtubeUrl.trim()}
+				disabled={fetchingMeta || !sourceUrl.trim()}
 				class="inline-flex items-center justify-center rounded-xl bg-[#e50914] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#ff1a27] disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				{fetchingMeta ? 'Fetching…' : 'Fetch Metadata'}
@@ -547,6 +660,17 @@
 					</label>
 
 					<label class="block space-y-1.5">
+						<span class="text-xs text-white/60">Vimeo ID</span>
+						<input
+							type="text"
+							name="vimeo_id"
+							bind:value={vimeoId}
+							placeholder="Vimeo video ID"
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						/>
+					</label>
+
+					<label class="block space-y-1.5 sm:col-span-2">
 						<span class="text-xs text-white/60">Duration</span>
 						<input
 							type="text"
@@ -558,29 +682,10 @@
 					</label>
 				</div>
 
-				<label class="block space-y-1.5">
-					<span class="text-xs text-white/60">External URL</span>
-					<input
-						type="url"
-						name="external_url"
-						bind:value={externalUrl}
-						placeholder="https://www.youtube.com/watch?v=..."
-						class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
-					/>
-				</label>
+				<input type="hidden" name="external_url" value={externalUrl} />
+				<input type="hidden" name="provider" value={provider} />
 
 				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<label class="block space-y-1.5">
-						<span class="text-xs text-white/60">Provider</span>
-						<input
-							type="text"
-							name="provider"
-							bind:value={provider}
-							placeholder="e.g. youtube, vimeo"
-							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
-						/>
-					</label>
-
 					<label class="block space-y-1.5">
 						<span class="text-xs text-white/60">Trakt</span>
 						<input
@@ -601,7 +706,7 @@
 
 			<div class="space-y-3">
 				<label class="block space-y-1.5">
-					<span class="text-xs text-white/60">Poster URL</span>
+					<span class="text-xs text-white/60">Thumbnail Preview</span>
 					{#if youtubeThumbUrl && !youtubeThumbFailed}
 						<img
 							src={youtubeThumbUrl}
@@ -616,19 +721,45 @@
 						>
 							Preview unavailable
 						</div>
+					{:else if vimeoThumbUrl && !vimeoThumbFailed}
+						<img
+							src={vimeoThumbUrl}
+							alt="Vimeo thumbnail preview"
+							class="mb-3 aspect-video w-full max-w-md rounded-lg border border-white/10 object-cover"
+							onerror={() => (vimeoThumbFailed = true)}
+						/>
+					{:else if vimeoThumbUrl && vimeoThumbFailed}
+						<div
+							class="mb-3 flex aspect-video w-full max-w-md items-center justify-center rounded-lg border border-white/10 bg-white/5 text-xs text-white/40"
+						>
+							Preview unavailable
+						</div>
 					{/if}
+					<input type="hidden" name="thumbnail" value={posterUrl} />
+					<p class="text-xs text-white/50">Poster path will be generated from the filename below.</p>
+				</label>
+
+				<label class="block space-y-1.5">
+					<span class="text-xs text-white/60">Filename</span>
 					<input
 						type="text"
-						name="thumbnail"
-						bind:value={posterUrl}
+						bind:value={posterFilename}
 						oninput={() => {
 							posterTouched = true;
+							updatePosterUrlFromFilename();
 							generatedPosterPreviewUrl = '';
 							generatedPosterSourceLabel = '';
 						}}
-						placeholder="/images/posters/your-slug.webp"
+						onblur={() => {
+							if (posterFilename && !/\.webp$/i.test(posterFilename.trim())) {
+								posterFilename = `${posterFilename.trim()}.webp`;
+								updatePosterUrlFromFilename();
+							}
+						}}
+						placeholder="e.g. my-movie-2024.webp"
 						class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
 					/>
+					<p class="text-xs text-white/50">Filename for generated poster (no path needed)</p>
 				</label>
 
 				<label class="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
@@ -656,7 +787,7 @@
 					<button
 						type="button"
 						onclick={generatePosterFromThumbnail}
-						disabled={generatingPoster || !isYouTubeVideoId(videoId) || !slug.trim()}
+					disabled={generatingPoster || (!isYouTubeVideoId(videoId) && !vimeoId.trim()) || (!slug.trim() && !posterFilename.trim())}
 						class="inline-flex items-center justify-center rounded-xl bg-[#e50914] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#ff1a27] disabled:cursor-not-allowed disabled:opacity-40"
 					>
 						{generatingPoster ? 'Generating Poster…' : 'Generate Poster From Thumbnail'}

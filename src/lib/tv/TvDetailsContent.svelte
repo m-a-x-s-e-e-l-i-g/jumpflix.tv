@@ -1668,7 +1668,7 @@
 	.detail-wrap {
 		display: grid;
 		gap: 2rem;
-		overflow-x: hidden;
+		overflow-x: visible;
 	}
 
 	.detail-header {
@@ -1832,7 +1832,7 @@
 	.detail-grid {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-			overflow-x: hidden;
+		overflow-x: visible;
 		gap: 2rem;
 	}
 
@@ -2087,7 +2087,8 @@
 		grid-column: auto;
 		min-width: 0;
 		overflow: visible;
-		min-width: 320px;
+		width: 100%;
+		max-width: 100%;
 	}
 
 	.detail-review-note {

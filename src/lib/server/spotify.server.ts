@@ -6,6 +6,7 @@ export type SpotifyTrack = {
 	title: string;
 	artist: string;
 	durationMs?: number;
+	explicit?: boolean;
 };
 
 type SpotifyToken = {
@@ -84,6 +85,38 @@ async function getSpotifyAccessToken(): Promise<string> {
 	return cachedToken.value;
 }
 
+export async function fetchSpotifyTrack(trackId: string): Promise<SpotifyTrack> {
+	const id = String(trackId || '').trim();
+	if (!id) throw new Error('Spotify track id is required');
+
+	const token = await getSpotifyAccessToken();
+	const res = await fetch(`https://api.spotify.com/v1/tracks/${encodeURIComponent(id)}`, {
+		headers: { authorization: `Bearer ${token}` }
+	});
+
+	if (!res.ok) {
+		const text = await res.text();
+		throw new Error(`Spotify track fetch failed: ${res.status} ${text}`);
+	}
+
+	const item: any = await res.json();
+	const artists = Array.isArray(item?.artists)
+		? item.artists
+				.map((a: any) => a?.name)
+				.filter(Boolean)
+				.join(', ')
+		: '';
+
+	return {
+		id: String(item?.id ?? id),
+		url: String(item?.external_urls?.spotify ?? `https://open.spotify.com/track/${id}`),
+		title: String(item?.name ?? '').trim(),
+		artist: artists,
+		durationMs: typeof item?.duration_ms === 'number' ? item.duration_ms : undefined,
+		explicit: typeof item?.explicit === 'boolean' ? item.explicit : undefined
+	};
+}
+
 async function searchSpotifyTrackByTitleAndArtist(params: {
 	title: string;
 	artist?: string;
@@ -148,7 +181,8 @@ async function searchSpotifyTrackByTitleAndArtist(params: {
 			url: String(item?.external_urls?.spotify ?? `https://open.spotify.com/track/${id}`),
 			title: String(item?.name ?? '').trim(),
 			artist: artists,
-			durationMs: typeof item?.duration_ms === 'number' ? item.duration_ms : undefined
+			durationMs: typeof item?.duration_ms === 'number' ? item.duration_ms : undefined,
+			explicit: typeof item?.explicit === 'boolean' ? item.explicit : undefined
 		};
 	}
 
@@ -230,7 +264,8 @@ export async function searchSpotifyTracks(params: {
 				url: String(item?.external_urls?.spotify ?? `https://open.spotify.com/track/${id}`),
 				title: String(item?.name ?? '').trim(),
 				artist: artists,
-				durationMs: typeof item?.duration_ms === 'number' ? item.duration_ms : undefined
+				durationMs: typeof item?.duration_ms === 'number' ? item.duration_ms : undefined,
+				explicit: typeof item?.explicit === 'boolean' ? item.explicit : undefined
 			});
 		}
 		return out;

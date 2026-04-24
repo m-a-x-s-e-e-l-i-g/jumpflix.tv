@@ -10,6 +10,7 @@ export type SpotifyTrack = {
 	title: string;
 	artist: string;
 	durationMs?: number;
+	explicit?: boolean;
 };
 
 let cachedToken: { value: string; expiresAtMs: number } | null = null;
@@ -145,7 +146,8 @@ export async function fetchSpotifyTrack(trackId: string): Promise<SpotifyTrack> 
 		url,
 		title,
 		artist,
-		durationMs: typeof json?.duration_ms === 'number' ? json.duration_ms : undefined
+		durationMs: typeof json?.duration_ms === 'number' ? json.duration_ms : undefined,
+		explicit: typeof json?.explicit === 'boolean' ? json.explicit : undefined
 	};
 }
 
@@ -213,7 +215,8 @@ export async function searchSpotifyTrackByTitleAndArtist(params: {
 			url: String(item?.external_urls?.spotify ?? `https://open.spotify.com/track/${id}`),
 			title: String(item?.name ?? '').trim(),
 			artist: artists,
-			durationMs: typeof item?.duration_ms === 'number' ? item.duration_ms : undefined
+			durationMs: typeof item?.duration_ms === 'number' ? item.duration_ms : undefined,
+			explicit: typeof item?.explicit === 'boolean' ? item.explicit : undefined
 		};
 	}
 

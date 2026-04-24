@@ -6,6 +6,7 @@
 	import { familySafeOnly } from '$lib/tv/store';
 	import type { ContentItem, Movie, Series } from '$lib/tv/types';
 	import { isFamilySafeContent, isImage, keyFor } from '$lib/tv/utils';
+	import ShieldOffIcon from 'lucide-svelte/icons/shield-off';
 	import {
 		getLatestWatchProgressByBaseId,
 		getSeriesProgressSummary,
@@ -220,7 +221,7 @@
 								</span>
 							{/if}
 							{#if familySafeBlocked}
-								<span class="catalog-badge catalog-badge--family-safe">Family safe only</span>
+								<span class="catalog-badge catalog-badge--family-safe" aria-label="Not family-safe"><ShieldOffIcon size={12} /></span>
 							{/if}
 						</div>
 
@@ -291,7 +292,9 @@
 	.catalog-badge--family-safe {
 		background: rgba(8, 12, 24, 0.82);
 		border-color: rgba(248, 250, 252, 0.18);
-		color: rgba(248, 250, 252, 0.92);
+		color: rgba(248, 250, 252, 0.72);
+		padding: 0.2rem 0.35rem;
+		line-height: 1;
 	}
 
 	.catalog-list {

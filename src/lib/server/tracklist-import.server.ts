@@ -35,18 +35,20 @@ export async function importSpotifyTracklistFromYouTube(params: {
 				continue;
 			}
 
+			const songUpsertPayload: any = {
+				spotify_track_id: result.id,
+				spotify_url: result.url,
+				title: result.title,
+				artist: result.artist,
+				duration_ms: result.durationMs ?? null
+			};
+			if (typeof result.explicit === 'boolean') {
+				songUpsertPayload.explicit = result.explicit;
+			}
+
 			const { data: song, error: songErr } = await params.supabase
 				.from('songs')
-				.upsert(
-					{
-						spotify_track_id: result.id,
-						spotify_url: result.url,
-						title: result.title,
-						artist: result.artist,
-						duration_ms: result.durationMs ?? null
-					},
-					{ onConflict: 'spotify_track_id' }
-				)
+				.upsert(songUpsertPayload, { onConflict: 'spotify_track_id' })
 				.select('id')
 				.single();
 			if (songErr || !song) throw new Error(songErr?.message ?? 'Failed to upsert song');

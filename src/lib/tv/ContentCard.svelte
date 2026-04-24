@@ -16,6 +16,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import { resolveMoviePlaybackSource } from '$lib/tv/playback-source';
 	import { isFamilySafeContent } from '$lib/tv/utils';
+	import ShieldOffIcon from 'lucide-svelte/icons/shield-off';
 
 	export let item: ContentItem;
 	export let isSelected = false;
@@ -222,7 +223,7 @@
 
 		{#if isFamilySafeBlocked}
 			<div class="card-family-safe-overlay">
-				<span class="card-family-safe-pill">Family safe only</span>
+				<span class="card-family-safe-pill" aria-label="Not family-safe"><ShieldOffIcon size={13} /></span>
 			</div>
 		{/if}
 
@@ -369,12 +370,8 @@
 		border-radius: 999px;
 		border: 1px solid rgba(255, 255, 255, 0.18);
 		background: rgba(8, 12, 24, 0.84);
-		padding: 0.38rem 0.7rem;
-		font-size: 0.58rem;
-		font-weight: 700;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: rgba(248, 250, 252, 0.92);
+		padding: 0.35rem;
+		color: rgba(248, 250, 252, 0.72);
 	}
 
 	.card-rating {

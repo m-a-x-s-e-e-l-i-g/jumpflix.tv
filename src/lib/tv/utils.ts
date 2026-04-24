@@ -62,7 +62,9 @@ export function keyFor(item: ContentItem) {
 
 export function isFamilySafeContent(item: ContentItem | null | undefined) {
 	if (!item) return true;
-	return (item.facets?.contentWarnings?.length ?? 0) === 0;
+	const hasWarnings = (item.facets?.contentWarnings?.length ?? 0) > 0;
+	const isExplicit = item.explicit === true;
+	return !hasWarnings && !isExplicit;
 }
 
 export function parseYear(item: ContentItem): number {

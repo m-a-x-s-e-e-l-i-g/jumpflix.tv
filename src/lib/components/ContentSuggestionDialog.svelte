@@ -133,6 +133,7 @@
 		title: string;
 		artist: string;
 		durationMs?: number;
+		explicit?: boolean;
 	};
 	let spotifySearchLoading = $state(false);
 	let spotifySearchError = $state('');
@@ -826,6 +827,7 @@
 		}
 
 		if (kind === 'tracks') {
+			const add: any = {};
 			const removeChoice = safeParseTrackChoice(trackRemoveChoice);
 			const editChoice = safeParseTrackChoice(trackEditChoice);
 			const choiceSongId =
@@ -895,6 +897,25 @@
 					trackAction === 'edit' ? (prevStartTimecode ?? undefined) : undefined
 			};
 			payload.track = t;
+
+			if (trackAction === 'add' && spotifySelectedTrackId) {
+				const picked = spotifySearchResults.find((r) => String(r?.id) === spotifySelectedTrackId);
+				if (picked?.explicit) {
+					const baseWarnings = (initial?.contentWarnings ?? []).map((w) => normString(w).toLowerCase());
+					const alreadyWarned = baseWarnings.includes('strong-language');
+					const existingAddWarnings = Array.isArray((payload.add ?? {}).content_warnings)
+						? (payload.add as any).content_warnings
+						: [];
+					const existingAddSet = new Set(
+						existingAddWarnings.map((w: unknown) => normString(w).toLowerCase()).filter(Boolean)
+					);
+					if (!alreadyWarned && !existingAddSet.has('strong-language')) {
+						add.content_warnings = [...existingAddWarnings, 'strong-language'];
+					}
+				}
+			}
+
+			if (Object.keys(add).length) payload.add = { ...(payload.add ?? {}), ...add };
 		}
 
 		return Object.keys(payload).length ? payload : undefined;

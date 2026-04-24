@@ -8,7 +8,6 @@
 	} from '$lib/components/ui/sheet';
 	import Button from '$lib/components/ui/Button.svelte';
 	import Switch from '$lib/components/ui/Switch.svelte';
-	import PrivacyPolicyDialog from '$lib/components/PrivacyPolicyDialog.svelte';
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
@@ -22,7 +21,6 @@
 	let password = $state('');
 	let loading = $state(false);
 	let marketingOptIn = $state(true);
-	let privacyDialogOpen = $state(false);
 
 	const SUPABASE_AUTH_COPY: Record<
 		AuthLocale,
@@ -66,7 +64,10 @@
 				switchToSignIn: 'Already have an account? Sign in',
 				marketingOptIn:
 					'Send me news and updates about JumpFlix, new content additions, and parkour-related updates',
+				agreementPrefix: 'By signing up, you agree to our',
 				privacyPolicy: 'Privacy Policy',
+				agreementConnector: 'and',
+				termsOfService: 'Terms of Service',
 				confirmation: 'Check your email for the confirmation link'
 			},
 			forgotPassword: {
@@ -97,7 +98,10 @@
 				switchToSignIn: 'Heb je al een account? Inloggen',
 				marketingOptIn:
 					'Stuur mij nieuws en updates over JumpFlix, nieuwe content en parkour-gerelateerde updates',
+				agreementPrefix: 'Door een account aan te maken, ga je akkoord met ons',
 				privacyPolicy: 'Privacybeleid',
+				agreementConnector: 'en onze',
+				termsOfService: 'Servicevoorwaarden',
 				confirmation: 'Controleer je e-mail voor de bevestigingslink'
 			},
 			forgotPassword: {
@@ -128,7 +132,10 @@
 				switchToSignIn: 'すでにアカウントをお持ちの方はサインイン',
 				marketingOptIn:
 					'JumpFlixに関するニュース、新しいコンテンツ追加、パルクール関連の最新情報を受け取る',
+				agreementPrefix: 'サインアップすると、',
 				privacyPolicy: 'プライバシーポリシー',
+				agreementConnector: 'と',
+				termsOfService: '利用規約',
 				confirmation: '確認リンクについてメールをご確認ください'
 			},
 			forgotPassword: {
@@ -347,14 +354,14 @@
 								</button>
 							</div>
 							<p class="px-1 text-xs text-muted-foreground">
-								By signing up, you agree to our
-								<button
-									type="button"
-									class="inline cursor-pointer underline hover:text-foreground"
-									onclick={() => (privacyDialogOpen = true)}
-								>
+								{copy.signUp.agreementPrefix}
+								<a href="/privacy-policy" class="underline hover:text-foreground">
 									{copy.signUp.privacyPolicy}
-								</button>
+								</a>
+								{copy.signUp.agreementConnector}
+								<a href="/terms-of-service" class="underline hover:text-foreground">
+									{copy.signUp.termsOfService}
+								</a>
 							</p>
 						</div>
 					{/if}
@@ -425,5 +432,3 @@
 		</div>
 	</SheetContent>
 </SheetRoot>
-
-<PrivacyPolicyDialog bind:open={privacyDialogOpen} />

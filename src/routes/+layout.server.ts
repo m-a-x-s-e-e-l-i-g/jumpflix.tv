@@ -8,6 +8,8 @@ function shouldLoadTvCatalog(pathname: string): boolean {
 		pathname === '/about' ||
 		pathname === '/autoplay' ||
 		pathname === '/costs' ||
+		pathname === '/privacy-policy' ||
+		pathname === '/terms-of-service' ||
 		pathname === '/stats' ||
 		pathname.startsWith('/stats/') ||
 		pathname.startsWith('/admin')

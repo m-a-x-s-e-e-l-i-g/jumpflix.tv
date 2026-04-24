@@ -35,6 +35,27 @@ export const actions: Actions = {
 		const slugInput = String(form.get('slug') || '').trim();
 		const slug = slugInput || defaultSlug;
 
+		const providerInput = String(form.get('provider') || '').trim().toLowerCase();
+		let normalizedProvider: string | null = providerInput || null;
+
+		let youtubeVideoId = String(form.get('video_id') || '').trim() || null;
+		let vimeoId = String(form.get('vimeo_id') || '').trim() || null;
+
+		if (providerInput === 'vimeo') {
+			if (!vimeoId && youtubeVideoId) vimeoId = youtubeVideoId;
+			youtubeVideoId = null;
+		}
+
+		if (providerInput === 'youtube') {
+			if (!youtubeVideoId && vimeoId) youtubeVideoId = vimeoId;
+			vimeoId = null;
+		}
+
+		if (!normalizedProvider) {
+			if (vimeoId && !youtubeVideoId) normalizedProvider = 'vimeo';
+			if (youtubeVideoId && !vimeoId) normalizedProvider = 'youtube';
+		}
+
 		const supabase = createSupabaseServiceClient();
 
 		const { data, error } = await supabase
@@ -46,11 +67,12 @@ export const actions: Actions = {
 				description: String(form.get('description') || '').trim() || null,
 				year,
 				duration: String(form.get('duration') || '').trim() || null,
-				video_id: String(form.get('video_id') || '').trim() || null,
+				video_id: youtubeVideoId,
+				vimeo_id: vimeoId,
 				thumbnail: String(form.get('thumbnail') || '').trim() || null,
 				blurhash: String(form.get('blurhash') || '').trim() || null,
 				paid: form.get('paid') === 'true',
-				provider: String(form.get('provider') || '').trim() || null,
+				provider: normalizedProvider,
 				external_url: String(form.get('external_url') || '').trim() || null,
 				trakt: String(form.get('trakt') || '').trim() || null,
 				creators: parseArrayInput(String(form.get('creators') || '')),

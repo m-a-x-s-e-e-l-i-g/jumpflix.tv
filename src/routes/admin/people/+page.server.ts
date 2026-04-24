@@ -3,7 +3,8 @@ import type { Actions, PageServerLoad } from './$types';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { requireAdmin } from '$lib/server/admin';
 import { fetchAllContent, invalidateContentCache } from '$lib/server/content-service';
-import { movePersonProfile } from '$lib/server/person-profiles';
+import { findPersonMatchCandidates, movePersonProfile } from '$lib/server/person-profiles';
+import { slugify } from '$lib/tv/slug';
 
 type MediaRow = {
 	id: number;
@@ -100,6 +101,50 @@ async function fetchAffectedRows(opts: {
 	return { rows: limited, total };
 }
 
+async function applySingleMerge(opts: {
+	supabase: ReturnType<typeof createSupabaseServiceClient>;
+	from: string;
+	to: string;
+	includeCreators: boolean;
+	includeStarring: boolean;
+}): Promise<{ affected: number; updated: number }> {
+	const { supabase, from, to, includeCreators, includeStarring } = opts;
+	const { rows, total } = await fetchAffectedRows({
+		from,
+		includeCreators,
+		includeStarring
+	});
+
+	let updated = 0;
+	for (const row of rows) {
+		const updates: Partial<Pick<MediaRow, 'creators' | 'starring'>> = {};
+
+		if (includeCreators) {
+			const before = normalizeList(row.creators);
+			if (before.some((v) => v === from)) {
+				const after = replaceAndDedupe(before, from, to);
+				updates.creators = after;
+			}
+		}
+
+		if (includeStarring) {
+			const before = normalizeList(row.starring);
+			if (before.some((v) => v === from)) {
+				const after = replaceAndDedupe(before, from, to);
+				updates.starring = after;
+			}
+		}
+
+		if (!('creators' in updates) && !('starring' in updates)) continue;
+
+		const { error } = await supabase.from('media_items').update(updates).eq('id', row.id);
+		if (error) throw new Error(error.message);
+		updated += 1;
+	}
+
+	return { affected: total, updated };
+}
+
 function buildPreview(opts: {
 	rows: MediaRow[];
 	from: string;
@@ -144,16 +189,43 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const content = await fetchAllContent();
 
-	const contributorsByKey = new Map<string, string>();
-	const athletesByKey = new Map<string, string>();
+	type PersonAggregate = {
+		slug: string;
+		roles: {
+			creator: boolean;
+			athlete: boolean;
+		};
+		mentions: number;
+		variantCounts: Map<string, number>;
+	};
 
-	function addName(target: Map<string, string>, value: unknown) {
+	const peopleBySlug = new Map<string, PersonAggregate>();
+
+	function addName(value: unknown, role: 'creator' | 'athlete') {
 		if (typeof value !== 'string') return;
 		const trimmed = value.trim();
 		if (!trimmed) return;
-		const key = trimmed.toLowerCase();
-		if (target.has(key)) return;
-		target.set(key, trimmed);
+
+		const slug = slugify(trimmed);
+		if (!slug) return;
+
+		const existing = peopleBySlug.get(slug);
+		if (existing) {
+			existing.roles[role] = true;
+			existing.mentions += 1;
+			existing.variantCounts.set(trimmed, (existing.variantCounts.get(trimmed) ?? 0) + 1);
+			return;
+		}
+
+		peopleBySlug.set(slug, {
+			slug,
+			roles: {
+				creator: role === 'creator',
+				athlete: role === 'athlete'
+			},
+			mentions: 1,
+			variantCounts: new Map([[trimmed, 1]])
+		});
 	}
 
 	for (const item of content) {
@@ -161,24 +233,107 @@ export const load: PageServerLoad = async ({ locals }) => {
 		const starring = (item as any)?.starring;
 
 		if (Array.isArray(creators)) {
-			for (const c of creators) addName(contributorsByKey, c);
+			for (const c of creators) addName(c, 'creator');
 		}
 		if (Array.isArray(starring)) {
-			for (const s of starring) addName(athletesByKey, s);
+			for (const s of starring) addName(s, 'athlete');
 		}
 	}
 
-	const contributors = Array.from(contributorsByKey.values()).sort((a, b) =>
-		a.localeCompare(b, undefined, { sensitivity: 'base' })
-	);
-	const athletes = Array.from(athletesByKey.values()).sort((a, b) =>
-		a.localeCompare(b, undefined, { sensitivity: 'base' })
-	);
+	const all = Array.from(peopleBySlug.values())
+		.map((person) => {
+			const variants = Array.from(person.variantCounts.entries())
+				.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], undefined, { sensitivity: 'base' }))
+				.map(([name]) => name);
+
+			return {
+				slug: person.slug,
+				name: variants[0] ?? person.slug,
+				variants,
+				roles: person.roles,
+				mentions: person.mentions
+			};
+		})
+		.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+
+	const potentialMatches = all
+		.filter((person) => person.variants.length > 1)
+		.map((person) => ({
+			slug: person.slug,
+			names: person.variants,
+			roles: person.roles,
+			mentions: person.mentions
+		}))
+		.sort((a, b) => {
+			if (b.names.length !== a.names.length) return b.names.length - a.names.length;
+			if (b.mentions !== a.mentions) return b.mentions - a.mentions;
+			return a.names[0].localeCompare(b.names[0], undefined, { sensitivity: 'base' });
+		});
+
+	const knownPeople = all.map((person) => ({
+		slug: person.slug,
+		name: person.name,
+		roles: person.roles
+	}));
+
+	const peopleBySlugLookup = new Map(knownPeople.map((person) => [person.slug, person]));
+	const lookAlikeByPair = new Map<
+		string,
+		{
+			left: { slug: string; name: string; roles: { creator: boolean; athlete: boolean } };
+			right: { slug: string; name: string; roles: { creator: boolean; athlete: boolean } };
+			score: number;
+			reason: 'exact' | 'strong' | 'possible';
+		}
+	>();
+
+	for (const person of knownPeople) {
+		const candidates = findPersonMatchCandidates(
+			person.name,
+			knownPeople.filter((candidate) => candidate.slug !== person.slug),
+			6
+		);
+
+		for (const candidate of candidates) {
+			const other = peopleBySlugLookup.get(candidate.slug);
+			if (!other) continue;
+
+			const leftSlug = person.slug.localeCompare(other.slug) <= 0 ? person.slug : other.slug;
+			const rightSlug = leftSlug === person.slug ? other.slug : person.slug;
+			const key = `${leftSlug}::${rightSlug}`;
+			const existing = lookAlikeByPair.get(key);
+
+			if (existing && existing.score >= candidate.score) continue;
+
+			const left = leftSlug === person.slug ? person : other;
+			const right = left.slug === person.slug ? other : person;
+
+			lookAlikeByPair.set(key, {
+				left: {
+					slug: left.slug,
+					name: left.name,
+					roles: left.roles
+				},
+				right: {
+					slug: right.slug,
+					name: right.name,
+					roles: right.roles
+				},
+				score: candidate.score,
+				reason: candidate.reason
+			});
+		}
+	}
+
+	const lookAlikeMatches = Array.from(lookAlikeByPair.values())
+		.filter((pair) => pair.score >= 0.7)
+		.sort((a, b) => b.score - a.score || a.left.name.localeCompare(b.left.name, undefined, { sensitivity: 'base' }));
 
 	return {
 		people: {
-			contributors,
-			athletes
+			all,
+			potentialMatches,
+			lookAlikeMatches
 		}
 	};
 };
@@ -244,38 +399,13 @@ export const actions: Actions = {
 		}
 
 		const supabase = createSupabaseServiceClient();
-		const { rows, total } = await fetchAffectedRows({
+		const result = await applySingleMerge({
+			supabase,
 			from,
+			to,
 			includeCreators,
 			includeStarring
 		});
-
-		let updated = 0;
-		for (const row of rows) {
-			const updates: Partial<Pick<MediaRow, 'creators' | 'starring'>> = {};
-
-			if (includeCreators) {
-				const before = normalizeList(row.creators);
-				if (before.some((v) => v === from)) {
-					const after = replaceAndDedupe(before, from, to);
-					updates.creators = after;
-				}
-			}
-
-			if (includeStarring) {
-				const before = normalizeList(row.starring);
-				if (before.some((v) => v === from)) {
-					const after = replaceAndDedupe(before, from, to);
-					updates.starring = after;
-				}
-			}
-
-			if (!('creators' in updates) && !('starring' in updates)) continue;
-
-			const { error } = await supabase.from('media_items').update(updates).eq('id', row.id);
-			if (error) return fail(400, { message: error.message });
-			updated += 1;
-		}
 
 		try {
 			await movePersonProfile(supabase as any, { fromName: from, toName: to });
@@ -297,8 +427,79 @@ export const actions: Actions = {
 			includeCreators,
 			includeStarring,
 			result: {
-				affected: total,
-				updated
+				affected: result.affected,
+				updated: result.updated
+			}
+		};
+	},
+
+	quickMerge: async ({ request, locals }) => {
+		const { user } = await locals.safeGetSession();
+		requireAdmin(user);
+
+		const form = await request.formData();
+		const keepName = asTrimmedString(form.get('keep_name'));
+		const mergeFrom = asTrimmedString(form.get('merge_from'));
+		const allNamesRaw = asTrimmedString(form.get('all_names'));
+
+		if (!keepName) return fail(400, { message: 'Keep name is required.' });
+
+		const fromNames: string[] = [];
+		if (mergeFrom) fromNames.push(mergeFrom);
+
+		if (allNamesRaw) {
+			try {
+				const parsed = JSON.parse(allNamesRaw) as unknown;
+				if (Array.isArray(parsed)) {
+					for (const item of parsed) {
+						if (typeof item !== 'string') continue;
+						const trimmed = item.trim();
+						if (!trimmed || trimmed === keepName) continue;
+						fromNames.push(trimmed);
+					}
+				}
+			} catch {
+				return fail(400, { message: 'Invalid match payload.' });
+			}
+		}
+
+		const uniqueFromNames = dedupePreserveOrder(fromNames).filter((name) => name !== keepName);
+		if (!uniqueFromNames.length) {
+			return fail(400, { message: 'No source name selected to merge.' });
+		}
+
+		const supabase = createSupabaseServiceClient();
+		let totalAffected = 0;
+		let totalUpdated = 0;
+
+		for (const from of uniqueFromNames) {
+			try {
+				const result = await applySingleMerge({
+					supabase,
+					from,
+					to: keepName,
+					includeCreators: true,
+					includeStarring: true
+				});
+				totalAffected += result.affected;
+				totalUpdated += result.updated;
+				await movePersonProfile(supabase as any, { fromName: from, toName: keepName });
+			} catch (error) {
+				return fail(400, {
+					message: error instanceof Error ? error.message : 'Failed to merge selected names.'
+				});
+			}
+		}
+
+		await invalidateContentCache();
+
+		return {
+			ok: true,
+			quickMerge: {
+				keepName,
+				merged: uniqueFromNames,
+				affected: totalAffected,
+				updated: totalUpdated
 			}
 		};
 	}

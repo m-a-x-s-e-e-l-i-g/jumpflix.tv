@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { toast } from 'svelte-sonner';
 	import type { ActionData, PageData } from './$types';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
@@ -9,6 +10,7 @@
 	let includeCreators = $state(true);
 	let includeStarring = $state(true);
 	let confirm = $state(false);
+	let lastSuccessToastKey = $state('');
 
 	// Autofill (name suggestions)
 	let fromSuggestOpen = $state(false);
@@ -34,8 +36,41 @@
 		}
 	});
 
+	$effect(() => {
+		if (!form || !(form as any).ok) return;
+
+		const result = (form as any).result;
+		const quickMerge = (form as any).quickMerge;
+
+		if (result && typeof result.updated === 'number' && typeof result.affected === 'number') {
+			const key = `merge:${result.updated}:${result.affected}:${(form as any).from ?? ''}:${(form as any).to ?? ''}`;
+			if (key !== lastSuccessToastKey) {
+				toast.success(`Merged ${result.updated} items (affected: ${result.affected}).`);
+				lastSuccessToastKey = key;
+			}
+			return;
+		}
+
+		if (quickMerge && typeof quickMerge.keepName === 'string' && Array.isArray(quickMerge.merged)) {
+			const key = `quick:${quickMerge.keepName}:${quickMerge.merged.join('|')}:${quickMerge.updated ?? ''}`;
+			if (key !== lastSuccessToastKey) {
+				toast.success(
+					`Kept ${quickMerge.keepName} and merged ${quickMerge.merged.length} name(s).`
+				);
+				lastSuccessToastKey = key;
+			}
+		}
+	});
+
 	function listFmt(list?: unknown) {
 		return Array.isArray(list) ? list.join(', ') : '';
+	}
+
+	function roleLabel(roles?: { creator?: boolean; athlete?: boolean }) {
+		if (roles?.creator && roles?.athlete) return 'creator + athlete';
+		if (roles?.creator) return 'creator';
+		if (roles?.athlete) return 'athlete';
+		return 'person';
 	}
 
 	function suggestRole(): 'creator' | 'athlete' | 'any' {
@@ -166,12 +201,6 @@
 	{#if form?.message}
 		<div class="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
 			{form.message}
-		</div>
-	{/if}
-
-	{#if form?.ok && form?.result}
-		<div class="mt-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-100">
-			Merged <span class="font-semibold">{form.result.updated}</span> items (affected: {form.result.affected}).
 		</div>
 	{/if}
 
@@ -316,32 +345,140 @@
 		<div class="jf-surface-soft mt-6 rounded-2xl p-5">
 			<div>
 				<div class="text-sm font-medium text-white/80">All people</div>
-				<div class="mt-1 text-xs text-white/60">
-					Contributors: {data.people.contributors.length} · Athletes: {data.people.athletes.length}
+				<div class="mt-1 text-xs text-white/60">Total: {data.people.all.length}</div>
+			</div>
+
+			<div class="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
+				<div class="max-h-96 overflow-auto pr-2">
+					<ul class="space-y-2 text-sm text-white/80">
+						{#each data.people.all as person (person.slug)}
+							<li class="flex flex-wrap items-center gap-2">
+								<span class="truncate">{person.name}</span>
+								{#if person.roles.creator}
+									<span class="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] text-white/65">
+										Creator
+									</span>
+								{/if}
+								{#if person.roles.athlete}
+									<span class="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] text-white/65">
+										Athlete
+									</span>
+								{/if}
+							</li>
+						{/each}
+					</ul>
 				</div>
 			</div>
 
-			<div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-				<div class="rounded-xl border border-white/10 bg-black/20 p-4">
-					<div class="text-xs text-white/60">Contributors</div>
-					<div class="mt-2 max-h-72 overflow-auto pr-2">
-						<ul class="space-y-1 text-sm text-white/80">
-							{#each data.people.contributors as name (name)}
-								<li class="truncate">{name}</li>
-							{/each}
-						</ul>
-					</div>
+			<div class="mt-5">
+				<div class="text-sm font-medium text-white/80">Potential matches</div>
+				<div class="mt-1 text-xs text-white/60">
+					Name variants that normalize to the same slug.
 				</div>
 
-				<div class="rounded-xl border border-white/10 bg-black/20 p-4">
-					<div class="text-xs text-white/60">Athletes</div>
-					<div class="mt-2 max-h-72 overflow-auto pr-2">
-						<ul class="space-y-1 text-sm text-white/80">
-							{#each data.people.athletes as name (name)}
-								<li class="truncate">{name}</li>
-							{/each}
-						</ul>
-					</div>
+				<div class="mt-3 rounded-xl border border-white/10 bg-black/20 p-4">
+					{#if data.people.potentialMatches.length === 0}
+						<div class="text-sm text-white/60">No potential matches found.</div>
+					{:else}
+						<div class="max-h-80 overflow-auto pr-2">
+							<ul class="space-y-3">
+								{#each data.people.potentialMatches as match (match.slug)}
+									<li class="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+										<div class="flex flex-wrap items-center gap-2 text-xs text-white/55">
+											<span>{match.slug}</span>
+											{#if match.roles.creator}
+												<span class="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] text-white/65">
+													Creator
+												</span>
+											{/if}
+											{#if match.roles.athlete}
+												<span class="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] text-white/65">
+													Athlete
+												</span>
+											{/if}
+										</div>
+										<div class="mt-2 text-sm text-white/80">{match.names.join(' · ')}</div>
+										<div class="mt-3 flex flex-wrap gap-2">
+											{#each match.names as keepName (`${match.slug}-${keepName}`)}
+												<form method="POST" use:enhance>
+													<input type="hidden" name="keep_name" value={keepName} />
+													<input type="hidden" name="all_names" value={JSON.stringify(match.names)} />
+													<button
+														type="submit"
+														formaction="?/quickMerge"
+														class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10"
+													>
+														{keepName}
+													</button>
+												</form>
+											{/each}
+										</div>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<div class="mt-5">
+				<div class="text-sm font-medium text-white/80">Potential matches by similar names</div>
+				<div class="mt-1 text-xs text-white/60">
+					Fuzzy name matches with score percentage. Pick which one to keep and merge instantly.
+				</div>
+
+				<div class="mt-3 rounded-xl border border-white/10 bg-black/20 p-4">
+					{#if data.people.lookAlikeMatches.length === 0}
+						<div class="text-sm text-white/60">No similar-name matches found.</div>
+					{:else}
+						<div class="max-h-96 overflow-auto pr-2">
+							<ul class="space-y-3">
+								{#each data.people.lookAlikeMatches as pair (`${pair.left.slug}-${pair.right.slug}`)}
+									<li class="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+										<div class="flex flex-wrap items-center justify-between gap-3">
+											<div class="text-sm text-white/85">
+												<span class="font-medium">{pair.left.name}</span>
+												<span class="mx-1 text-white/45">↔</span>
+												<span class="font-medium">{pair.right.name}</span>
+											</div>
+											<div class="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs text-white/70">
+												{Math.round(pair.score * 100)}% · {pair.reason}
+											</div>
+										</div>
+
+										<div class="mt-1 text-xs text-white/55">
+											{pair.left.slug} ({roleLabel(pair.left.roles)}) · {pair.right.slug} ({roleLabel(pair.right.roles)})
+										</div>
+
+										<div class="mt-3 flex flex-wrap gap-2">
+											<form method="POST" use:enhance>
+												<input type="hidden" name="keep_name" value={pair.left.name} />
+												<input type="hidden" name="merge_from" value={pair.right.name} />
+												<button
+													type="submit"
+													formaction="?/quickMerge"
+													class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10"
+												>
+													{pair.left.name}
+												</button>
+											</form>
+											<form method="POST" use:enhance>
+												<input type="hidden" name="keep_name" value={pair.right.name} />
+												<input type="hidden" name="merge_from" value={pair.left.name} />
+												<button
+													type="submit"
+													formaction="?/quickMerge"
+													class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10"
+												>
+													{pair.right.name}
+												</button>
+											</form>
+										</div>
+									</li>
+								{/each}
+							</ul>
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>

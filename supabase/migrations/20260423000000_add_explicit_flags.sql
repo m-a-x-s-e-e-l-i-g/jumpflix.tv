@@ -79,16 +79,22 @@ create or replace function public.songs_recompute_linked_media_explicit_trigger(
 returns trigger
 language plpgsql
 as $$
-declare
-  v_media_id bigint;
 begin
-  for v_media_id in
+  update public.media_items as mi
+  set explicit =
+    coalesce(mi.content_warnings, '{}'::text[]) @> array['strong-language']::text[]
+    or exists (
+      select 1
+      from public.video_songs vs2
+      join public.songs s2 on s2.id = vs2.song_id
+      where vs2.video_id = mi.id
+        and coalesce(s2.explicit, false)
+    )
+  where mi.id in (
     select distinct vs.video_id
     from public.video_songs vs
     where vs.song_id = new.id
-  loop
-    perform public.recompute_media_item_explicit(v_media_id);
-  end loop;
+  );
 
   return new;
 end;

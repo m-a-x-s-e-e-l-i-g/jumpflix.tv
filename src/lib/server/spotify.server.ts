@@ -85,36 +85,53 @@ async function getSpotifyAccessToken(): Promise<string> {
 	return cachedToken.value;
 }
 
+export async function fetchSpotifyTracksBatch(trackIds: string[]): Promise<SpotifyTrack[]> {
+	const ids = trackIds.map((id) => String(id || '').trim()).filter(Boolean);
+	if (ids.length === 0) return [];
+	if (ids.length > 50) throw new Error('Spotify batch track fetch max is 50 IDs per request.');
+
+	const token = await getSpotifyAccessToken();
+	const url = new URL('https://api.spotify.com/v1/tracks');
+	url.searchParams.set('ids', ids.join(','));
+
+	const res = await fetch(url.toString(), {
+		headers: { authorization: `Bearer ${token}` }
+	});
+	if (!res.ok) {
+		const text = await res.text();
+		throw new Error(`Spotify batch tracks fetch failed: ${res.status} ${text}`);
+	}
+
+	const json: any = await res.json();
+	const tracks: any[] = Array.isArray(json?.tracks) ? json.tracks : [];
+	return tracks
+		.filter((item) => item && item.id)
+		.map((item) => {
+			const id = String(item.id);
+			const artists = Array.isArray(item?.artists)
+				? item.artists
+						.map((a: any) => a?.name)
+						.filter(Boolean)
+						.join(', ')
+				: '';
+			return {
+				id,
+				url: String(item?.external_urls?.spotify ?? `https://open.spotify.com/track/${id}`),
+				title: String(item?.name ?? '').trim(),
+				artist: artists,
+				durationMs: typeof item?.duration_ms === 'number' ? item.duration_ms : undefined,
+				explicit: typeof item?.explicit === 'boolean' ? item.explicit : undefined
+			} as SpotifyTrack;
+		});
+}
+
 export async function fetchSpotifyTrack(trackId: string): Promise<SpotifyTrack> {
 	const id = String(trackId || '').trim();
 	if (!id) throw new Error('Spotify track id is required');
-
-	const token = await getSpotifyAccessToken();
-	const res = await fetch(`https://api.spotify.com/v1/tracks/${encodeURIComponent(id)}`, {
-		headers: { authorization: `Bearer ${token}` }
-	});
-
-	if (!res.ok) {
-		const text = await res.text();
-		throw new Error(`Spotify track fetch failed: ${res.status} ${text}`);
-	}
-
-	const item: any = await res.json();
-	const artists = Array.isArray(item?.artists)
-		? item.artists
-				.map((a: any) => a?.name)
-				.filter(Boolean)
-				.join(', ')
-		: '';
-
-	return {
-		id: String(item?.id ?? id),
-		url: String(item?.external_urls?.spotify ?? `https://open.spotify.com/track/${id}`),
-		title: String(item?.name ?? '').trim(),
-		artist: artists,
-		durationMs: typeof item?.duration_ms === 'number' ? item.duration_ms : undefined,
-		explicit: typeof item?.explicit === 'boolean' ? item.explicit : undefined
-	};
+	const tracks = await fetchSpotifyTracksBatch([id]);
+	const track = tracks.find((t) => t.id === id) ?? tracks[0];
+	if (!track) throw new Error('Spotify track fetch failed: track not found');
+	return track;
 }
 
 async function searchSpotifyTrackByTitleAndArtist(params: {

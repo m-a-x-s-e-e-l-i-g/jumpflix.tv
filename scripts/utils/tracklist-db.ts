@@ -6,19 +6,20 @@ export async function upsertSongFromSpotify(
 	supabase: SupabaseClient<Database>,
 	track: SpotifyTrack
 ): Promise<{ songId: number }> {
+	const songUpsertPayload: any = {
+		spotify_track_id: track.id,
+		spotify_url: track.url,
+		title: track.title,
+		artist: track.artist,
+		duration_ms: track.durationMs ?? null
+	};
+	if (typeof track.explicit === 'boolean') {
+		songUpsertPayload.explicit = track.explicit;
+	}
+
 	const { data, error } = await supabase
 		.from('songs')
-		.upsert(
-			{
-				spotify_track_id: track.id,
-				spotify_url: track.url,
-				title: track.title,
-				artist: track.artist,
-				duration_ms: track.durationMs ?? null,
-				explicit: track.explicit ?? false
-			},
-			{ onConflict: 'spotify_track_id' }
-		)
+		.upsert(songUpsertPayload, { onConflict: 'spotify_track_id' })
 		.select('id')
 		.single();
 

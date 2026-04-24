@@ -63,17 +63,32 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 console.log('📦  Fetching songs with Spotify track IDs from database…');
 
-const { data: songs, error: songsError } = await (supabase as any)
-	.from('songs')
-	.select('id, spotify_track_id, explicit')
-	.not('spotify_track_id', 'is', null);
+type SongRow = { id: number; spotify_track_id: string; explicit: boolean };
+const songs: SongRow[] = [];
+const pageSize = 1000;
+let from = 0;
 
-if (songsError) {
-	console.error('❌  Failed to fetch songs:', songsError.message);
-	process.exit(1);
+while (true) {
+	const to = from + pageSize - 1;
+	const { data, error } = await (supabase as any)
+		.from('songs')
+		.select('id, spotify_track_id, explicit')
+		.not('spotify_track_id', 'is', null)
+		.range(from, to);
+
+	if (error) {
+		console.error('❌  Failed to fetch songs:', error.message);
+		process.exit(1);
+	}
+
+	const page = (data ?? []) as SongRow[];
+	if (!page.length) break;
+	songs.push(...page);
+	if (page.length < pageSize) break;
+	from += pageSize;
 }
 
-if (!songs || songs.length === 0) {
+if (!songs.length) {
 	console.log('ℹ️   No songs with Spotify track IDs found. Nothing to do.');
 	process.exit(0);
 }

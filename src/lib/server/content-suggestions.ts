@@ -336,12 +336,14 @@ export async function applyMediaPatch(
 			let targetSongId = songId;
 			if (!targetSongId) {
 				if (spotifyTrackId) {
-					let spotifyExplicit = false;
+					let spotifyExplicit: boolean | undefined;
 					if (hasSpotifyCredentials()) {
 						try {
 							const spotifyTrack = await fetchSpotifyTrack(spotifyTrackId);
 							spotifyUrl = spotifyTrack.url || spotifyUrl;
-							spotifyExplicit = spotifyTrack.explicit ?? false;
+							if (typeof spotifyTrack.explicit === 'boolean') {
+								spotifyExplicit = spotifyTrack.explicit;
+							}
 						} catch {
 							// Keep workflow resilient if Spotify lookup fails.
 						}
@@ -350,15 +352,19 @@ export async function applyMediaPatch(
 					// Spotify-backed: upsert by track id.
 					// NOTE: we intentionally avoid best-effort Spotify searching here; if the user
 					// didn't provide a URL/ID, we treat it as a manual (no-link) track.
+					const songUpsertPayload: any = {
+						spotify_track_id: spotifyTrackId,
+						spotify_url: spotifyUrl || `https://open.spotify.com/track/${spotifyTrackId}`,
+						title,
+						artist,
+						duration_ms: null
+					};
+					if (typeof spotifyExplicit === 'boolean') {
+						songUpsertPayload.explicit = spotifyExplicit;
+					}
+
 					const { error: upsertSongErr } = await supabase.from('songs').upsert(
-						{
-							spotify_track_id: spotifyTrackId,
-							spotify_url: spotifyUrl || `https://open.spotify.com/track/${spotifyTrackId}`,
-							title,
-							artist,
-							duration_ms: null,
-							explicit: spotifyExplicit
-						} as any,
+						songUpsertPayload,
 						{ onConflict: 'spotify_track_id' }
 					);
 					if (upsertSongErr) throw new Error(upsertSongErr.message);

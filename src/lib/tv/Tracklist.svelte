@@ -81,6 +81,15 @@
 						{/if}
 						<div class="truncate text-sm text-gray-100">
 							{t.song?.artist} — {t.song?.title}
+							{#if t.song?.explicit}
+								<span
+									class="ml-2 inline-flex items-center rounded border border-gray-500/45 bg-gray-500/12 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-gray-300"
+									title="Explicit lyrics"
+									aria-label="Explicit lyrics"
+								>
+									E
+								</span>
+							{/if}
 						</div>
 					</div>
 					{#if spotifyHref}

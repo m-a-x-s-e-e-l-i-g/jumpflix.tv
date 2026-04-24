@@ -151,43 +151,6 @@ export async function fetchSpotifyTrack(trackId: string): Promise<SpotifyTrack> 
 	};
 }
 
-/**
- * Fetch up to 50 tracks in a single Spotify API call.
- * Returns a map of spotify_track_id → { explicit }.
- */
-export async function fetchSpotifyTracksBatch(
-	trackIds: string[]
-): Promise<Map<string, { explicit: boolean }>> {
-	if (trackIds.length === 0) return new Map();
-	if (trackIds.length > 50) throw new Error('fetchSpotifyTracksBatch: max 50 IDs per call');
-
-	const token = await getSpotifyAccessToken();
-	const url = new URL('https://api.spotify.com/v1/tracks');
-	url.searchParams.set('ids', trackIds.join(','));
-
-	const res = await fetch(url.toString(), {
-		headers: { authorization: `Bearer ${token}` }
-	});
-
-	if (!res.ok) {
-		const text = await res.text();
-		throw new Error(`Spotify batch tracks fetch failed: ${res.status} ${text}`);
-	}
-
-	const json: any = await res.json();
-	const tracks: any[] = json?.tracks ?? [];
-	const result = new Map<string, { explicit: boolean }>();
-
-	for (const track of tracks) {
-		if (!track?.id) continue;
-		result.set(String(track.id), {
-			explicit: typeof track.explicit === 'boolean' ? track.explicit : false
-		});
-	}
-
-	return result;
-}
-
 export async function searchSpotifyTrackByTitleAndArtist(params: {
 	title: string;
 	artist?: string;

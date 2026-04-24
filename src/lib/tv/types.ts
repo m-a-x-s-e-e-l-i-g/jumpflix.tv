@@ -58,6 +58,7 @@ export interface BaseContent {
 	externalUrl?: string;
 	averageRating?: number;
 	ratingCount?: number;
+	explicit?: boolean;
 	facets?: Facets;
 	createdAt?: string;
 	updatedAt?: string;
@@ -94,6 +95,7 @@ export interface Song {
 	title: string;
 	artist: string;
 	durationMs?: number;
+	explicit?: boolean;
 }
 
 export interface VideoTrack {

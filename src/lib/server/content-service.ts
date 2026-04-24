@@ -85,6 +85,13 @@ async function writePrerenderCache<T>(fileName: string, items: T): Promise<void>
 
 // Helper to map facets from database row
 function mapFacets(row: MediaItemRow): Facets | undefined {
+	const rowExplicit = Boolean((row as any).explicit);
+	const warningSet = new Set<string>(
+		Array.isArray(row.content_warnings) ? row.content_warnings.map((w) => String(w)) : []
+	);
+	if (rowExplicit) warningSet.add('strong-language');
+	const normalizedWarnings = warningSet.size ? Array.from(warningSet) : null;
+
 	// Calculate automatic facets
 	const era = calculateEraFacet(row.year);
 	const length = calculateLengthFacet(row.duration);
@@ -96,7 +103,7 @@ function mapFacets(row: MediaItemRow): Facets | undefined {
 		row.facet_focus ||
 		row.facet_production ||
 		row.facet_presentation ||
-		(row.content_warnings && row.content_warnings.length > 0) ||
+		(normalizedWarnings && normalizedWarnings.length > 0) ||
 		row.facet_medium ||
 		era ||
 		length;
@@ -113,10 +120,7 @@ function mapFacets(row: MediaItemRow): Facets | undefined {
 		environment: row.facet_environment ?? undefined,
 		production: row.facet_production ?? undefined,
 		presentation: row.facet_presentation ?? undefined,
-		contentWarnings:
-			row.content_warnings && row.content_warnings.length > 0
-				? (row.content_warnings as any)
-				: undefined,
+		contentWarnings: normalizedWarnings ? (normalizedWarnings as any) : undefined,
 		medium: row.facet_medium ?? undefined,
 		era: era ?? undefined,
 		length: length ?? undefined
@@ -192,7 +196,8 @@ function mapMovie(
 							spotifyUrl: song.spotify_url ?? undefined,
 							title: song.title,
 							artist: song.artist,
-							durationMs: song.duration_ms ?? undefined
+							durationMs: song.duration_ms ?? undefined,
+							explicit: typeof (song as any).explicit === 'boolean' ? (song as any).explicit : undefined
 						})
 					});
 				})
@@ -220,6 +225,7 @@ function mapMovie(
 		tracks,
 		averageRating: ratingSummary?.average_rating ?? undefined,
 		ratingCount: ratingSummary?.rating_count ?? undefined,
+		explicit: typeof (row as any).explicit === 'boolean' ? (row as any).explicit : undefined,
 		facets: mapFacets(row),
 		createdAt: row.created_at ?? undefined,
 		updatedAt: row.updated_at ?? undefined
@@ -270,6 +276,7 @@ function mapSeries(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryR
 		episodeCount: episodeCount > 0 ? episodeCount : undefined,
 		averageRating: ratingSummary?.average_rating ?? undefined,
 		ratingCount: ratingSummary?.rating_count ?? undefined,
+		explicit: typeof (row as any).explicit === 'boolean' ? (row as any).explicit : undefined,
 		facets: mapFacets(row),
 		createdAt: row.created_at ?? undefined,
 		updatedAt: row.updated_at ?? undefined

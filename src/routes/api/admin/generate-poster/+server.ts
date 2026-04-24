@@ -23,81 +23,7 @@ function buildPosterPrompt(title: string, includeTitle: boolean): string {
 	if (!includeTitle) return POSTER_PROMPT;
 
 	const safeTitle = escapePromptText(title.trim());
-	return `make movie poster sized image, prominently include the movie title "${safeTitle}" as part of the poster design, preserve other important existing visual elements, no borders or frames around the poster, don't add any other text.`;
-}
-
-function escapeXml(value: string): string {
-	return value
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&#39;');
-}
-
-function wrapTitle(title: string, maxCharsPerLine: number, maxLines: number): string[] {
-	const words = title.trim().split(/\s+/).filter(Boolean);
-	if (!words.length) return ['UNTITLED'];
-
-	const lines: string[] = [];
-	let current = '';
-
-	for (const word of words) {
-		const candidate = current ? `${current} ${word}` : word;
-		if (candidate.length <= maxCharsPerLine) {
-			current = candidate;
-			continue;
-		}
-		if (current) lines.push(current);
-		current = word;
-		if (lines.length >= maxLines - 1) break;
-	}
-
-	if (current && lines.length < maxLines) {
-		lines.push(current);
-	}
-
-	if (lines.length === 0) lines.push(words.join(' ').slice(0, maxCharsPerLine));
-	return lines.slice(0, maxLines);
-}
-
-async function applyTitleOverlay(posterBuffer: Buffer, title: string): Promise<Buffer> {
-	const width = 1024;
-	const height = 1536;
-	const maxCharsPerLine = title.length > 36 ? 20 : 24;
-	const lines = wrapTitle(title.toUpperCase(), maxCharsPerLine, 3).map(escapeXml);
-	const fontSize = lines.length === 1 ? 90 : lines.length === 2 ? 72 : 58;
-	const lineHeight = Math.round(fontSize * 1.12);
-	const textBlockHeight = lineHeight * lines.length;
-	const bottomPadding = 72;
-	const textTop = height - bottomPadding - textBlockHeight;
-
-	const textMarkup = lines
-		.map((line, index) => {
-			const y = textTop + lineHeight * (index + 1);
-			return `<text x="50%" y="${y}" text-anchor="middle">${line}</text>`;
-		})
-		.join('');
-
-	const overlaySvg = `
-<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="titleFade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
-      <stop offset="45%" stop-color="rgba(0,0,0,0.42)"/>
-      <stop offset="100%" stop-color="rgba(0,0,0,0.85)"/>
-    </linearGradient>
-  </defs>
-  <rect x="0" y="0" width="${width}" height="${height}" fill="url(#titleFade)"/>
-  <g fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="800" letter-spacing="1.4">
-    ${textMarkup}
-  </g>
-</svg>`;
-
-	return sharp(posterBuffer)
-		.composite([{ input: Buffer.from(overlaySvg) }])
-		.webp({ quality: 92 })
-		.toBuffer();
+	return `make movie poster sized image, include the movie title "${safeTitle}" as part of the poster design, preserve other important existing visual elements, no borders or frames around the poster, don't add any other text.`;
 }
 
 type ThumbnailSource = {
@@ -247,10 +173,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			.resize(1024, 1536, { fit: 'cover' })
 			.webp({ quality: 92 })
 			.toBuffer();
-
-		if (includeTitle) {
-			posterBuffer = await applyTitleOverlay(posterBuffer, title);
-		}
 
 		const posterDir = path.join(process.cwd(), 'static', 'images', 'posters');
 		await mkdir(posterDir, { recursive: true });

@@ -2,6 +2,7 @@ import { env } from '$env/dynamic/public';
 import { fetchAllContent } from '$lib/server/content-service';
 import { createSupabaseClient } from '$lib/server/supabaseClient';
 import type { ContentItem } from '$lib/tv/types';
+import { slugify } from '$lib/tv/slug';
 
 export const prerender = true;
 
@@ -29,11 +30,31 @@ export const GET = async () => {
 	entries.push({ path: '/stats', lastmod: undefined });
 
 	const content = await fetchAllContent();
+	const personLastmod = new Map<string, string>();
 	for (const item of content) {
 		if (!item?.slug) continue;
 		const path = item.type === 'movie' ? `/movie/${item.slug}` : `/series/${item.slug}`;
 		const lastmod = item.updatedAt ? new Date(item.updatedAt).toISOString() : undefined;
 		entries.push({ path, lastmod });
+
+		const itemPeople = [
+			...(Array.isArray((item as any).creators) ? ((item as any).creators as unknown[]) : []),
+			...(Array.isArray((item as any).starring) ? ((item as any).starring as unknown[]) : [])
+		];
+
+		for (const personName of itemPeople) {
+			if (typeof personName !== 'string') continue;
+			const personSlug = slugify(personName);
+			if (!personSlug) continue;
+
+			const existing = personLastmod.get(personSlug);
+			if (!lastmod || (existing && existing >= lastmod)) continue;
+			personLastmod.set(personSlug, lastmod);
+		}
+	}
+
+	for (const [personSlug, personUpdatedAt] of personLastmod.entries()) {
+		entries.push({ path: `/people/${personSlug}`, lastmod: personUpdatedAt });
 	}
 
 	const deduped = Array.from(new Map(entries.map((entry) => [entry.path, entry])).values());

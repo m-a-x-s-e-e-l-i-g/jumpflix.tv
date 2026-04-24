@@ -85,6 +85,13 @@
 			notation: 'compact',
 			maximumFractionDigits: value >= 1000 ? 1 : 0
 		}).format(value);
+
+	let avatarError = $state(false);
+	// Reset error flag when the user (and thus their avatar URL) changes
+	$effect(() => {
+		$user;
+		avatarError = false;
+	});
 </script>
 
 {#if $loading}
@@ -103,11 +110,12 @@
 			title={xp ? m.stats_xpEarned({ xp: formatNumber(xp.total) }) : undefined}
 		>
 			<span class="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-foreground/5 ring-1 ring-foreground/6 transition-colors group-hover:bg-foreground/8">
-				{#if $user.user_metadata?.avatar_url}
+				{#if $user.user_metadata?.avatar_url && !avatarError}
 					<img
 						src={$user.user_metadata.avatar_url}
 						alt={$user.user_metadata?.name ?? 'User'}
 						class="h-full w-full rounded-full object-cover"
+						onerror={() => (avatarError = true)}
 					/>
 				{:else if $user.user_metadata?.name}
 					<span class="text-xs font-semibold">

@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
 
-	export let data: { suggestions: any[]; error: string | null };
+	export let data: { suggestions: any[]; error: string | null; usernames: Record<string, string> };
 
 	let selectedId: number | null = null;
 
@@ -47,6 +47,25 @@
 	$: adminPayloadText = selected
 		? jsonPretty(selected.admin_payload ?? selected.payload ?? {})
 		: '';
+
+	function diffFields(original: any, edited: any): { key: string; from: any; to: any; changed: boolean }[] {
+		const orig = (original && typeof original === 'object') ? original : {};
+		const edit = (edited && typeof edited === 'object') ? edited : {};
+		const keys = Array.from(new Set([...Object.keys(orig), ...Object.keys(edit)])).sort();
+		return keys.map((key) => {
+			const from = orig[key];
+			const to = edit[key];
+			const fromStr = JSON.stringify(from ?? null);
+			const toStr = JSON.stringify(to ?? null);
+			return { key, from, to, changed: fromStr !== toStr };
+		});
+	}
+
+	$: parsedAdminPayload = (() => {
+		try { return JSON.parse(adminPayloadText); } catch { return null; }
+	})();
+
+	$: diffRows = diffFields(selected?.payload ?? {}, parsedAdminPayload ?? selected?.payload ?? {});
 
 	function statusPillClass(status: unknown) {
 		const s = String(status ?? '').toLowerCase();
@@ -180,14 +199,45 @@
 							<div class="mt-2 text-xs text-white/60">
 								Episode: S{selected.season_number} · E{selected.episode_number}
 							</div>
-						{/if}
-					</div>
+						{/if}					{#if selected.created_by}
+						<div class="mt-2 text-xs text-white/50">
+							Submitted by <span class="text-white/80 font-medium">{data.usernames?.[selected.created_by] ?? selected.created_by}</span>
+						</div>
+					{/if}					</div>
 				</div>
 
 				<div class="mt-5 grid grid-cols-1 gap-4">
-					<div class="rounded-xl border border-white/10 bg-black/20 p-4">
-						<div class="mb-2 text-xs text-white/60">Payload</div>
-						<pre class="overflow-auto text-xs text-white/80">{jsonPretty(selected.payload)}</pre>
+					<!-- Diff: suggestion vs admin payload -->
+					<div class="rounded-xl border border-white/10 bg-black/20 overflow-hidden">
+						<div class="flex items-center justify-between gap-4 border-b border-white/10 px-4 py-2">
+							<span class="text-xs font-medium text-white/60">Changes</span>
+							<div class="flex gap-4 text-[10px] text-white/40">
+								<span class="flex items-center gap-1.5"><span class="inline-block h-2 w-2 rounded-sm bg-red-500/50"></span>Suggested</span>
+								<span class="flex items-center gap-1.5"><span class="inline-block h-2 w-2 rounded-sm bg-green-500/50"></span>Admin edit</span>
+								<span class="flex items-center gap-1.5"><span class="inline-block h-2 w-2 rounded-sm bg-white/10"></span>Unchanged</span>
+							</div>
+						</div>
+						{#if diffRows.length === 0}
+							<div class="px-4 py-3 text-xs text-white/40">No fields in payload.</div>
+						{:else}
+							<table class="w-full text-xs">
+								<tbody>
+									{#each diffRows as row}
+										<tr class={row.changed ? 'bg-yellow-400/5' : ''}>
+											<td class="w-1/4 border-b border-white/5 px-4 py-2 font-mono text-white/50 align-top">{row.key}</td>
+											{#if row.changed}
+												<td class="w-5/8 border-b border-white/5 px-3 py-2 align-top">
+													<div class="rounded bg-red-500/10 px-2 py-1 font-mono text-red-300 line-through opacity-70">{JSON.stringify(row.from ?? null)}</div>
+													<div class="mt-1 rounded bg-green-500/10 px-2 py-1 font-mono text-green-300">{JSON.stringify(row.to ?? null)}</div>
+												</td>
+											{:else}
+												<td class="w-5/8 border-b border-white/5 px-3 py-2 font-mono text-white/40 align-top">{JSON.stringify(row.from ?? null)}</td>
+											{/if}
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						{/if}
 					</div>
 
 					<form method="POST" use:enhance class="space-y-4">

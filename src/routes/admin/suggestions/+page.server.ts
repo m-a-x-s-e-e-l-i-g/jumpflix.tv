@@ -37,10 +37,37 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.limit(200);
 
 	if (error) {
-		return { suggestions: [], error: error.message };
+		return { suggestions: [], error: error.message, usernames: {} };
 	}
 
-	return { suggestions: data ?? [], error: null };
+	const suggestions = data ?? [];
+
+	// Resolve display names for all unique submitters
+	const userIds = [...new Set(
+		suggestions
+			.map((s: any) => (typeof s.created_by === 'string' ? s.created_by : null))
+			.filter(Boolean) as string[]
+	)];
+
+	const usernames: Record<string, string> = {};
+	if (userIds.length > 0) {
+		try {
+			await Promise.all(
+				userIds.map(async (uid) => {
+					const { data: authUser } = await (supabase as any).auth.admin.getUserById(uid);
+					if (!authUser?.user) return;
+					const u = authUser.user;
+					if (typeof u.email === 'string' && u.email.trim()) {
+						usernames[uid] = u.email.trim();
+					}
+				})
+			);
+		} catch {
+			// Non-critical — continue without usernames
+		}
+	}
+
+	return { suggestions, error: null, usernames };
 };
 
 export const actions: Actions = {

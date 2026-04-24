@@ -25,7 +25,7 @@
 		for (const item of items) {
 			const key = String(item.parsedSlug);
 			nextSelections[key] = item.suggestedSlug ? `known:${item.suggestedSlug}` : `raw:${item.parsedSlug}`;
-			nextIncluded[key] = true;
+			nextIncluded[key] = Boolean(item.suggestedSlug);
 		}
 
 		previewSelections = nextSelections;
@@ -48,6 +48,15 @@
 		if (confidence === 'strong') return 'Strong suggestion';
 		if (confidence === 'possible') return 'Possible suggestion';
 		return 'No suggestion';
+	}
+
+	function matchedPreviewItems(items: unknown) {
+		if (!Array.isArray(items)) return [];
+		return items.filter((item) => {
+			if (!item || typeof item !== 'object') return false;
+			const suggestedSlug = (item as { suggestedSlug?: unknown }).suggestedSlug;
+			return typeof suggestedSlug === 'string' && suggestedSlug.length > 0;
+		});
 	}
 </script>
 
@@ -150,7 +159,7 @@
 
 			<form method="POST" use:enhance class="mt-4 space-y-3">
 				<input type="hidden" name="bulk_text" value={bulkText} />
-				{#each actionForm.preview.items as item (item.parsedSlug)}
+				{#each matchedPreviewItems(actionForm.preview.items) as item (item.parsedSlug)}
 					<div class="rounded-xl border border-white/10 bg-black/20 p-4">
 						<div class="flex flex-wrap items-start justify-between gap-3">
 							<div>

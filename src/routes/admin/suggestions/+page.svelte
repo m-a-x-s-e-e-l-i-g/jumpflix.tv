@@ -2,7 +2,7 @@
 	import { page } from '$app/stores';
 	import { enhance } from '$app/forms';
 
-	export let data: { suggestions: any[]; error: string | null };
+	export let data: { suggestions: any[]; error: string | null; usernames: Record<string, string> };
 
 	let selectedId: number | null = null;
 
@@ -199,8 +199,11 @@
 							<div class="mt-2 text-xs text-white/60">
 								Episode: S{selected.season_number} · E{selected.episode_number}
 							</div>
-						{/if}
-					</div>
+						{/if}					{#if selected.created_by}
+						<div class="mt-2 text-xs text-white/50">
+							Submitted by <span class="text-white/80 font-medium">{data.usernames?.[selected.created_by] ?? selected.created_by}</span>
+						</div>
+					{/if}					</div>
 				</div>
 
 				<div class="mt-5 grid grid-cols-1 gap-4">

@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import { createEventDispatcher, onDestroy, onMount } from 'svelte';
 	import { browser } from '$app/environment';
 	import type { MediaPlayerElement } from 'vidstack/elements';
@@ -6,6 +6,7 @@
 	import PauseIcon from 'lucide-svelte/icons/pause';
 	import RotateCcwIcon from 'lucide-svelte/icons/rotate-ccw';
 	import SkipForwardIcon from 'lucide-svelte/icons/skip-forward';
+	import MapPinIcon from 'lucide-svelte/icons/map-pin';
 	import VolumeXIcon from 'lucide-svelte/icons/volume-x';
 	import Volume2Icon from 'lucide-svelte/icons/volume-2';
 	import Maximize2Icon from 'lucide-svelte/icons/maximize-2';
@@ -22,6 +23,8 @@
 	import { parseTimecodeToSeconds } from '$lib/utils/timecode';
 	import { getParkourSpotUrl } from '$lib/utils';
 	import * as m from '$lib/paraglide/messages';
+	import { user as authUser } from '$lib/stores/authStore';
+	import { toast } from 'svelte-sonner';
 	import {
 		updateWatchProgress,
 		getResumePosition,
@@ -257,6 +260,16 @@
 	let spotSuggestionTriggerTitle = 'Suggest spot';
 	let spotSuggestionTriggerAriaLabel = 'Suggest a parkour spot (chapter)';
 
+	// Range picker state
+	let isRangePicking = false;
+	let rpStart: number | null = null;
+	let rpEnd: number | null = null;
+	let videoDuration = 0;
+	let rpDragging: 'start' | 'end' | null = null;
+	let rangeOverlayEl: HTMLElement | null = null;
+	let spotDialogOpen = false;
+	$: rpConfirmable = rpStart !== null && rpEnd !== null && rpStart !== rpEnd;
+
 	function parkourSpotUrl(spotId: string): string {
 		return getParkourSpotUrl(spotId);
 	}
@@ -388,6 +401,104 @@
 		try {
 			player.currentTime = clampedTime;
 		} catch {}
+	}
+
+	function fmtTimeSec(seconds: number): string {
+		if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+		const s = Math.floor(seconds);
+		const mins = Math.floor(s / 60);
+		const r = s % 60;
+		return `${mins}:${String(r).padStart(2, '0')}`;
+	}
+
+	function enterRangePicking() {
+		if (!playerEl) return;
+		videoDuration = Number(playerEl.duration) || 0;
+		if (isChangingSpot) {
+			rpStart = activeSpotStartSeconds !== null ? Math.floor(activeSpotStartSeconds) : Math.floor(Number(playerEl.currentTime) || 0);
+			rpEnd = activeSpotEndSeconds !== null ? Math.floor(activeSpotEndSeconds) : Math.min(Math.floor(videoDuration), rpStart + 30);
+		} else {
+			rpStart = Math.floor(Number(playerEl.currentTime) || 0);
+			rpEnd = Math.min(Math.floor(videoDuration), rpStart + 30);
+		}
+		isRangePicking = true;
+		controlsVisible = true;
+		clearHideControlsTimer();
+	}
+
+	function cancelRangePicking() {
+		isRangePicking = false;
+		rpStart = null;
+		rpEnd = null;
+		rpDragging = null;
+	}
+
+	function markRangeStart() {
+		rpStart = Math.floor(Number(playerEl?.currentTime ?? 0));
+	}
+
+	function markRangeEnd() {
+		rpEnd = Math.floor(Number(playerEl?.currentTime ?? 0));
+	}
+
+	function confirmRange() {
+		if (!rpConfirmable) return;
+		if (rpEnd !== null && rpStart !== null && rpEnd < rpStart) {
+			const tmp = rpStart;
+			rpStart = rpEnd;
+			rpEnd = tmp;
+		}
+		isRangePicking = false;
+		spotDialogOpen = true;
+	}
+
+	function onOverlayPointerDown(e: PointerEvent) {
+		if (!rangeOverlayEl || videoDuration <= 0) return;
+		e.stopPropagation();
+		e.preventDefault();
+		const rect = rangeOverlayEl.getBoundingClientRect();
+		const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+		const seconds = Math.floor(frac * videoDuration);
+		// Check if clicking near an existing handle
+		const handleThresholdPx = 20;
+		let grabbed: 'start' | 'end' | null = null;
+		if (rpStart !== null) {
+			const startX = (rpStart / videoDuration) * rect.width;
+			if (Math.abs(e.clientX - rect.left - startX) < handleThresholdPx) grabbed = 'start';
+		}
+		if (rpEnd !== null && grabbed === null) {
+			const endX = (rpEnd / videoDuration) * rect.width;
+			if (Math.abs(e.clientX - rect.left - endX) < handleThresholdPx) grabbed = 'end';
+		}
+		if (grabbed !== null) {
+			rpDragging = grabbed;
+			(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		} else {
+			// Just seek
+			seekToSeconds(seconds);
+		}
+	}
+
+	function onOverlayPointerMove(e: PointerEvent) {
+		if (!rpDragging || !rangeOverlayEl || videoDuration <= 0) return;
+		const rect = rangeOverlayEl.getBoundingClientRect();
+		const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+		const seconds = Math.floor(frac * videoDuration);
+		if (rpDragging === 'start') rpStart = seconds;
+		else rpEnd = seconds;
+		seekToSeconds(seconds);
+	}
+
+	function onOverlayPointerUp() {
+		rpDragging = null;
+	}
+
+	function onHandlePointerDown(e: PointerEvent, handle: 'start' | 'end') {
+		e.stopPropagation();
+		e.preventDefault();
+		rpDragging = handle;
+		// Capture on the overlay so its pointermove/pointerup listeners receive all subsequent events
+		rangeOverlayEl?.setPointerCapture(e.pointerId);
 	}
 
 	function clearTouchSkipFeedback() {
@@ -1883,6 +1994,7 @@
 	function shouldAutoHide() {
 		if (!browser) return false;
 		if (!autoHidePlayer) return false;
+		if (isRangePicking) return false;
 		const mediaEl = autoHidePlayer.querySelector('video, audio') as HTMLMediaElement | null;
 		const currentlyPaused = getPausedState(autoHidePlayer, mediaEl);
 		if (currentlyPaused) return false;
@@ -2829,6 +2941,7 @@
 					class="player-controls"
 					data-jumpflix-gesture-ignore="true"
 					data-hidden={controlsVisible && !youTubeGateVisible ? undefined : ''}
+					data-range-picking={isRangePicking ? '' : undefined}
 					bind:this={controlsEl}
 				>
 					{#if typeof onClose === 'function'}
@@ -2866,8 +2979,109 @@
 									<div class="slider-chapter-title" data-part="chapter-title"></div>
 									<media-slider-value class="slider-value"></media-slider-value>
 								</media-slider-preview>
+								{#if isRangePicking && videoDuration > 0}
+									{@const minS = Math.min(rpStart ?? 0, rpEnd ?? 0)}
+									{@const maxS = Math.max(rpStart ?? 0, rpEnd ?? 0)}
+									<div
+										class="range-overlay"
+										bind:this={rangeOverlayEl}
+										data-jumpflix-gesture-ignore="true"
+										on:pointerdown={onOverlayPointerDown}
+										on:pointermove={onOverlayPointerMove}
+										on:pointerup={onOverlayPointerUp}
+										on:pointercancel={onOverlayPointerUp}
+									>
+										<div
+											class="range-fill"
+											style="left: {(minS / videoDuration) * 100}%; width: {((maxS - minS) / videoDuration) * 100}%"
+											aria-hidden="true"
+										></div>
+										<div
+											class="range-handle rh-start"
+											style="left: {Math.max(0, Math.min(100, ((rpStart ?? 0) / videoDuration) * 100))}%"
+											aria-label="Start: {fmtTimeSec(rpStart ?? 0)}"
+											role="slider"
+											aria-valuemin={0}
+											aria-valuemax={Math.floor(videoDuration)}
+											aria-valuenow={rpStart ?? 0}
+											tabindex="0"
+											on:pointerdown={(e) => onHandlePointerDown(e, 'start')}
+											on:keydown={(e) => {
+												if (e.key === 'ArrowLeft') { e.preventDefault(); rpStart = Math.max(0, (rpStart ?? 0) - 1); }
+												else if (e.key === 'ArrowRight') { e.preventDefault(); rpStart = Math.min(Math.floor(videoDuration), (rpStart ?? 0) + 1); }
+											}}
+										>
+											<span class="rh-tooltip rh-tooltip-start">{fmtTimeSec(rpStart ?? 0)}</span>
+										</div>
+										<div
+											class="range-handle rh-end"
+											style="left: {Math.max(0, Math.min(100, ((rpEnd ?? 0) / videoDuration) * 100))}%"
+											aria-label="End: {fmtTimeSec(rpEnd ?? 0)}"
+											role="slider"
+											aria-valuemin={0}
+											aria-valuemax={Math.floor(videoDuration)}
+											aria-valuenow={rpEnd ?? 0}
+											tabindex="0"
+											on:pointerdown={(e) => onHandlePointerDown(e, 'end')}
+											on:keydown={(e) => {
+												if (e.key === 'ArrowLeft') { e.preventDefault(); rpEnd = Math.max(0, (rpEnd ?? 0) - 1); }
+												else if (e.key === 'ArrowRight') { e.preventDefault(); rpEnd = Math.min(Math.floor(videoDuration), (rpEnd ?? 0) + 1); }
+											}}
+										>
+											<span class="rh-tooltip rh-tooltip-end">{fmtTimeSec(rpEnd ?? 0)}</span>
+										</div>
+									</div>
+								{/if}
 							</media-time-slider>
 						</media-controls-group>
+
+						{#if isRangePicking}
+							<div class="range-picker-bar" data-jumpflix-gesture-ignore="true">
+								<div class="rp-times">
+									<button
+										type="button"
+										class="rp-time-btn"
+										title="Seek to current position and set as start"
+										on:click|stopPropagation={markRangeStart}
+									>
+										<span class="rp-time-label">Start</span>
+										<span class="rp-time-value">{rpStart !== null ? fmtTimeSec(rpStart) : '—'}</span>
+									</button>
+									<span class="rp-arrow" aria-hidden="true">→</span>
+									<button
+										type="button"
+										class="rp-time-btn"
+										title="Seek to current position and set as end"
+										on:click|stopPropagation={markRangeEnd}
+									>
+										<span class="rp-time-label">End</span>
+										<span class="rp-time-value">{rpEnd !== null ? fmtTimeSec(rpEnd) : '—'}</span>
+									</button>
+								</div>
+								<div class="rp-hint">
+									{#if rpStart === null}
+										Seek to start → click <strong>Start</strong>
+									{:else if rpEnd === null}
+										Seek to end → click <strong>End</strong>
+									{:else}
+										Drag handles or click below to adjust
+									{/if}
+								</div>
+								<div class="rp-actions">
+									<button
+										type="button"
+										class="rp-action-cancel"
+										on:click|stopPropagation={cancelRangePicking}
+									>Cancel</button>
+									<button
+										type="button"
+										class="rp-action-confirm"
+										disabled={!rpConfirmable}
+										on:click|stopPropagation={confirmRange}
+									>Pick Spot →</button>
+								</div>
+							</div>
+						{/if}
 
 						<div class="controls-row">
 							<media-controls-group class="controls-group left">
@@ -3044,21 +3258,41 @@
 								</media-menu>
 
 								{#if showSpotSuggestion}
+									{#if !isRangePicking}
+										<button
+											type="button"
+											class="control-button control-button-suggest-spot"
+											aria-label={spotSuggestionTriggerAriaLabel}
+											title={spotSuggestionTriggerTitle}
+											data-jumpflix-gesture-ignore="true"
+											on:click={() => {
+												if (!$authUser) {
+													toast.message(m.tv_spotSuggestion_signInRequired());
+													return;
+												}
+												enterRangePicking();
+											}}
+										>
+											<span class="icon" aria-hidden="true"><MapPinIcon /></span>
+											<span class="sr-only">{spotSuggestionTriggerTitle}</span>
+										</button>
+									{/if}
 									<SpotChapterSuggestionDialog
+										bind:open={spotDialogOpen}
+										showTrigger={false}
 										{mediaId}
 										{mediaType}
 										{playbackKey}
 										getCurrentTimeSeconds={() => Number(playerEl?.currentTime ?? 0)}
 										spotChapterId={activeSpotChapterId}
 										initialSpotId={activeSpotSpotId}
-										initialStartSeconds={activeSpotStartSeconds}
-										initialEndSeconds={activeSpotEndSeconds}
+										initialStartSeconds={rpStart !== null ? rpStart : activeSpotStartSeconds}
+										initialEndSeconds={rpEnd !== null ? rpEnd : activeSpotEndSeconds}
 										lockTimeRange={isChangingSpot}
-										triggerClass="control-button"
-										triggerAriaLabel={spotSuggestionTriggerAriaLabel}
-										triggerTitle={spotSuggestionTriggerTitle}
 										on:submitted={() => {
 											spotChaptersRefreshToken += 1;
+											rpStart = null;
+											rpEnd = null;
 										}}
 									/>
 								{/if}
@@ -3523,7 +3757,7 @@
 		z-index: 0;
 	}
 
-	.player-controls[data-hidden] {
+	.player-controls[data-hidden]:not([data-range-picking]) {
 		opacity: 0;
 		pointer-events: none;
 	}
@@ -3824,6 +4058,10 @@
 		display: none;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.control-button-suggest-spot .icon {
+		display: inline-flex;
 	}
 
 	:global(media-airplay-button.control-button .icon),
@@ -4226,6 +4464,220 @@
 	.time-slider .slider-chapter .slider-track-fill {
 		inline-size: var(--chapter-fill, 0%);
 	}
+
+	/* ── Range picker overlay ───────────────────────────────── */
+
+	.range-overlay {
+		position: absolute;
+		inset-inline: 0;
+		top: 50%;
+		transform: translateY(-50%);
+		height: 28px;
+		cursor: crosshair;
+		z-index: 10;
+		pointer-events: auto;
+		touch-action: none;
+	}
+
+	.range-fill {
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		height: var(--media-slider-track-height, 6px);
+		background: color-mix(in oklch, var(--primary) 64%, white 8%);
+		border-radius: 0;
+		pointer-events: none;
+		z-index: 11;
+	}
+
+	.range-handle {
+		position: absolute;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		background: white;
+		border: 2.5px solid var(--primary);
+		box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 28%, transparent);
+		cursor: ew-resize;
+		z-index: 12;
+		pointer-events: all;
+		touch-action: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: box-shadow 120ms ease, transform 120ms ease;
+		outline: none;
+	}
+
+	.range-handle:hover,
+	.range-handle:focus-visible {
+		transform: translate(-50%, -50%) scale(1.25);
+		box-shadow: 0 0 0 6px color-mix(in oklch, var(--primary) 36%, transparent);
+	}
+
+	.rh-end {
+		background: var(--primary);
+		border-color: white;
+	}
+
+	/* Expand the pointer hit area without affecting layout */
+	.range-handle::before {
+		content: '';
+		position: absolute;
+		inset: -10px;
+		border-radius: 50%;
+	}
+
+	.rh-tooltip {
+		position: absolute;
+		bottom: calc(100% + 10px);
+		left: 50%;
+		transform: translateX(-50%);
+		background: var(--player-surface-strong);
+		color: var(--player-text);
+		font-size: 0.7rem;
+		font-variant-numeric: tabular-nums;
+		font-weight: 600;
+		padding: 0.2rem 0.45rem;
+		border-radius: 5px;
+		border: 1px solid var(--player-border);
+		white-space: nowrap;
+		pointer-events: none;
+		user-select: none;
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+	}
+
+	.rh-tooltip-start {
+		border-color: color-mix(in oklch, var(--primary) 50%, var(--player-border));
+	}
+
+	.rh-tooltip-end {
+		border-color: color-mix(in oklch, var(--primary) 50%, var(--player-border));
+	}
+
+	/* ── Range picker bar ───────────────────────────────────── */
+
+	.range-picker-bar {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.5rem 0.75rem;
+		background: var(--player-surface);
+		border: 1px solid var(--player-border);
+		border-radius: 0.85rem;
+		backdrop-filter: blur(14px) saturate(112%);
+		-webkit-backdrop-filter: blur(14px) saturate(112%);
+		flex-wrap: wrap;
+		row-gap: 0.5rem;
+		pointer-events: auto;
+	}
+
+	.rp-times {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex: 0 0 auto;
+	}
+
+	.rp-time-btn {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.1rem;
+		padding: 0.3rem 0.6rem;
+		border-radius: 0.6rem;
+		border: 1px solid var(--player-border);
+		background: var(--player-surface-soft);
+		color: var(--player-text);
+		cursor: pointer;
+		transition: background 140ms ease;
+		min-width: 4.5rem;
+	}
+
+	.rp-time-btn:hover {
+		background: var(--player-surface-strong);
+	}
+
+	.rp-time-label {
+		font-size: 0.6rem;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		color: var(--player-text-muted);
+		font-weight: 600;
+	}
+
+	.rp-time-value {
+		font-size: 0.85rem;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+		line-height: 1.1;
+	}
+
+	.rp-arrow {
+		color: var(--player-text-muted);
+		font-size: 0.9rem;
+		flex: 0 0 auto;
+	}
+
+	.rp-hint {
+		flex: 1 1 auto;
+		font-size: 0.72rem;
+		color: var(--player-text-muted);
+		min-width: 0;
+	}
+
+	.rp-hint strong {
+		color: var(--player-text);
+	}
+
+	.rp-actions {
+		display: flex;
+		gap: 0.4rem;
+		flex: 0 0 auto;
+		margin-inline-start: auto;
+	}
+
+	.rp-action-cancel {
+		padding: 0.35rem 0.75rem;
+		border-radius: 0.55rem;
+		border: 1px solid var(--player-border);
+		background: transparent;
+		color: var(--player-text-muted);
+		cursor: pointer;
+		font-size: 0.78rem;
+		transition: color 140ms ease, background 140ms ease;
+	}
+
+	.rp-action-cancel:hover {
+		color: var(--player-text);
+		background: var(--player-surface-soft);
+	}
+
+	.rp-action-confirm {
+		padding: 0.35rem 0.85rem;
+		border-radius: 0.55rem;
+		border: 1px solid var(--player-primary-border);
+		background: var(--player-primary-soft);
+		color: var(--player-text);
+		cursor: pointer;
+		font-size: 0.78rem;
+		font-weight: 600;
+		transition: background 140ms ease, opacity 140ms ease;
+	}
+
+	.rp-action-confirm:hover:not(:disabled) {
+		background: var(--player-primary-soft-strong);
+	}
+
+	.rp-action-confirm:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	/* ── end range picker ───────────────────────────────────── */
 
 	.time-slider .slider-thumb,
 	.volume-slider .slider-thumb {

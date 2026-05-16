@@ -258,6 +258,7 @@ export type Database = {
 					id: number;
 					slug: string;
 					type: 'movie' | 'series';
+					availability_status: 'available' | 'unavailable';
 					title: string;
 					description: string | null;
 					thumbnail: string | null;
@@ -303,6 +304,7 @@ export type Database = {
 					id?: number;
 					slug: string;
 					type: 'movie' | 'series';
+					availability_status?: 'available' | 'unavailable';
 					title: string;
 					description?: string | null;
 					thumbnail?: string | null;
@@ -348,6 +350,7 @@ export type Database = {
 					id?: number;
 					slug?: string;
 					type?: 'movie' | 'series';
+					availability_status?: 'available' | 'unavailable';
 					title?: string;
 					description?: string | null;
 					thumbnail?: string | null;

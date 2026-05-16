@@ -14,6 +14,7 @@
 	}>();
 
 	let {
+		open = $bindable(false),
 		mediaId = null,
 		mediaType = null,
 		playbackKey = null,
@@ -23,11 +24,13 @@
 		initialStartSeconds = null,
 		initialEndSeconds = null,
 		lockTimeRange = false,
+		showTrigger = true,
 		triggerClass =
 			'control-button',
 		triggerAriaLabel = 'Suggest a parkour spot (chapter)',
 		triggerTitle = 'Suggest spot'
 	} = $props<{
+		open?: boolean;
 		mediaId?: number | null;
 		mediaType?: 'movie' | 'series' | null;
 		playbackKey?: string | null;
@@ -37,12 +40,11 @@
 		initialStartSeconds?: number | null;
 		initialEndSeconds?: number | null;
 		lockTimeRange?: boolean;
+		showTrigger?: boolean;
 		triggerClass?: string;
 		triggerAriaLabel?: string;
 		triggerTitle?: string;
 	}>();
-
-	let open = $state(false);
 	let isSubmitting = $state(false);
 	let isChangeMode = $derived(Boolean(spotChapterId));
 	let isAuthenticated = $derived(Boolean($authUser));
@@ -178,6 +180,7 @@
 </script>
 
 <Dialog.Root bind:open>
+	{#if showTrigger}
 	<Dialog.Trigger
 		class={triggerClass}
 		aria-label={triggerAriaLabel}
@@ -194,6 +197,7 @@
 		<span class="icon" aria-hidden="true"><MapPinIcon /></span>
 		<span class="sr-only">{triggerTitle}</span>
 	</Dialog.Trigger>
+	{/if}
 
 	<Dialog.Overlay
 		class="fixed inset-0 z-[60] bg-black/78 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"

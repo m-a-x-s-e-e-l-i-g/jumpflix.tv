@@ -15,7 +15,7 @@
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
 	import { resolveMoviePlaybackSource } from '$lib/tv/playback-source';
-	import { isFamilySafeContent } from '$lib/tv/utils';
+	import { isContentUnavailable, isFamilySafeContent } from '$lib/tv/utils';
 	import ShieldOffIcon from 'lucide-svelte/icons/shield-off';
 
 	export let item: ContentItem;
@@ -138,6 +138,7 @@
 	let familySafeOnlyEnabled = false;
 	$: familySafeOnlyEnabled = $familySafeOnly;
 	$: isFamilySafeBlocked = familySafeOnlyEnabled && !isFamilySafeContent(item);
+	$: contentUnavailable = isContentUnavailable(item);
 
 	// no loading lifecycle needed
 
@@ -233,6 +234,9 @@
 			{/if}
 			{#if item.paid && !isWatched}
 				<span class="card-badge card-badge--paid">{m.tv_paid()}</span>
+			{/if}
+			{#if contentUnavailable}
+				<span class="card-badge">Unavailable</span>
 			{/if}
 			{#if isWatched}
 				<span class="card-badge card-badge--watched">{m.tv_showWatched()}</span>

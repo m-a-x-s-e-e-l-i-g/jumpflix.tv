@@ -5,7 +5,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import { familySafeOnly } from '$lib/tv/store';
 	import type { ContentItem, Movie, Series } from '$lib/tv/types';
-	import { isFamilySafeContent, isImage, keyFor } from '$lib/tv/utils';
+	import { isContentUnavailable, isFamilySafeContent, isImage, keyFor } from '$lib/tv/utils';
 	import ShieldOffIcon from 'lucide-svelte/icons/shield-off';
 	import {
 		getLatestWatchProgressByBaseId,
@@ -48,6 +48,7 @@
 
 	function metaParts(item: ContentItem): string[] {
 		const parts: string[] = [item.type === 'movie' ? m.tv_pillFilm() : m.tv_pillSeries()];
+		if (isContentUnavailable(item)) parts.push('Unavailable');
 		if (item.type === 'movie' && item.year) parts.push(item.year);
 		if (item.type === 'movie' && item.duration) parts.push(item.duration);
 		if (item.type === 'series') {
@@ -212,6 +213,9 @@
 							{/if}
 							{#if item.paid && !watchState.isWatched}
 								<span class="catalog-badge catalog-badge--paid">{m.tv_paid()}</span>
+							{/if}
+							{#if isContentUnavailable(item)}
+								<span class="catalog-badge">Unavailable</span>
 							{/if}
 							{#if watchState.isWatched}
 								<span class="catalog-badge catalog-badge--watched">{m.tv_showWatched()}</span>

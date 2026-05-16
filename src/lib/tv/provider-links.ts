@@ -1,6 +1,7 @@
 import { withUtm } from '$lib/utils';
 import type { ContentItem, Episode } from './types';
 import { getPublicProviderLinkSource, resolveMoviePlaybackSource } from './playback-source';
+import { isContentUnavailable } from './utils';
 
 export type ProviderLink = {
 	kind: 'youtube' | 'vimeo';
@@ -10,6 +11,8 @@ export type ProviderLink = {
 };
 
 export function getProviderLink(item: ContentItem, episode: Episode | null): ProviderLink | null {
+	if (isContentUnavailable(item)) return null;
+
 	if (item.type === 'movie') {
 		const movie = item;
 		const publicSource = getPublicProviderLinkSource(resolveMoviePlaybackSource(movie));

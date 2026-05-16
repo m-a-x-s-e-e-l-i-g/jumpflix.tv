@@ -1,6 +1,10 @@
 import { getFeedBySlug } from './feeds';
 import type { ContentItem, Movie, SortBy, TvState, VideoTrack } from './types';
 
+export function isContentUnavailable(item: ContentItem | null | undefined) {
+	return item?.availabilityStatus === 'unavailable';
+}
+
 // Deterministic seeded shuffle (xmur3 + sfc32)
 function xmur3(str: string) {
 	let h = 1779033703 ^ str.length;
@@ -427,6 +431,7 @@ import { resolveMoviePlaybackSource } from './playback-source';
 
 export function isInlinePlayable(content: ContentItem | null | undefined) {
 	if (!content) return false;
+	if (isContentUnavailable(content)) return false;
 	if (content.type === 'movie') return Boolean(resolveMoviePlaybackSource(content));
 	if (content.type === 'series') {
 		const series = content as any;

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { ContentItem, ContentWarning, Episode, Movie } from './types';
-	import { isInlinePlayable } from './utils';
+	import { isContentUnavailable, isInlinePlayable } from './utils';
 	import { getUrlForItem, getEpisodeUrl } from './slug';
 	import { browser } from '$app/environment';
+	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { toast } from 'svelte-sonner';
 	import * as Select from '$lib/components/ui/select/index.js';
@@ -121,7 +122,9 @@
 	let spotChaptersPlaybackKey: string | null = null;
 	let spotChaptersMediaType: 'movie' | 'series' | null = null;
 	let familySafeOnlyEnabled = false;
+	let availabilitySaving = false;
 	$: familySafeOnlyEnabled = $familySafeOnly;
+	$: contentUnavailable = isContentUnavailable(selected);
 
 	function buildSeriesEpisodePlaybackKey(seriesId: number, episodeId: string): string {
 		return `series:${seriesId}:ep:${episodeId}`;
@@ -373,6 +376,40 @@
 			toast.error(err instanceof Error ? err.message : 'Failed to regenerate poster');
 		} finally {
 			regeneratingPoster = false;
+		}
+	}
+
+	async function updateAvailabilityStatus(nextStatus: 'available' | 'unavailable') {
+		if (!selected || availabilitySaving) return;
+
+		availabilitySaving = true;
+
+		try {
+			const res = await fetch('/api/admin/content-availability', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					mediaId: selected.id,
+					availabilityStatus: nextStatus
+				})
+			});
+
+			if (!res.ok) {
+				const body: unknown = await res.json().catch(() => ({}));
+				const message =
+					body !== null && typeof body === 'object' && 'message' in body
+						? String((body as { message: unknown }).message)
+						: '';
+				throw new Error(message || `HTTP ${res.status}`);
+			}
+
+			selected = { ...selected, availabilityStatus: nextStatus };
+			await invalidateAll();
+			toast.success(nextStatus === 'unavailable' ? 'Marked unavailable' : 'Marked available');
+		} catch (err: unknown) {
+			toast.error(err instanceof Error ? err.message : 'Failed to update availability');
+		} finally {
+			availabilitySaving = false;
 		}
 	}
 
@@ -1058,6 +1095,9 @@
 				<span class="detail-pill">
 					{selected.type === 'movie' ? m.tv_pillFilm() : m.tv_pillSeries()}
 				</span>
+				{#if contentUnavailable}
+					<span class="detail-pill detail-pill--unavailable">Unavailable</span>
+				{/if}
 				{#if selected.paid}
 					<span class="detail-pill detail-pill--paid">Paid</span>
 				{/if}
@@ -1120,6 +1160,22 @@
 								<span class="provider-icon provider-icon-vimeo h-4 w-4" aria-hidden="true"></span>
 							{/if}
 						</a>
+					{/if}
+					{#if $page.data?.isAdmin}
+						<button
+							type="button"
+							class="detail-icon detail-icon--label"
+							on:click={() => updateAvailabilityStatus(contentUnavailable ? 'available' : 'unavailable')}
+							disabled={availabilitySaving}
+							title={contentUnavailable ? 'Mark available' : 'Mark unavailable'}
+							aria-label={contentUnavailable ? 'Mark available' : 'Mark unavailable'}
+						>
+							{availabilitySaving
+								? 'Saving…'
+								: contentUnavailable
+									? 'Mark available'
+									: 'Mark unavailable'}
+						</button>
 					{/if}
 					{#if detailContentWarnings.length}
 						<Tooltip.Provider disableCloseOnTriggerClick={true}>
@@ -1191,7 +1247,7 @@
 					<div class="detail-play-observer" bind:this={playObserverEl}>
 						{#if !$showPlayer}
 							<button
-								disabled={familySafeBlocked || (isSeriesWithoutEpisode && !seriesExternalSourceUrl)}
+								disabled={contentUnavailable || familySafeBlocked || (isSeriesWithoutEpisode && !seriesExternalSourceUrl)}
 								on:click={handlePlayClick}
 								class="detail-play"
 							>
@@ -1200,6 +1256,8 @@
 								>
 								{#if familySafeBlocked}
 									Family safe only
+								{:else if contentUnavailable}
+									Unavailable
 								{:else if selected?.type === 'series'}
 									{#if selectedEpisode}
 										{#if isEpisodePlayable(selectedEpisode)}
@@ -1229,6 +1287,10 @@
 						<p class="detail-family-safe-note">
 							Playback is blocked for this title while Family safe only is enabled.
 						</p>
+					{/if}
+
+					{#if contentUnavailable}
+						<p class="detail-family-safe-note">This title has been marked unavailable.</p>
 					{/if}
 
 					{#if isAuthenticated && selected.type === 'movie'}
@@ -1803,6 +1865,11 @@
 		color: rgba(254, 240, 138, 0.85);
 	}
 
+	.detail-pill--unavailable {
+		border-color: rgba(251, 191, 36, 0.55);
+		color: rgba(253, 230, 138, 0.92);
+	}
+
 	.detail-icon {
 		display: inline-flex;
 		align-items: center;
@@ -1824,6 +1891,14 @@
 		color: rgba(248, 250, 252, 0.95);
 	}
 
+
+	.detail-icon--label {
+		width: auto;
+		padding: 0 0.7rem;
+		font-size: 0.68rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
 	.detail-icon-img {
 		width: 18px;
 		height: 18px;

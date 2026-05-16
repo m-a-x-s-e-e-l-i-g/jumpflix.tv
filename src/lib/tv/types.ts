@@ -49,6 +49,7 @@ export interface BaseContent {
 	id: number | string;
 	slug: string;
 	title: string;
+	availabilityStatus?: 'available' | 'unavailable';
 	description?: string;
 	thumbnail?: string;
 	blurhash?: string;

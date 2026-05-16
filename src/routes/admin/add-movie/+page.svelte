@@ -123,6 +123,39 @@
 		return uniqueList(names);
 	}
 
+	async function normalizeVideoMetadata(input: {
+		title: string;
+		description: string;
+		author: string;
+		provider: 'youtube' | 'vimeo';
+	}): Promise<{ description: string; creators: string[]; athletes: string[] } | null> {
+		const res = await fetch('/api/admin/normalize-video-metadata', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(input)
+		});
+		if (!res.ok) return null;
+		const body = (await res.json()) as {
+			description?: unknown;
+			creators?: unknown;
+			athletes?: unknown;
+		};
+
+		const description = typeof body.description === 'string' ? body.description.trim() : '';
+		const creators = Array.isArray(body.creators)
+			? body.creators.map((v) => (typeof v === 'string' ? v.trim() : '')).filter(Boolean)
+			: [];
+		const athletes = Array.isArray(body.athletes)
+			? body.athletes.map((v) => (typeof v === 'string' ? v.trim() : '')).filter(Boolean)
+			: [];
+
+		return {
+			description,
+			creators: uniqueList(creators),
+			athletes: uniqueList(athletes)
+		};
+	}
+
 
 	function updatePosterUrlFromSlug() {
 		if (posterTouched) return;
@@ -381,10 +414,26 @@
 			}
 			const data = await res.json();
 			title = data.title || '';
-			description = data.description || '';
+			const rawDescription = typeof data.description === 'string' ? data.description : '';
+			const rawAuthor = typeof data.author === 'string' ? data.author : '';
+
+			let normalized: { description: string; creators: string[]; athletes: string[] } | null = null;
+			try {
+				normalized = await normalizeVideoMetadata({
+					title,
+					description: rawDescription,
+					author: rawAuthor,
+					provider: source.provider
+				});
+			} catch {
+				// Non-blocking: keep original metadata if AI normalization fails.
+			}
+
+			description = normalized?.description || rawDescription;
 			year = data.year || '';
 			duration = data.duration || '';
-			creators = data.author || '';
+			creators = uniqueList([rawAuthor, ...(normalized?.creators ?? [])]).join(', ');
+			starring = uniqueList(normalized?.athletes ?? []).join(', ');
 			if (source.provider === 'youtube') {
 				provider = source.provider;
 				externalUrl = source.externalUrl;

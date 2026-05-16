@@ -42,8 +42,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const author = typeof body?.author === 'string' ? body.author.trim() : '';
 	const provider = body?.provider === 'vimeo' ? 'vimeo' : 'youtube';
 
-	if (!title && !description && !author) {
-		return json({ description: '', creators: [], athletes: [] });
+	if (!description) {
+		return json({ description: '', creators: author ? [author] : [], athletes: [] });
 	}
 
 	const apiKey = env.OPENAI_API_KEY?.trim();

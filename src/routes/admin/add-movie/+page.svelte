@@ -418,15 +418,17 @@
 			const rawAuthor = typeof data.author === 'string' ? data.author : '';
 
 			let normalized: { description: string; creators: string[]; athletes: string[] } | null = null;
-			try {
-				normalized = await normalizeVideoMetadata({
-					title,
-					description: rawDescription,
-					author: rawAuthor,
-					provider: source.provider
-				});
-			} catch {
-				// Non-blocking: keep original metadata if AI normalization fails.
+			if (rawDescription) {
+				try {
+					normalized = await normalizeVideoMetadata({
+						title,
+						description: rawDescription,
+						author: rawAuthor,
+						provider: source.provider
+					});
+				} catch {
+					// Non-blocking: keep original metadata if AI normalization fails.
+				}
 			}
 
 			description = normalized?.description || rawDescription;

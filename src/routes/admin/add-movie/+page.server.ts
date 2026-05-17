@@ -21,6 +21,62 @@ function parseArrayInput(input: string): string[] {
 		.filter((s) => s.length > 0);
 }
 
+function parsePlaylistId(input: string): string | null {
+	const trimmed = input.trim();
+	if (!trimmed) return null;
+
+	try {
+		const url = new URL(trimmed);
+		const host = url.hostname.toLowerCase();
+		if (host === 'youtube.com' || host === 'www.youtube.com') {
+			const listParam = url.searchParams.get('list');
+			if (listParam && /^[A-Za-z0-9_-]{10,}$/.test(listParam)) return listParam;
+		}
+	} catch {
+		// Keep parsing as a raw playlist ID.
+	}
+
+	if (/^[A-Za-z0-9_-]{10,}$/.test(trimmed)) return trimmed;
+	return null;
+}
+
+type SeasonDraft = {
+	playlistId: string;
+	customName: string | null;
+};
+
+function parseSeasonDrafts(form: FormData): SeasonDraft[] {
+	const raw = String(form.get('seasons_json') || '').trim();
+	if (raw) {
+		try {
+			const parsed = JSON.parse(raw) as Array<{ playlistId?: unknown; customName?: unknown }>;
+			if (Array.isArray(parsed)) {
+				const drafts = parsed
+					.map((item) => {
+						const playlistId = parsePlaylistId(String(item?.playlistId || ''));
+						if (!playlistId) return null;
+						const customName = String(item?.customName || '').trim() || null;
+						return { playlistId, customName };
+					})
+					.filter((item): item is SeasonDraft => item !== null);
+				if (drafts.length > 0) return drafts;
+			}
+		} catch {
+			// Fall back to legacy single-season fields.
+		}
+	}
+
+	const legacyPlaylistId = parsePlaylistId(String(form.get('playlist_id') || ''));
+	if (!legacyPlaylistId) return [];
+
+	return [
+		{
+			playlistId: legacyPlaylistId,
+			customName: String(form.get('season_name') || '').trim() || null
+		}
+	];
+}
+
 export const actions: Actions = {
 	save: async ({ request, locals }) => {
 		const { user } = await locals.safeGetSession();
@@ -116,8 +172,10 @@ export const actions: Actions = {
 		const title = String(form.get('title') || '').trim();
 		if (!title) return fail(400, { message: 'Title is required' });
 
-		const playlistId = String(form.get('playlist_id') || '').trim();
-		if (!playlistId) return fail(400, { message: 'Playlist ID is required' });
+		const seasons = parseSeasonDrafts(form);
+		if (seasons.length === 0) {
+			return fail(400, { message: 'At least one valid season playlist is required' });
+		}
 
 		const year = String(form.get('year') || '').trim() || null;
 		const defaultSlug = year ? `${slugify(title)}-${year}` : slugify(title);
@@ -149,18 +207,19 @@ export const actions: Actions = {
 			return fail(400, { message: seriesError.message });
 		}
 
-		// 2. Create season 1 with the playlist ID
-		const seasonName = String(form.get('season_name') || '').trim() || null;
-		const { data: season, error: seasonError } = await supabase
+		// 2. Create all requested seasons
+		const seasonRows = seasons.map((season, index) => ({
+			series_id: Number(series.id),
+			season_number: index + 1,
+			playlist_id: season.playlistId,
+			custom_name: season.customName
+		}));
+
+		const { data: createdSeasons, error: seasonError } = await supabase
 			.from('series_seasons')
-			.insert({
-				series_id: Number(series.id),
-				season_number: 1,
-				playlist_id: playlistId,
-				custom_name: seasonName
-			})
+			.insert(seasonRows)
 			.select()
-			.single();
+			.order('season_number', { ascending: true });
 
 		if (seasonError) {
 			// Roll back the series if season creation fails
@@ -168,24 +227,37 @@ export const actions: Actions = {
 			return fail(400, { message: `Failed to create season: ${seasonError.message}` });
 		}
 
-		// 3. Sync episodes from the playlist (best-effort)
-		let episodesSynced = 0;
-		try {
-			const items = await fetchPlaylistItems(playlistId);
-			if (items.length > 0) {
+		const seasonsByNumber = new Map<number, { id: number; season_number: number }>();
+		for (const createdSeason of createdSeasons ?? []) {
+			const seasonNumber = Number((createdSeason as { season_number: unknown }).season_number);
+			const seasonId = Number((createdSeason as { id: unknown }).id);
+			if (Number.isFinite(seasonNumber) && Number.isFinite(seasonId)) {
+				seasonsByNumber.set(seasonNumber, { id: seasonId, season_number: seasonNumber });
+			}
+		}
+
+		// 3. Sync episodes from each playlist (best-effort)
+		for (const [index, season] of seasons.entries()) {
+			const seasonRecord = seasonsByNumber.get(index + 1);
+			if (!seasonRecord) continue;
+
+			try {
+				const items = await fetchPlaylistItems(season.playlistId);
+				if (items.length === 0) continue;
+
 				const episodes = items.map((item) => ({
-					season_id: Number(season.id),
+					season_id: seasonRecord.id,
 					episode_number: item.position,
 					video_id: item.id,
 					title: item.title,
 					thumbnail: item.thumbnail ?? null,
 					published_at: item.publishedAt ?? null
 				}));
-				const { error: episodesError } = await supabase.from('series_episodes').insert(episodes);
-				if (!episodesError) episodesSynced = items.length;
+
+				await supabase.from('series_episodes').insert(episodes);
+			} catch {
+				// best-effort only — series and seasons are already saved
 			}
-		} catch {
-			// best-effort only — series and season are already saved
 		}
 
 		await invalidateContentCache();

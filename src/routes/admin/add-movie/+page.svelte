@@ -93,7 +93,8 @@
 	let seriesCreators = $state('');
 	let seriesStarring = $state('');
 	let seriesPaid = $state(false);
-	let seasonName = $state('');
+	type SeasonDraft = { playlistId: string; customName: string };
+	let seasonDrafts = $state<SeasonDraft[]>([]);
 	let seriesPosterUrl = $state('');
 	let seriesPosterFilename = $state('');
 	let seriesBlurhash = $state('');
@@ -136,6 +137,29 @@
 		}
 	}
 
+	function addSeasonDraft() {
+		seasonDrafts = [...seasonDrafts, { playlistId: '', customName: '' }];
+	}
+
+	function removeSeasonDraft(index: number) {
+		if (seasonDrafts.length <= 1) return;
+		seasonDrafts = seasonDrafts.filter((_, i) => i !== index);
+	}
+
+	function updateSeasonDraftPlaylist(index: number, value: string) {
+		const parsed = extractPlaylistId(value);
+		const nextValue = parsed ?? value.trim();
+		seasonDrafts = seasonDrafts.map((season, i) =>
+			i === index ? { ...season, playlistId: nextValue } : season
+		);
+	}
+
+	function updateSeasonDraftName(index: number, value: string) {
+		seasonDrafts = seasonDrafts.map((season, i) =>
+			i === index ? { ...season, customName: value } : season
+		);
+	}
+
 	async function fetchPlaylistMetadata() {
 		if (!detectedPlaylistId) return;
 		fetchingPlaylist = true;
@@ -156,6 +180,13 @@
 			}
 			const data = (await res.json()) as PlaylistMeta;
 			playlistMeta = data;
+			seasonDrafts = [
+				{
+					playlistId: data.playlistId || detectedPlaylistId,
+					customName: seasonDrafts[0]?.customName ?? ''
+				},
+				...seasonDrafts.slice(1)
+			];
 			// Pre-fill series fields
 			seriesTitle = data.title || '';
 			seriesYear = data.year || '';
@@ -870,6 +901,7 @@
 						playlistMeta = null;
 						playlistFetched = false;
 						playlistError = '';
+						seasonDrafts = [];
 					}
 				}}
 				onkeydown={(e) => {
@@ -930,7 +962,11 @@
 	<!-- Playlist → Series form -->
 	{#if detectedPlaylistId && playlistFetched && playlistMeta}
 		<form method="POST" action="?/savePlaylistSeries" use:enhance class="mt-6 space-y-5">
-			<input type="hidden" name="playlist_id" value={detectedPlaylistId} />
+			<input
+				type="hidden"
+				name="seasons_json"
+				value={JSON.stringify(seasonDrafts)}
+			/>
 			<input type="hidden" name="thumbnail" value={seriesPosterUrl} />
 			<input type="hidden" name="paid" value={seriesPaid ? 'true' : 'false'} />
 
@@ -1030,16 +1066,66 @@
 						></textarea>
 					</label>
 
-					<label class="block space-y-1.5">
-						<span class="text-xs text-white/60">Season name <span class="text-white/30">(optional)</span></span>
-						<input
-							type="text"
-							name="season_name"
-							bind:value={seasonName}
-							placeholder="e.g. Season 1, Competition 2024"
-							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
-						/>
-					</label>
+					<div class="space-y-3">
+						<div class="flex items-center justify-between">
+							<span class="text-xs text-white/60">Seasons & playlist IDs</span>
+							<button
+								type="button"
+								onclick={addSeasonDraft}
+								class="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-white/80 transition hover:bg-white/10"
+							>
+								Add Season
+							</button>
+						</div>
+						{#if seasonDrafts.length === 0}
+							<p class="text-xs text-white/40">
+								Load a playlist above to prefill Season 1.
+							</p>
+						{:else}
+							<div class="space-y-3">
+								{#each seasonDrafts as season, index (index)}
+									<div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+										<div class="mb-2 flex items-center justify-between">
+											<span class="text-xs text-white/50">Season {index + 1}</span>
+											{#if seasonDrafts.length > 1}
+												<button
+													type="button"
+													onclick={() => removeSeasonDraft(index)}
+													class="text-xs text-red-300 transition hover:text-red-200"
+												>
+													Remove
+												</button>
+											{/if}
+										</div>
+										<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+											<label class="block space-y-1.5">
+												<span class="text-xs text-white/60">Playlist URL or ID <span class="text-red-400">*</span></span>
+												<input
+													type="text"
+													value={season.playlistId}
+													oninput={(e) =>
+														updateSeasonDraftPlaylist(index, (e.currentTarget as HTMLInputElement).value)}
+													placeholder="PL... or https://www.youtube.com/playlist?list=..."
+													class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+												/>
+											</label>
+											<label class="block space-y-1.5">
+												<span class="text-xs text-white/60">Season name <span class="text-white/30">(optional)</span></span>
+												<input
+													type="text"
+													value={season.customName}
+													oninput={(e) =>
+														updateSeasonDraftName(index, (e.currentTarget as HTMLInputElement).value)}
+													placeholder="e.g. Season 1, Qualifiers"
+													class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+												/>
+											</label>
+										</div>
+									</div>
+								{/each}
+							</div>
+						{/if}
+					</div>
 				</div>
 			</div>
 

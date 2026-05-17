@@ -120,6 +120,7 @@ async function mainMenu() {
 		choices: [
 			{ name: '🎥 Add Movie', value: 'add-movie' },
 			{ name: '📺 Add Series', value: 'add-series' },
+			{ name: '🧩 Add Season to Existing Series', value: 'add-season' },
 			{ name: '� Manually Manage Episodes', value: 'manage-episodes' },
 			{ name: '�🔄 Auto Refresh Episodes', value: 'refresh-episodes' },
 			{ name: '📋 List All Content', value: 'list-content' },
@@ -137,6 +138,9 @@ async function mainMenu() {
 			break;
 		case 'add-series':
 			await addSeries();
+			break;
+		case 'add-season':
+			await addSeasonToExistingSeries();
 			break;
 		case 'manage-episodes':
 			await manageEpisodes();
@@ -410,6 +414,127 @@ async function manageTracklists() {
 		await importTracklistFromYouTubeDescription(Number(movieId), String(ytId));
 		return;
 	}
+}
+
+async function addSeasonToSeries(seriesId: number) {
+	const { data: existingSeasons, error: existingSeasonsError } = await supabase
+		.from('series_seasons')
+		.select('season_number')
+		.eq('series_id', seriesId)
+		.order('season_number');
+
+	if (existingSeasonsError) {
+		console.error('❌ Error loading existing seasons:', existingSeasonsError.message);
+		return null;
+	}
+
+	const existingSeasonNumbers = (existingSeasons || []).map((s) => s.season_number);
+	const nextSeasonNumber =
+		existingSeasonNumbers.length > 0 ? Math.max(...existingSeasonNumbers) + 1 : 1;
+
+	const seasonNumber = await prompts.number({
+		message: 'Season number:',
+		default: nextSeasonNumber,
+		min: 1,
+		required: true
+	});
+
+	if (!seasonNumber || existingSeasonNumbers.includes(seasonNumber)) {
+		console.log(
+			existingSeasonNumbers.includes(seasonNumber)
+				? '❌ That season number already exists for this series'
+				: '❌ Invalid season number'
+		);
+		return null;
+	}
+
+	const playlistId = await prompts.input({
+		message: 'YouTube Playlist ID (optional):'
+	});
+
+	const customName = await prompts.input({
+		message: 'Custom season name (optional):'
+	});
+
+	const { data: season, error: insertError } = await supabase
+		.from('series_seasons')
+		.insert({
+			series_id: seriesId,
+			season_number: seasonNumber,
+			playlist_id: playlistId || null,
+			custom_name: customName.trim() || null
+		})
+		.select('*')
+		.single();
+
+	if (insertError || !season) {
+		console.error('❌ Error adding season:', insertError?.message || 'Unknown error');
+		return null;
+	}
+
+	console.log('✅ Season added successfully!');
+	console.log(`   Season: ${season.season_number}`);
+	if (season.custom_name) {
+		console.log(`   Name: ${season.custom_name}`);
+	}
+	if (season.playlist_id) {
+		console.log(`   Playlist: ${season.playlist_id}`);
+	}
+
+	if (season.playlist_id) {
+		const syncNow = await prompts.confirm({
+			message: 'Sync episodes from this playlist now?',
+			default: true
+		});
+
+		if (syncNow) {
+			console.log('\n🔄 Syncing episodes...\n');
+			const result = await syncPlaylistEpisodes(supabase, season.id, season.playlist_id);
+			console.log('✅ Sync complete!');
+			console.log(`   Added: ${result.added} episodes`);
+			console.log(`   Updated: ${result.updated} episodes`);
+			if (result.errors.length > 0) {
+				console.log(`   ⚠ Errors: ${result.errors.length}`);
+				result.errors.forEach((err) => console.log(`     - ${err}`));
+			}
+		}
+	}
+
+	return season;
+}
+
+async function addSeasonToExistingSeries() {
+	console.clear();
+	console.log('🧩 Add Season to Existing Series\n');
+
+	const { data: seriesList, error: fetchError } = await supabase
+		.from('media_items')
+		.select('id, title, slug')
+		.eq('type', 'series')
+		.order('title');
+
+	if (fetchError || !seriesList || seriesList.length === 0) {
+		console.log('❌ No series found');
+		return;
+	}
+
+	const seriesId = await prompts.select({
+		message: 'Select a series:',
+		choices: [
+			{ name: '← Back', value: 'back' },
+			{ name: '---', value: 'separator', disabled: true },
+			...seriesList.map((s) => ({
+				name: `${s.title} (${s.slug})`,
+				value: s.id
+			}))
+		]
+	});
+
+	if (seriesId === 'back') {
+		return;
+	}
+
+	await addSeasonToSeries(seriesId);
 }
 
 async function bulkImportMissingTracklists() {
@@ -1089,17 +1214,37 @@ async function manageEpisodes() {
 		.eq('series_id', seriesId)
 		.order('season_number');
 
-	if (seasonsError || !seasons || seasons.length === 0) {
-		console.log('❌ No seasons found for this series');
+	if (seasonsError) {
+		console.log('❌ Error loading seasons');
 		return;
+	}
+
+	let availableSeasons = seasons || [];
+	if (availableSeasons.length === 0) {
+		console.log('ℹ No seasons found for this series');
+		const createNow = await prompts.confirm({
+			message: 'Create the first season now?',
+			default: true
+		});
+
+		if (!createNow) {
+			return;
+		}
+
+		const newSeason = await addSeasonToSeries(seriesId);
+		if (!newSeason) {
+			return;
+		}
+		availableSeasons = [newSeason];
 	}
 
 	const seasonId = await prompts.select({
 		message: 'Select a season:',
 		choices: [
 			{ name: '← Back', value: 'back' },
+			{ name: '➕ Add New Season', value: 'add-season' },
 			{ name: '---', value: 'separator', disabled: true },
-			...seasons.map((s) => ({
+			...availableSeasons.map((s) => ({
 				name: `Season ${s.season_number}${s.custom_name ? ` (${s.custom_name})` : ''}`,
 				value: s.id
 			}))
@@ -1107,6 +1252,25 @@ async function manageEpisodes() {
 	});
 
 	if (seasonId === 'back') {
+		return;
+	}
+
+	if (seasonId === 'add-season') {
+		const newSeason = await addSeasonToSeries(seriesId);
+		if (!newSeason) {
+			return;
+		}
+		const action = await prompts.select({
+			message: `Season ${newSeason.season_number} created. What next?`,
+			choices: [
+				{ name: '➕ Add Episode', value: 'add' },
+				{ name: '← Back', value: 'back' }
+			]
+		});
+
+		if (action === 'add') {
+			await addEpisodeManually(seriesId, newSeason.id, newSeason.season_number || 1);
+		}
 		return;
 	}
 

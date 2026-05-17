@@ -68,6 +68,253 @@
 	let generatingBlurhash = $state(false);
 	let blurhashError = $state('');
 
+	// Playlist / series state
+	type PlaylistItem = { id: string; title: string; description?: string; thumbnail?: string; position: number };
+	type PlaylistMeta = {
+		playlistId: string;
+		title: string;
+		channelName: string;
+		videoCount: number;
+		year: string;
+		items: PlaylistItem[];
+	};
+	let detectedPlaylistId = $state('');
+	let playlistMeta = $state<PlaylistMeta | null>(null);
+	let fetchingPlaylist = $state(false);
+	let playlistError = $state('');
+	let playlistFetched = $state(false);
+	let normalizingPlaylist = $state(false);
+	let playlistNormalizeError = $state('');
+	let seriesTitle = $state('');
+	let seriesSlug = $state('');
+	let seriesSlugTouched = $state(false);
+	let seriesDescription = $state('');
+	let seriesYear = $state('');
+	let seriesCreators = $state('');
+	let seriesStarring = $state('');
+	let seriesPaid = $state(false);
+	let seasonName = $state('');
+	let seriesPosterUrl = $state('');
+	let seriesPosterFilename = $state('');
+	let seriesBlurhash = $state('');
+	let generatingSeriesBlurhash = $state(false);
+	let seriesBlurhashError = $state('');
+	let generatingSeriesPoster = $state(false);
+	let seriesPosterGenerationError = $state('');
+	let seriesGeneratedPosterPreviewUrl = $state('');
+	let seriesGeneratedPosterSourceLabel = $state('');
+	let seriesIncludeTitleInPoster = $state(false);
+
+	function extractPlaylistId(url: string): string | null {
+		const trimmed = url.trim();
+		if (!trimmed) return null;
+		try {
+			const u = new URL(trimmed);
+			const host = u.hostname.toLowerCase();
+			if (host === 'youtube.com' || host === 'www.youtube.com') {
+				// https://www.youtube.com/playlist?list=PLxxx
+				const listParam = u.searchParams.get('list');
+				if (listParam && /^[A-Za-z0-9_-]{10,}$/.test(listParam)) return listParam;
+			}
+		} catch {
+			// not a URL — check if it looks like a raw playlist ID
+		}
+		// Accept raw playlist IDs (PL prefix, 34 chars, or other valid formats)
+		if (/^PL[A-Za-z0-9_-]{16,}$/.test(trimmed)) return trimmed;
+		return null;
+	}
+
+	function updateSeriesSlug() {
+		if (!seriesSlugTouched) {
+			seriesSlug = seriesYear
+				? `${slugify(seriesTitle)}-${seriesYear}`
+				: slugify(seriesTitle);
+		}
+		if (!seriesPosterFilename || seriesPosterFilename === `${seriesSlug}.webp`) {
+			seriesPosterFilename = seriesSlug ? `${seriesSlug}.webp` : '';
+			seriesPosterUrl = seriesSlug ? `/images/posters/${seriesSlug}.webp` : '';
+		}
+	}
+
+	async function fetchPlaylistMetadata() {
+		if (!detectedPlaylistId) return;
+		fetchingPlaylist = true;
+		playlistError = '';
+		playlistNormalizeError = '';
+		playlistMeta = null;
+		try {
+			const res = await fetch(
+				`/api/admin/youtube-playlist-metadata?playlistId=${encodeURIComponent(detectedPlaylistId)}`
+			);
+			if (!res.ok) {
+				const body: unknown = await res.json().catch(() => ({}));
+				const msg =
+					body !== null && typeof body === 'object' && 'message' in body
+						? String((body as { message: unknown }).message)
+						: '';
+				throw new Error(msg || `HTTP ${res.status}`);
+			}
+			const data = (await res.json()) as PlaylistMeta;
+			playlistMeta = data;
+			// Pre-fill series fields
+			seriesTitle = data.title || '';
+			seriesYear = data.year || '';
+			seriesCreators = data.channelName || '';
+			if (!seriesSlugTouched) {
+				seriesSlug = seriesYear ? `${slugify(seriesTitle)}-${seriesYear}` : slugify(seriesTitle);
+				seriesPosterFilename = seriesSlug ? `${seriesSlug}.webp` : '';
+				seriesPosterUrl = seriesSlug ? `/images/posters/${seriesSlug}.webp` : '';
+			}
+			playlistFetched = true;
+		} catch (err: unknown) {
+			playlistError = err instanceof Error ? err.message : 'Failed to fetch playlist metadata';
+			fetchingPlaylist = false;
+			return;
+		}
+		fetchingPlaylist = false;
+
+		// AI normalization: summarize descriptions and extract cast/crew
+		const meta = playlistMeta;
+		if (!meta) return;
+		const descriptions = meta.items.map((i) => i.description ?? '').filter(Boolean);
+		const titles = meta.items.map((i) => i.title).filter(Boolean);
+		if (descriptions.length === 0 && titles.length === 0) return;
+
+		normalizingPlaylist = true;
+		try {
+			const normRes = await fetch('/api/admin/normalize-playlist-metadata', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					playlistTitle: meta.title,
+					channelName: meta.channelName,
+					episodeTitles: titles,
+					episodeDescriptions: descriptions
+				})
+			});
+			if (!normRes.ok) {
+				const body: unknown = await normRes.json().catch(() => ({}));
+				const msg =
+					body !== null && typeof body === 'object' && 'message' in body
+						? String((body as { message: unknown }).message)
+						: '';
+				throw new Error(msg || `HTTP ${normRes.status}`);
+			}
+			const normalized = (await normRes.json()) as {
+				description?: string;
+				creators?: string[];
+				athletes?: string[];
+			};
+			if (normalized.description) seriesDescription = normalized.description;
+			if (normalized.creators?.length) {
+				const all = uniqueList([meta.channelName, ...normalized.creators].filter(Boolean));
+				seriesCreators = all.join(', ');
+			}
+			if (normalized.athletes?.length) seriesStarring = normalized.athletes.join(', ');
+		} catch (err: unknown) {
+			playlistNormalizeError =
+				(err instanceof Error ? err.message : 'AI normalization failed') +
+				' — you can fill these fields manually.';
+		} finally {
+			normalizingPlaylist = false;
+		}
+	}
+
+	async function generateSeriesPoster() {
+		const firstVideoId = playlistMeta?.items[0]?.id ?? '';
+		const firstThumb = playlistMeta?.items[0]?.thumbnail ?? '';
+		if (!firstVideoId && !firstThumb) {
+			seriesPosterGenerationError = 'No thumbnail available — load a playlist first.';
+			return;
+		}
+		const filename = seriesPosterFilename.trim() || seriesSlug.trim();
+		if (!filename) {
+			seriesPosterGenerationError = 'Set a poster filename or slug before generating.';
+			return;
+		}
+		const filenameNoExtension = filename.replace(/\.webp$/i, '');
+		generatingSeriesPoster = true;
+		seriesPosterGenerationError = '';
+		seriesGeneratedPosterSourceLabel = '';
+		try {
+			const requestBody: Record<string, unknown> = {
+				slug: filenameNoExtension,
+				title: seriesTitle.trim(),
+				includeTitle: seriesIncludeTitleInPoster
+			};
+			if (firstVideoId) {
+				requestBody.videoId = firstVideoId;
+			} else {
+				requestBody.thumbnailUrl = firstThumb;
+			}
+			const res = await fetch('/api/admin/generate-poster', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify(requestBody)
+			});
+			if (!res.ok) {
+				const body: unknown = await res.json().catch(() => ({}));
+				const msg =
+					body !== null && typeof body === 'object' && 'message' in body
+						? String((body as { message: unknown }).message)
+						: '';
+				throw new Error(msg || `HTTP ${res.status}`);
+			}
+			const data = (await res.json()) as {
+				posterUrl?: string;
+				previewUrl?: string;
+				sourceThumbnailUrl?: string;
+				sourceWidth?: number;
+				sourceHeight?: number;
+			};
+			seriesPosterUrl = data.posterUrl || seriesPosterUrl;
+			if (data.posterUrl) {
+				const match = data.posterUrl.match(/\/([^/]+)$/);
+				if (match?.[1]) seriesPosterFilename = match[1];
+			}
+			seriesGeneratedPosterPreviewUrl = data.previewUrl || '';
+			if (data.sourceThumbnailUrl && data.sourceWidth && data.sourceHeight) {
+				seriesGeneratedPosterSourceLabel = `${data.sourceWidth}×${data.sourceHeight} thumbnail used`;
+			}
+		} catch (err: unknown) {
+			seriesPosterGenerationError =
+				err instanceof Error ? err.message : 'Failed to generate poster from thumbnail.';
+		} finally {
+			generatingSeriesPoster = false;
+		}
+	}
+
+	async function generateSeriesBlurhash() {
+		if (!seriesPosterUrl) {
+			seriesBlurhashError = 'Set a poster URL first.';
+			return;
+		}
+		generatingSeriesBlurhash = true;
+		seriesBlurhashError = '';
+		try {
+			const url = seriesPosterUrl.startsWith('/')
+				? new URL(seriesPosterUrl, window.location.origin).toString()
+				: seriesPosterUrl;
+			const res = await fetch(`/api/admin/blurhash?url=${encodeURIComponent(url)}`);
+			if (!res.ok) {
+				const body: unknown = await res.json().catch(() => ({}));
+				const msg =
+					body !== null && typeof body === 'object' && 'message' in body
+						? String((body as { message: unknown }).message)
+						: '';
+				throw new Error(msg || `HTTP ${res.status}`);
+			}
+			const data = await res.json();
+			seriesBlurhash = data.blurhash || '';
+		} catch (err: unknown) {
+			seriesBlurhashError =
+				(err instanceof Error ? err.message : 'Failed') +
+				' — you can save without a blurhash or enter one manually.';
+		} finally {
+			generatingSeriesBlurhash = false;
+		}
+	}
+
 	function splitCommaList(value: string): string[] {
 		return value
 			.split(',')
@@ -594,7 +841,8 @@
 		<p class="jf-label">Admin desk</p>
 		<h1 class="mt-2 text-3xl font-semibold text-white">Add New Film</h1>
 		<p class="mt-2 text-sm text-white/60">
-			Paste a YouTube or Vimeo URL to auto-populate metadata, then review and save.
+			Paste a YouTube or Vimeo URL to auto-populate metadata, then review and save. Paste a YouTube
+			playlist URL to create a series instead.
 		</p>
 	</div>
 
@@ -607,33 +855,361 @@
 
 	<!-- Step 1: Source URL -->
 	<div class="jf-surface-soft mt-6 rounded-2xl p-5">
-		<div class="mb-4 text-sm font-medium text-white/80">Step 1 — Paste a YouTube or Vimeo URL</div>
+		<div class="mb-4 text-sm font-medium text-white/80">
+			Step 1 — Paste a YouTube, Vimeo, or playlist URL
+		</div>
 		<div class="flex gap-2">
 			<input
 				type="url"
-				placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+				placeholder="https://www.youtube.com/playlist?list=... or watch?v=... or vimeo.com/..."
 				bind:value={sourceUrl}
-				onkeydown={(e) => e.key === 'Enter' && fetchMetadata()}
+				oninput={() => {
+					const pid = extractPlaylistId(sourceUrl);
+					detectedPlaylistId = pid ?? '';
+					if (!pid) {
+						playlistMeta = null;
+						playlistFetched = false;
+						playlistError = '';
+					}
+				}}
+				onkeydown={(e) => {
+					if (e.key !== 'Enter') return;
+					if (detectedPlaylistId) fetchPlaylistMetadata();
+					else fetchMetadata();
+				}}
 				class="min-w-0 flex-1 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
 			/>
-			<button
-				type="button"
-				onclick={fetchMetadata}
-				disabled={fetchingMeta || !sourceUrl.trim()}
-				class="inline-flex items-center justify-center rounded-xl bg-[#e50914] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#ff1a27] disabled:cursor-not-allowed disabled:opacity-50"
-			>
-				{fetchingMeta ? 'Fetching…' : 'Fetch Metadata'}
-			</button>
+			{#if detectedPlaylistId}
+				<button
+					type="button"
+					onclick={fetchPlaylistMetadata}
+					disabled={fetchingPlaylist}
+					class="inline-flex items-center justify-center rounded-xl bg-[#e50914] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#ff1a27] disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					{fetchingPlaylist ? 'Fetching…' : 'Load Playlist'}
+				</button>
+			{:else}
+				<button
+					type="button"
+					onclick={fetchMetadata}
+					disabled={fetchingMeta || !sourceUrl.trim()}
+					class="inline-flex items-center justify-center rounded-xl bg-[#e50914] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#ff1a27] disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					{fetchingMeta ? 'Fetching…' : 'Fetch Metadata'}
+				</button>
+			{/if}
 		</div>
+		{#if detectedPlaylistId && !playlistFetched}
+			<p class="mt-2 text-xs text-blue-300">
+				▶ Playlist detected — click "Load Playlist" to preview episodes.
+			</p>
+		{/if}
 		{#if metaError}
 			<p class="mt-2 text-xs text-red-300">{metaError}</p>
+		{/if}
+		{#if playlistError}
+			<p class="mt-2 text-xs text-red-300">{playlistError}</p>
 		{/if}
 		{#if metaFetched && !metaError}
 			<p class="mt-2 text-xs text-green-300">✓ Metadata loaded — review and edit below.</p>
 		{/if}
+		{#if playlistFetched && !playlistError}
+			{#if normalizingPlaylist}
+				<p class="mt-2 text-xs text-white/50">✦ Summarizing episodes with AI…</p>
+			{:else}
+				<p class="mt-2 text-xs text-green-300">
+					✓ Playlist loaded — {playlistMeta?.videoCount ?? 0} episode(s) found. Fill in the details below.
+				</p>
+			{/if}
+		{/if}
+		{#if playlistNormalizeError}
+			<p class="mt-2 text-xs text-yellow-300">{playlistNormalizeError}</p>
+		{/if}
 	</div>
 
+	<!-- Playlist → Series form -->
+	{#if detectedPlaylistId && playlistFetched && playlistMeta}
+		<form method="POST" action="?/savePlaylistSeries" use:enhance class="mt-6 space-y-5">
+			<input type="hidden" name="playlist_id" value={detectedPlaylistId} />
+			<input type="hidden" name="thumbnail" value={seriesPosterUrl} />
+			<input type="hidden" name="paid" value={seriesPaid ? 'true' : 'false'} />
+
+			<!-- Episode preview -->
+			<div class="jf-surface-soft rounded-2xl p-5">
+				<div class="mb-3 text-sm font-medium text-white/80">Playlist Preview</div>
+				<div class="mb-3 flex items-center gap-3">
+					<span
+						class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white/60"
+					>
+						{playlistMeta.videoCount} episode{playlistMeta.videoCount === 1 ? '' : 's'}
+					</span>
+					{#if playlistMeta.channelName}
+						<span class="text-xs text-white/40">{playlistMeta.channelName}</span>
+					{/if}
+				</div>
+				{#if playlistMeta.items.length > 0}
+					<div class="space-y-1.5">
+						{#each playlistMeta.items.slice(0, 5) as item (item.id)}
+							<div class="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2">
+								{#if item.thumbnail}
+									<img
+										src={item.thumbnail}
+										alt=""
+										class="h-9 w-16 shrink-0 rounded-md object-cover"
+									/>
+								{/if}
+								<span class="min-w-0 truncate text-sm text-white/70"
+									><span class="mr-2 text-white/30">{item.position}.</span>{item.title}</span
+								>
+							</div>
+						{/each}
+						{#if playlistMeta.items.length > 5}
+							<p class="pl-3 text-xs text-white/35">
+								+ {playlistMeta.items.length - 5} more episodes
+							</p>
+						{/if}
+					</div>
+				{/if}
+			</div>
+
+			<!-- Series basic info -->
+			<div class="jf-surface-soft rounded-2xl p-5">
+				<div class="mb-4 text-sm font-medium text-white/80">Series Info</div>
+				<div class="space-y-4">
+					<label class="block space-y-1.5">
+						<span class="text-xs text-white/60">Title <span class="text-red-400">*</span></span>
+						<input
+							type="text"
+							name="title"
+							required
+							bind:value={seriesTitle}
+							oninput={updateSeriesSlug}
+							placeholder="Series title"
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						/>
+					</label>
+
+					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+						<label class="block space-y-1.5">
+							<span class="text-xs text-white/60">Year</span>
+							<input
+								type="text"
+								name="year"
+								bind:value={seriesYear}
+								oninput={updateSeriesSlug}
+								placeholder="e.g. 2024"
+								class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+							/>
+						</label>
+
+						<label class="block space-y-1.5">
+							<span class="text-xs text-white/60">Slug</span>
+							<input
+								type="text"
+								name="slug"
+								bind:value={seriesSlug}
+								oninput={() => {
+									seriesSlugTouched = true;
+									seriesPosterFilename = seriesSlug ? `${seriesSlug}.webp` : '';
+									seriesPosterUrl = seriesSlug ? `/images/posters/${seriesSlug}.webp` : '';
+								}}
+								placeholder="auto-generated from title"
+								class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+							/>
+						</label>
+					</div>
+
+					<label class="block space-y-1.5">
+						<span class="text-xs text-white/60">Description</span>
+						<textarea
+							name="description"
+							rows="3"
+							bind:value={seriesDescription}
+							placeholder="Series description"
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						></textarea>
+					</label>
+
+					<label class="block space-y-1.5">
+						<span class="text-xs text-white/60">Season name <span class="text-white/30">(optional)</span></span>
+						<input
+							type="text"
+							name="season_name"
+							bind:value={seasonName}
+							placeholder="e.g. Season 1, Competition 2024"
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						/>
+					</label>
+				</div>
+			</div>
+
+			<!-- Poster / Blurhash -->
+			<div class="jf-surface-soft rounded-2xl p-5">
+				<div class="mb-4 text-sm font-medium text-white/80">Poster</div>
+				<div class="space-y-3">
+					<label class="block space-y-1.5">
+						<span class="text-xs text-white/60">Thumbnail Preview</span>
+						{#if playlistMeta?.items[0]?.thumbnail}
+							<img
+								src={playlistMeta.items[0].thumbnail}
+								alt="Episode 1 thumbnail"
+								class="mb-3 aspect-video w-full max-w-md rounded-lg border border-white/10 object-cover"
+							/>
+						{/if}
+						<p class="text-xs text-white/50">Poster will be generated from the first episode's thumbnail.</p>
+					</label>
+
+					<label class="block space-y-1.5">
+						<span class="text-xs text-white/60">Filename</span>
+						<input
+							type="text"
+							bind:value={seriesPosterFilename}
+							oninput={() => {
+								seriesPosterUrl = seriesPosterFilename
+									? `/images/posters/${seriesPosterFilename}`
+									: '';
+								seriesGeneratedPosterPreviewUrl = '';
+								seriesGeneratedPosterSourceLabel = '';
+							}}
+							onblur={() => {
+								if (seriesPosterFilename && !/\.webp$/i.test(seriesPosterFilename.trim())) {
+									seriesPosterFilename = `${seriesPosterFilename.trim()}.webp`;
+									seriesPosterUrl = `/images/posters/${seriesPosterFilename}`;
+								}
+							}}
+							placeholder="e.g. my-series-2024.webp"
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						/>
+						<p class="text-xs text-white/50">Filename for generated poster (no path needed)</p>
+					</label>
+
+					<label class="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+						<button
+							type="button"
+							role="checkbox"
+							aria-checked={seriesIncludeTitleInPoster}
+							aria-label="Include series title in poster generation"
+							onclick={() => (seriesIncludeTitleInPoster = !seriesIncludeTitleInPoster)}
+							class={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none ${seriesIncludeTitleInPoster ? 'bg-[#e50914]' : 'bg-white/20'}`}
+						>
+							<span class={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform ${seriesIncludeTitleInPoster ? 'translate-x-4' : 'translate-x-0'}`}></span>
+						</button>
+						<div class="space-y-0.5">
+							<span class="block text-sm text-white/80">Add series title to generated poster</span>
+							<p class="text-xs text-white/50">When enabled, the poster prompt will include the title.</p>
+						</div>
+					</label>
+
+					<div class="flex flex-wrap items-center gap-2">
+						<button
+							type="button"
+							onclick={generateSeriesPoster}
+							disabled={generatingSeriesPoster || !playlistMeta?.items[0]?.id || (!seriesSlug.trim() && !seriesPosterFilename.trim())}
+							class="inline-flex items-center justify-center rounded-xl bg-[#e50914] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#ff1a27] disabled:cursor-not-allowed disabled:opacity-40"
+						>
+							{generatingSeriesPoster ? 'Generating Poster…' : 'Generate Poster From Thumbnail'}
+						</button>
+						{#if seriesGeneratedPosterSourceLabel}
+							<span class="text-xs text-white/55">{seriesGeneratedPosterSourceLabel}</span>
+						{/if}
+					</div>
+					{#if seriesPosterGenerationError}
+						<p class="text-xs text-yellow-300">{seriesPosterGenerationError}</p>
+					{/if}
+					{#if seriesGeneratedPosterPreviewUrl}
+						<div class="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+							<p class="text-xs text-white/60">Generated poster preview</p>
+							<img
+								src={seriesGeneratedPosterPreviewUrl}
+								alt="Generated poster preview"
+								class="aspect-[2/3] w-full max-w-xs rounded-lg border border-white/10 object-cover"
+							/>
+						</div>
+					{/if}
+
+					<div class="flex items-center gap-2">
+						<input
+							type="text"
+							name="blurhash"
+							bind:value={seriesBlurhash}
+							placeholder="Blurhash string (optional)"
+							class="min-w-0 flex-1 rounded-xl border border-white/20 bg-white/10 px-3 py-2 font-mono text-xs text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						/>
+						<button
+							type="button"
+							onclick={generateSeriesBlurhash}
+							disabled={generatingSeriesBlurhash || !seriesPosterUrl}
+							class="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-xs font-medium text-white/80 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+						>
+							{generatingSeriesBlurhash ? 'Generating…' : 'Generate Blurhash'}
+						</button>
+					</div>
+					{#if seriesBlurhashError}
+						<p class="text-xs text-yellow-300">{seriesBlurhashError}</p>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Cast & Crew -->
+			<div class="jf-surface-soft rounded-2xl p-5">
+				<div class="mb-4 text-sm font-medium text-white/80">Cast & Crew</div>
+				<div class="space-y-4">
+					<label class="block space-y-1.5">
+						<span class="text-xs text-white/60">Creators (comma-separated)</span>
+						<input
+							type="text"
+							name="creators"
+							bind:value={seriesCreators}
+							placeholder="e.g. Channel Name, Director"
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						/>
+					</label>
+					<label class="block space-y-1.5">
+						<span class="text-xs text-white/60">Starring / Athletes (comma-separated)</span>
+						<input
+							type="text"
+							name="starring"
+							bind:value={seriesStarring}
+							placeholder="e.g. Athlete One, Athlete Two"
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						/>
+					</label>
+					<label class="flex items-center gap-3">
+						<button
+							type="button"
+							role="checkbox"
+							aria-checked={seriesPaid}
+							aria-label="Paid content"
+							onclick={() => (seriesPaid = !seriesPaid)}
+							class={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none ${seriesPaid ? 'bg-[#e50914]' : 'bg-white/20'}`}
+						>
+							<span
+								class={`pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform ${seriesPaid ? 'translate-x-4' : 'translate-x-0'}`}
+							></span>
+						</button>
+						<span class="text-sm text-white/80">Paid content</span>
+					</label>
+				</div>
+			</div>
+
+			<!-- Save -->
+			<div class="flex items-center justify-end gap-3 pt-2">
+				{#if normalizingPlaylist}
+					<span class="text-xs text-white/40">Summarizing with AI…</span>
+				{/if}
+				<button
+					type="submit"
+					disabled={normalizingPlaylist}
+					class="inline-flex items-center justify-center rounded-full bg-[#e50914] px-8 py-3 text-sm font-medium text-white transition hover:bg-[#ff1a27] focus-visible:ring-2 focus-visible:ring-[#e50914] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+				>
+					Create Series & Sync Episodes
+				</button>
+			</div>
+		</form>
+	{/if}
+
 	<!-- Step 2: Form -->
+	{#if !detectedPlaylistId}
 	<form method="POST" action="?/save" use:enhance class="mt-6 space-y-5">
 		<!-- Title + Slug -->
 		<div class="jf-surface-soft rounded-2xl p-5">
@@ -1003,4 +1579,5 @@
 			</button>
 		</div>
 	</form>
+	{/if}
 </div>

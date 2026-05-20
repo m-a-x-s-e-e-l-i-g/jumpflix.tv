@@ -34,6 +34,7 @@ If neither is set, the endpoint returns an authorization configuration error.
 
 - `JUMPFLIX_MCP_BEARER_TOKEN` (preferred)
 - `MCP_BEARER_TOKEN` (fallback)
+- `JUMPFLIX_MCP_SESSION_MODE` (optional: `stateful` or `stateless`; default auto)
 - `JUMPFLIX_MCP_MAX_STRUCTURED_CONTENT_CHARS` (optional, default `120000`)
 - `JUMPFLIX_MCP_MAX_TEXT_CONTENT_CHARS` (optional, default `2000`)
 
@@ -91,7 +92,9 @@ http://localhost:5173/mcp
 
 - Session lifecycle is handled through Streamable HTTP session IDs.
 - Sessions can be terminated with `DELETE` to the MCP route with `mcp-session-id` header.
-- This implementation stores MCP sessions in process memory. In serverless environments, clients should treat sessions as ephemeral and re-run `initialize` if they receive `Unknown MCP session`.
+- Session mode defaults to `stateless` in production and `stateful` outside production. Override with `JUMPFLIX_MCP_SESSION_MODE`.
+- In `stateful` mode, session state is in-process memory. In serverless or multi-instance deployments this is ephemeral unless sticky routing is guaranteed.
+- The endpoint accepts `initialize` even if a stale `mcp-session-id` header is present, so clients can recover cleanly after session loss.
 - For Netlify and other proxy/CDN setups, avoid response buffering and caching on `/mcp`, and ensure function timeout settings can support longer-lived streamable connections.
 - The transport endpoint is implemented in `src/routes/mcp/+server.ts`.
 - Tool registration is implemented in `src/lib/server/mcp/catalog-server.ts`.

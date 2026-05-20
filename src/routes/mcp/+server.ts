@@ -12,7 +12,19 @@ type SessionContext = {
 	lastTouchedAt: number;
 };
 
+type SessionMode = 'stateful' | 'stateless';
+
 const sessions = new Map<string, SessionContext>();
+
+function resolveSessionMode(): SessionMode {
+	const configured = env.JUMPFLIX_MCP_SESSION_MODE?.trim().toLowerCase();
+	if (configured === 'stateful' || configured === 'stateless') {
+		return configured;
+	}
+
+	const nodeEnv = env.NODE_ENV?.trim().toLowerCase();
+	return nodeEnv === 'production' ? 'stateless' : 'stateful';
+}
 
 function authToken(): string {
 	return env.JUMPFLIX_MCP_BEARER_TOKEN?.trim() || env.MCP_BEARER_TOKEN?.trim() || '';
@@ -85,7 +97,21 @@ async function closeSession(sessionId: string): Promise<void> {
 	}
 }
 
-async function handlePost(request: Request): Promise<Response> {
+async function handleStatelessRequest(request: Request, parsedBody?: unknown): Promise<Response> {
+	const server = createJumpflixMcpServer();
+	const transport = new WebStandardStreamableHTTPServerTransport({
+		sessionIdGenerator: undefined
+	});
+
+	await server.connect(transport);
+	const response =
+		parsedBody === undefined
+			? await transport.handleRequest(request)
+			: await transport.handleRequest(request, { parsedBody });
+	return withCors(response);
+}
+
+async function handlePost(request: Request, sessionMode: SessionMode): Promise<Response> {
 	const sessionId = request.headers.get('mcp-session-id')?.trim() || null;
 	let parsedBody: unknown = undefined;
 
@@ -95,6 +121,12 @@ async function handlePost(request: Request): Promise<Response> {
 		return jsonResponse(400, { error: 'Invalid JSON body.' });
 	}
 
+	if (sessionMode === 'stateless') {
+		return handleStatelessRequest(request, parsedBody);
+	}
+
+	const initializeRequest = isInitializeRequest(parsedBody);
+
 	if (sessionId && sessions.has(sessionId)) {
 		const context = sessions.get(sessionId)!;
 		context.lastTouchedAt = Date.now();
@@ -102,11 +134,11 @@ async function handlePost(request: Request): Promise<Response> {
 		return withCors(response);
 	}
 
-	if (sessionId && !sessions.has(sessionId)) {
+	if (sessionId && !sessions.has(sessionId) && !initializeRequest) {
 		return jsonResponse(404, { error: 'Unknown MCP session.' });
 	}
 
-	if (!isInitializeRequest(parsedBody)) {
+	if (!initializeRequest) {
 		return jsonResponse(400, { error: 'No valid session provided and request is not initialize.' });
 	}
 
@@ -146,7 +178,11 @@ async function handlePost(request: Request): Promise<Response> {
 	}
 }
 
-async function handleGetOrDelete(request: Request): Promise<Response> {
+async function handleGetOrDelete(request: Request, sessionMode: SessionMode): Promise<Response> {
+	if (sessionMode === 'stateless') {
+		return handleStatelessRequest(request);
+	}
+
 	const sessionId = request.headers.get('mcp-session-id')?.trim() || null;
 	if (!sessionId) return jsonResponse(400, { error: 'Missing MCP session id.' });
 
@@ -162,10 +198,12 @@ const mainHandler: RequestHandler = async ({ request }) => {
 	const unauthorized = ensureAuthorized(request);
 	if (unauthorized) return unauthorized;
 
+	const sessionMode = resolveSessionMode();
+
 	try {
-		if (request.method === 'POST') return await handlePost(request);
+		if (request.method === 'POST') return await handlePost(request, sessionMode);
 		if (request.method === 'GET' || request.method === 'DELETE') {
-			return await handleGetOrDelete(request);
+			return await handleGetOrDelete(request, sessionMode);
 		}
 
 		return jsonResponse(405, { error: 'Method not allowed.' });

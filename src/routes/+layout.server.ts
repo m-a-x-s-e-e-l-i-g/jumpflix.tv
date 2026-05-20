@@ -10,6 +10,8 @@ function shouldLoadTvCatalog(pathname: string): boolean {
 		pathname === '/costs' ||
 		pathname === '/privacy-policy' ||
 		pathname === '/terms-of-service' ||
+		pathname === '/video-map' ||
+		pathname.startsWith('/video-map/') ||
 		pathname === '/stats' ||
 		pathname.startsWith('/stats/') ||
 		pathname.startsWith('/admin')

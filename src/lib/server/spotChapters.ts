@@ -1,5 +1,6 @@
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { fetchSpotById, resolveSpotIds } from '$lib/server/parkourSpot';
+import { normalizeParkourSpotPayload } from '$lib/server/parkourSpotPayload';
 import { asTrimmedString, asSafeInt, normalizeParkourSpotId } from '$lib/utils';
 
 export type SpotInfo = {
@@ -139,22 +140,17 @@ export function collectSpotCountries(spots: Array<SpotInfo | null | undefined>):
 }
 
 function normalizeSpot(raw: any, spotIdFallback?: string): SpotInfo | null {
-	const id = asTrimmedString(raw?.id) ?? asTrimmedString(raw?.spotId) ?? spotIdFallback ?? null;
-	if (!id) return null;
-	const name =
-		asTrimmedString(raw?.name) ??
-		asTrimmedString(raw?.title) ??
-		asTrimmedString(raw?.displayName) ??
-		id;
+	const normalized = normalizeParkourSpotPayload(raw, spotIdFallback);
+	if (!normalized) return null;
+	const countries = extractSpotCountries(normalized.raw ?? raw);
 
-	const latRaw = raw?.lat ?? raw?.latitude ?? raw?.location?.lat ?? raw?.location?.latitude;
-	const lngRaw = raw?.lng ?? raw?.lon ?? raw?.longitude ?? raw?.location?.lng ?? raw?.location?.longitude;
-	const lat = typeof latRaw === 'number' ? latRaw : Number(String(latRaw ?? ''));
-	const lng = typeof lngRaw === 'number' ? lngRaw : Number(String(lngRaw ?? ''));
-	if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-	const countries = extractSpotCountries(raw);
-
-	return { id, name, lat, lng, ...(countries.length ? { countries } : {}) };
+	return {
+		id: normalized.id,
+		name: normalized.name,
+		lat: normalized.lat,
+		lng: normalized.lng,
+		...(countries.length ? { countries } : {})
+	};
 }
 
 function normalizeChapterFromSpotChapterRow(row: any): ApprovedSpotChapter | null {

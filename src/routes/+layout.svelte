@@ -18,6 +18,7 @@
 	import CogIcon from '@lucide/svelte/icons/cog';
 	import HomeIcon from '@lucide/svelte/icons/home';
 	import BarChart3Icon from '@lucide/svelte/icons/bar-chart-3';
+	import MapIcon from '@lucide/svelte/icons/map';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import GithubIcon from '@lucide/svelte/icons/github';
@@ -132,6 +133,9 @@
 	const isCostsRoute = $derived(/\/costs$/.test(String($page.url.pathname)));
 	const isLegalRoute = $derived(
 		$page.url.pathname === '/privacy-policy' || $page.url.pathname === '/terms-of-service'
+	);
+	const isVideoMapRoute = $derived(
+		$page.url.pathname === '/video-map' || $page.url.pathname.startsWith('/video-map/')
 	);
 	const isAutoplayRoute = $derived(String($page.url.pathname) === '/autoplay');
 	const isDetailRoute = $derived(
@@ -833,7 +837,7 @@
 					<HelpTipsButton />
 				{/if}
 
-				{#if isStatsRoute || isAdminRoute || isAboutRoute || isCostsRoute || isLegalRoute || isDetailRoute || isPeopleRoute}
+				{#if isStatsRoute || isAdminRoute || isAboutRoute || isCostsRoute || isLegalRoute || isVideoMapRoute || isDetailRoute || isPeopleRoute}
 					<a
 						href="/"
 						aria-label={isDetailRoute || isPeopleRoute ? m.tv_backToCatalog() : 'Catalog'}
@@ -859,6 +863,15 @@
 					>
 						<BarChart3Icon class="size-5" />
 						<span class="sr-only">Stats</span>
+					</a>
+
+					<a
+						href="/video-map"
+						aria-label="Video map"
+						class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+					>
+						<MapIcon class="size-5" />
+						<span class="sr-only">Video map</span>
 					</a>
 				{/if}
 
@@ -1029,7 +1042,7 @@
 		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
 		{#if $page.error}
 			{@render children?.()}
-		{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute || isLegalRoute || isAutoplayRoute}
+		{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute || isLegalRoute || isVideoMapRoute || isAutoplayRoute}
 			{@render children?.()}
 		{:else}
 			<TvPage

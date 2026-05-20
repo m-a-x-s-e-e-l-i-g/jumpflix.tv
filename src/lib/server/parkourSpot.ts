@@ -1,8 +1,13 @@
 import { env } from '$env/dynamic/private';
+import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
+import { normalizeParkourSpotPayload } from '$lib/server/parkourSpotPayload';
 import { asTrimmedString, normalizeParkourSpotId } from '$lib/utils';
 
 const API_BASE = 'https://parkour.spot/api/v1';
 const MAX_DUPLICATE_DEPTH = 10;
+const SPOT_CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+
+let spotCacheTableUnavailable = false;
 
 export type ParkourSpotResolution = {
 	requestedSpotId: string;
@@ -31,6 +36,101 @@ async function parkourSpotFetch(path: string, init?: RequestInit): Promise<Respo
 			Authorization: `Bearer ${key}`
 		}
 	});
+}
+
+function isMissingRelationError(error: unknown, relation: string): boolean {
+	const message = String((error as any)?.message ?? error ?? '').toLowerCase();
+	const relationName = relation.toLowerCase();
+	return message.includes(relationName) && (message.includes('does not exist') || message.includes('relation'));
+}
+
+function shouldDisableSpotCache(error: unknown): boolean {
+	if (isMissingRelationError(error, 'parkour_spot_cache')) return true;
+	const message = String((error as any)?.message ?? error ?? '').toLowerCase();
+	return message.includes('supabase_service_role_key') || message.includes('service role');
+}
+
+type SpotCacheEntry = {
+	payload: unknown;
+	fetchedAtMs: number | null;
+};
+
+async function readSpotCacheEntry(spotId: string): Promise<SpotCacheEntry | null> {
+	if (spotCacheTableUnavailable) return null;
+
+	try {
+		const supabase = createSupabaseServiceClient();
+		const { data, error } = await (supabase as any)
+			.from('parkour_spot_cache')
+			.select('payload, fetched_at')
+			.eq('spot_id', spotId)
+			.maybeSingle();
+
+		if (error) {
+			if (shouldDisableSpotCache(error)) {
+				spotCacheTableUnavailable = true;
+			}
+			return null;
+		}
+
+		const payload = data?.payload;
+		if (!payload) return null;
+
+		const fetchedAtRaw = String(data?.fetched_at ?? '');
+		const parsed = Date.parse(fetchedAtRaw);
+
+		return {
+			payload,
+			fetchedAtMs: Number.isFinite(parsed) ? parsed : null
+		};
+	} catch (error: unknown) {
+		if (shouldDisableSpotCache(error)) {
+			spotCacheTableUnavailable = true;
+		}
+		return null;
+	}
+}
+
+async function writeSpotCacheEntry(spotId: string, payload: unknown): Promise<void> {
+	if (spotCacheTableUnavailable) return;
+
+	try {
+		const supabase = createSupabaseServiceClient();
+		const normalized = normalizeParkourSpotPayload(payload, spotId);
+		const resolvedSpotId = normalizeResolvedSpotId(payload as any, spotId);
+		const nowIso = new Date().toISOString();
+
+		const baseRow = {
+			resolved_spot_id: resolvedSpotId,
+			name: normalized?.name ?? null,
+			lat: normalized?.lat ?? null,
+			lng: normalized?.lng ?? null,
+			payload,
+			fetched_at: nowIso
+		};
+
+		const rows = [
+			{ spot_id: spotId, ...baseRow },
+			...(resolvedSpotId && resolvedSpotId !== spotId ? [{ spot_id: resolvedSpotId, ...baseRow }] : [])
+		];
+
+		for (const row of rows) {
+			const { error } = await (supabase as any)
+				.from('parkour_spot_cache')
+				.upsert(row, { onConflict: 'spot_id' });
+
+			if (error) {
+				if (shouldDisableSpotCache(error)) {
+					spotCacheTableUnavailable = true;
+				}
+				return;
+			}
+		}
+	} catch (error: unknown) {
+		if (shouldDisableSpotCache(error)) {
+			spotCacheTableUnavailable = true;
+		}
+	}
 }
 
 
@@ -68,13 +168,29 @@ function withResolutionMetadata(raw: unknown, resolution: ParkourSpotResolution)
 async function fetchSpotByIdRaw(spotId: string): Promise<unknown> {
 	const id = String(spotId ?? '').trim();
 	if (!id) throw new Error('Missing spotId');
+	const normalizedSpotId = normalizeParkourSpotId(id) ?? id;
 
-	const res = await parkourSpotFetch(`/spots/${encodeURIComponent(id)}`);
+	const cachedEntry = await readSpotCacheEntry(normalizedSpotId);
+	if (
+		cachedEntry?.payload &&
+		cachedEntry.fetchedAtMs !== null &&
+		Date.now() - cachedEntry.fetchedAtMs <= SPOT_CACHE_TTL_MS
+	) {
+		return cachedEntry.payload;
+	}
+
+	const res = await parkourSpotFetch(`/spots/${encodeURIComponent(normalizedSpotId)}`);
 	const data = await res.json().catch(() => null);
 	if (!res.ok) {
+		if (cachedEntry?.payload) {
+			// Fallback to stale cache when upstream is temporarily unavailable.
+			return cachedEntry.payload;
+		}
 		const message = (data as any)?.error || (data as any)?.message || `parkour.spot error ${res.status}`;
 		throw new Error(message);
 	}
+
+	await writeSpotCacheEntry(normalizedSpotId, data);
 	return data;
 }
 

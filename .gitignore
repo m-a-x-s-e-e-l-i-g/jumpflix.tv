@@ -31,3 +31,5 @@ backups/
 
 # Prerender cache
 .cache/
+
+supabase/.temp

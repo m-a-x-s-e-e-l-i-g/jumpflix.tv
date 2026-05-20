@@ -306,12 +306,20 @@
 			leaflet = await import('leaflet');
 			if (disposed || !leaflet || !mapContainer) return;
 
+			const worldBounds: [[number, number], [number, number]] = [
+				[-82, -180],
+				[82, 180]
+			];
+
 			map = leaflet.map(mapContainer, {
 				center: [25, 10],
 				zoom: 3,
+				minZoom: 2,
 				scrollWheelZoom: true,
 				preferCanvas: true,
-				worldCopyJump: true,
+				worldCopyJump: false,
+				maxBounds: worldBounds,
+				maxBoundsViscosity: 1,
 				attributionControl: false
 			});
 
@@ -320,6 +328,8 @@
 					attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
 					subdomains: 'abcd',
 					maxZoom: 20,
+					noWrap: true,
+					bounds: worldBounds,
 					className: 'video-map-base-tiles'
 				})
 				.addTo(map);
@@ -329,6 +339,8 @@
 					subdomains: 'abcd',
 					maxZoom: 20,
 					opacity: 0.88,
+					noWrap: true,
+					bounds: worldBounds,
 					className: 'video-map-label-tiles'
 				})
 				.addTo(map);

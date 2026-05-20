@@ -23,7 +23,7 @@
 	} from '$lib/tv/store';
 	import Tracklist from '$lib/tv/Tracklist.svelte';
 	import { getProviderLink, type ProviderLink } from '$lib/tv/provider-links';
-	import { getCountryFlagEmoji, getParkourSpotUrl, withUtm } from '$lib/utils';
+	import { withUtm } from '$lib/utils';
 	import {
 		flushWatchHistoryNow,
 		PROGRESS_CHANGE_EVENT,
@@ -57,6 +57,7 @@
 	import { getPublicUserName, getPublicUserNameOrFallback } from '$lib/utils';
 	import { slugify } from '$lib/tv/slug';
 	import FacetChips from '$lib/components/FacetChips.svelte';
+	import SpotChaptersMapPanel from '$lib/tv/SpotChaptersMapPanel.svelte';
 	import ContentWarningIcon from '$lib/components/ContentWarningIcon.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import {
@@ -103,8 +104,7 @@
 	let reviewsRequestToken = 0;
 	let spotChaptersRequestToken = 0;
 
-	type SpotCountry = { code?: string | null; name?: string | null };
-	type SpotInfo = { id: string; name: string; lat: number; lng: number; countries?: SpotCountry[] };
+	type SpotInfo = { id: string; name: string; lat: number; lng: number };
 	type SpotChapter = {
 		suggestionId: number;
 		spotId: string;
@@ -129,49 +129,6 @@
 	function buildSeriesEpisodePlaybackKey(seriesId: number, episodeId: string): string {
 		return `series:${seriesId}:ep:${episodeId}`;
 	}
-
-	function formatSecondsToTimecode(totalSeconds: number): string {
-		const s = Math.max(0, Math.floor(totalSeconds || 0));
-		const h = Math.floor(s / 3600);
-		const m = Math.floor((s % 3600) / 60);
-		const sec = s % 60;
-		if (h > 0)
-			return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-		return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-	}
-
-	function getTimeLabel(tc: unknown, seconds: unknown): string {
-		const trimmed = typeof tc === 'string' ? tc.trim() : '';
-		if (trimmed) return trimmed;
-		const n = typeof seconds === 'number' ? seconds : Number(String(seconds ?? ''));
-		return Number.isFinite(n) ? formatSecondsToTimecode(n) : '00:00';
-	}
-
-	function spotUrl(spotId: string): string {
-		return getParkourSpotUrl(spotId);
-	}
-
-	function getSpotFlags(spot: SpotInfo | null | undefined): Array<{ flag: string; label: string }> {
-		const out: Array<{ flag: string; label: string }> = [];
-		const seen = new Set<string>();
-
-		for (const country of spot?.countries ?? []) {
-			const flag = getCountryFlagEmoji(country.code);
-			if (!flag) continue;
-			const label = country.name?.trim() || country.code?.trim() || '';
-			if (!label || seen.has(label)) continue;
-			seen.add(label);
-			out.push({ flag, label });
-		}
-
-		return out;
-	}
-
-	const openSpotButtonClass =
-		'inline-flex flex-shrink-0 items-center gap-1 rounded border border-[#8ecff2]/35 bg-[#8ecff2]/10 px-2 py-1 text-xs text-[#8ecff2] transition hover:bg-[#8ecff2]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8ecff2]/70';
-
-	const spotFlagClass =
-		'inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-white/10 bg-white/5 px-1 text-sm leading-none';
 
 	async function loadSpotChaptersForMovie(mediaId: number) {
 		if (!browser) return;
@@ -1398,51 +1355,7 @@
 							{:else if !spotChapters.length}
 								<p class="detail-muted">{m.tv_noSpotsYet()}</p>
 							{:else}
-								<div class="space-y-2">
-									<ul class="space-y-2">
-										{#each spotChapters as c (c.suggestionId)}
-											{@const startLabel = getTimeLabel(c.startTimecode, c.startSeconds)}
-											{@const endLabel = getTimeLabel(c.endTimecode, c.endSeconds)}
-											{@const spotFlags = getSpotFlags(c.spot)}
-											<li
-												class="flex items-center justify-between gap-3 rounded-lg border border-l-2 border-gray-700/50 border-l-[#8ecff2]/50 bg-gray-900/30 px-3 py-2"
-											>
-												<div class="min-w-0 flex-1">
-													<div class="font-mono text-xs text-gray-400">{startLabel}–{endLabel}</div>
-													<div class="flex items-center gap-2">
-														{#if spotFlags.length}
-															<div class="flex shrink-0 items-center gap-1">
-																{#each spotFlags as item (item.label)}
-																	<span class={spotFlagClass} title={item.label} aria-label={item.label}>{item.flag}</span>
-																{/each}
-															</div>
-														{/if}
-														<div class="truncate text-sm text-gray-100">
-															{c.spot?.name ?? c.spotId}
-														</div>
-													</div>
-												</div>
-												<div class="flex shrink-0 items-center gap-2">
-													<a
-														href={spotUrl(c.spotId)}
-														target="_blank"
-														rel="noreferrer"
-														class={openSpotButtonClass}
-														title={m.tv_openOnParkourSpot()}
-													>
-														<img
-															src="/icons/brand-parkour-dot-spot.svg"
-															alt=""
-															class="size-4 invert"
-															aria-hidden="true"
-														/>
-														<span>{m.tv_open()}</span>
-													</a>
-												</div>
-											</li>
-										{/each}
-									</ul>
-								</div>
+								<SpotChaptersMapPanel chapters={spotChapters} />
 							{/if}
 						</section>
 					{/if}
@@ -1559,51 +1472,7 @@
 									{:else if !spotChapters.length}
 										<p class="detail-muted">{m.tv_noSpotsYet()}</p>
 									{:else}
-										<div class="space-y-2">
-											<ul class="space-y-2">
-												{#each spotChapters as c (c.suggestionId)}
-													{@const startLabel = getTimeLabel(c.startTimecode, c.startSeconds)}
-													{@const endLabel = getTimeLabel(c.endTimecode, c.endSeconds)}
-													{@const spotFlags = getSpotFlags(c.spot)}
-													<li
-														class="flex items-center justify-between gap-3 rounded-lg border border-l-2 border-gray-700/50 border-l-[#8ecff2]/50 bg-gray-900/30 px-3 py-2"
-													>
-														<div class="min-w-0 flex-1">
-															<div class="font-mono text-xs text-gray-400">{startLabel}–{endLabel}</div>
-															<div class="flex items-center gap-2">
-																{#if spotFlags.length}
-																	<div class="flex shrink-0 items-center gap-1">
-																		{#each spotFlags as item (item.label)}
-																			<span class={spotFlagClass} title={item.label} aria-label={item.label}>{item.flag}</span>
-																		{/each}
-																	</div>
-																{/if}
-																<div class="truncate text-sm text-gray-100">
-																	{c.spot?.name ?? c.spotId}
-																</div>
-															</div>
-														</div>
-														<div class="flex shrink-0 items-center gap-2">
-															<a
-																href={spotUrl(c.spotId)}
-																target="_blank"
-																rel="noreferrer"
-																class={openSpotButtonClass}
-																title={m.tv_openOnParkourSpot()}
-															>
-																<img
-																	src="/icons/brand-parkour-dot-spot.svg"
-																	alt=""
-																	class="size-4 invert"
-																	aria-hidden="true"
-																/>
-																<span>{m.tv_open()}</span>
-														</a>
-													</div>
-												</li>
-											{/each}
-										</ul>
-									</div>
+										<SpotChaptersMapPanel chapters={spotChapters} />
 									{/if}
 								{/if}
 							</div>

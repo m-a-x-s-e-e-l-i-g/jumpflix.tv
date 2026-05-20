@@ -864,7 +864,9 @@
 						<BarChart3Icon class="size-5" />
 						<span class="sr-only">Stats</span>
 					</a>
+				{/if}
 
+				{#if !isDetailRoute && !isPeopleRoute}
 					<a
 						href="/video-map"
 						aria-label="Video map"

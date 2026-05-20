@@ -5,6 +5,8 @@ import { calculateUserXp } from '$lib/xp';
 
 function shouldLoadTvCatalog(pathname: string): boolean {
 	return !(
+		pathname === '/blog' ||
+		pathname.startsWith('/blog/') ||
 		pathname === '/about' ||
 		pathname === '/autoplay' ||
 		pathname === '/costs' ||

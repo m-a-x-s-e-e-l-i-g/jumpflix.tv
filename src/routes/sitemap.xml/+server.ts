@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/public';
+import { getAllBlogPostSummaries, getAllBlogTags } from '$lib/blog/content';
 import { fetchAllContent } from '$lib/server/content-service';
 import { createSupabaseClient } from '$lib/server/supabaseClient';
 import type { ContentItem } from '$lib/tv/types';
@@ -28,6 +29,32 @@ export const GET = async () => {
 
 	// Public stats overview
 	entries.push({ path: '/stats', lastmod: undefined });
+	entries.push({ path: '/blog', lastmod: undefined });
+	entries.push({ path: '/blog/rss.xml', lastmod: undefined });
+
+	const blogPosts = getAllBlogPostSummaries();
+	const latestBlogDateByTagSlug = new Map<string, string>();
+
+	for (const post of blogPosts) {
+		const lastmod = post.updated ?? post.date;
+		entries.push({ path: `/blog/${post.slug}`, lastmod });
+
+		for (const tag of post.tags) {
+			const tagSlug = slugify(tag);
+			if (!tagSlug) continue;
+			const currentLastmod = latestBlogDateByTagSlug.get(tagSlug);
+			if (!currentLastmod || currentLastmod < lastmod) {
+				latestBlogDateByTagSlug.set(tagSlug, lastmod);
+			}
+		}
+	}
+
+	for (const tag of getAllBlogTags()) {
+		entries.push({
+			path: `/blog/tag/${tag.slug}`,
+			lastmod: latestBlogDateByTagSlug.get(tag.slug)
+		});
+	}
 
 	const content = await fetchAllContent();
 	const personLastmod = new Map<string, string>();

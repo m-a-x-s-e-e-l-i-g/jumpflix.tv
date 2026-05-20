@@ -133,6 +133,9 @@
 	const isLegalRoute = $derived(
 		$page.url.pathname === '/privacy-policy' || $page.url.pathname === '/terms-of-service'
 	);
+	const isBlogRoute = $derived(
+		$page.url.pathname === '/blog' || $page.url.pathname.startsWith('/blog/')
+	);
 	const isAutoplayRoute = $derived(String($page.url.pathname) === '/autoplay');
 	const isDetailRoute = $derived(
 		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
@@ -833,7 +836,7 @@
 					<HelpTipsButton />
 				{/if}
 
-				{#if isStatsRoute || isAdminRoute || isAboutRoute || isCostsRoute || isLegalRoute || isDetailRoute || isPeopleRoute}
+				{#if isStatsRoute || isAdminRoute || isAboutRoute || isCostsRoute || isLegalRoute || isBlogRoute || isDetailRoute || isPeopleRoute}
 					<a
 						href="/"
 						aria-label={isDetailRoute || isPeopleRoute ? m.tv_backToCatalog() : 'Catalog'}
@@ -1029,7 +1032,7 @@
 		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
 		{#if $page.error}
 			{@render children?.()}
-		{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute || isLegalRoute || isAutoplayRoute}
+		{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute || isLegalRoute || isBlogRoute || isAutoplayRoute}
 			{@render children?.()}
 		{:else}
 			<TvPage

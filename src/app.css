@@ -24,12 +24,12 @@
 	--secondary-foreground: oklch(0.98 0.006 248.1);
 	--muted: oklch(0.215 0.03 262.8);
 	--muted-foreground: oklch(0.72 0.03 256.2);
-	--accent: oklch(0.26 0.05 292.5);
+	--accent: oklch(0.31 0.08 36.5);
 	--accent-foreground: oklch(0.98 0.006 248.1);
 	--destructive: oklch(0.65 0.2 25.5);
 	--border: oklch(1 0 0 / 12%);
 	--input: oklch(1 0 0 / 18%);
-	--ring: oklch(0.62 0.06 264.3);
+	--ring: oklch(0.62 0.08 35.8);
 	--chart-1: oklch(0.488 0.243 264.376);
 	--chart-2: oklch(0.696 0.17 162.48);
 	--chart-3: oklch(0.769 0.188 70.08);
@@ -48,7 +48,7 @@
 	--jf-surface: oklch(0.155 0.035 264.2);
 	--jf-surface-soft: oklch(0.195 0.03 261.8);
 	--jf-glow-red: rgba(229, 9, 20, 0.45);
-	--jf-glow-blue: rgba(37, 99, 235, 0.35);
+	--jf-glow-blue: rgba(214, 146, 72, 0.24);
 	--jf-frame: rgba(248, 250, 252, 0.18);
 	--jf-frame-strong: rgba(248, 250, 252, 0.32);
 	--jf-shadow: 0 30px 80px -40px rgba(2, 6, 23, 0.9);
@@ -115,10 +115,10 @@
 	}
 	body {
 		@apply bg-background text-foreground;
-		font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+		font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
 		background-image:
 			radial-gradient(140% 120% at 18% 12%, rgba(229, 9, 20, 0.22), transparent 68%),
-			radial-gradient(130% 120% at 78% 8%, rgba(37, 99, 235, 0.2), transparent 72%),
+			radial-gradient(130% 120% at 78% 8%, rgba(212, 146, 66, 0.16), transparent 72%),
 			linear-gradient(
 				180deg,
 				rgba(5, 7, 18, 0.92),
@@ -147,14 +147,14 @@
 }
 
 .jf-surface {
-	background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(12, 17, 32, 0.82));
+	background: linear-gradient(145deg, rgba(17, 20, 33, 0.94), rgba(11, 14, 24, 0.86));
 	border: 1px solid var(--jf-frame);
 	box-shadow: var(--jf-shadow);
-	backdrop-filter: blur(12px);
+	backdrop-filter: blur(8px);
 }
 
 .jf-surface-soft {
-	background: linear-gradient(160deg, rgba(15, 23, 42, 0.75), rgba(8, 12, 24, 0.8));
+	background: linear-gradient(160deg, rgba(20, 22, 34, 0.78), rgba(10, 12, 20, 0.82));
 	border: 1px solid rgba(248, 250, 252, 0.12);
 	box-shadow: var(--jf-shadow-soft);
 }
@@ -177,7 +177,7 @@
 	inset: 0;
 	background:
 		radial-gradient(120% 100% at 18% 16%, rgba(229, 9, 20, 0.36), transparent 70%),
-		radial-gradient(130% 120% at 80% 12%, rgba(37, 99, 235, 0.28), transparent 74%),
+		radial-gradient(130% 120% at 80% 12%, rgba(212, 146, 66, 0.2), transparent 74%),
 		radial-gradient(120% 120% at 50% 70%, rgba(148, 163, 184, 0.16), transparent 80%),
 		linear-gradient(210deg, rgba(20, 30, 55, 0.55), rgba(5, 7, 18, 0.3) 45%, transparent 85%),
 		linear-gradient(180deg, rgba(5, 7, 18, 0.95), rgba(5, 7, 18, 0.75) 55%, rgba(5, 7, 18, 1) 100%);
@@ -191,7 +191,7 @@
 	inset: -14% -18% -18%;
 	background:
 		radial-gradient(140% 120% at 28% 24%, rgba(229, 9, 20, 0.28), transparent 72%),
-		radial-gradient(140% 120% at 70% 18%, rgba(59, 130, 246, 0.22), transparent 74%),
+		radial-gradient(140% 120% at 70% 18%, rgba(212, 146, 66, 0.16), transparent 74%),
 		linear-gradient(210deg, rgba(5, 7, 18, 0.9), rgba(5, 7, 18, 0.5) 60%, rgba(5, 7, 18, 0.18) 100%);
 	mix-blend-mode: soft-light;
 	pointer-events: none;

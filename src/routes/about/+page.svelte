@@ -27,6 +27,7 @@
 		{ href: '#story', label: 'Story' },
 		{ href: '#vision', label: 'Vision' },
 		{ href: '#autoplay', label: 'Autoplay' },
+		{ href: '#video-map', label: 'Video map' },
 		{ href: '#transparency', label: 'Costs' },
 		{ href: '#contribute', label: 'Contribute' },
 		{ href: '#about-me', label: 'About me' }
@@ -269,6 +270,37 @@
 			<p class="text-muted-foreground">
 				The point is passive display: set it up on a TV, projector, or kiosk screen and let the vibe run.
 				Less like choosing a film night, more like giving a space a living parkour reel.
+			</p>
+		</div>
+	</div>
+
+	<div id="video-map" class="jf-surface mt-6 rounded-3xl p-6 md:mt-8 md:p-8 scroll-mt-24">
+		<div class="max-w-3xl space-y-6 text-sm leading-7 text-foreground md:text-base">
+			<h2 class="text-2xl font-semibold tracking-tight md:text-3xl">Video map</h2>
+			<p>
+				The video map is made for discovery through place, not just title search. Instead of digging through
+				lists, you can explore the catalog geographically and find the films and series connected to each spot.
+			</p>
+			<p>
+				Nearby locations are grouped into clustered pins with counts, so dense areas stay readable. Zoom in to
+				split clusters, select a spot, and open the linked videos directly from that location.
+			</p>
+			<p>
+				The same map context now appears in movie and series detail views, so spot chapters are easier to read
+				without leaving the page.
+			</p>
+			<p>
+				Open
+				<a
+					href="/video-map"
+					class="font-medium text-foreground underline decoration-muted-foreground/60 underline-offset-4 transition hover:decoration-foreground"
+					>/video-map</a
+				>
+				to explore the full map view.
+			</p>
+			<p class="text-muted-foreground">
+				Map navigation is intentionally constrained to real-world bounds so panning and zooming stay focused on
+				actual spot coverage.
 			</p>
 		</div>
 	</div>

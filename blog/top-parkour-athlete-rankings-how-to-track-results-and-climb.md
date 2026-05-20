@@ -186,3 +186,9 @@ Yes. Consistent ranking progression plus strong footage improves credibility wit
 Open [parkour athlete rankings watch search](/?q=parkour%20athlete%20rankings%20competition%20run), shortlist two athletes with different style profiles, then map what each does to protect execution under pressure.
 
 Rankings move fastest when your training decisions become measurable.
+
+## Matching JumpFlix Picks
+
+- [Sport Parkour League](/series/sport-parkour-league): Ranking-relevant competitive footage and repeatable event data.
+- [CAPSTONE VERKY](/movie/capstone-verky-2025): Strong benchmark for elite-level run quality.
+- [Ultimate Tag](/series/ultimate-tag-2020): Useful format contrast for consistency and pressure handling.

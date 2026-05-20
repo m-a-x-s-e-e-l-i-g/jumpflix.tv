@@ -287,3 +287,9 @@ It varies. Usually faster when you return to structured progression and avoid im
 Open [JumpFlix fear progression search](/?q=parkour%20fear%20progression), watch one technical clip, one raw clip, one conceptual clip, then train one scaled commitment ladder.
 
 Progression is not "be fearless." Progression is learning when and how to trust yourself.
+
+## Matching JumpFlix Picks
+
+- [Our relationship with fear](/movie/our-relationship-with-fear-sebastien-foucan-at-tedxealing-2012): Direct fear framing from an oldschool voice.
+- [Imagination Is Everything](/movie/imagination-is-everything-2011): Mindset-first piece for reframing pressure and confidence.
+- [Controlled Descent](/movie/controlled-descent-2021): Process-oriented movement that rewards calm decision making.

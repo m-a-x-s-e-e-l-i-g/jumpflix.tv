@@ -214,3 +214,9 @@ Poor transition quality and unstable landings after technical peaks usually leak
 Open [competition run building search](/?q=competition%20run%20building), choose one finalist run, and map each section to a score role before your next hard session.
 
 Build the line first, then let the line build your result.
+
+## Matching JumpFlix Picks
+
+- [Sport Parkour League](/series/sport-parkour-league): Useful for studying format-driven run composition and judge conversion.
+- [CAPSTONE VERKY](/movie/capstone-verky-2025): Great reference for sequencing risk and commitment in one line.
+- [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018): Short speed-focused run to analyze transitions and pacing.

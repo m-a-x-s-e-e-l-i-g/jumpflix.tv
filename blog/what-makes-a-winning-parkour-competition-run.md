@@ -275,3 +275,9 @@ Consistency under pressure and ability to preserve execution late in the run.
 Open [JumpFlix competition run search](/?q=best%20competition%20parkour%20runs), compare three finalist runs, and map each segment to a scoring pillar before your next run-building session.
 
 Winning runs are designed, not improvised.
+
+## Matching JumpFlix Picks
+
+- [Sport Parkour League](/series/sport-parkour-league): Event examples for scoring pillar analysis.
+- [CAPSTONE // SWARM](/movie/capstone-swarm-2022): Run architecture with high-value sections and clean transitions.
+- [CAPSTONE VERKY](/movie/capstone-verky-2025): Useful reference for balancing difficulty with execution reliability.

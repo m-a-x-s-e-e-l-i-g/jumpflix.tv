@@ -184,3 +184,9 @@ Study pacing decisions, transition quality, and where finalists choose controlle
 Open [freerunning contests Europe highlights search](/?q=freerunning%20contests%20europe%20highlights), pick two finals runs and one semifinal run, then map where each athlete protected execution under pressure.
 
 Winning in Europe is less about chaos and more about repeatable control.
+
+## Matching JumpFlix Picks
+
+- [Sport Parkour League](/series/sport-parkour-league): Good benchmark for competition structure and judging behavior.
+- [CAPSTONE // OATH](/movie/capstone-oath-2024): High-conversion run construction under pressure.
+- [CAPSTONE // SWARM](/movie/capstone-swarm-2022): Useful for comparing aggressive versus controlled risk.

@@ -326,3 +326,9 @@ Yes, with simple constraints and clear quality standards.
 Open [JumpFlix challenge search](/?q=parkour%20challenge), choose one constraint-based video, and run a scaled version with your crew this week.
 
 The best challenge is not the one that looks hardest online. It is the one that makes your movement cleaner tomorrow.
+
+## Matching JumpFlix Picks
+
+- [Sport Parkour League](/series/sport-parkour-league): Structured challenge context with measurable outcomes.
+- [Ultimate Tag](/series/ultimate-tag-2020): Constraint-driven speed and decision-making under pressure.
+- [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018): Useful sprint challenge reference for transition consistency.

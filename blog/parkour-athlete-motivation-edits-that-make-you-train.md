@@ -292,3 +292,9 @@ Absolutely. Many older edits have stronger movement clarity and discipline energ
 Open [JumpFlix athlete motivation search](/?q=parkour%20motivation%20athlete), watch one activation edit and one process-heavy piece, then go train one clear objective.
 
 The best motivation video is the one that gets you moving, not the one that keeps you scrolling.
+
+## Matching JumpFlix Picks
+
+- [CAPSTONE VERKY](/movie/capstone-verky-2025): High-discipline modern athlete project with clear training signal.
+- [BOOGIE VIDEOEN](/movie/boogie-videoen-2025): Fast motivational hit that still shows real movement output.
+- [One Last Run](/movie/one-last-run-2025): Compact piece that converts inspiration into train-now energy.

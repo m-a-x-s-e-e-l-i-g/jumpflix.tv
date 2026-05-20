@@ -251,3 +251,9 @@ Track consistency, judge-criteria alignment, and execution error frequency per r
 Open [JumpFlix competition search](/?q=parkour%20competitions%202026), shortlist three event-style runs that match your target season, and build one adaptation plan before your next hard session.
 
 Winning starts with calendar decisions, not only contest-day energy.
+
+## Matching JumpFlix Picks
+
+- [Sport Parkour League](/series/sport-parkour-league): Ongoing event reference for format and season timing.
+- [CAPSTONE // OATH](/movie/capstone-oath-2024): Current-era benchmark for competitive line expectations.
+- [CAPSTONE // SWARM](/movie/capstone-swarm-2022): Strong comparative reference for run planning across events.

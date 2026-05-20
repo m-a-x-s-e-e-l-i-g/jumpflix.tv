@@ -200,3 +200,9 @@ Treating flow and technical as enemies instead of complementary tools inside one
 Open [fast-flow vs technical search](/?q=fast%20flow%20vs%20technical%20parkour), compare one flow-heavy run and one technical-heavy run, then design a hybrid sequence for your next simulation.
 
 Most comps are won by athletes who can balance both.
+
+## Matching JumpFlix Picks
+
+- [Sport Parkour League](/series/sport-parkour-league): Direct competition footage for flow vs precision tradeoffs.
+- [CAPSTONE VERKY](/movie/capstone-verky-2025): Technical density and execution pressure in one package.
+- [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018): Pure pace and continuity study in short form.

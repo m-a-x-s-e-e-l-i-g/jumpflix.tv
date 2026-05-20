@@ -215,3 +215,9 @@ Consistent preparation, clean adaptation under pressure, and professional behavi
 Open [how to win parkour comps search](/?q=how%20to%20win%20parkour%20comps), compare two finalists and map where each protected execution in high-risk sections.
 
 Win more comps by reducing preventable score leaks, not by gambling bigger every round.
+
+## Matching JumpFlix Picks
+
+- [Sport Parkour League](/series/sport-parkour-league): Event footage for score-strategy pattern spotting.
+- [CAPSTONE // SWARM](/movie/capstone-swarm-2022): Great for risk management and compositional structure.
+- [Enter the Breach](/movie/enter-the-breach-2021): Long-form context on execution quality under pressure.

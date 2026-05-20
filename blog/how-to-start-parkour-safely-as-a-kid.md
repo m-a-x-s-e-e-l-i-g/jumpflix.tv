@@ -281,3 +281,9 @@ No. Rooftop content should be inspiration only. Real beginner training stays low
 Open [JumpFlix beginner search](/?q=parkour%20for%20beginners), pick one tutorial and one low-height session clip, then practice only the simplest version with supervision.
 
 That is how a kid becomes confident in parkour without rushing into risky imitation.
+
+## Matching JumpFlix Picks
+
+- [People in Motion](/movie/people-in-motion-2012): Accessible long-form intro to real parkour culture.
+- [The Progression Series](/series/the-progression-series-2010): Progression-focused sessions that emphasize fundamentals.
+- [Imagination Is Everything](/movie/imagination-is-everything-2011): Positive mindset framing without stunt-only pressure.

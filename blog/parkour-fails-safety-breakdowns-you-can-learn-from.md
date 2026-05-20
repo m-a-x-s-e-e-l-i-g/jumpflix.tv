@@ -281,3 +281,9 @@ Increase your ratio of progression and confidence clips, then train controlled f
 Open [JumpFlix fail + safety search](/?q=parkour%20fails%20safety), analyze one clip with the 4-question method, then train a scaled technical session.
 
 Fail content can make you smarter, but only when you watch to learn, not just to react.
+
+## Matching JumpFlix Picks
+
+- [Controlled Descent](/movie/controlled-descent-2021): Emphasizes control and reduction of avoidable error.
+- [Our relationship with fear](/movie/our-relationship-with-fear-sebastien-foucan-at-tedxealing-2012): Useful mental model for fear-aware decisions.
+- [The Progression Series](/series/the-progression-series-2010): Good baseline for technique-first progression.

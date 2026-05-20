@@ -243,3 +243,9 @@ If you want a clean start, do this now:
 3. Train one movement family this week and ignore everything else
 
 Your progression gets faster the moment your watching gets intentional.
+
+## Matching JumpFlix Picks
+
+- [The Progression Series](/series/the-progression-series-2010): Built around progressive skill acquisition.
+- [People in Motion](/movie/people-in-motion-2012): Context-rich movement examples with strong fundamentals.
+- [Parkour, imaginatively.](/movie/parkour-imaginatively-2013): Compact technical cues with clear line readability.

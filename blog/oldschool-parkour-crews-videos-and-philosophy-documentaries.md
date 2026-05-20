@@ -264,3 +264,9 @@ Yes. The best current athletes do both: oldschool discipline with modern movemen
 Open [JumpFlix oldschool crews search](/?q=oldschool%20parkour%20crews), choose one classic session and one active crew update, then finish with one documentary segment that changes how you train this week.
 
 That is how archive watching becomes forward progress.
+
+## Matching JumpFlix Picks
+
+- [OUT OF TIME](/movie/out-of-time-2009): Raw oldschool crew energy and foundational line literacy.
+- [Jump London](/movie/jump-london-2003): Core cultural reference for early mainstream parkour storytelling.
+- [The Monkey's Back / Le Singe est de Retour](/movie/the-monkeys-back-le-singe-est-de-retour-2006): Documentary perspective rooted in early philosophy.

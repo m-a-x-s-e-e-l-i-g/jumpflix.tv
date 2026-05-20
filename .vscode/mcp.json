@@ -2,7 +2,7 @@
 	"servers": {
 		"jumpflixMcp": {
 			"type": "http",
-			"url": "http://localhost:5173/mcp",
+			"url": "https://www.jumpflix.tv/mcp",
 			"headers": {
 				"Authorization": "Bearer ${input:jumpflix-mcp-token}",
 				"Accept": "application/json, text/event-stream"

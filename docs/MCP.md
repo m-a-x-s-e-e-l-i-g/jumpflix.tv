@@ -44,9 +44,9 @@ Catalog and spot data still rely on existing project env vars like Supabase keys
 The server now includes payload-size controls at two levels:
 
 - Tool-level optional limits:
-	- `catalog.get` supports `maxTracks` and `maxSeasons`.
-	- `catalog.by_spot` supports `maxChaptersPerItem`.
-	- `catalog.facets` supports `includeDescriptions`.
+	- `catalog_get` supports `maxTracks` and `maxSeasons`.
+	- `catalog_by_spot` supports `maxChaptersPerItem`.
+	- `catalog_facets` supports `includeDescriptions`.
 - Transport-level fallback:
 	- If `structuredContent` is still too large, the server trims oversized sections and adds `transportLimit` metadata.
 	- If needed, a compact fallback payload is returned so the response stays deliverable.
@@ -69,22 +69,22 @@ http://localhost:5173/mcp
 
 ## Exposed Tools
 
-- `catalog.search`
+- `catalog_search`
 : Search by text, feed preset, type, and facet filters with pagination and sort.
 
-- `catalog.get`
+- `catalog_get`
 : Fetch one media item by `id` or `slug`.
 
-- `catalog.by_person`
+- `catalog_by_person`
 : Resolve creator/athlete matches and list related media.
 
-- `catalog.by_spot`
+- `catalog_by_spot`
 : Resolve spot ID and return media linked by approved spot chapters.
 
-- `catalog.facets`
+- `catalog_facets`
 : Return machine-readable facet taxonomy and content warning options.
 
-- `catalog.feeds`
+- `catalog_feeds`
 : Return feed presets and filter definitions.
 
 ## Notes

@@ -158,11 +158,11 @@ function applyStructuredContentLimit(toolName: string, data: JsonObject): { payl
 		}
 	};
 
-	if (toolName === 'catalog.search' || toolName === 'catalog.by_person') {
+	if (toolName === 'catalog_search' || toolName === 'catalog_by_person') {
 		trimTopLevelItems(1);
 	}
 
-	if (toolName === 'catalog.get' && isRecord(payload.item)) {
+	if (toolName === 'catalog_get' && isRecord(payload.item)) {
 		trimNestedArray(payload.item, 'tracks', 1);
 		trimNestedArray(payload.item, 'seasons', 1);
 
@@ -177,7 +177,7 @@ function applyStructuredContentLimit(toolName: string, data: JsonObject): { payl
 		}
 	}
 
-	if (toolName === 'catalog.by_spot') {
+	if (toolName === 'catalog_by_spot') {
 		const currentItems = payload.items;
 		if (Array.isArray(currentItems)) {
 			let chapterListsTrimmed = 0;
@@ -211,7 +211,7 @@ function applyStructuredContentLimit(toolName: string, data: JsonObject): { payl
 		}
 	}
 
-	if (toolName === 'catalog.facets') {
+	if (toolName === 'catalog_facets') {
 		const manual = payload.manual;
 		if (isRecord(manual)) {
 			let descriptionsRemoved = 0;
@@ -454,12 +454,12 @@ export function createJumpflixMcpServer(): McpServer {
 		},
 		{
 			instructions:
-				'Read-only JumpFlix catalog MCP server for parkour and freerunning films. Use catalog.search first, then catalog.get for details.'
+				'Read-only JumpFlix catalog MCP server for parkour and freerunning films. Use catalog_search first, then catalog_get for details.'
 		}
 	);
 
 	server.registerTool(
-		'catalog.search',
+		'catalog_search',
 		{
 			title: 'Catalog Search',
 			description:
@@ -491,15 +491,15 @@ export function createJumpflixMcpServer(): McpServer {
 			};
 
 			return jsonToolResult(
-				'catalog.search',
+				'catalog_search',
 				payload,
-				summarizeResult('catalog.search', page.total, page.page, page.pageSize)
+				summarizeResult('catalog_search', page.total, page.page, page.pageSize)
 			);
 		}
 	);
 
 	server.registerTool(
-		'catalog.get',
+		'catalog_get',
 		{
 			title: 'Catalog Get',
 			description: 'Get one catalog item by numeric id or slug.',
@@ -589,12 +589,12 @@ export function createJumpflixMcpServer(): McpServer {
 				};
 			}
 
-			return jsonToolResult('catalog.get', payload, `catalog.get: found ${item.type} \"${item.title}\".`);
+			return jsonToolResult('catalog_get', payload, `catalog_get: found ${item.type} \"${item.title}\".`);
 		}
 	);
 
 	server.registerTool(
-		'catalog.by_person',
+		'catalog_by_person',
 		{
 			title: 'Catalog By Person',
 			description: 'Find media by creator and/or athlete name.',
@@ -665,15 +665,15 @@ export function createJumpflixMcpServer(): McpServer {
 			};
 
 			return jsonToolResult(
-				'catalog.by_person',
+				'catalog_by_person',
 				payload,
-				summarizeResult('catalog.by_person', page.total, page.page, page.pageSize)
+				summarizeResult('catalog_by_person', page.total, page.page, page.pageSize)
 			);
 		}
 	);
 
 	server.registerTool(
-		'catalog.by_spot',
+		'catalog_by_spot',
 		{
 			title: 'Catalog By Spot',
 			description: 'Find catalog items containing a parkour.spot chapter.',
@@ -718,7 +718,7 @@ export function createJumpflixMcpServer(): McpServer {
 					(msg.includes('does not exist') || msg.includes('relation'))
 				) {
 					return jsonToolResult(
-						'catalog.by_spot',
+						'catalog_by_spot',
 						{
 							requestedSpotId,
 							resolvedSpotId,
@@ -726,7 +726,7 @@ export function createJumpflixMcpServer(): McpServer {
 							total: 0,
 							items: []
 						},
-						'catalog.by_spot: no spot chapters table found.'
+						'catalog_by_spot: no spot chapters table found.'
 					);
 				}
 
@@ -844,15 +844,15 @@ export function createJumpflixMcpServer(): McpServer {
 			}
 
 			return jsonToolResult(
-				'catalog.by_spot',
+				'catalog_by_spot',
 				payload,
-				summarizeResult('catalog.by_spot', page.total, page.page, page.pageSize)
+				summarizeResult('catalog_by_spot', page.total, page.page, page.pageSize)
 			);
 		}
 	);
 
 	server.registerTool(
-		'catalog.facets',
+		'catalog_facets',
 		{
 			title: 'Catalog Facets',
 			description: 'Return machine-readable facet taxonomy options and descriptions.',
@@ -909,12 +909,12 @@ export function createJumpflixMcpServer(): McpServer {
 				}
 			};
 
-			return jsonToolResult('catalog.facets', payload, 'catalog.facets: returned current facet taxonomy.');
+			return jsonToolResult('catalog_facets', payload, 'catalog_facets: returned current facet taxonomy.');
 		}
 	);
 
 	server.registerTool(
-		'catalog.feeds',
+		'catalog_feeds',
 		{
 			title: 'Catalog Feeds',
 			description: 'List named JumpFlix feed presets and their filter definitions.',
@@ -931,9 +931,9 @@ export function createJumpflixMcpServer(): McpServer {
 			};
 
 			return jsonToolResult(
-				'catalog.feeds',
+				'catalog_feeds',
 				payload,
-				`catalog.feeds: ${payload.feeds.length} feed preset${payload.feeds.length === 1 ? '' : 's'}.`
+				`catalog_feeds: ${payload.feeds.length} feed preset${payload.feeds.length === 1 ? '' : 's'}.`
 			);
 		}
 	);

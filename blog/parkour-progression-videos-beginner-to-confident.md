@@ -238,7 +238,7 @@ If you cannot identify a safe regression and cannot explain setup mechanics, tre
 
 If you want a clean start, do this now:
 
-1. Open [JumpFlix beginner tutorial search](/?q=parkour%20tutorial%20beginners)
+1. Open [The Progression Series](/series/the-progression-series-2010)
 2. Pick one tutorial, one POV clip, one session edit
 3. Train one movement family this week and ignore everything else
 
@@ -246,6 +246,6 @@ Your progression gets faster the moment your watching gets intentional.
 
 ## Matching JumpFlix Picks
 
-- [The Progression Series](/series/the-progression-series-2010): Built around progressive skill acquisition.
-- [People in Motion](/movie/people-in-motion-2012): Context-rich movement examples with strong fundamentals.
-- [Parkour, imaginatively.](/movie/parkour-imaginatively-2013): Compact technical cues with clear line readability.
+- [The Progression Series](/series/the-progression-series-2010): Best progression-first backbone for new athletes.
+- [People in Motion](/movie/people-in-motion-2012): Solid movement context and fundamentals in long form.
+- [Parkour, imaginatively.](/movie/parkour-imaginatively-2013): Clear technical cues with readable line design.

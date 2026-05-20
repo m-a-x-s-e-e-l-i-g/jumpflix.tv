@@ -249,12 +249,12 @@ Yes, if challenges are structured around technical consistency, not only max sen
 
 ## Watch CTA
 
-Open [JumpFlix move search](/?q=parkour%20wall%20run%20kong%20precision), pick one move family, and build a 3-video stack (tutorial + session + POV).
+Open [The Progression Series](/series/the-progression-series-2010), pick one move family, and build a 3-video stack (tutorial + session + POV).
 
 One focused move week beats ten random hype clips every time.
 
 ## Matching JumpFlix Picks
 
-- [The Progression Series](/series/the-progression-series-2010): Strong move-by-move progression cues.
-- [Parkour, imaginatively.](/movie/parkour-imaginatively-2013): Clean technical lines for reading takeoff and landing rhythm.
-- [Controlled Descent](/movie/controlled-descent-2021): Good precision and control references for transfer to drills.
+- [The Progression Series](/series/the-progression-series-2010): Move-by-move progression references for core skills.
+- [Parkour, imaginatively.](/movie/parkour-imaginatively-2013): Clean line readability for takeoff and landing rhythm.
+- [Controlled Descent](/movie/controlled-descent-2021): Precision and control cues that transfer to drills.

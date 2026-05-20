@@ -252,12 +252,12 @@ Absolutely. The best 2026 releases combine modern production with oldschool disc
 
 ## Watch CTA
 
-Open [JumpFlix new films 2026 search](/?q=new%20parkour%20films%202026), shortlist three releases, and keep only the ones that improve how you read and build lines.
+Open [THE MANPOWER STICK](/movie/the-manpower-stick-2026), shortlist three releases, and keep only the ones that improve how you read and build lines.
 
 That is how inspiration turns into better training, not just better playlists.
 
 ## Matching JumpFlix Picks
 
-- [THE MANPOWER STICK](/movie/the-manpower-stick-2026): Fresh technical documentary with clear movement intent.
-- [Capstone Verky BTS](/movie/capstone-verky-bts-2026): Behind-the-scenes context for modern high-level projects.
-- [BOOGIE VIDEOEN](/movie/boogie-videoen-2025): Contemporary send-focused energy with current scene texture.
+- [THE MANPOWER STICK](/movie/the-manpower-stick-2026): Fresh 2026 technical documentary with clear intent.
+- [Capstone Verky BTS](/movie/capstone-verky-bts-2026): Behind-the-scenes context for current production methods.
+- [BOOGIE VIDEOEN](/movie/boogie-videoen-2025): Contemporary scene energy with strong movement signal.

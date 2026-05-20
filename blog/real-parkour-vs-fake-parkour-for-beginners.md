@@ -270,12 +270,12 @@ Check environment safety, supervision, movement difficulty, and whether there is
 
 ## Watch CTA
 
-Open [JumpFlix progression search](/?q=parkour%20progression%20tutorial), pick one clip that passes the 6-point filter, and practice only the scaled beginner version with supervision.
+Open [People in Motion](/movie/people-in-motion-2012), pick one clip that passes the 6-point filter, and practice only the scaled beginner version with supervision.
 
 That is how you keep parkour real, fun, and sustainable from day one.
 
 ## Matching JumpFlix Picks
 
-- [People in Motion](/movie/people-in-motion-2012): Real training culture with clear, non-gimmick context.
-- [Jump London](/movie/jump-london-2003): Foundational real-world movement history for beginners.
-- [The Progression Series](/series/the-progression-series-2010): Process-driven movement that contrasts with stunt-only clips.
+- [People in Motion](/movie/people-in-motion-2012): Real training culture with minimal gimmick framing.
+- [The Progression Series](/series/the-progression-series-2010): Process-driven movement that contrasts with stunt edits.
+- [Jump London](/movie/jump-london-2003): Foundational real-world context for beginner media literacy.

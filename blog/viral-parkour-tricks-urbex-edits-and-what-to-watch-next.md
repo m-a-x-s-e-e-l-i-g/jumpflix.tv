@@ -289,12 +289,12 @@ Yes. The same viral-to-longform pipeline applies to freerunning trend content.
 
 ## Watch CTA
 
-Open [JumpFlix viral-to-longform search](/?q=viral%20parkour%20tricks), pick one trend clip category, then run the 4-step watch sequence (viral -> tutorial -> session -> long-form).
+Open [District B13](/movie/district-b13-2004), pick one trend clip category, then run the 4-step watch sequence (viral -> tutorial -> session -> long-form).
 
 That is how you turn trending attention into real parkour culture discovery.
 
 ## Matching JumpFlix Picks
 
-- [District B13](/movie/district-b13-2004): Classic viral-adjacent gateway with historical context.
-- [STORROR Rooftop POV's & Escapes](/series/storror-rooftop-povs-escapes-2016): High-click rooftop format that transitions well to long-form viewing.
-- [Holi Shit](/movie/holi-shit-2013): Urbex-style edit to bridge trend interest into deeper catalog exploration.
+- [District B13](/movie/district-b13-2004): Viral gateway classic with historical context.
+- [STORROR Rooftop POV's & Escapes](/series/storror-rooftop-povs-escapes-2016): High-click rooftop format that converts to deeper watching.
+- [Holi Shit](/movie/holi-shit-2013): Urbex-style bridge from trend clips to full sessions.

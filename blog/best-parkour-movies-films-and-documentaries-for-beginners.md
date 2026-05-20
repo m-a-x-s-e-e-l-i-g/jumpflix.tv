@@ -265,12 +265,12 @@ Yes, with guidance. The key is discussing what is cinematic versus what is begin
 
 ## Watch CTA
 
-Open [JumpFlix films and docs search](/?q=parkour%20movies%20documentary), choose one inspiring film segment, then immediately queue one beginner tutorial before your next practice session.
+Open [People in Motion](/movie/people-in-motion-2012), choose one inspiring film segment, then immediately queue one beginner tutorial before your next practice session.
 
 That is the fastest way to turn movie curiosity into real, safe parkour progress.
 
 ## Matching JumpFlix Picks
 
-- [Jump London](/movie/jump-london-2003): Classic entry point with clear movement roots and documentary context.
-- [People in Motion](/movie/people-in-motion-2012): Beginner-friendly documentary pacing with real athlete perspectives.
-- [Bound By Movement](/movie/bound-by-movement-2019): Long-form modern documentary that balances inspiration and real training culture.
+- [People in Motion](/movie/people-in-motion-2012): Beginner-friendly documentary pacing with clear movement context.
+- [Jump London](/movie/jump-london-2003): Foundational watch for understanding parkour roots and culture.
+- [Bound By Movement](/movie/bound-by-movement-2019): Modern long-form documentary that balances inspiration and realism.

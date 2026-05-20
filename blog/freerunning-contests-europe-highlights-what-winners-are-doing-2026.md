@@ -41,9 +41,9 @@ In 2026, Europe event footage shows a clear pattern. Winners are not only bigger
 
 Start with these watch lanes:
 
-- [freerunning contests Europe search](/?q=freerunning%20contests%20europe)
-- [parkour competitions 2026 search](/?q=parkour%20competitions%202026)
-- [best competition runs search](/?q=best%20competition%20parkour%20runs)
+- [Sport Parkour League](/series/sport-parkour-league)
+- [CAPSTONE // OATH](/movie/capstone-oath-2024)
+- [Civilisation](/movie/civilisation-2023)
 
 Then evaluate what actually converts under judges, not only what looks impressive on replay.
 
@@ -143,9 +143,9 @@ Fix: end every review with one session change for the next 7 days.
 
 Use this sequence once per week:
 
-- One finals highlight reel via [Europe contest search](/?q=freerunning%20contests%20europe%20highlights)
-- One judged breakdown via [parkour scoring system search](/?q=parkour%20scoring%20system)
-- One run architecture study via [competition run building search](/?q=competition%20run%20building)
+- One finals highlight reel via [Sport Parkour League](/series/sport-parkour-league)
+- One judged breakdown via [CAPSTONE // OATH](/movie/capstone-oath-2024)
+- One run architecture study via [Civilisation](/movie/civilisation-2023)
 
 Then document:
 
@@ -181,12 +181,12 @@ Study pacing decisions, transition quality, and where finalists choose controlle
 
 ## Watch CTA
 
-Open [freerunning contests Europe highlights search](/?q=freerunning%20contests%20europe%20highlights), pick two finals runs and one semifinal run, then map where each athlete protected execution under pressure.
+Open [Sport Parkour League](/series/sport-parkour-league), pick two finals runs and one semifinal run, then map where each athlete protected execution under pressure.
 
 Winning in Europe is less about chaos and more about repeatable control.
 
 ## Matching JumpFlix Picks
 
-- [Sport Parkour League](/series/sport-parkour-league): Good benchmark for competition structure and judging behavior.
-- [CAPSTONE // OATH](/movie/capstone-oath-2024): High-conversion run construction under pressure.
-- [CAPSTONE // SWARM](/movie/capstone-swarm-2022): Useful for comparing aggressive versus controlled risk.
+- [Sport Parkour League](/series/sport-parkour-league): Competition format reference for tactical benchmarking.
+- [CAPSTONE // OATH](/movie/capstone-oath-2024): Modern high-conversion run example.
+- [Civilisation](/movie/civilisation-2023): Europe scene depth with strong pace-and-composition signal.

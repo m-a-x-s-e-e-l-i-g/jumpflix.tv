@@ -273,12 +273,12 @@ You see rising consistency under pressure, not just occasional highlight runs.
 
 ## Watch CTA
 
-Open [JumpFlix competitive training search](/?q=competitive%20parkour%20training), pick one run-building session and one execution-heavy session to model this week, and log how each changes your contest readiness.
+Open [Sport Parkour League](/series/sport-parkour-league), pick one run-building session and one execution-heavy session to model this week, and log how each changes your contest readiness.
 
 A winning season is built on timing, not just effort.
 
 ## Matching JumpFlix Picks
 
-- [The Progression Series](/series/the-progression-series-2010): Shows staged progression and repeatable training logic.
-- [Sport Parkour League](/series/sport-parkour-league): Competition context for periodized prep decisions.
-- [CAPSTONE // SWARM](/movie/capstone-swarm-2022): High-level benchmark for peak-phase intensity and execution.
+- [Sport Parkour League](/series/sport-parkour-league): Event-context footage for season planning and format awareness.
+- [CAPSTONE // OATH](/movie/capstone-oath-2024): Benchmark run intensity for peak-phase prep.
+- [The Progression Series](/series/the-progression-series-2010): Long-view progression logic that supports periodized training.

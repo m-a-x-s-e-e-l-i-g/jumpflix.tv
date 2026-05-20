@@ -45,9 +45,9 @@ If you are searching how to build competition run line strategy, this is the fra
 
 Use these references while building:
 
-- [competition run building search](/?q=competition%20run%20building)
-- [best competition runs search](/?q=best%20competition%20parkour%20runs)
-- [freerunning judge criteria search](/?q=freerunning%20judge%20criteria)
+- [CAPSTONE VERKY](/movie/capstone-verky-2025)
+- [CAPSTONE // SWARM](/movie/capstone-swarm-2022)
+- [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018)
 
 ## Step 1: Define your scoring profile first
 
@@ -211,12 +211,12 @@ Poor transition quality and unstable landings after technical peaks usually leak
 
 ## Watch CTA
 
-Open [competition run building search](/?q=competition%20run%20building), choose one finalist run, and map each section to a score role before your next hard session.
+Open [CAPSTONE VERKY](/movie/capstone-verky-2025), choose one finalist run, and map each section to a score role before your next hard session.
 
 Build the line first, then let the line build your result.
 
 ## Matching JumpFlix Picks
 
-- [Sport Parkour League](/series/sport-parkour-league): Useful for studying format-driven run composition and judge conversion.
-- [CAPSTONE VERKY](/movie/capstone-verky-2025): Great reference for sequencing risk and commitment in one line.
-- [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018): Short speed-focused run to analyze transitions and pacing.
+- [CAPSTONE VERKY](/movie/capstone-verky-2025): High-level example of structured risk and controlled commitment.
+- [CAPSTONE // SWARM](/movie/capstone-swarm-2022): Useful for studying run architecture and section planning.
+- [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018): Fast short-form reference for transition pacing.

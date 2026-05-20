@@ -43,7 +43,7 @@ It is a system:
 
 If you are training with career-level intent, this is the realistic path.
 
-Start by benchmarking through [how to win parkour comps search](/?q=how%20to%20win%20parkour%20comps), [parkour performance mindset search](/?q=parkour%20performance%20mindset), and [parkour competitions schedule search](/?q=parkour%20competitions%202026%20schedule).
+Start by benchmarking through [CAPSTONE // SWARM](/movie/capstone-swarm-2022), [CAPSTONE VERKY](/movie/capstone-verky-2025), and [Enter the Breach](/movie/enter-the-breach-2021).
 
 Then turn what you learn into weekly decisions, not just motivation.
 
@@ -180,9 +180,9 @@ Related: [/blog/parkour-performance-mindset-under-competition-pressure](/blog/pa
 
 Use this weekly:
 
-- [best competition runs search](/?q=best%20competition%20parkour%20runs)
-- [parkour scoring system search](/?q=parkour%20scoring%20system)
-- [elite traceur training search](/?q=elite%20traceur%20training)
+- [CAPSTONE // SWARM](/movie/capstone-swarm-2022)
+- [CAPSTONE VERKY](/movie/capstone-verky-2025)
+- [Enter the Breach](/movie/enter-the-breach-2021)
 
 Then document one technical cue, one pacing cue, and one mindset cue for your next session.
 
@@ -212,12 +212,12 @@ Consistent preparation, clean adaptation under pressure, and professional behavi
 
 ## Watch CTA
 
-Open [how to win parkour comps search](/?q=how%20to%20win%20parkour%20comps), compare two finalists and map where each protected execution in high-risk sections.
+Open [CAPSTONE // SWARM](/movie/capstone-swarm-2022), compare two finalists and map where each protected execution in high-risk sections.
 
 Win more comps by reducing preventable score leaks, not by gambling bigger every round.
 
 ## Matching JumpFlix Picks
 
-- [Sport Parkour League](/series/sport-parkour-league): Event footage for score-strategy pattern spotting.
-- [CAPSTONE // SWARM](/movie/capstone-swarm-2022): Great for risk management and compositional structure.
-- [Enter the Breach](/movie/enter-the-breach-2021): Long-form context on execution quality under pressure.
+- [CAPSTONE // SWARM](/movie/capstone-swarm-2022): Strong model for balancing risk, score value, and control.
+- [CAPSTONE VERKY](/movie/capstone-verky-2025): Useful benchmark for high-level execution standards.
+- [Enter the Breach](/movie/enter-the-breach-2021): Long-form context on composure and consistency.

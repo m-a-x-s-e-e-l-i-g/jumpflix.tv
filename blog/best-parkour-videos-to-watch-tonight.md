@@ -265,12 +265,12 @@ Try "parkour videos documentary session pov" and then narrow by what mood you wa
 
 Want an instant queue right now?
 
-Open [JumpFlix best videos search](/?q=best%20parkour%20videos), build one 5-slot stack, and watch it in order.
+Open [Enter the Breach](/movie/enter-the-breach-2021), build one 5-slot stack, and watch it in order.
 
 You will enjoy the session more, and you will discover better creators faster than random autoplay.
 
 ## Matching JumpFlix Picks
 
-- [Enter the Breach](/movie/enter-the-breach-2021): Strong anchor film for a full watch session.
-- [S.O.L](/movie/s-o-l-2022): Long-form project with team energy and narrative momentum.
-- [Amsterdam Is Dead](/movie/amsterdam-is-dead-2024): High-retention modern film for a contemporary style block.
+- [Enter the Breach](/movie/enter-the-breach-2021): Strong anchor film to start a full watch session.
+- [Amsterdam Is Dead](/movie/amsterdam-is-dead-2024): Contemporary style and energy for your second slot.
+- [S.O.L](/movie/s-o-l-2022): Long-form team project to close with depth and momentum.

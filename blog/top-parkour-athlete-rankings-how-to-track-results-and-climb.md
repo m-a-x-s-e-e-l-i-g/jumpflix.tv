@@ -45,7 +45,7 @@ Start by watching three things each week:
 - which event formats suit your profile,
 - and which execution errors keep repeating.
 
-For current benchmark footage, open [best competitive parkour runs search](/?q=best%20competition%20parkour%20runs), [parkour scoring criteria search](/?q=parkour%20scoring%20competition%20run), and [parkour competition calendar and results search](/?q=parkour%20competitions%202026%20results).
+For current benchmark footage, open [Sport Parkour League](/series/sport-parkour-league), [CAPSTONE VERKY](/movie/capstone-verky-2025), and [Ultimate Tag](/series/ultimate-tag-2020).
 
 ## What rankings really measure
 
@@ -101,7 +101,7 @@ Use a simple run review template:
 - Main point leak
 - One tactical fix for next block
 
-This is where [parkour scoring criteria search](/?q=parkour%20scoring%20competition%20run) and [elite traceur training search](/?q=elite%20traceur%20training) become useful, not just motivational.
+This is where [Sport Parkour League](/series/sport-parkour-league) and [CAPSTONE VERKY](/movie/capstone-verky-2025) become useful, not just motivational.
 
 For judging literacy, read [/blog/how-judges-score-parkour-comps-and-freerunning-contests](/blog/how-judges-score-parkour-comps-and-freerunning-contests).
 
@@ -183,12 +183,12 @@ Yes. Consistent ranking progression plus strong footage improves credibility wit
 
 ## Watch CTA
 
-Open [parkour athlete rankings watch search](/?q=parkour%20athlete%20rankings%20competition%20run), shortlist two athletes with different style profiles, then map what each does to protect execution under pressure.
+Open [Ultimate Tag](/series/ultimate-tag-2020), shortlist two athletes with different style profiles, then map what each does to protect execution under pressure.
 
 Rankings move fastest when your training decisions become measurable.
 
 ## Matching JumpFlix Picks
 
-- [Sport Parkour League](/series/sport-parkour-league): Ranking-relevant competitive footage and repeatable event data.
-- [CAPSTONE VERKY](/movie/capstone-verky-2025): Strong benchmark for elite-level run quality.
+- [Sport Parkour League](/series/sport-parkour-league): Competition footage suitable for trend tracking.
+- [CAPSTONE VERKY](/movie/capstone-verky-2025): Elite benchmark for run quality comparison.
 - [Ultimate Tag](/series/ultimate-tag-2020): Useful format contrast for consistency and pressure handling.

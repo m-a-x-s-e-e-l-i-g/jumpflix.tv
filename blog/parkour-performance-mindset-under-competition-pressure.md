@@ -260,12 +260,12 @@ Convert result to training targets and commit to a defined next competition bloc
 
 ## Watch CTA
 
-Open [JumpFlix performance mindset search](/?q=parkour%20performance%20mindset), watch one run where an athlete recovers mid-attempt, and build your own 10-second reset cue sequence before your next simulation.
+Open [Our relationship with fear](/movie/our-relationship-with-fear-sebastien-foucan-at-tedxealing-2012), watch one run where an athlete recovers mid-attempt, and build your own 10-second reset cue sequence before your next simulation.
 
 Pressure is not something to eliminate. It is something to train.
 
 ## Matching JumpFlix Picks
 
-- [Our relationship with fear](/movie/our-relationship-with-fear-sebastien-foucan-at-tedxealing-2012): Direct mindset framework for handling pressure.
-- [Imagination Is Everything](/movie/imagination-is-everything-2011): Mental framing and self-direction for performance days.
-- [Enter the Breach](/movie/enter-the-breach-2021): Long-form case study in composure and execution.
+- [Our relationship with fear](/movie/our-relationship-with-fear-sebastien-foucan-at-tedxealing-2012): Direct pressure-management framing.
+- [Enter the Breach](/movie/enter-the-breach-2021): Composure and execution under high expectation.
+- [Imagination Is Everything](/movie/imagination-is-everything-2011): Fast pre-session mindset reset.

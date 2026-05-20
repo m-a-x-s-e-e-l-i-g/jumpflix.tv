@@ -41,7 +41,7 @@ In real judge environments, the answer is almost never one or the other.
 
 You win by sequencing both styles based on where each one scores best.
 
-To benchmark quickly, compare runs through [parkour scoring system search](/?q=parkour%20scoring%20system), [best competition runs search](/?q=best%20competition%20parkour%20runs), and [freerunning judge criteria search](/?q=freerunning%20judge%20criteria).
+To benchmark quickly, compare runs through [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018), [CAPSTONE VERKY](/movie/capstone-verky-2025), and [Ultimate Tag](/series/ultimate-tag-2020).
 
 ## What fast flow means in scoring language
 
@@ -197,12 +197,12 @@ Treating flow and technical as enemies instead of complementary tools inside one
 
 ## Watch CTA
 
-Open [fast-flow vs technical search](/?q=fast%20flow%20vs%20technical%20parkour), compare one flow-heavy run and one technical-heavy run, then design a hybrid sequence for your next simulation.
+Open [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018), compare one flow-heavy run and one technical-heavy run, then design a hybrid sequence for your next simulation.
 
 Most comps are won by athletes who can balance both.
 
 ## Matching JumpFlix Picks
 
-- [Sport Parkour League](/series/sport-parkour-league): Direct competition footage for flow vs precision tradeoffs.
-- [CAPSTONE VERKY](/movie/capstone-verky-2025): Technical density and execution pressure in one package.
-- [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018): Pure pace and continuity study in short form.
+- [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018): Pure speed-flow sample for continuity scoring.
+- [CAPSTONE VERKY](/movie/capstone-verky-2025): Technical density reference for high-difficulty sections.
+- [Ultimate Tag](/series/ultimate-tag-2020): Format-based contrast on pace, consistency, and execution.

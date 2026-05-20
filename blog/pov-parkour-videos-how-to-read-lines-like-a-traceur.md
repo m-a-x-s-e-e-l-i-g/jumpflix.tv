@@ -268,12 +268,12 @@ Switch to technical POV or talk/tutorial content for balance before training.
 
 ## Watch CTA
 
-Open [JumpFlix POV search](/?q=parkour%20pov), pick one run, extract two cues, and apply them in your next warm-up line.
+Open [STORROR Rooftop POV's & Escapes](/series/storror-rooftop-povs-escapes-2016), pick one run, extract two cues, and apply them in your next warm-up line.
 
 POV stops being entertainment-only the moment you start reading decisions, not just watching outcomes.
 
 ## Matching JumpFlix Picks
 
-- [STORROR Rooftop POV's & Escapes](/series/storror-rooftop-povs-escapes-2016): Core POV reference for route reading.
-- [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018): Great for studying pacing in near real-time speed.
-- [CAVEMEN](/series/storror-cavemen): Useful supplemental perspective on commitment and spatial awareness.
+- [STORROR Rooftop POV's & Escapes](/series/storror-rooftop-povs-escapes-2016): Primary POV source for line-reading practice.
+- [CAVEMEN](/series/storror-cavemen): Supplemental perspective for commitment and spatial choices.
+- [Louvain-la-Neuve | Parkour as fast as you can!](/movie/louvain-la-neuve-parkour-as-fast-as-you-can-2018): Speed timing study in short form.

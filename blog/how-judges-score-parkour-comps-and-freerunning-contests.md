@@ -254,12 +254,12 @@ Ask where your run leaked points by section, not just overall category labels.
 
 ## Watch CTA
 
-Open [JumpFlix scoring and run analysis search](/?q=parkour%20scoring%20competition%20run), compare two podium runs and one non-podium run, then map where each athlete gained or lost points by section.
+Open [Sport Parkour League](/series/sport-parkour-league), compare two podium runs and one non-podium run, then map where each athlete gained or lost points by section.
 
 That analysis habit turns competition footage into competitive advantage.
 
 ## Matching JumpFlix Picks
 
-- [Sport Parkour League](/series/sport-parkour-league): Clear event context for score-category breakdowns.
-- [Ultimate Tag](/series/ultimate-tag-2020): Useful contrast on speed, consistency, and execution under format rules.
-- [CAPSTONE VERKY](/movie/capstone-verky-2025): Helps analyze difficulty versus execution tradeoffs.
+- [Sport Parkour League](/series/sport-parkour-league): Best baseline for judging categories in action.
+- [Ultimate Tag](/series/ultimate-tag-2020): Contrast format for consistency and execution scoring behavior.
+- [CAPSTONE // SWARM](/movie/capstone-swarm-2022): Difficulty-vs-cleanliness tradeoffs in one run package.

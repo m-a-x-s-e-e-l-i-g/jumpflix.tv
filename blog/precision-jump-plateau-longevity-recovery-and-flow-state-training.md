@@ -277,12 +277,12 @@ Landing confidence stabilizes, joint irritability drops, and technical quality h
 
 ## Watch CTA
 
-Open [JumpFlix precision and recovery search](/?q=precision%20jump%20training%20recovery), choose one technical breakdown and one raw session, then train one low-volume precision block with strict quality caps.
+Open [Controlled Descent](/movie/controlled-descent-2021), choose one technical breakdown and one raw session, then train one low-volume precision block with strict quality caps.
 
 Stay sharp, stay durable, and let progression compound.
 
 ## Matching JumpFlix Picks
 
-- [Controlled Descent](/movie/controlled-descent-2021): Precision-focused control and landing economy.
-- [One Last Run](/movie/one-last-run-2025): Good model for balancing intensity with technical consistency.
-- [The Progression Series](/series/the-progression-series-2010): Long-view progression framing for plateau phases.
+- [Controlled Descent](/movie/controlled-descent-2021): Precision control and landing economy reference.
+- [One Last Run](/movie/one-last-run-2025): Good model for intensity with technical consistency.
+- [The Progression Series](/series/the-progression-series-2010): Long-term progression framing for plateau phases.

@@ -255,12 +255,12 @@ Only if overdone. Use it to sharpen choices, then return to expressive movement 
 
 ## Watch CTA
 
-Open [JumpFlix urban long-take search](/?q=urban%20freerun%20long%20take), choose one no-cut line and one raw session line, then build a low-consequence version with one timing cue and one decision cue.
+Open [MAUERFALL | A Berlin Parkour Film](/movie/mauerfall-a-berlin-parkour-film-2023), choose one no-cut line and one raw session line, then build a low-consequence version with one timing cue and one decision cue.
 
 That is how creative urban freerun lines become trainable, not just watchable.
 
 ## Matching JumpFlix Picks
 
-- [Skull Chatter](/movie/skull-chatter-2020): Technical urban line detail with readable movement choices.
-- [MAUERFALL | A Berlin Parkour Film](/movie/mauerfall-a-berlin-parkour-film-2023): Modern urban creativity with dense line problem-solving.
+- [MAUERFALL | A Berlin Parkour Film](/movie/mauerfall-a-berlin-parkour-film-2023): Dense urban line creativity with readable decisions.
+- [Skull Chatter](/movie/skull-chatter-2020): Technical line detail ideal for breakdown-based analysis.
 - [Tether](/movie/tether-2023): Compact conceptual piece for studying transition logic.

@@ -265,12 +265,12 @@ Absolutely. They improve obstacle reading and caution instincts in unfamiliar sp
 
 ## Watch CTA
 
-Open [JumpFlix spot discovery search](/?q=parkour%20spots%20street%20rooftop%20urbex), pick one clip per environment, and build tomorrow's session plan from those references.
+Open [STORROR Rooftop POV's & Escapes](/series/storror-rooftop-povs-escapes-2016), pick one clip per environment, and build tomorrow's session plan from those references.
 
 The right spot is not the most viral one. It is the one that gives you repeatable movement growth.
 
 ## Matching JumpFlix Picks
 
-- [STORROR Rooftop POV's & Escapes](/series/storror-rooftop-povs-escapes-2016): Rooftop line reading and route decisions.
-- [Holi Shit](/movie/holi-shit-2013): Urbex-specific atmosphere and environment adaptation.
-- [Traceurs Des Arbres](/movie/traceurs-des-arbres-2025): Nature movement reference for non-urban scouting.
+- [STORROR Rooftop POV's & Escapes](/series/storror-rooftop-povs-escapes-2016): Strong rooftop route-reading reference.
+- [Holi Shit](/movie/holi-shit-2013): Urbex environment adaptation in compact form.
+- [Traceurs Des Arbres](/movie/traceurs-des-arbres-2025): Nature-focused movement scouting reference.

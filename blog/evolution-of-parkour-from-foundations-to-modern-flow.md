@@ -246,12 +246,12 @@ If you can extract a cue that changes your movement decisions, it is rewatchable
 
 ## Watch CTA
 
-Open [JumpFlix evolution and documentary search](/?q=parkour%20evolution%20documentary), pick one raw session, one diary segment, and one technical breakdown, then train one clean line with zero ego additions.
+Open [Speed Air Man](/movie/speed-air-man-1997), pick one raw session, one diary segment, and one technical breakdown, then train one clean line with zero ego additions.
 
 That is how advanced parkour training stays honest and sustainable.
 
 ## Matching JumpFlix Picks
 
-- [Speed Air Man](/movie/speed-air-man-1997): Foundational oldschool reference from the earliest era.
-- [Jump London](/movie/jump-london-2003): Historic documentary milestone for philosophy and movement roots.
-- [Enter the Breach](/movie/enter-the-breach-2021): Modern long-form counterpoint for current movement language.
+- [Speed Air Man](/movie/speed-air-man-1997): Earliest-era reference for foundational movement language.
+- [Jump London](/movie/jump-london-2003): Historic documentary bridge from roots to wider culture.
+- [Enter the Breach](/movie/enter-the-breach-2021): Modern counterpart showing current flow and style evolution.

@@ -1,0 +1,20 @@
+{
+	"servers": {
+		"jumpflixMcp": {
+			"type": "http",
+			"url": "https://www.jumpflix.tv/mcp",
+			"headers": {
+				"Authorization": "Bearer ${input:jumpflix-mcp-token}",
+				"Accept": "application/json, text/event-stream"
+			}
+		}
+	},
+	"inputs": [
+		{
+			"type": "promptString",
+			"id": "jumpflix-mcp-token",
+			"description": "JumpFlix MCP bearer token",
+			"password": true
+		}
+	]
+}

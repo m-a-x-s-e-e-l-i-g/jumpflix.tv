@@ -144,6 +144,36 @@ npm run build
 npm run preview   # locally preview built output
 ```
 
+## MCP Server (Read-Only)
+
+JumpFlix ships with a remote MCP server for structured catalog discovery by LLM clients.
+
+- Transport: Streamable HTTP
+- Default endpoint: `/mcp` on the app server
+- Auth: `Authorization: Bearer <token>`
+
+Start the app server:
+
+```bash
+npm run dev
+```
+
+Required auth env var:
+
+```bash
+JUMPFLIX_MCP_BEARER_TOKEN="your-token"
+```
+
+Alternative fallback:
+
+```bash
+MCP_BEARER_TOKEN="your-token"
+```
+
+See `docs/MCP.md` for transport details, environment variables, and exposed tools.
+
+`docs/MCP.md` also documents payload-size controls (`maxTracks`, `maxSeasons`, `maxChaptersPerItem`) and deployment guidance for streamable HTTP sessions on Netlify/serverless runtimes.
+
 ## 🗄 Supabase Setup
 
 The app requires Supabase for content management. Here's how to set it up:

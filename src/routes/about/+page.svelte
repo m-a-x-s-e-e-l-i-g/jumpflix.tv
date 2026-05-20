@@ -289,19 +289,16 @@
 				The same map context now appears in movie and series detail views, so spot chapters are easier to read
 				without leaving the page.
 			</p>
-			<p>
-				Open
+			<div class="rounded-2xl border border-primary/35 bg-primary/10 p-4 md:p-5">
+				<p class="text-sm text-muted-foreground md:text-base">Want to browse the catalog by location?</p>
 				<a
 					href="/video-map"
-					class="font-medium text-foreground underline decoration-muted-foreground/60 underline-offset-4 transition hover:decoration-foreground"
-					>/video-map</a
+					class="mt-3 inline-flex items-center gap-2 rounded-xl border border-primary/45 bg-background/70 px-4 py-2 text-sm font-semibold text-foreground transition hover:-translate-y-0.5 hover:border-primary/70 hover:bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>
-				to explore the full map view.
-			</p>
-			<p class="text-muted-foreground">
-				Map navigation is intentionally constrained to real-world bounds so panning and zooming stay focused on
-				actual spot coverage.
-			</p>
+					Open Video Map
+					<span aria-hidden="true">-></span>
+				</a>
+			</div>
 		</div>
 	</div>
 

@@ -141,11 +141,11 @@ http://localhost:5173/mcp
 
 For ChatGPT App connectors:
 
-- MCP Server URL: `https://jumpflix.tv/mcp`
-- Auth URL: `https://jumpflix.tv/oauth/authorize`
-- Token URL: `https://jumpflix.tv/oauth/token`
-- Authorization server base: `https://jumpflix.tv`
-- Resource: `https://jumpflix.tv/mcp`
+- MCP Server URL: `https://www.jumpflix.tv/mcp`
+- Auth URL: `https://www.jumpflix.tv/oauth/authorize`
+- Token URL: `https://www.jumpflix.tv/oauth/token`
+- Authorization server base: `https://www.jumpflix.tv`
+- Resource: `https://www.jumpflix.tv/mcp`
 - Base/default scope: `jumpflix.read`
 
 Client setup method:

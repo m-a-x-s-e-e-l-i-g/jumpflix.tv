@@ -12,6 +12,8 @@ import {
 	validateAccessToken
 } from '$lib/server/mcp/oauth';
 
+export const trailingSlash = 'ignore';
+
 type SessionContext = {
 	server: McpServer;
 	transport: WebStandardStreamableHTTPServerTransport;

@@ -62,6 +62,7 @@ OAuth discovery endpoints:
 - `/.well-known/oauth-protected-resource`
 - `/.well-known/oauth-protected-resource/mcp`
 - `/.well-known/oauth-authorization-server`
+- `/.well-known/openid-configuration` (compatibility alias for OAuth discovery clients)
 - `/oauth/authorize`
 - `/oauth/token`
 - `/oauth/register` (Dynamic Client Registration; advertised through authorization server metadata)

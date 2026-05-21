@@ -8,7 +8,10 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		adapter: adapter()
+		adapter: adapter(),
+		csrf: {
+			trustedOrigins: ['https://chatgpt.com', 'https://chat.openai.com']
+		}
 	}
 };
 

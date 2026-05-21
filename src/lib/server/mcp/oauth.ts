@@ -7,6 +7,8 @@ const DEFAULT_CODE_TTL_SECONDS = 300;
 const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 3600;
 const DEFAULT_SUBJECT = 'jumpflix-connector-user';
 const DEFAULT_DCR_CLIENT_TTL_SECONDS = 31_536_000;
+const DEFAULT_CIMD_CACHE_TTL_SECONDS = 300;
+const DEFAULT_CIMD_FETCH_TIMEOUT_MS = 3000;
 
 const ALL_TOKEN_ENDPOINT_AUTH_METHODS: TokenEndpointAuthMethod[] = [
 	'none',
@@ -22,6 +24,7 @@ const DEFAULT_ALLOWED_REDIRECT_ORIGINS = [
 ];
 
 const usedAuthorizationCodes = new Map<string, number>();
+const cimdClientCache = new Map<string, { client: CimdClientMetadata; expiresAt: number }>();
 
 type JwtPayload = Record<string, unknown>;
 
@@ -43,6 +46,10 @@ export type OAuthServerConfig = {
 	dcrEnabled: boolean;
 	dcrAuthMethodsSupported: TokenEndpointAuthMethod[];
 	dcrClientTtlSeconds: number;
+	cimdEnabled: boolean;
+	cimdCacheTtlSeconds: number;
+	cimdAllowedHosts: Set<string>;
+	cimdFetchTimeoutMs: number;
 	allowedRedirectUris: Set<string>;
 	allowedRedirectOrigins: Set<string>;
 	requireUserSession: boolean;
@@ -121,6 +128,27 @@ type DynamicClientMetadata = {
 	expiresAt: number;
 };
 
+type CimdClientMetadata = {
+	clientId: string;
+	clientName: string | null;
+	redirectUris: string[];
+	tokenEndpointAuthMethod: TokenEndpointAuthMethod;
+	grantTypes: ['authorization_code'];
+	responseTypes: ['code'];
+	issuedAt: number;
+	expiresAt: number;
+};
+
+type ResolvedOAuthClient = {
+	clientId: string;
+	clientName: string | null;
+	redirectUris: string[];
+	tokenEndpointAuthMethod: TokenEndpointAuthMethod;
+	clientSecretHash: string | null;
+	clientSecretExpiresAt: number;
+	kind: 'static' | 'dynamic' | 'cimd';
+};
+
 export type DynamicClientRegistrationResult =
 	| {
 			ok: true;
@@ -170,10 +198,14 @@ export function resolveOAuthServerConfig(requestUrl: URL): OAuthServerConfig {
 	const dcrAuthMethodsSupported =
 		configuredDcrAuthMethods.length > 0 ? configuredDcrAuthMethods : ALL_TOKEN_ENDPOINT_AUTH_METHODS;
 
+	const cimdEnabled = parseBoolean(env.JUMPFLIX_MCP_OAUTH_ENABLE_CIMD, true);
+	const cimdAllowedHosts = new Set(parseHostList(env.JUMPFLIX_MCP_OAUTH_CIMD_ALLOWED_HOSTS));
+
 	const tokenEndpointAuthMethodsSupported = Array.from(
 		new Set([
 			...staticClientAuthMethods,
-			...(dcrEnabled ? dcrAuthMethodsSupported : [])
+			...(dcrEnabled ? dcrAuthMethodsSupported : []),
+			...(cimdEnabled ? (['none'] as TokenEndpointAuthMethod[]) : [])
 		])
 	);
 
@@ -216,6 +248,20 @@ export function resolveOAuthServerConfig(requestUrl: URL): OAuthServerConfig {
 			DEFAULT_DCR_CLIENT_TTL_SECONDS,
 			86_400,
 			157_680_000
+		),
+		cimdEnabled,
+		cimdCacheTtlSeconds: clampInt(
+			env.JUMPFLIX_MCP_OAUTH_CIMD_CACHE_TTL_SECONDS,
+			DEFAULT_CIMD_CACHE_TTL_SECONDS,
+			10,
+			3_600
+		),
+		cimdAllowedHosts,
+		cimdFetchTimeoutMs: clampInt(
+			env.JUMPFLIX_MCP_OAUTH_CIMD_FETCH_TIMEOUT_MS,
+			DEFAULT_CIMD_FETCH_TIMEOUT_MS,
+			500,
+			10_000
 		),
 		allowedRedirectUris,
 		allowedRedirectOrigins,
@@ -263,7 +309,7 @@ export function buildAuthorizationServerMetadata(config: OAuthServerConfig): Rec
 		code_challenge_methods_supported: ['S256'],
 		token_endpoint_auth_methods_supported: config.tokenEndpointAuthMethodsSupported,
 		scopes_supported: config.scopesSupported,
-		client_id_metadata_document_supported: false
+		client_id_metadata_document_supported: config.cimdEnabled
 	};
 
 	if (config.dcrEnabled) {
@@ -303,21 +349,71 @@ export function normalizeAndValidateRedirectUri(
 	return normalizeAndValidateRedirectUriForPolicy(rawRedirectUri, config);
 }
 
-export function normalizeAndValidateRedirectUriForClient(
+export async function normalizeAndValidateRedirectUriForClient(
 	rawRedirectUri: string,
 	clientId: string,
 	config: OAuthServerConfig
-): string | null {
+): Promise<string | null> {
 	if (clientId === config.clientId) {
 		return normalizeAndValidateRedirectUriForPolicy(rawRedirectUri, config);
 	}
 
-	const dynamicClient = resolveDynamicClient(clientId, config);
-	if (!dynamicClient) return null;
+	const resolvedClient = await resolveOAuthClient(clientId, config);
+	if (!resolvedClient) return null;
+	if (resolvedClient.kind === 'static') {
+		return normalizeAndValidateRedirectUriForPolicy(rawRedirectUri, config);
+	}
 
 	const normalized = normalizeRedirectUri(rawRedirectUri);
 	if (!normalized) return null;
-	return dynamicClient.redirectUris.includes(normalized) ? normalized : null;
+	return resolvedClient.redirectUris.includes(normalized) ? normalized : null;
+}
+
+export async function resolveOAuthClient(
+	clientId: string,
+	config: OAuthServerConfig
+): Promise<ResolvedOAuthClient | null> {
+	if (!clientId) return null;
+
+	if (clientId === config.clientId) {
+		return {
+			clientId,
+			clientName: 'JumpFlix MCP Static Client',
+			redirectUris: [],
+			tokenEndpointAuthMethod: config.clientSecret ? 'client_secret_post' : 'none',
+			clientSecretHash: config.clientSecret ? hashClientSecret(config.clientSecret) : null,
+			clientSecretExpiresAt: 0,
+			kind: 'static'
+		};
+	}
+
+	const dynamicClient = resolveDynamicClient(clientId, config);
+	if (dynamicClient) {
+		return {
+			clientId: dynamicClient.clientId,
+			clientName: dynamicClient.clientName,
+			redirectUris: dynamicClient.redirectUris,
+			tokenEndpointAuthMethod: dynamicClient.tokenEndpointAuthMethod,
+			clientSecretHash: dynamicClient.clientSecretHash,
+			clientSecretExpiresAt: dynamicClient.clientSecretExpiresAt,
+			kind: 'dynamic'
+		};
+	}
+
+	const cimdClient = await resolveCimdClient(clientId, config);
+	if (cimdClient) {
+		return {
+			clientId: cimdClient.clientId,
+			clientName: cimdClient.clientName,
+			redirectUris: cimdClient.redirectUris,
+			tokenEndpointAuthMethod: cimdClient.tokenEndpointAuthMethod,
+			clientSecretHash: null,
+			clientSecretExpiresAt: 0,
+			kind: 'cimd'
+		};
+	}
+
+	return null;
 }
 
 export function registerDynamicClient(
@@ -489,11 +585,11 @@ function normalizeAndValidateRedirectUriForPolicy(
 	return normalized;
 }
 
-export function ensureClientAndRedirect(
+export async function ensureClientAndRedirect(
 	clientId: string,
 	redirectUri: string,
 	config: OAuthServerConfig
-): { ok: true; redirectUri: string } | { ok: false; error: string; errorDescription: string } {
+): Promise<{ ok: true; redirectUri: string } | { ok: false; error: string; errorDescription: string }> {
 	if (!clientId) {
 		return {
 			ok: false,
@@ -502,9 +598,8 @@ export function ensureClientAndRedirect(
 		};
 	}
 
-	const isStaticClient = clientId === config.clientId;
-	const isDynamicClient = !isStaticClient && Boolean(resolveDynamicClient(clientId, config));
-	if (!isStaticClient && !isDynamicClient) {
+	const resolvedClient = await resolveOAuthClient(clientId, config);
+	if (!resolvedClient) {
 		return {
 			ok: false,
 			error: 'unauthorized_client',
@@ -512,7 +607,11 @@ export function ensureClientAndRedirect(
 		};
 	}
 
-	const normalizedRedirectUri = normalizeAndValidateRedirectUriForClient(redirectUri, clientId, config);
+	const normalizedRedirectUri = await normalizeAndValidateRedirectUriForClient(
+		redirectUri,
+		clientId,
+		config
+	);
 	if (!normalizedRedirectUri) {
 		return {
 			ok: false,
@@ -767,11 +866,11 @@ export function validateAccessToken(token: string, config: OAuthServerConfig): A
 	};
 }
 
-export function validateTokenEndpointClient(
+export async function validateTokenEndpointClient(
 	request: Request,
 	params: URLSearchParams,
 	config: OAuthServerConfig
-): { ok: true; clientId: string } | { ok: false; status: 401; error: string; errorDescription: string } {
+): Promise<{ ok: true; clientId: string } | { ok: false; status: 401; error: string; errorDescription: string }> {
 	const parsedBasic = parseBasicAuthHeader(request.headers.get('authorization'));
 	const bodyClientId = params.get('client_id')?.trim() || '';
 	const basicClientId = parsedBasic?.clientId || '';
@@ -786,17 +885,39 @@ export function validateTokenEndpointClient(
 		};
 	}
 
-	if (clientId === config.clientId) {
-		if (config.clientSecret) {
-			if (parsedBasic && parsedBasic.clientId !== clientId) {
-				return {
-					ok: false,
-					status: 401,
-					error: 'invalid_client',
-					errorDescription: 'Basic auth client_id does not match body client_id.'
-				};
-			}
+	if (parsedBasic && bodyClientId && parsedBasic.clientId !== bodyClientId) {
+		return {
+			ok: false,
+			status: 401,
+			error: 'invalid_client',
+			errorDescription: 'Basic auth client_id does not match body client_id.'
+		};
+	}
 
+	const resolvedClient = await resolveOAuthClient(clientId, config);
+	if (!resolvedClient) {
+		return {
+			ok: false,
+			status: 401,
+			error: 'invalid_client',
+			errorDescription: 'Unknown OAuth client_id.'
+		};
+	}
+
+	if (
+		resolvedClient.clientSecretExpiresAt > 0 &&
+		resolvedClient.clientSecretExpiresAt <= nowInSeconds()
+	) {
+		return {
+			ok: false,
+			status: 401,
+			error: 'invalid_client',
+			errorDescription: 'Client credentials expired.'
+		};
+	}
+
+	if (resolvedClient.kind === 'static') {
+		if (config.clientSecret) {
 			const providedSecret = parsedBasic?.clientSecret || params.get('client_secret')?.trim() || '';
 			if (!providedSecret || !constantTimeEqual(providedSecret, config.clientSecret)) {
 				return {
@@ -811,51 +932,22 @@ export function validateTokenEndpointClient(
 		return { ok: true, clientId };
 	}
 
-	if (!config.dcrEnabled) {
-		return {
-			ok: false,
-			status: 401,
-			error: 'invalid_client',
-			errorDescription: 'Unknown OAuth client_id.'
-		};
-	}
-
-	const dynamicClient = resolveDynamicClient(clientId, config);
-	if (!dynamicClient) {
-		return {
-			ok: false,
-			status: 401,
-			error: 'invalid_client',
-			errorDescription: 'Unknown OAuth client_id.'
-		};
-	}
-
-	if (
-		dynamicClient.clientSecretExpiresAt > 0 &&
-		dynamicClient.clientSecretExpiresAt <= nowInSeconds()
-	) {
-		return {
-			ok: false,
-			status: 401,
-			error: 'invalid_client',
-			errorDescription: 'Client credentials expired.'
-		};
-	}
-
-	if (dynamicClient.tokenEndpointAuthMethod === 'none') {
-		if (parsedBasic && parsedBasic.clientId !== clientId) {
-			return {
-				ok: false,
-				status: 401,
-				error: 'invalid_client',
-				errorDescription: 'Basic auth client_id does not match body client_id.'
-			};
-		}
+	if (resolvedClient.tokenEndpointAuthMethod === 'none') {
 
 		return { ok: true, clientId };
 	}
 
-	if (!dynamicClient.clientSecretHash) {
+	if (resolvedClient.kind === 'cimd') {
+		return {
+			ok: false,
+			status: 401,
+			error: 'invalid_client',
+			errorDescription:
+				'Client ID metadata documents only support token_endpoint_auth_method=none on this server.'
+		};
+	}
+
+	if (!resolvedClient.clientSecretHash) {
 		return {
 			ok: false,
 			status: 401,
@@ -864,7 +956,7 @@ export function validateTokenEndpointClient(
 		};
 	}
 
-	if (dynamicClient.tokenEndpointAuthMethod === 'client_secret_basic') {
+	if (resolvedClient.tokenEndpointAuthMethod === 'client_secret_basic') {
 		if (!parsedBasic || parsedBasic.clientId !== clientId) {
 			return {
 				ok: false,
@@ -874,7 +966,7 @@ export function validateTokenEndpointClient(
 			};
 		}
 
-		if (!constantTimeEqual(hashClientSecret(parsedBasic.clientSecret), dynamicClient.clientSecretHash)) {
+		if (!constantTimeEqual(hashClientSecret(parsedBasic.clientSecret), resolvedClient.clientSecretHash)) {
 			return {
 				ok: false,
 				status: 401,
@@ -886,7 +978,7 @@ export function validateTokenEndpointClient(
 		return { ok: true, clientId };
 	}
 
-	if (dynamicClient.tokenEndpointAuthMethod === 'client_secret_post') {
+	if (resolvedClient.tokenEndpointAuthMethod === 'client_secret_post') {
 		if (parsedBasic) {
 			return {
 				ok: false,
@@ -906,7 +998,7 @@ export function validateTokenEndpointClient(
 			};
 		}
 
-		if (!constantTimeEqual(hashClientSecret(postedClientSecret), dynamicClient.clientSecretHash)) {
+		if (!constantTimeEqual(hashClientSecret(postedClientSecret), resolvedClient.clientSecretHash)) {
 			return {
 				ok: false,
 				status: 401,
@@ -970,6 +1062,18 @@ function parseUriList(raw: string | null | undefined): string[] {
 		.split(/[\n,]/)
 		.map((entry) => entry.trim())
 		.filter(Boolean);
+}
+
+function parseHostList(raw: string | null | undefined): string[] {
+	if (!raw) return [];
+	return Array.from(
+		new Set(
+			raw
+				.split(/[\s,]+/)
+				.map((entry) => entry.trim().toLowerCase())
+				.filter(Boolean)
+		)
+	);
 }
 
 function parseTokenEndpointAuthMethods(raw: string | null | undefined): TokenEndpointAuthMethod[] {
@@ -1060,6 +1164,156 @@ function resolveDynamicClient(clientId: string, config: OAuthServerConfig): Dyna
 
 function hashClientSecret(secret: string): string {
 	return createHash('sha256').update(secret).digest('base64url');
+}
+
+async function resolveCimdClient(
+	clientId: string,
+	config: OAuthServerConfig
+): Promise<CimdClientMetadata | null> {
+	if (!config.cimdEnabled) return null;
+
+	const clientIdUrl = parseClientIdMetadataUrl(clientId, config);
+	if (!clientIdUrl) return null;
+
+	pruneCimdClientCache();
+	const cached = cimdClientCache.get(clientId);
+	if (cached && cached.expiresAt > nowInSeconds()) {
+		return cached.client;
+	}
+
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), config.cimdFetchTimeoutMs);
+
+	try {
+		const response = await fetch(clientIdUrl.toString(), {
+			method: 'GET',
+			headers: {
+				Accept: 'application/json'
+			},
+			redirect: 'follow',
+			signal: controller.signal
+		});
+
+		if (!response.ok) return null;
+
+		const payload = (await response.json()) as unknown;
+		const parsed = parseCimdClientMetadata(payload, clientIdUrl.toString(), config);
+		if (!parsed) return null;
+
+		const now = nowInSeconds();
+		const cacheTtl = Math.max(
+			1,
+			Math.min(config.cimdCacheTtlSeconds, parseHttpMaxAge(response.headers.get('cache-control')))
+		);
+
+		cimdClientCache.set(clientIdUrl.toString(), {
+			client: parsed,
+			expiresAt: now + cacheTtl
+		});
+
+		return parsed;
+	} catch {
+		return null;
+	} finally {
+		clearTimeout(timeout);
+	}
+}
+
+function parseClientIdMetadataUrl(clientId: string, config: OAuthServerConfig): URL | null {
+	try {
+		const parsed = new URL(clientId);
+		if (parsed.protocol !== 'https:') return null;
+		if (!parsed.pathname || parsed.pathname === '/') return null;
+		if (parsed.hash) return null;
+
+		const host = parsed.hostname.toLowerCase();
+		if (config.cimdAllowedHosts.size > 0 && !config.cimdAllowedHosts.has(host)) {
+			return null;
+		}
+
+		return parsed;
+	} catch {
+		return null;
+	}
+}
+
+function parseCimdClientMetadata(
+	payload: unknown,
+	clientId: string,
+	config: OAuthServerConfig
+): CimdClientMetadata | null {
+	if (!isRecord(payload)) return null;
+	if (payload.client_id !== clientId) return null;
+
+	const redirectUrisRaw = payload.redirect_uris;
+	if (!Array.isArray(redirectUrisRaw) || redirectUrisRaw.length === 0) return null;
+
+	const redirectUris = Array.from(
+		new Set(
+			redirectUrisRaw
+				.filter((entry): entry is string => typeof entry === 'string')
+				.map((entry) => normalizeRedirectUri(entry))
+				.filter((entry): entry is string => Boolean(entry))
+		)
+	);
+
+	if (redirectUris.length !== redirectUrisRaw.length) return null;
+
+	for (const redirectUri of redirectUris) {
+		const parsedRedirect = new URL(redirectUri);
+		const isLoopback = isLoopbackHost(parsedRedirect.hostname);
+		if (!isLoopback && parsedRedirect.protocol !== 'https:') {
+			return null;
+		}
+	}
+
+	const tokenEndpointAuthMethod =
+		typeof payload.token_endpoint_auth_method === 'string' &&
+		isTokenEndpointAuthMethod(payload.token_endpoint_auth_method)
+			? payload.token_endpoint_auth_method
+			: 'none';
+
+	if (tokenEndpointAuthMethod !== 'none') {
+		return null;
+	}
+
+	if (payload.grant_types !== undefined && !isAuthorizationCodeGrantOnly(payload.grant_types)) {
+		return null;
+	}
+
+	if (payload.response_types !== undefined && !isCodeResponseTypeOnly(payload.response_types)) {
+		return null;
+	}
+
+	const now = nowInSeconds();
+	return {
+		clientId,
+		clientName: typeof payload.client_name === 'string' ? payload.client_name.slice(0, 120) : null,
+		redirectUris,
+		tokenEndpointAuthMethod,
+		grantTypes: ['authorization_code'],
+		responseTypes: ['code'],
+		issuedAt: now,
+		expiresAt: now + config.cimdCacheTtlSeconds
+	};
+}
+
+function parseHttpMaxAge(cacheControl: string | null): number {
+	if (!cacheControl) return Number.MAX_SAFE_INTEGER;
+	const match = cacheControl.match(/max-age=(\d+)/i);
+	if (!match) return Number.MAX_SAFE_INTEGER;
+	const parsed = Number(match[1]);
+	if (!Number.isFinite(parsed) || parsed < 0) return Number.MAX_SAFE_INTEGER;
+	return Math.floor(parsed);
+}
+
+function pruneCimdClientCache(): void {
+	const now = nowInSeconds();
+	for (const [clientId, cached] of cimdClientCache.entries()) {
+		if (cached.expiresAt <= now) {
+			cimdClientCache.delete(clientId);
+		}
+	}
 }
 
 function parseBoolean(raw: string | undefined, fallback: boolean): boolean {

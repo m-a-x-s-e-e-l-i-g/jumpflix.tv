@@ -43,6 +43,10 @@ Optional OAuth settings:
 - `JUMPFLIX_MCP_OAUTH_ENABLE_DCR` (optional, default `true`)
 - `JUMPFLIX_MCP_OAUTH_DCR_AUTH_METHODS` (optional; defaults to `none,client_secret_post,client_secret_basic`)
 - `JUMPFLIX_MCP_OAUTH_DCR_CLIENT_TTL_SECONDS` (optional; defaults to `31536000`)
+- `JUMPFLIX_MCP_OAUTH_ENABLE_CIMD` (optional, default `true`)
+- `JUMPFLIX_MCP_OAUTH_CIMD_ALLOWED_HOSTS` (optional host allowlist for `client_id` metadata URLs)
+- `JUMPFLIX_MCP_OAUTH_CIMD_CACHE_TTL_SECONDS` (optional; defaults to `300`)
+- `JUMPFLIX_MCP_OAUTH_CIMD_FETCH_TIMEOUT_MS` (optional; defaults to `3000`)
 - `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_URIS` (comma/newline list, exact match)
 - `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_ORIGINS` (comma/newline list, origin allowlist fallback)
 - `JUMPFLIX_MCP_OAUTH_SCOPES` (supported scopes, default `jumpflix.read`)
@@ -82,6 +86,10 @@ If OAuth is disabled and no static token is configured, the endpoint returns an 
 - `JUMPFLIX_MCP_OAUTH_ENABLE_DCR` (optional)
 - `JUMPFLIX_MCP_OAUTH_DCR_AUTH_METHODS` (optional)
 - `JUMPFLIX_MCP_OAUTH_DCR_CLIENT_TTL_SECONDS` (optional)
+- `JUMPFLIX_MCP_OAUTH_ENABLE_CIMD` (optional)
+- `JUMPFLIX_MCP_OAUTH_CIMD_ALLOWED_HOSTS` (optional)
+- `JUMPFLIX_MCP_OAUTH_CIMD_CACHE_TTL_SECONDS` (optional)
+- `JUMPFLIX_MCP_OAUTH_CIMD_FETCH_TIMEOUT_MS` (optional)
 - `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_URIS` (optional)
 - `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_ORIGINS` (optional)
 - `JUMPFLIX_MCP_OAUTH_SCOPES` (optional, default `jumpflix.read`)
@@ -140,6 +148,7 @@ For ChatGPT App connectors:
 Client setup method:
 
 - Prefer `Dynamic Client Registration (DCR)` when available.
+- `Client Identifier Metadata Document (CIMD)` is also supported and advertised as `client_id_metadata_document_supported: true`.
 - `User-Defined OAuth Client` also works.
 - OAuth Client ID must match `JUMPFLIX_MCP_OAUTH_CLIENT_ID`.
 - OAuth Client Secret is optional. If provided, it must match `JUMPFLIX_MCP_OAUTH_CLIENT_SECRET`.
@@ -151,6 +160,12 @@ DCR notes:
 - DCR is advertised via `registration_endpoint` in `/.well-known/oauth-authorization-server`.
 - Registered DCR clients are stateless signed client IDs (no server-side DB needed).
 - For ChatGPT connector callbacks, allow `https://chatgpt.com` (and/or `https://chat.openai.com`) via redirect policy settings.
+
+CIMD notes:
+
+- CIMD clients must use HTTPS `client_id` URLs with a path component that returns a JSON metadata document.
+- This server currently accepts CIMD clients with `token_endpoint_auth_method=none`.
+- If you set `JUMPFLIX_MCP_OAUTH_CIMD_ALLOWED_HOSTS`, only those metadata document hosts are accepted.
 
 ## Exposed Tools
 

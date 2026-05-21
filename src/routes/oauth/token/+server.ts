@@ -29,7 +29,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		});
 	}
 
-	const clientAuth = validateTokenEndpointClient(request, params, config);
+	const clientAuth = await validateTokenEndpointClient(request, params, config);
 	if (!clientAuth.ok) {
 		const response = oauthJsonResponse(clientAuth.status, {
 			error: clientAuth.error,
@@ -52,7 +52,7 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		});
 	}
 
-	const normalizedRedirectUri = normalizeAndValidateRedirectUriForClient(
+	const normalizedRedirectUri = await normalizeAndValidateRedirectUriForClient(
 		redirectUri,
 		clientAuth.clientId,
 		config

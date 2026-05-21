@@ -182,6 +182,8 @@ See `docs/MCP.md` for transport details, environment variables, and exposed tool
 
 `docs/MCP.md` includes both `User-Defined OAuth Client` and Dynamic Client Registration (DCR) connector setup paths.
 
+`docs/MCP.md` also includes Client Identifier Metadata Document (CIMD) support details.
+
 `docs/MCP.md` also documents payload-size controls (`maxTracks`, `maxSeasons`, `maxChaptersPerItem`) and deployment guidance for streamable HTTP sessions on Netlify/serverless runtimes.
 
 ## 🗄 Supabase Setup

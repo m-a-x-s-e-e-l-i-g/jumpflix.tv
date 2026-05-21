@@ -58,7 +58,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		});
 	}
 
-	const clientAndRedirect = ensureClientAndRedirect(clientId, redirectUri, config);
+	const clientAndRedirect = await ensureClientAndRedirect(clientId, redirectUri, config);
 	if (!clientAndRedirect.ok) {
 		return oauthJsonResponse(400, {
 			error: clientAndRedirect.error,

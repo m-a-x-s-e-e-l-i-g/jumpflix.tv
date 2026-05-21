@@ -3,6 +3,13 @@ import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/publi
 import type { Handle } from '@sveltejs/kit';
 import type { Database } from '$lib/supabase/types';
 
+const SUPABASE_BYPASS_PATHS = new Set(['/oauth/token', '/oauth/register']);
+
+function isCookieWriteAfterResponseError(error: unknown): boolean {
+	if (!(error instanceof Error)) return false;
+	return error.message.includes('Cannot use `cookies.set(...)` after the response has been generated');
+}
+
 if (!PUBLIC_SUPABASE_URL || !PUBLIC_SUPABASE_ANON_KEY) {
 	throw new Error(
 		'Missing Supabase environment variables. Please set PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY in your .env file.'
@@ -10,6 +17,11 @@ if (!PUBLIC_SUPABASE_URL || !PUBLIC_SUPABASE_ANON_KEY) {
 }
 
 export const handleSupabase: Handle = async ({ event, resolve }) => {
+	if (SUPABASE_BYPASS_PATHS.has(event.url.pathname)) {
+		event.locals.safeGetSession = async () => ({ session: null, user: null });
+		return resolve(event);
+	}
+
 	/**
 	 * Creates a Supabase client specific to this server request.
 	 * The Supabase client is configured to use cookies for session management.
@@ -31,16 +43,23 @@ export const handleSupabase: Handle = async ({ event, resolve }) => {
 					 * - Path=/ (available across the entire app)
 					 * - MaxAge set by Supabase (typically 1 year for refresh tokens)
 					 */
-					cookiesToSet.forEach(({ name, value, options }) => {
-						event.cookies.set(name, value, {
-							...options,
-							path: '/',
-							// Ensure cookies work in PWA context
-							sameSite: 'lax',
-							secure: true,
-							httpOnly: options?.httpOnly ?? true
-						});
-					});
+					for (const { name, value, options } of cookiesToSet) {
+						try {
+							event.cookies.set(name, value, {
+								...options,
+								path: '/',
+								// Ensure cookies work in PWA context
+								sameSite: 'lax',
+								secure: true,
+								httpOnly: options?.httpOnly ?? true
+							});
+						} catch (error) {
+							if (isCookieWriteAfterResponseError(error)) {
+								continue;
+							}
+							throw error;
+						}
+					}
 				}
 			}
 		}

@@ -316,6 +316,20 @@ function jsonToolResult<T extends JsonObject>(toolName: string, data: T, text: s
 	};
 }
 
+function errorToolResult(toolName: string, message: string, details?: JsonObject) {
+	const payload: JsonObject = {
+		error: {
+			message,
+			...(details ?? {})
+		}
+	};
+
+	return {
+		isError: true,
+		...jsonToolResult(toolName, payload, message)
+	};
+}
+
 function parseTimestamp(value: string | undefined): number {
 	if (!value) return 0;
 	const parsed = Date.parse(value);
@@ -446,6 +460,173 @@ const facetsInputSchema = {
 	includeDescriptions: z.boolean().default(true)
 };
 
+const toolErrorOutputSchema = z
+	.object({
+		message: z.string()
+	})
+	.passthrough();
+
+const transportLimitOutputSchema = z
+	.object({
+		truncated: z.boolean(),
+		originalSizeChars: z.number().int().nonnegative(),
+		finalSizeChars: z.number().int().nonnegative(),
+		maxSizeChars: z.number().int().positive(),
+		notes: z.array(z.string())
+	})
+	.passthrough();
+
+const mediaSummaryOutputSchema = z
+	.object({
+		id: z.union([z.number(), z.string()]).optional(),
+		slug: z.string().optional(),
+		type: z.enum(['movie', 'series']).optional(),
+		title: z.string().optional(),
+		url: z.string().optional(),
+		thumbnail: z.unknown().optional(),
+		year: z.unknown().optional(),
+		duration: z.unknown().optional(),
+		paid: z.boolean().optional(),
+		provider: z.unknown().optional(),
+		availabilityStatus: z.unknown().optional(),
+		averageRating: z.number().nullable().optional(),
+		ratingCount: z.number().nullable().optional(),
+		creators: z.unknown().optional(),
+		starring: z.unknown().optional(),
+		facets: z.unknown().optional(),
+		createdAt: z.string().optional(),
+		updatedAt: z.string().optional()
+	})
+	.passthrough();
+
+const spotChapterOutputSchema = z
+	.object({
+		id: z.number().int().nonnegative().optional(),
+		spotId: z.string().optional(),
+		startSeconds: z.number().optional(),
+		endSeconds: z.number().optional(),
+		mediaType: z.enum(['movie', 'series']).optional(),
+		playbackKey: z.string().optional()
+	})
+	.passthrough();
+
+const catalogSearchOutputSchema = z
+	.object({
+		query: z.string().optional(),
+		feed: z.string().nullable().optional(),
+		sort: z.string().optional(),
+		total: z.number().int().nonnegative().optional(),
+		page: z.number().int().positive().optional(),
+		pageSize: z.number().int().positive().optional(),
+		items: z.array(mediaSummaryOutputSchema).optional(),
+		resultLimit: z.unknown().optional(),
+		transportLimit: transportLimitOutputSchema.optional(),
+		error: toolErrorOutputSchema.optional()
+	})
+	.passthrough();
+
+const catalogGetOutputSchema = z
+	.object({
+		item: z
+			.object({
+				tracks: z.array(z.unknown()).optional(),
+				seasons: z.array(z.unknown()).optional()
+			})
+			.passthrough()
+			.optional(),
+		resultLimit: z.unknown().optional(),
+		transportLimit: transportLimitOutputSchema.optional(),
+		error: toolErrorOutputSchema.optional()
+	})
+	.passthrough();
+
+const catalogByPersonOutputSchema = z
+	.object({
+		person: z.string().optional(),
+		resolvedName: z.string().optional(),
+		slug: z.string().optional(),
+		roles: z
+			.object({
+				creator: z.boolean().optional(),
+				athlete: z.boolean().optional()
+			})
+			.passthrough()
+			.optional(),
+		total: z.number().int().nonnegative().optional(),
+		page: z.number().int().positive().optional(),
+		pageSize: z.number().int().positive().optional(),
+		items: z.array(mediaSummaryOutputSchema).optional(),
+		suggestions: z
+			.array(
+				z
+					.object({
+						name: z.string().optional()
+					})
+					.passthrough()
+			)
+			.optional(),
+		resultLimit: z.unknown().optional(),
+		transportLimit: transportLimitOutputSchema.optional(),
+		error: toolErrorOutputSchema.optional()
+	})
+	.passthrough();
+
+const catalogBySpotOutputSchema = z
+	.object({
+		requestedSpotId: z.string().optional(),
+		resolvedSpotId: z.string().optional(),
+		resolutionError: z.string().nullable().optional(),
+		spot: z.unknown().nullable().optional(),
+		total: z.number().int().nonnegative().optional(),
+		page: z.number().int().positive().optional(),
+		pageSize: z.number().int().positive().optional(),
+		items: z
+			.array(
+				z
+					.object({
+						media: mediaSummaryOutputSchema.optional(),
+						chapters: z.array(spotChapterOutputSchema).optional()
+					})
+					.passthrough()
+			)
+			.optional(),
+		resultLimit: z.unknown().optional(),
+		transportLimit: transportLimitOutputSchema.optional(),
+		error: toolErrorOutputSchema.optional()
+	})
+	.passthrough();
+
+const catalogFacetsOutputSchema = z
+	.object({
+		manual: z.unknown().optional(),
+		computed: z.unknown().optional(),
+		contentWarnings: z.unknown().optional(),
+		resultLimit: z.unknown().optional(),
+		transportLimit: transportLimitOutputSchema.optional(),
+		error: toolErrorOutputSchema.optional()
+	})
+	.passthrough();
+
+const catalogFeedsOutputSchema = z
+	.object({
+		feeds: z
+			.array(
+				z
+					.object({
+						slug: z.string().optional(),
+						filter: z.unknown().optional(),
+						title: z.string().optional(),
+						description: z.string().optional()
+					})
+					.passthrough()
+			)
+			.optional(),
+		resultLimit: z.unknown().optional(),
+		transportLimit: transportLimitOutputSchema.optional(),
+		error: toolErrorOutputSchema.optional()
+	})
+	.passthrough();
+
 export function createJumpflixMcpServer(): McpServer {
 	const server = new McpServer(
 		{
@@ -464,7 +645,8 @@ export function createJumpflixMcpServer(): McpServer {
 			title: 'Catalog Search',
 			description:
 				'Search JumpFlix content by text, feed presets, and facet filters. Returns paginated summaries.',
-			inputSchema: searchInputSchema
+			inputSchema: searchInputSchema,
+			outputSchema: catalogSearchOutputSchema
 		},
 		async (args) => {
 			const content = await fetchAllContent();
@@ -503,14 +685,12 @@ export function createJumpflixMcpServer(): McpServer {
 		{
 			title: 'Catalog Get',
 			description: 'Get one catalog item by numeric id or slug.',
-			inputSchema: getInputSchema
+			inputSchema: getInputSchema,
+			outputSchema: catalogGetOutputSchema
 		},
 		async (args) => {
 			if (!args.id && !args.slug) {
-				return {
-					isError: true,
-					content: [{ type: 'text', text: 'Provide either id or slug.' }]
-				};
+				return errorToolResult('catalog_get', 'Provide either id or slug.');
 			}
 
 			const content = await fetchAllContent();
@@ -524,24 +704,13 @@ export function createJumpflixMcpServer(): McpServer {
 					(entry) => entry.slug === slug && (!args.type || entry.type === args.type)
 				);
 				if (matches.length > 1) {
-					return {
-						isError: true,
-						content: [
-							{
-								type: 'text',
-								text: 'Slug matched multiple items. Provide type to disambiguate.'
-							}
-						]
-					};
+					return errorToolResult('catalog_get', 'Slug matched multiple items. Provide type to disambiguate.');
 				}
 				item = matches[0];
 			}
 
 			if (!item) {
-				return {
-					isError: true,
-					content: [{ type: 'text', text: 'Catalog item not found.' }]
-				};
+				return errorToolResult('catalog_get', 'Catalog item not found.');
 			}
 
 			const maxTracks = clampLimit(args.maxTracks, DEFAULT_GET_TRACKS_LIMIT, MAX_GET_TRACKS_LIMIT);
@@ -598,15 +767,13 @@ export function createJumpflixMcpServer(): McpServer {
 		{
 			title: 'Catalog By Person',
 			description: 'Find media by creator and/or athlete name.',
-			inputSchema: byPersonInputSchema
+			inputSchema: byPersonInputSchema,
+			outputSchema: catalogByPersonOutputSchema
 		},
 		async (args) => {
 			const querySlug = slugify(args.person);
 			if (!querySlug) {
-				return {
-					isError: true,
-					content: [{ type: 'text', text: 'Could not derive a person slug from input.' }]
-				};
+				return errorToolResult('catalog_by_person', 'Could not derive a person slug from input.');
 			}
 
 			const content = await fetchAllContent();
@@ -677,15 +844,13 @@ export function createJumpflixMcpServer(): McpServer {
 		{
 			title: 'Catalog By Spot',
 			description: 'Find catalog items containing a parkour.spot chapter.',
-			inputSchema: bySpotInputSchema
+			inputSchema: bySpotInputSchema,
+			outputSchema: catalogBySpotOutputSchema
 		},
 		async (args) => {
 			const requestedSpotId = normalizeParkourSpotId(args.spotId) ?? args.spotId.trim();
 			if (!requestedSpotId) {
-				return {
-					isError: true,
-					content: [{ type: 'text', text: 'Invalid spotId.' }]
-				};
+				return errorToolResult('catalog_by_spot', 'Invalid spotId.');
 			}
 
 			const maxChaptersPerItem = clampLimit(
@@ -730,10 +895,7 @@ export function createJumpflixMcpServer(): McpServer {
 					);
 				}
 
-				return {
-					isError: true,
-					content: [{ type: 'text', text: chaptersError.message || 'Failed to load spot chapters.' }]
-				};
+				return errorToolResult('catalog_by_spot', chaptersError.message || 'Failed to load spot chapters.');
 			}
 
 			const rows = Array.isArray(chapters) ? chapters : [];
@@ -856,7 +1018,8 @@ export function createJumpflixMcpServer(): McpServer {
 		{
 			title: 'Catalog Facets',
 			description: 'Return machine-readable facet taxonomy options and descriptions.',
-			inputSchema: facetsInputSchema
+			inputSchema: facetsInputSchema,
+			outputSchema: catalogFacetsOutputSchema
 		},
 		async (args) => {
 			const includeDescriptions = args.includeDescriptions;
@@ -918,7 +1081,8 @@ export function createJumpflixMcpServer(): McpServer {
 		{
 			title: 'Catalog Feeds',
 			description: 'List named JumpFlix feed presets and their filter definitions.',
-			inputSchema: {}
+			inputSchema: {},
+			outputSchema: catalogFeedsOutputSchema
 		},
 		async () => {
 			const payload = {

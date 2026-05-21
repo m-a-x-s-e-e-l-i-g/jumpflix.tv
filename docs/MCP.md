@@ -19,19 +19,77 @@ This server is designed for LLM clients that need structured access to films, fa
 
 ## Authentication
 
-All requests require a bearer token:
+The MCP endpoint accepts bearer tokens in two modes:
+
+1. OAuth 2.1 access tokens (recommended for ChatGPT connectors).
+2. Static bearer token fallback (legacy/manual clients).
+
+Every MCP request still uses:
 
 `Authorization: Bearer <token>`
+
+### OAuth Mode (recommended)
+
+Enable OAuth by setting:
+
+- `JUMPFLIX_MCP_OAUTH_SIGNING_SECRET` (required to enable OAuth)
+- `JUMPFLIX_MCP_OAUTH_CLIENT_ID` (optional, default `jumpflix-chatgpt`)
+
+Optional OAuth settings:
+
+- `JUMPFLIX_MCP_OAUTH_CLIENT_SECRET` (if set, token endpoint requires client secret auth)
+- `JUMPFLIX_MCP_OAUTH_ISSUER` (optional issuer base URL; defaults to request origin)
+- `JUMPFLIX_MCP_OAUTH_RESOURCE` (optional resource URI; defaults to `<issuer>/mcp`)
+- `JUMPFLIX_MCP_OAUTH_ENABLE_DCR` (optional, default `true`)
+- `JUMPFLIX_MCP_OAUTH_DCR_AUTH_METHODS` (optional; defaults to `none,client_secret_post,client_secret_basic`)
+- `JUMPFLIX_MCP_OAUTH_DCR_CLIENT_TTL_SECONDS` (optional; defaults to `31536000`)
+- `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_URIS` (comma/newline list, exact match)
+- `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_ORIGINS` (comma/newline list, origin allowlist fallback)
+- `JUMPFLIX_MCP_OAUTH_SCOPES` (supported scopes, default `jumpflix.read`)
+- `JUMPFLIX_MCP_OAUTH_REQUIRED_SCOPES` (required scopes for MCP access, default first supported scope)
+- `JUMPFLIX_MCP_OAUTH_REQUIRE_USER_SESSION` (`true/false`, default `false`)
+- `JUMPFLIX_MCP_OAUTH_DEFAULT_SUBJECT` (default subject claim when session is not required)
+- `JUMPFLIX_MCP_OAUTH_CODE_TTL_SECONDS` (default `300`)
+- `JUMPFLIX_MCP_OAUTH_ACCESS_TOKEN_TTL_SECONDS` (default `3600`)
+
+OAuth discovery endpoints:
+
+- `/.well-known/oauth-protected-resource`
+- `/.well-known/oauth-protected-resource/mcp`
+- `/.well-known/oauth-authorization-server`
+- `/oauth/authorize`
+- `/oauth/token`
+- `/oauth/register` (Dynamic Client Registration; advertised through authorization server metadata)
+
+The MCP route returns `WWW-Authenticate: Bearer ... resource_metadata="..."` challenges when OAuth is enabled, so clients can discover authorization metadata automatically.
+
+### Static Bearer Fallback
 
 Set one of:
 
 - `JUMPFLIX_MCP_BEARER_TOKEN` (preferred)
 - `MCP_BEARER_TOKEN` (fallback)
 
-If neither is set, the endpoint returns an authorization configuration error.
+If OAuth is disabled and no static token is configured, the endpoint returns an authorization configuration error.
 
 ## Environment Variables
 
+- `JUMPFLIX_MCP_OAUTH_SIGNING_SECRET` (required for OAuth mode)
+- `JUMPFLIX_MCP_OAUTH_CLIENT_ID` (optional, default `jumpflix-chatgpt`)
+- `JUMPFLIX_MCP_OAUTH_CLIENT_SECRET` (optional)
+- `JUMPFLIX_MCP_OAUTH_ISSUER` (optional)
+- `JUMPFLIX_MCP_OAUTH_RESOURCE` (optional)
+- `JUMPFLIX_MCP_OAUTH_ENABLE_DCR` (optional)
+- `JUMPFLIX_MCP_OAUTH_DCR_AUTH_METHODS` (optional)
+- `JUMPFLIX_MCP_OAUTH_DCR_CLIENT_TTL_SECONDS` (optional)
+- `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_URIS` (optional)
+- `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_ORIGINS` (optional)
+- `JUMPFLIX_MCP_OAUTH_SCOPES` (optional, default `jumpflix.read`)
+- `JUMPFLIX_MCP_OAUTH_REQUIRED_SCOPES` (optional)
+- `JUMPFLIX_MCP_OAUTH_REQUIRE_USER_SESSION` (optional)
+- `JUMPFLIX_MCP_OAUTH_DEFAULT_SUBJECT` (optional)
+- `JUMPFLIX_MCP_OAUTH_CODE_TTL_SECONDS` (optional)
+- `JUMPFLIX_MCP_OAUTH_ACCESS_TOKEN_TTL_SECONDS` (optional)
 - `JUMPFLIX_MCP_BEARER_TOKEN` (preferred)
 - `MCP_BEARER_TOKEN` (fallback)
 - `JUMPFLIX_MCP_SESSION_MODE` (optional: `stateful` or `stateless`; default auto)
@@ -67,6 +125,32 @@ The MCP endpoint is then available at:
 ```bash
 http://localhost:5173/mcp
 ```
+
+### ChatGPT Connector Notes
+
+For ChatGPT App connectors:
+
+- MCP Server URL: `https://jumpflix.tv/mcp`
+- Auth URL: `https://jumpflix.tv/oauth/authorize`
+- Token URL: `https://jumpflix.tv/oauth/token`
+- Authorization server base: `https://jumpflix.tv`
+- Resource: `https://jumpflix.tv/mcp`
+- Base/default scope: `jumpflix.read`
+
+Client setup method:
+
+- Prefer `Dynamic Client Registration (DCR)` when available.
+- `User-Defined OAuth Client` also works.
+- OAuth Client ID must match `JUMPFLIX_MCP_OAUTH_CLIENT_ID`.
+- OAuth Client Secret is optional. If provided, it must match `JUMPFLIX_MCP_OAUTH_CLIENT_SECRET`.
+- If no client secret is configured, use token endpoint auth method `none`.
+- If a client secret is configured, use `client_secret_post` or `client_secret_basic`.
+
+DCR notes:
+
+- DCR is advertised via `registration_endpoint` in `/.well-known/oauth-authorization-server`.
+- Registered DCR clients are stateless signed client IDs (no server-side DB needed).
+- For ChatGPT connector callbacks, allow `https://chatgpt.com` (and/or `https://chat.openai.com`) via redirect policy settings.
 
 ## Exposed Tools
 

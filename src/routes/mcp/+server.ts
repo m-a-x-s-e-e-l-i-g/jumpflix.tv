@@ -5,6 +5,12 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createJumpflixMcpServer } from '$lib/server/mcp/catalog-server';
+import {
+	buildWwwAuthenticateHeader,
+	isOAuthEnabled,
+	resolveOAuthServerConfig,
+	validateAccessToken
+} from '$lib/server/mcp/oauth';
 
 type SessionContext = {
 	server: McpServer;
@@ -30,13 +36,25 @@ function authToken(): string {
 	return env.JUMPFLIX_MCP_BEARER_TOKEN?.trim() || env.MCP_BEARER_TOKEN?.trim() || '';
 }
 
-function jsonResponse(status: number, body: Record<string, unknown>): Response {
+function jsonResponse(
+	status: number,
+	body: Record<string, unknown>,
+	extraHeaders?: HeadersInit
+): Response {
+	const headers = new Headers({
+		'Content-Type': 'application/json; charset=utf-8'
+	});
+
+	if (extraHeaders) {
+		for (const [name, value] of new Headers(extraHeaders).entries()) {
+			headers.set(name, value);
+		}
+	}
+
 	return withCors(
 		new Response(JSON.stringify(body), {
 			status,
-			headers: {
-				'Content-Type': 'application/json; charset=utf-8'
-			}
+			headers
 		})
 	);
 }
@@ -48,6 +66,7 @@ function withCors(response: Response): Response {
 		'Access-Control-Allow-Headers',
 		'authorization, content-type, mcp-session-id, mcp-protocol-version, last-event-id'
 	);
+	headers.set('Access-Control-Expose-Headers', 'WWW-Authenticate');
 	headers.set('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
 	headers.set('Cache-Control', 'no-store, no-transform');
 	headers.set('X-Accel-Buffering', 'no');
@@ -60,23 +79,66 @@ function withCors(response: Response): Response {
 }
 
 function ensureAuthorized(request: Request): Response | null {
+	const oauthConfig = resolveOAuthServerConfig(new URL(request.url));
+	const oauthEnabled = isOAuthEnabled(oauthConfig);
 	const token = authToken();
-	if (!token) {
+	const authHeader = request.headers.get('authorization');
+	if (!authHeader || !/^Bearer\s+/i.test(authHeader)) {
+		if (oauthEnabled) {
+			return jsonResponse(
+				401,
+				{ error: 'Unauthorized' },
+				{
+					'WWW-Authenticate': buildWwwAuthenticateHeader(oauthConfig, {
+						error: 'invalid_token',
+						errorDescription: 'Missing bearer access token.'
+					})
+				}
+			);
+		}
+
+		if (token) {
+			return jsonResponse(401, { error: 'Unauthorized' });
+		}
+
 		return jsonResponse(500, {
-			error: 'Missing MCP auth token. Configure JUMPFLIX_MCP_BEARER_TOKEN or MCP_BEARER_TOKEN.'
+			error:
+				'Missing MCP auth configuration. Configure OAuth (JUMPFLIX_MCP_OAUTH_SIGNING_SECRET) or static bearer token (JUMPFLIX_MCP_BEARER_TOKEN or MCP_BEARER_TOKEN).'
 		});
 	}
 
-	const authHeader = request.headers.get('authorization');
-	if (!authHeader?.startsWith('Bearer ')) {
+	const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+	if (token && bearerToken === token) {
+		return null;
+	}
+
+	if (oauthEnabled) {
+		const accessValidation = validateAccessToken(bearerToken, oauthConfig);
+		if (accessValidation.ok) {
+			return null;
+		}
+
+		return jsonResponse(
+			accessValidation.status,
+			{ error: 'Unauthorized' },
+			{
+				'WWW-Authenticate': buildWwwAuthenticateHeader(oauthConfig, {
+					error: accessValidation.error,
+					errorDescription: accessValidation.errorDescription,
+					scope: accessValidation.requiredScope
+				})
+			}
+		);
+	}
+
+	if (token) {
 		return jsonResponse(401, { error: 'Unauthorized' });
 	}
 
-	if (authHeader.slice(7).trim() !== token) {
-		return jsonResponse(401, { error: 'Unauthorized' });
-	}
-
-	return null;
+	return jsonResponse(500, {
+		error:
+			'Missing MCP auth configuration. Configure OAuth (JUMPFLIX_MCP_OAUTH_SIGNING_SECRET) or static bearer token (JUMPFLIX_MCP_BEARER_TOKEN or MCP_BEARER_TOKEN).'
+	});
 }
 
 async function closeSession(sessionId: string): Promise<void> {

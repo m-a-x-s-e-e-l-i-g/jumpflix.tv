@@ -150,7 +150,7 @@ JumpFlix ships with a remote MCP server for structured catalog discovery by LLM 
 
 - Transport: Streamable HTTP
 - Default endpoint: `/mcp` on the app server
-- Auth: `Authorization: Bearer <token>`
+- Auth: `Authorization: Bearer <token>` (OAuth access token recommended)
 
 Start the app server:
 
@@ -158,19 +158,29 @@ Start the app server:
 npm run dev
 ```
 
-Required auth env var:
+OAuth mode (recommended for ChatGPT connectors):
+
+```bash
+JUMPFLIX_MCP_OAUTH_SIGNING_SECRET="replace-with-long-random-secret"
+JUMPFLIX_MCP_OAUTH_CLIENT_ID="jumpflix-chatgpt"
+JUMPFLIX_MCP_OAUTH_ENABLE_DCR="true"
+```
+
+Optional OAuth client secret:
+
+```bash
+JUMPFLIX_MCP_OAUTH_CLIENT_SECRET="replace-with-client-secret"
+```
+
+Legacy static token fallback:
 
 ```bash
 JUMPFLIX_MCP_BEARER_TOKEN="your-token"
 ```
 
-Alternative fallback:
-
-```bash
-MCP_BEARER_TOKEN="your-token"
-```
-
 See `docs/MCP.md` for transport details, environment variables, and exposed tools.
+
+`docs/MCP.md` includes both `User-Defined OAuth Client` and Dynamic Client Registration (DCR) connector setup paths.
 
 `docs/MCP.md` also documents payload-size controls (`maxTracks`, `maxSeasons`, `maxChaptersPerItem`) and deployment guidance for streamable HTTP sessions on Netlify/serverless runtimes.
 

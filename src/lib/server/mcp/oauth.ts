@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, createPublicKey, createVerify, randomUUID, timingSafeEqual } from 'node:crypto';
 import { env } from '$env/dynamic/private';
 
 const DEFAULT_SCOPE = 'jumpflix.read';
@@ -9,6 +9,9 @@ const DEFAULT_SUBJECT = 'jumpflix-connector-user';
 const DEFAULT_DCR_CLIENT_TTL_SECONDS = 31_536_000;
 const DEFAULT_CIMD_CACHE_TTL_SECONDS = 300;
 const DEFAULT_CIMD_FETCH_TIMEOUT_MS = 3000;
+const DEFAULT_JWKS_CACHE_TTL_SECONDS = 300;
+const CLIENT_ASSERTION_TYPE_JWT_BEARER = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer';
+const CLIENT_ASSERTION_CLOCK_SKEW_SECONDS = 60;
 
 const ALL_TOKEN_ENDPOINT_AUTH_METHODS: TokenEndpointAuthMethod[] = [
 	'none',
@@ -25,10 +28,15 @@ const DEFAULT_ALLOWED_REDIRECT_ORIGINS = [
 
 const usedAuthorizationCodes = new Map<string, number>();
 const cimdClientCache = new Map<string, { client: CimdClientMetadata; expiresAt: number }>();
+const jwksCache = new Map<string, { keys: JwkKey[]; expiresAt: number }>();
 
 type JwtPayload = Record<string, unknown>;
 
-export type TokenEndpointAuthMethod = 'none' | 'client_secret_post' | 'client_secret_basic';
+export type TokenEndpointAuthMethod =
+	| 'none'
+	| 'client_secret_post'
+	| 'client_secret_basic'
+	| 'private_key_jwt';
 
 export type OAuthServerConfig = {
 	enabled: boolean;
@@ -50,6 +58,7 @@ export type OAuthServerConfig = {
 	cimdCacheTtlSeconds: number;
 	cimdAllowedHosts: Set<string>;
 	cimdFetchTimeoutMs: number;
+	jwksCacheTtlSeconds: number;
 	allowedRedirectUris: Set<string>;
 	allowedRedirectOrigins: Set<string>;
 	requireUserSession: boolean;
@@ -133,6 +142,8 @@ type CimdClientMetadata = {
 	clientName: string | null;
 	redirectUris: string[];
 	tokenEndpointAuthMethod: TokenEndpointAuthMethod;
+	tokenEndpointAuthSigningAlg: 'RS256' | null;
+	jwksUri: string | null;
 	grantTypes: ['authorization_code'];
 	responseTypes: ['code'];
 	issuedAt: number;
@@ -146,7 +157,20 @@ type ResolvedOAuthClient = {
 	tokenEndpointAuthMethod: TokenEndpointAuthMethod;
 	clientSecretHash: string | null;
 	clientSecretExpiresAt: number;
+	tokenEndpointAuthSigningAlg: 'RS256' | null;
+	jwksUri: string | null;
 	kind: 'static' | 'dynamic' | 'cimd';
+};
+
+type JwkKey = {
+	kty: string;
+	use?: string;
+	key_ops?: string[];
+	alg?: string;
+	kid?: string;
+	n?: string;
+	e?: string;
+	[k: string]: unknown;
 };
 
 export type DynamicClientRegistrationResult =
@@ -205,7 +229,7 @@ export function resolveOAuthServerConfig(requestUrl: URL): OAuthServerConfig {
 		new Set([
 			...staticClientAuthMethods,
 			...(dcrEnabled ? dcrAuthMethodsSupported : []),
-			...(cimdEnabled ? (['none'] as TokenEndpointAuthMethod[]) : [])
+			...(cimdEnabled ? (['none', 'private_key_jwt'] as TokenEndpointAuthMethod[]) : [])
 		])
 	);
 
@@ -262,6 +286,12 @@ export function resolveOAuthServerConfig(requestUrl: URL): OAuthServerConfig {
 			DEFAULT_CIMD_FETCH_TIMEOUT_MS,
 			500,
 			10_000
+		),
+		jwksCacheTtlSeconds: clampInt(
+			env.JUMPFLIX_MCP_OAUTH_JWKS_CACHE_TTL_SECONDS,
+			DEFAULT_JWKS_CACHE_TTL_SECONDS,
+			10,
+			3_600
 		),
 		allowedRedirectUris,
 		allowedRedirectOrigins,
@@ -383,6 +413,8 @@ export async function resolveOAuthClient(
 			tokenEndpointAuthMethod: config.clientSecret ? 'client_secret_post' : 'none',
 			clientSecretHash: config.clientSecret ? hashClientSecret(config.clientSecret) : null,
 			clientSecretExpiresAt: 0,
+			tokenEndpointAuthSigningAlg: null,
+			jwksUri: null,
 			kind: 'static'
 		};
 	}
@@ -396,6 +428,8 @@ export async function resolveOAuthClient(
 			tokenEndpointAuthMethod: dynamicClient.tokenEndpointAuthMethod,
 			clientSecretHash: dynamicClient.clientSecretHash,
 			clientSecretExpiresAt: dynamicClient.clientSecretExpiresAt,
+			tokenEndpointAuthSigningAlg: null,
+			jwksUri: null,
 			kind: 'dynamic'
 		};
 	}
@@ -409,6 +443,8 @@ export async function resolveOAuthClient(
 			tokenEndpointAuthMethod: cimdClient.tokenEndpointAuthMethod,
 			clientSecretHash: null,
 			clientSecretExpiresAt: 0,
+			tokenEndpointAuthSigningAlg: cimdClient.tokenEndpointAuthSigningAlg,
+			jwksUri: cimdClient.jwksUri,
 			kind: 'cimd'
 		};
 	}
@@ -482,6 +518,15 @@ export function registerDynamicClient(
 			status: 400,
 			error: 'invalid_client_metadata',
 			errorDescription: `Unsupported token_endpoint_auth_method: ${tokenEndpointAuthMethod}`
+		};
+	}
+
+	if (tokenEndpointAuthMethod === 'private_key_jwt') {
+		return {
+			ok: false,
+			status: 400,
+			error: 'invalid_client_metadata',
+			errorDescription: 'private_key_jwt is not supported for DCR clients on this server.'
 		};
 	}
 
@@ -937,13 +982,31 @@ export async function validateTokenEndpointClient(
 		return { ok: true, clientId };
 	}
 
+	if (resolvedClient.tokenEndpointAuthMethod === 'private_key_jwt') {
+		const assertionValidation = await validatePrivateKeyJwtClientAssertion(
+			params,
+			resolvedClient,
+			config
+		);
+		if (!assertionValidation.ok) {
+			return {
+				ok: false,
+				status: 401,
+				error: 'invalid_client',
+				errorDescription: assertionValidation.errorDescription
+			};
+		}
+
+		return { ok: true, clientId };
+	}
+
 	if (resolvedClient.kind === 'cimd') {
 		return {
 			ok: false,
 			status: 401,
 			error: 'invalid_client',
 			errorDescription:
-				'Client ID metadata documents only support token_endpoint_auth_method=none on this server.'
+				'Unsupported CIMD token_endpoint_auth_method for this server.'
 		};
 	}
 
@@ -1093,13 +1156,21 @@ function isTokenEndpointAuthMethod(value: string): value is TokenEndpointAuthMet
 	return (
 		value === 'none' ||
 		value === 'client_secret_post' ||
-		value === 'client_secret_basic'
+		value === 'client_secret_basic' ||
+		value === 'private_key_jwt'
 	);
 }
 
 function isAuthorizationCodeGrantOnly(value: unknown): boolean {
 	if (!Array.isArray(value) || value.length === 0) return false;
 	return value.every((item) => item === 'authorization_code');
+}
+
+function includesAuthorizationCodeGrant(value: unknown): boolean {
+	if (!Array.isArray(value) || value.length === 0) return false;
+	const normalized = value.filter((item): item is string => typeof item === 'string');
+	if (normalized.length !== value.length) return false;
+	return normalized.includes('authorization_code');
 }
 
 function isCodeResponseTypeOnly(value: unknown): boolean {
@@ -1109,6 +1180,15 @@ function isCodeResponseTypeOnly(value: unknown): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isHttpsUrl(value: string): boolean {
+	try {
+		const parsed = new URL(value);
+		return parsed.protocol === 'https:';
+	} catch {
+		return false;
+	}
 }
 
 function resolveDynamicClient(clientId: string, config: OAuthServerConfig): DynamicClientMetadata | null {
@@ -1252,20 +1332,12 @@ function parseCimdClientMetadata(
 		new Set(
 			redirectUrisRaw
 				.filter((entry): entry is string => typeof entry === 'string')
-				.map((entry) => normalizeRedirectUri(entry))
+				.map((entry) => normalizeAndValidateRedirectUriForPolicy(entry, config))
 				.filter((entry): entry is string => Boolean(entry))
 		)
 	);
 
 	if (redirectUris.length !== redirectUrisRaw.length) return null;
-
-	for (const redirectUri of redirectUris) {
-		const parsedRedirect = new URL(redirectUri);
-		const isLoopback = isLoopbackHost(parsedRedirect.hostname);
-		if (!isLoopback && parsedRedirect.protocol !== 'https:') {
-			return null;
-		}
-	}
 
 	const tokenEndpointAuthMethod =
 		typeof payload.token_endpoint_auth_method === 'string' &&
@@ -1273,11 +1345,24 @@ function parseCimdClientMetadata(
 			? payload.token_endpoint_auth_method
 			: 'none';
 
-	if (tokenEndpointAuthMethod !== 'none') {
+	if (tokenEndpointAuthMethod !== 'none' && tokenEndpointAuthMethod !== 'private_key_jwt') {
 		return null;
 	}
 
-	if (payload.grant_types !== undefined && !isAuthorizationCodeGrantOnly(payload.grant_types)) {
+	const tokenEndpointAuthSigningAlg =
+		typeof payload.token_endpoint_auth_signing_alg === 'string'
+			? payload.token_endpoint_auth_signing_alg
+			: null;
+
+	const jwksUri = typeof payload.jwks_uri === 'string' ? payload.jwks_uri : null;
+
+	if (tokenEndpointAuthMethod === 'private_key_jwt') {
+		if (tokenEndpointAuthSigningAlg !== 'RS256') return null;
+		if (!jwksUri) return null;
+		if (!isHttpsUrl(jwksUri)) return null;
+	}
+
+	if (payload.grant_types !== undefined && !includesAuthorizationCodeGrant(payload.grant_types)) {
 		return null;
 	}
 
@@ -1291,11 +1376,284 @@ function parseCimdClientMetadata(
 		clientName: typeof payload.client_name === 'string' ? payload.client_name.slice(0, 120) : null,
 		redirectUris,
 		tokenEndpointAuthMethod,
+		tokenEndpointAuthSigningAlg: tokenEndpointAuthMethod === 'private_key_jwt' ? 'RS256' : null,
+		jwksUri: tokenEndpointAuthMethod === 'private_key_jwt' ? jwksUri : null,
 		grantTypes: ['authorization_code'],
 		responseTypes: ['code'],
 		issuedAt: now,
 		expiresAt: now + config.cimdCacheTtlSeconds
 	};
+}
+
+async function validatePrivateKeyJwtClientAssertion(
+	params: URLSearchParams,
+	client: ResolvedOAuthClient,
+	config: OAuthServerConfig
+): Promise<{ ok: true } | { ok: false; errorDescription: string }> {
+	if (client.kind !== 'cimd') {
+		return {
+			ok: false,
+			errorDescription: 'private_key_jwt is only supported for CIMD clients.'
+		};
+	}
+
+	if (!client.jwksUri || client.tokenEndpointAuthSigningAlg !== 'RS256') {
+		return {
+			ok: false,
+			errorDescription: 'CIMD client is missing private_key_jwt signing metadata.'
+		};
+	}
+
+	const assertionType = params.get('client_assertion_type')?.trim() || '';
+	const assertion = params.get('client_assertion')?.trim() || '';
+
+	if (assertionType !== CLIENT_ASSERTION_TYPE_JWT_BEARER) {
+		return {
+			ok: false,
+			errorDescription: 'Invalid client_assertion_type for private_key_jwt.'
+		};
+	}
+
+	if (!assertion) {
+		return {
+			ok: false,
+			errorDescription: 'Missing client_assertion for private_key_jwt.'
+		};
+	}
+
+	const parsedAssertion = parseJwtWithoutVerification(assertion);
+	if (!parsedAssertion) {
+		return {
+			ok: false,
+			errorDescription: 'Malformed client_assertion JWT.'
+		};
+	}
+
+	if (parsedAssertion.header.alg !== 'RS256') {
+		return {
+			ok: false,
+			errorDescription: 'client_assertion must use RS256.'
+		};
+	}
+
+	const payload = parsedAssertion.payload;
+	if (payload.iss !== client.clientId || payload.sub !== client.clientId) {
+		return {
+			ok: false,
+			errorDescription: 'client_assertion iss/sub must match client_id.'
+		};
+	}
+
+	if (!audienceMatches(payload.aud, config.tokenEndpoint, config.issuer)) {
+		return {
+			ok: false,
+			errorDescription: 'client_assertion aud is invalid for this token endpoint.'
+		};
+	}
+
+	const now = nowInSeconds();
+	if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp)) {
+		return {
+			ok: false,
+			errorDescription: 'client_assertion exp claim is required.'
+		};
+	}
+
+	if (payload.exp <= now - CLIENT_ASSERTION_CLOCK_SKEW_SECONDS) {
+		return {
+			ok: false,
+			errorDescription: 'client_assertion has expired.'
+		};
+	}
+
+	if (
+		typeof payload.nbf === 'number' &&
+		Number.isFinite(payload.nbf) &&
+		payload.nbf > now + CLIENT_ASSERTION_CLOCK_SKEW_SECONDS
+	) {
+		return {
+			ok: false,
+			errorDescription: 'client_assertion is not valid yet.'
+		};
+	}
+
+	if (
+		typeof payload.iat === 'number' &&
+		Number.isFinite(payload.iat) &&
+		payload.iat > now + CLIENT_ASSERTION_CLOCK_SKEW_SECONDS
+	) {
+		return {
+			ok: false,
+			errorDescription: 'client_assertion iat is in the future.'
+		};
+	}
+
+	const keys = await fetchJwksKeys(client.jwksUri, config);
+	if (!keys || keys.length === 0) {
+		return {
+			ok: false,
+			errorDescription: 'Unable to load client JWKS for private_key_jwt.'
+		};
+	}
+
+	const candidateKeys = selectJwkCandidates(keys, parsedAssertion.header.kid);
+	if (candidateKeys.length === 0) {
+		return {
+			ok: false,
+			errorDescription: 'No compatible JWK found for client_assertion.'
+		};
+	}
+
+	const isValidSignature = candidateKeys.some((key) =>
+		verifyRs256JwtSignature(parsedAssertion.signingInput, parsedAssertion.signature, key)
+	);
+
+	if (!isValidSignature) {
+		return {
+			ok: false,
+			errorDescription: 'Invalid client_assertion signature.'
+		};
+	}
+
+	return { ok: true };
+}
+
+async function fetchJwksKeys(jwksUri: string, config: OAuthServerConfig): Promise<JwkKey[] | null> {
+	pruneJwksCache();
+	const cached = jwksCache.get(jwksUri);
+	if (cached && cached.expiresAt > nowInSeconds()) {
+		return cached.keys;
+	}
+
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), config.cimdFetchTimeoutMs);
+
+	try {
+		const response = await fetch(jwksUri, {
+			method: 'GET',
+			headers: {
+				Accept: 'application/json'
+			},
+			redirect: 'follow',
+			signal: controller.signal
+		});
+
+		if (!response.ok) return null;
+
+		const payload = (await response.json()) as unknown;
+		if (!isRecord(payload) || !Array.isArray(payload.keys)) {
+			return null;
+		}
+
+		const keys = payload.keys
+			.filter((entry): entry is JwkKey => isRecord(entry))
+			.filter((entry) => entry.kty === 'RSA' && typeof entry.n === 'string' && typeof entry.e === 'string');
+
+		if (keys.length === 0) {
+			return null;
+		}
+
+		const now = nowInSeconds();
+		const cacheTtl = Math.max(
+			1,
+			Math.min(config.jwksCacheTtlSeconds, parseHttpMaxAge(response.headers.get('cache-control')))
+		);
+
+		jwksCache.set(jwksUri, {
+			keys,
+			expiresAt: now + cacheTtl
+		});
+
+		return keys;
+	} catch {
+		return null;
+	} finally {
+		clearTimeout(timeout);
+	}
+}
+
+function selectJwkCandidates(keys: JwkKey[], kid: string | null): JwkKey[] {
+	const compatible = keys.filter((key) => {
+		if (key.use && key.use !== 'sig') return false;
+		if (Array.isArray(key.key_ops) && key.key_ops.length > 0 && !key.key_ops.includes('verify')) {
+			return false;
+		}
+		if (key.alg && key.alg !== 'RS256') return false;
+		return true;
+	});
+
+	if (kid) {
+		const byKid = compatible.filter((key) => key.kid === kid);
+		if (byKid.length > 0) return byKid;
+	}
+
+	return compatible;
+}
+
+function verifyRs256JwtSignature(signingInput: string, signature: Buffer, jwk: JwkKey): boolean {
+	try {
+		const keyObject = createPublicKey({
+			key: jwk as any,
+			format: 'jwk'
+		});
+		const verifier = createVerify('RSA-SHA256');
+		verifier.update(signingInput);
+		verifier.end();
+		return verifier.verify(keyObject, signature);
+	} catch {
+		return false;
+	}
+}
+
+function parseJwtWithoutVerification(token: string): {
+	header: { alg?: string; kid: string | null };
+	payload: Record<string, unknown>;
+	signingInput: string;
+	signature: Buffer;
+} | null {
+	const parts = token.split('.');
+	if (parts.length !== 3) return null;
+	const [encodedHeader, encodedPayload, encodedSignature] = parts;
+	if (!encodedHeader || !encodedPayload || !encodedSignature) return null;
+
+	try {
+		const header = JSON.parse(Buffer.from(encodedHeader, 'base64url').toString('utf8')) as Record<
+			string,
+			unknown
+		>;
+		const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8')) as Record<
+			string,
+			unknown
+		>;
+		const signature = Buffer.from(encodedSignature, 'base64url');
+
+		if (!isRecord(payload)) return null;
+
+		return {
+			header: {
+				alg: typeof header.alg === 'string' ? header.alg : undefined,
+				kid: typeof header.kid === 'string' ? header.kid : null
+			},
+			payload,
+			signingInput: `${encodedHeader}.${encodedPayload}`,
+			signature
+		};
+	} catch {
+		return null;
+	}
+}
+
+function audienceMatches(audClaim: unknown, tokenEndpoint: string, issuer: string): boolean {
+	if (typeof audClaim === 'string') {
+		return audClaim === tokenEndpoint || audClaim === issuer;
+	}
+
+	if (Array.isArray(audClaim)) {
+		const values = audClaim.filter((entry): entry is string => typeof entry === 'string');
+		return values.includes(tokenEndpoint) || values.includes(issuer);
+	}
+
+	return false;
 }
 
 function parseHttpMaxAge(cacheControl: string | null): number {
@@ -1312,6 +1670,15 @@ function pruneCimdClientCache(): void {
 	for (const [clientId, cached] of cimdClientCache.entries()) {
 		if (cached.expiresAt <= now) {
 			cimdClientCache.delete(clientId);
+		}
+	}
+}
+
+function pruneJwksCache(): void {
+	const now = nowInSeconds();
+	for (const [jwksUri, cached] of jwksCache.entries()) {
+		if (cached.expiresAt <= now) {
+			jwksCache.delete(jwksUri);
 		}
 	}
 }

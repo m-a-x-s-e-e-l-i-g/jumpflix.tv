@@ -47,6 +47,7 @@ Optional OAuth settings:
 - `JUMPFLIX_MCP_OAUTH_CIMD_ALLOWED_HOSTS` (optional host allowlist for `client_id` metadata URLs)
 - `JUMPFLIX_MCP_OAUTH_CIMD_CACHE_TTL_SECONDS` (optional; defaults to `300`)
 - `JUMPFLIX_MCP_OAUTH_CIMD_FETCH_TIMEOUT_MS` (optional; defaults to `3000`)
+- `JUMPFLIX_MCP_OAUTH_JWKS_CACHE_TTL_SECONDS` (optional; defaults to `300`)
 - `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_URIS` (comma/newline list, exact match)
 - `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_ORIGINS` (comma/newline list, origin allowlist fallback)
 - `JUMPFLIX_MCP_OAUTH_SCOPES` (supported scopes, default `jumpflix.read`)
@@ -90,6 +91,7 @@ If OAuth is disabled and no static token is configured, the endpoint returns an 
 - `JUMPFLIX_MCP_OAUTH_CIMD_ALLOWED_HOSTS` (optional)
 - `JUMPFLIX_MCP_OAUTH_CIMD_CACHE_TTL_SECONDS` (optional)
 - `JUMPFLIX_MCP_OAUTH_CIMD_FETCH_TIMEOUT_MS` (optional)
+- `JUMPFLIX_MCP_OAUTH_JWKS_CACHE_TTL_SECONDS` (optional)
 - `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_URIS` (optional)
 - `JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_ORIGINS` (optional)
 - `JUMPFLIX_MCP_OAUTH_SCOPES` (optional, default `jumpflix.read`)
@@ -164,7 +166,7 @@ DCR notes:
 CIMD notes:
 
 - CIMD clients must use HTTPS `client_id` URLs with a path component that returns a JSON metadata document.
-- This server currently accepts CIMD clients with `token_endpoint_auth_method=none`.
+- This server accepts CIMD clients with `token_endpoint_auth_method=none` and `token_endpoint_auth_method=private_key_jwt` (`RS256` + `jwks_uri`).
 - If you set `JUMPFLIX_MCP_OAUTH_CIMD_ALLOWED_HOSTS`, only those metadata document hosts are accepted.
 
 ## Exposed Tools

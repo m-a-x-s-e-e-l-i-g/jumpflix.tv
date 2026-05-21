@@ -184,6 +184,8 @@ See `docs/MCP.md` for transport details, environment variables, and exposed tool
 
 `docs/MCP.md` also includes Client Identifier Metadata Document (CIMD) support details.
 
+For ChatGPT-style CIMD clients, private_key_jwt (`RS256` + `jwks_uri`) is supported.
+
 `docs/MCP.md` also documents payload-size controls (`maxTracks`, `maxSeasons`, `maxChaptersPerItem`) and deployment guidance for streamable HTTP sessions on Netlify/serverless runtimes.
 
 ## 🗄 Supabase Setup

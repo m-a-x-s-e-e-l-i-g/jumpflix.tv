@@ -268,7 +268,29 @@
 	let rpDragging: 'start' | 'end' | null = null;
 	let rangeOverlayEl: HTMLElement | null = null;
 	let spotDialogOpen = false;
+	let rpStartInput = '';
+	let rpEndInput = '';
+	let rpStartInputInvalid = false;
+	let rpEndInputInvalid = false;
+	let isEditingRangeStartInput = false;
+	let isEditingRangeEndInput = false;
 	$: rpConfirmable = rpStart !== null && rpEnd !== null && rpStart !== rpEnd;
+
+	$: if (!isRangePicking) {
+		rpStartInput = '';
+		rpEndInput = '';
+		rpStartInputInvalid = false;
+		rpEndInputInvalid = false;
+		isEditingRangeStartInput = false;
+		isEditingRangeEndInput = false;
+	} else {
+		if (!isEditingRangeStartInput) {
+			rpStartInput = rpStart !== null ? fmtTimeSec(rpStart) : '';
+		}
+		if (!isEditingRangeEndInput) {
+			rpEndInput = rpEnd !== null ? fmtTimeSec(rpEnd) : '';
+		}
+	}
 
 	function parkourSpotUrl(spotId: string): string {
 		return getParkourSpotUrl(spotId);
@@ -411,16 +433,131 @@
 		return `${mins}:${String(r).padStart(2, '0')}`;
 	}
 
+	function getRangeDurationCeiling() {
+		const fallbackDuration = Number(playerEl?.duration ?? 0);
+		const source = Number.isFinite(videoDuration) && videoDuration > 0 ? videoDuration : fallbackDuration;
+		if (!Number.isFinite(source) || source <= 0) return 0;
+		return Math.max(0, Math.floor(source));
+	}
+
+	function clampRangeValue(seconds: number) {
+		const ceiling = getRangeDurationCeiling();
+		const floorSeconds = Math.floor(Number(seconds) || 0);
+		return Math.max(0, Math.min(ceiling, floorSeconds));
+	}
+
+	function setRangeStartValue(seconds: number, options?: { seek?: boolean }) {
+		const clamped = clampRangeValue(seconds);
+		const nextStart = rpEnd !== null ? Math.min(clamped, rpEnd) : clamped;
+		rpStart = nextStart;
+		if (options?.seek) seekToSeconds(nextStart);
+	}
+
+	function setRangeEndValue(seconds: number, options?: { seek?: boolean }) {
+		const clamped = clampRangeValue(seconds);
+		const nextEnd = rpStart !== null ? Math.max(clamped, rpStart) : clamped;
+		rpEnd = nextEnd;
+		if (options?.seek) seekToSeconds(nextEnd);
+	}
+
+	function parseRangeInputSeconds(raw: string): number | null {
+		const value = raw.trim();
+		if (!value) return null;
+		if (/^\d+$/.test(value)) return Number(value);
+		if (!/^\d+:\d{1,2}(?::\d{1,2})?$/.test(value)) return null;
+
+		const parts = value.split(':').map((part) => Number(part));
+		if (parts.some((part) => !Number.isFinite(part) || part < 0)) return null;
+
+		if (parts.length === 2) {
+			const [minutes, seconds] = parts;
+			if (seconds >= 60) return null;
+			return minutes * 60 + seconds;
+		}
+
+		const [hours, minutes, seconds] = parts;
+		if (minutes >= 60 || seconds >= 60) return null;
+		return hours * 3600 + minutes * 60 + seconds;
+	}
+
+	function commitRangeInput(which: 'start' | 'end', options?: { seek?: boolean }) {
+		const raw = which === 'start' ? rpStartInput : rpEndInput;
+		if (!raw.trim()) {
+			if (which === 'start') {
+				rpStart = null;
+				rpStartInputInvalid = false;
+			} else {
+				rpEnd = null;
+				rpEndInputInvalid = false;
+			}
+			return;
+		}
+
+		const parsed = parseRangeInputSeconds(raw);
+		if (parsed === null) {
+			if (which === 'start') {
+				rpStartInputInvalid = true;
+			} else {
+				rpEndInputInvalid = true;
+			}
+			return;
+		}
+
+		if (which === 'start') {
+			rpStartInputInvalid = false;
+			setRangeStartValue(parsed, options);
+		} else {
+			rpEndInputInvalid = false;
+			setRangeEndValue(parsed, options);
+		}
+	}
+
+	function handleRangeInputKeydown(event: KeyboardEvent, which: 'start' | 'end') {
+		if (event.key === 'Enter') {
+			event.preventDefault();
+			commitRangeInput(which, { seek: true });
+			(event.currentTarget as HTMLInputElement | null)?.blur();
+			return;
+		}
+
+		if (event.key === 'Escape') {
+			event.preventDefault();
+			if (which === 'start') {
+				rpStartInput = rpStart !== null ? fmtTimeSec(rpStart) : '';
+				rpStartInputInvalid = false;
+			} else {
+				rpEndInput = rpEnd !== null ? fmtTimeSec(rpEnd) : '';
+				rpEndInputInvalid = false;
+			}
+			(event.currentTarget as HTMLInputElement | null)?.blur();
+		}
+	}
+
 	function enterRangePicking() {
 		if (!playerEl) return;
 		videoDuration = Number(playerEl.duration) || 0;
+		const maxDuration = Math.max(0, Math.floor(videoDuration));
 		if (isChangingSpot) {
-			rpStart = activeSpotStartSeconds !== null ? Math.floor(activeSpotStartSeconds) : Math.floor(Number(playerEl.currentTime) || 0);
-			rpEnd = activeSpotEndSeconds !== null ? Math.floor(activeSpotEndSeconds) : Math.min(Math.floor(videoDuration), rpStart + 30);
+			rpStart =
+				activeSpotStartSeconds !== null
+					? Math.floor(activeSpotStartSeconds)
+					: Math.floor(Number(playerEl.currentTime) || 0);
+			rpEnd =
+				activeSpotEndSeconds !== null
+					? Math.floor(activeSpotEndSeconds)
+					: Math.min(maxDuration, (rpStart ?? 0) + 30);
 		} else {
 			rpStart = Math.floor(Number(playerEl.currentTime) || 0);
-			rpEnd = Math.min(Math.floor(videoDuration), rpStart + 30);
+			rpEnd = Math.min(maxDuration, (rpStart ?? 0) + 30);
 		}
+		rpStart = rpStart !== null ? Math.max(0, Math.min(maxDuration, rpStart)) : null;
+		rpEnd = rpEnd !== null ? Math.max(0, Math.min(maxDuration, rpEnd)) : null;
+		if (rpStart !== null && rpEnd !== null && rpEnd < rpStart) {
+			rpEnd = rpStart;
+		}
+		rpDragging = null;
+		rpStartInputInvalid = false;
+		rpEndInputInvalid = false;
 		isRangePicking = true;
 		controlsVisible = true;
 		clearHideControlsTimer();
@@ -434,20 +571,15 @@
 	}
 
 	function markRangeStart() {
-		rpStart = Math.floor(Number(playerEl?.currentTime ?? 0));
+		setRangeStartValue(Number(playerEl?.currentTime ?? 0));
 	}
 
 	function markRangeEnd() {
-		rpEnd = Math.floor(Number(playerEl?.currentTime ?? 0));
+		setRangeEndValue(Number(playerEl?.currentTime ?? 0));
 	}
 
 	function confirmRange() {
 		if (!rpConfirmable) return;
-		if (rpEnd !== null && rpStart !== null && rpEnd < rpStart) {
-			const tmp = rpStart;
-			rpStart = rpEnd;
-			rpEnd = tmp;
-		}
 		isRangePicking = false;
 		spotDialogOpen = true;
 	}
@@ -484,9 +616,11 @@
 		const rect = rangeOverlayEl.getBoundingClientRect();
 		const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
 		const seconds = Math.floor(frac * videoDuration);
-		if (rpDragging === 'start') rpStart = seconds;
-		else rpEnd = seconds;
-		seekToSeconds(seconds);
+		if (rpDragging === 'start') {
+			setRangeStartValue(seconds, { seek: true });
+		} else {
+			setRangeEndValue(seconds, { seek: true });
+		}
 	}
 
 	function onOverlayPointerUp() {
@@ -1484,10 +1618,20 @@
 		return Math.max(0, Math.min(value, duration));
 	}
 
+	function isSpotSuggestionWorkflowActive() {
+		return showSpotSuggestion && (isRangePicking || spotDialogOpen);
+	}
+
 	function trackProgress(player: MediaPlayerElement, options?: { force?: boolean }) {
 		if (!browser) return;
 		const mediaId = getMediaId();
 		if (!mediaId) return;
+
+		if (isSpotSuggestionWorkflowActive()) {
+			cancelProgressCommitTimer();
+			pendingProgress = null;
+			return;
+		}
 
 		const safeDuration = Number.isFinite(player.duration) ? Number(player.duration) : 0;
 		if (safeDuration <= 0) return;
@@ -1622,6 +1766,7 @@
 		if (!browser) return () => {};
 		let lastEmit = 0;
 		const handleEnded = () => {
+			if (isSpotSuggestionWorkflowActive()) return;
 			const now = Date.now();
 			if (now - lastEmit < 200) return;
 			lastEmit = now;
@@ -2172,6 +2317,9 @@
 
 		const handleEnded = () => {
 			applyPausedState(true);
+			if (isSpotSuggestionWorkflowActive()) {
+				return;
+			}
 			// Close player on mobile when video ends
 			if (isMobileViewport && typeof onClose === 'function') {
 				onClose();
@@ -3007,8 +3155,13 @@
 											tabindex="0"
 											on:pointerdown={(e) => onHandlePointerDown(e, 'start')}
 											on:keydown={(e) => {
-												if (e.key === 'ArrowLeft') { e.preventDefault(); rpStart = Math.max(0, (rpStart ?? 0) - 1); }
-												else if (e.key === 'ArrowRight') { e.preventDefault(); rpStart = Math.min(Math.floor(videoDuration), (rpStart ?? 0) + 1); }
+												if (e.key === 'ArrowLeft') {
+													e.preventDefault();
+													setRangeStartValue((rpStart ?? 0) - 1, { seek: true });
+												} else if (e.key === 'ArrowRight') {
+													e.preventDefault();
+													setRangeStartValue((rpStart ?? 0) + 1, { seek: true });
+												}
 											}}
 										>
 											<span class="rh-tooltip rh-tooltip-start">{fmtTimeSec(rpStart ?? 0)}</span>
@@ -3024,8 +3177,13 @@
 											tabindex="0"
 											on:pointerdown={(e) => onHandlePointerDown(e, 'end')}
 											on:keydown={(e) => {
-												if (e.key === 'ArrowLeft') { e.preventDefault(); rpEnd = Math.max(0, (rpEnd ?? 0) - 1); }
-												else if (e.key === 'ArrowRight') { e.preventDefault(); rpEnd = Math.min(Math.floor(videoDuration), (rpEnd ?? 0) + 1); }
+												if (e.key === 'ArrowLeft') {
+													e.preventDefault();
+													setRangeEndValue((rpEnd ?? 0) - 1, { seek: true });
+												} else if (e.key === 'ArrowRight') {
+													e.preventDefault();
+													setRangeEndValue((rpEnd ?? 0) + 1, { seek: true });
+												}
 											}}
 										>
 											<span class="rh-tooltip rh-tooltip-end">{fmtTimeSec(rpEnd ?? 0)}</span>
@@ -3038,25 +3196,79 @@
 						{#if isRangePicking}
 							<div class="range-picker-bar" data-jumpflix-gesture-ignore="true">
 								<div class="rp-times">
-									<button
-										type="button"
-										class="rp-time-btn"
-										title="Seek to current position and set as start"
-										on:click|stopPropagation={markRangeStart}
-									>
-										<span class="rp-time-label">Start</span>
-										<span class="rp-time-value">{rpStart !== null ? fmtTimeSec(rpStart) : '—'}</span>
-									</button>
+									<div class="rp-time-field">
+										<label class="rp-time-label" for="rp-start-input">Start</label>
+										<div class="rp-time-control">
+											<input
+												id="rp-start-input"
+												type="text"
+												inputmode="numeric"
+												placeholder="m:ss or s"
+												class="rp-time-input"
+												aria-label="Start time"
+												aria-invalid={rpStartInputInvalid ? 'true' : undefined}
+												value={rpStartInput}
+												on:focus={() => {
+													isEditingRangeStartInput = true;
+												}}
+												on:input={(event) => {
+													rpStartInput = (event.currentTarget as HTMLInputElement).value;
+													rpStartInputInvalid = false;
+												}}
+												on:blur={() => {
+													isEditingRangeStartInput = false;
+													commitRangeInput('start');
+												}}
+												on:keydown={(event) => handleRangeInputKeydown(event, 'start')}
+											/>
+											<button
+												type="button"
+												class="rp-set-current-btn"
+												title="Set start to current playback time"
+												on:click|stopPropagation={markRangeStart}
+											>
+												Now
+											</button>
+										</div>
+										<div class="rp-time-preview">{rpStart !== null ? fmtTimeSec(rpStart) : '—'}</div>
+									</div>
 									<span class="rp-arrow" aria-hidden="true">→</span>
-									<button
-										type="button"
-										class="rp-time-btn"
-										title="Seek to current position and set as end"
-										on:click|stopPropagation={markRangeEnd}
-									>
-										<span class="rp-time-label">End</span>
-										<span class="rp-time-value">{rpEnd !== null ? fmtTimeSec(rpEnd) : '—'}</span>
-									</button>
+									<div class="rp-time-field">
+										<label class="rp-time-label" for="rp-end-input">End</label>
+										<div class="rp-time-control">
+											<input
+												id="rp-end-input"
+												type="text"
+												inputmode="numeric"
+												placeholder="m:ss or s"
+												class="rp-time-input"
+												aria-label="End time"
+												aria-invalid={rpEndInputInvalid ? 'true' : undefined}
+												value={rpEndInput}
+												on:focus={() => {
+													isEditingRangeEndInput = true;
+												}}
+												on:input={(event) => {
+													rpEndInput = (event.currentTarget as HTMLInputElement).value;
+													rpEndInputInvalid = false;
+												}}
+												on:blur={() => {
+													isEditingRangeEndInput = false;
+													commitRangeInput('end');
+												}}
+												on:keydown={(event) => handleRangeInputKeydown(event, 'end')}
+											/>
+											<button
+												type="button"
+												class="rp-set-current-btn"
+												title="Set end to current playback time"
+												on:click|stopPropagation={markRangeEnd}
+											>
+												Now
+											</button>
+										</div>
+										<div class="rp-time-preview">{rpEnd !== null ? fmtTimeSec(rpEnd) : '—'}</div>
+									</div>
 								</div>
 								<div class="rp-hint">
 									{#if rpStart === null}
@@ -4465,6 +4677,15 @@
 		inline-size: var(--chapter-fill, 0%);
 	}
 
+	.player-controls[data-range-picking] .time-slider .slider-track-fill,
+	.player-controls[data-range-picking] .time-slider .slider-track-progress,
+	.player-controls[data-range-picking] .time-slider .slider-chapter .slider-track-fill,
+	.player-controls[data-range-picking] .time-slider .slider-chapter .slider-track-progress,
+	.player-controls[data-range-picking] :global(media-time-slider.time-slider [part='track-fill']),
+	.player-controls[data-range-picking] :global(media-time-slider.time-slider [part='track-progress']) {
+		opacity: 0;
+	}
+
 	/* ── Range picker overlay ───────────────────────────────── */
 
 	.range-overlay {
@@ -4582,23 +4803,57 @@
 		flex: 0 0 auto;
 	}
 
-	.rp-time-btn {
+	.rp-time-field {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
-		gap: 0.1rem;
-		padding: 0.3rem 0.6rem;
-		border-radius: 0.6rem;
+		gap: 0.25rem;
+		min-width: 9.5rem;
+	}
+
+	.rp-time-control {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+	}
+
+	.rp-time-input {
+		width: 6.5rem;
+		padding: 0.28rem 0.45rem;
+		border-radius: 0.45rem;
 		border: 1px solid var(--player-border);
 		background: var(--player-surface-soft);
 		color: var(--player-text);
-		cursor: pointer;
-		transition: background 140ms ease;
-		min-width: 4.5rem;
+		font-size: 0.76rem;
+		font-variant-numeric: tabular-nums;
+		outline: none;
 	}
 
-	.rp-time-btn:hover {
+	.rp-time-input:focus-visible {
+		border-color: var(--player-primary-border);
+		box-shadow: 0 0 0 1px var(--player-primary-border);
+	}
+
+	.rp-time-input[aria-invalid='true'] {
+		border-color: color-mix(in oklch, var(--primary) 55%, #ef4444 45%);
+		box-shadow: 0 0 0 1px color-mix(in oklch, var(--primary) 55%, #ef4444 45%);
+	}
+
+	.rp-set-current-btn {
+		padding: 0.28rem 0.52rem;
+		border-radius: 0.45rem;
+		border: 1px solid var(--player-border);
+		background: var(--player-surface-soft);
+		color: var(--player-text-muted);
+		font-size: 0.7rem;
+		line-height: 1;
+		cursor: pointer;
+		transition: background 140ms ease, color 140ms ease;
+	}
+
+	.rp-set-current-btn:hover {
 		background: var(--player-surface-strong);
+		color: var(--player-text);
 	}
 
 	.rp-time-label {
@@ -4609,11 +4864,12 @@
 		font-weight: 600;
 	}
 
-	.rp-time-value {
-		font-size: 0.85rem;
-		font-weight: 700;
+	.rp-time-preview {
+		font-size: 0.68rem;
+		font-weight: 600;
 		font-variant-numeric: tabular-nums;
 		line-height: 1.1;
+		color: var(--player-text-muted);
 	}
 
 	.rp-arrow {

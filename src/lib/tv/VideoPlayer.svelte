@@ -1765,8 +1765,19 @@
 	function setupPlaybackCompletion(player: MediaPlayerElement) {
 		if (!browser) return () => {};
 		let lastEmit = 0;
+		const isPlaybackAtEnd = () => {
+			const duration = Number(player.duration);
+			if (!Number.isFinite(duration) || duration <= 0) return false;
+			const currentTime = Number(player.currentTime ?? 0);
+			if (!Number.isFinite(currentTime) || currentTime < 0) return false;
+			const remaining = duration - currentTime;
+			// Some providers can emit a transient `ended` during pause/seek transitions.
+			// Treat completion as valid only when we're effectively at the tail.
+			return remaining <= 1.5;
+		};
 		const handleEnded = () => {
 			if (isSpotSuggestionWorkflowActive()) return;
+			if (!isPlaybackAtEnd()) return;
 			const now = Date.now();
 			if (now - lastEmit < 200) return;
 			lastEmit = now;
@@ -2318,6 +2329,13 @@
 		const handleEnded = () => {
 			applyPausedState(true);
 			if (isSpotSuggestionWorkflowActive()) {
+				return;
+			}
+			const duration = Number(player.duration);
+			const currentTime = Number(player.currentTime ?? 0);
+			const hasValidDuration = Number.isFinite(duration) && duration > 0;
+			const hasValidCurrentTime = Number.isFinite(currentTime) && currentTime >= 0;
+			if (!hasValidDuration || !hasValidCurrentTime || duration - currentTime > 1.5) {
 				return;
 			}
 			// Close player on mobile when video ends

@@ -12,6 +12,8 @@
 	export let selected: ContentItem | null = null;
 	export let selectedEpisode: Episode | null = null;
 	export let close: () => void;
+	let previousShowState = false;
+	let hasInitializedShowState = false;
 	let playerContainer: HTMLElement | null = null;
 	let currentPlaybackKey: string | null = null;
 	let playingContent: ContentItem | null = null;
@@ -41,6 +43,20 @@
 	let familySafeOnlyEnabled = false;
 	$: familySafeOnlyEnabled = $familySafeOnly;
 
+	function closeWithReason(reason: string, detail?: Record<string, unknown>) {
+		if (browser) {
+			console.info('[PlayerModal] closing', {
+				reason,
+				detail: detail ?? null,
+				show,
+				selectedId: selected?.id ?? null,
+				selectedType: selected?.type ?? null,
+				episodeId: selectedEpisode?.id ?? null
+			});
+		}
+		close?.();
+	}
+
 	function handlePlaybackCompleted(
 		event: CustomEvent<{ mediaId: string | null; mediaType: 'movie' | 'series' | 'episode' }>
 	) {
@@ -50,7 +66,10 @@
 			content: playingContent ?? selected ?? null,
 			episode: playingEpisode ?? selectedEpisode ?? null
 		});
-		close?.();
+		closeWithReason('playback-completed', {
+			mediaId: event.detail?.mediaId ?? null,
+			mediaType: event.detail?.mediaType ?? null
+		});
 	}
 
 	onMount(() => {
@@ -144,6 +163,28 @@
 		playbackMediaType = selected?.type ?? null;
 	}
 
+	$: {
+		if (!browser) {
+			previousShowState = show;
+			hasInitializedShowState = true;
+		} else if (!hasInitializedShowState) {
+			hasInitializedShowState = true;
+			previousShowState = show;
+		} else {
+			if (previousShowState && !show) {
+				console.info('[PlayerModal] closing', {
+					reason: 'external-show-state-change',
+					detail: null,
+					show,
+					selectedId: selected?.id ?? null,
+					selectedType: selected?.type ?? null,
+					episodeId: selectedEpisode?.id ?? null
+				});
+			}
+			previousShowState = show;
+		}
+	}
+
 	// Track which piece of content actually started playback so completion events
 	// can reference the correct movie even if sidebar selection changes mid-stream.
 	$: {
@@ -166,14 +207,14 @@
 		bind:this={playerContainer}
 		class="player-overlay"
 		transition:fade={{ duration: 300 }}
-		on:click={close}
+		on:click={() => closeWithReason('overlay-click')}
 		role="dialog"
 		aria-modal="true"
 		aria-label={playerView?.kind === 'video' ? playerView.title : m.tv_nowPlaying()}
 		tabindex="0"
 		on:keydown={(e) => {
 			if (e.key === 'Escape' && !document.fullscreenElement) {
-				close();
+				closeWithReason('escape-key');
 			}
 		}}
 	>
@@ -193,7 +234,9 @@
 					mediaType={playbackMediaType}
 					tracks={selected?.type === 'movie' ? selected.tracks : undefined}
 					autoPlay={playerView.autoPlay}
-					onClose={close}
+					onClose={(reason, detail) =>
+						closeWithReason(reason ?? 'video-player-onClose', detail)
+					}
 					on:playbackCompleted={handlePlaybackCompleted}
 				/>
 			{:else if playerView?.kind === 'message'}

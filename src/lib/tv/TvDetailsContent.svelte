@@ -380,11 +380,23 @@
 
 	function handlePlayClick() {
 		if (!selected) return;
-		if (familySafeOnlyEnabled && !isFamilySafeContent(selected)) return;
+		if (familySafeOnlyEnabled && !isFamilySafeContent(selected)) {
+			if (browser) {
+				console.warn('[TvDetailsContent] play blocked: family-safe-only', {
+					id: selected.id,
+					type: selected.type
+				});
+			}
+			return;
+		}
 
 		if (selected?.type === 'series' && !selectedEpisode) {
 			// No episode selected/available: open series external source if present.
 			if (seriesExternalSourceUrl && browser) {
+				console.warn('[TvDetailsContent] play route: series-external-source', {
+					id: selected.id,
+					url: seriesExternalSourceUrl
+				});
 				window.open(withUtm(seriesExternalSourceUrl), '_blank', 'noopener');
 			}
 			return;
@@ -396,6 +408,12 @@
 
 			if (canPlayInline) {
 				// Episode has valid YouTube video ID - play it
+				if (browser) {
+					console.warn('[TvDetailsContent] play route: series-episode-inline', {
+						id: selected.id,
+						episodeId: selectedEpisode.id
+					});
+				}
 				onOpenEpisode(
 					selectedEpisode.id,
 					decode(selectedEpisode.title),
@@ -409,18 +427,50 @@
 			const externalUrl =
 				selectedEpisode.externalUrl || selected.externalUrl || seriesExternalSourceUrl;
 			if (externalUrl && browser) {
+				console.warn('[TvDetailsContent] play route: series-episode-external', {
+					id: selected.id,
+					episodeId: selectedEpisode.id,
+					url: externalUrl
+				});
 				window.open(withUtm(externalUrl), '_blank', 'noopener');
 				return;
 			}
 
 			// Neither playable inline nor has external URL - do nothing
+			if (browser) {
+				console.warn('[TvDetailsContent] play blocked: no-episode-player-source', {
+					id: selected.id,
+					episodeId: selectedEpisode.id
+				});
+			}
 			return;
 		}
 
-		if (isInlinePlayable(selected)) openContent(selected);
-		else if (selected?.externalUrl) openExternal(selected);
-		else if ((selected as any)?.trakt && browser)
+		if (isInlinePlayable(selected)) {
+			if (browser) {
+				console.warn('[TvDetailsContent] play route: inline-content', {
+					id: selected.id,
+					type: selected.type
+				});
+			}
+			openContent(selected);
+		} else if (selected?.externalUrl) {
+			if (browser) {
+				console.warn('[TvDetailsContent] play route: external-content', {
+					id: selected.id,
+					type: selected.type,
+					url: selected.externalUrl
+				});
+			}
+			openExternal(selected);
+		} else if ((selected as any)?.trakt && browser) {
+			console.warn('[TvDetailsContent] play route: trakt-fallback', {
+				id: selected.id,
+				type: selected.type,
+				url: (selected as any).trakt
+			});
 			window.open(withUtm((selected as any).trakt), '_blank', 'noopener');
+		}
 	}
 
 	function getWatchProgressForSelected(): void {

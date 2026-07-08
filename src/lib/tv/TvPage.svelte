@@ -347,9 +347,29 @@
 	async function loadPlayerModal() {
 		if (PlayerModalComponent || playerModalLoading) return;
 		playerModalLoading = true;
-		const module = await import('$lib/tv/PlayerModal.svelte');
-		PlayerModalComponent = module.default as any;
-		playerModalLoading = false;
+		if (browser) {
+			console.warn('[TvPage] loadPlayerModal:start', {
+				showPlayer: get(showPlayer),
+				path: get(page).url.pathname
+			});
+		}
+		try {
+			const module = await import('$lib/tv/PlayerModal.svelte');
+			PlayerModalComponent = module.default as any;
+			if (browser) {
+				console.warn('[TvPage] loadPlayerModal:success');
+			}
+		} catch (error) {
+			if (browser) {
+				console.error('[TvPage] loadPlayerModal:failed', error);
+			}
+			// Recover from lazy-chunk failures by resetting the open flag so
+			// the Play button becomes available again.
+			showPlayer.set(false);
+			toast.error('Player failed to load. Please try again.');
+		} finally {
+			playerModalLoading = false;
+		}
 	}
 
 	function isAndroidStandalone() {
@@ -412,13 +432,26 @@
 		}
 	});
 
+	$effect(() => {
+		if (!browser) return;
+		if (isDetailRoute) {
+			// Warm the lazy chunk on detail pages to reduce first-click misses.
+			void loadPlayerModal();
+		}
+	});
+
 	function handleSelect(item: ContentItem) {
 		selectContent(item);
 		if (browser) nav(buildItemUrl(item));
 	}
 
 	function handleOpenContent(item: ContentItem) {
-		if (browser) nav(buildItemUrl(item));
+		if (browser) {
+			const target = buildItemUrl(item);
+			if (target !== currentPath) {
+				nav(target);
+			}
+		}
 		openContent(item);
 	}
 
@@ -510,7 +543,7 @@
 	}
 
 	function handlePlayerClose() {
-		const current = get(selectedContent);
+		const current = get(selectedContent) ?? selectedForDetail;
 		if (!ratingDialogOpen) {
 			void maybePromptForMovieRating(current);
 		}
@@ -979,7 +1012,7 @@
 	{#if PlayerModalComponent}
 		<PlayerModalComponent
 			show={$showPlayer}
-			selected={$selectedContent}
+			selected={selectedForDetail}
 			selectedEpisode={$selectedEpisode}
 			close={handlePlayerClose}
 			on:playbackCompleted={handlePlaybackCompleted}

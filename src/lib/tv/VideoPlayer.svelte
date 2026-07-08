@@ -43,7 +43,7 @@
 	export let mediaType: 'movie' | 'series' | null = null;
 	export let tracks: VideoTrack[] | null | undefined = undefined;
 	export let autoPlay = false;
-	export let onClose: (() => void) | null = null;
+	export let onClose: ((reason?: string, detail?: Record<string, unknown>) => void) | null = null;
 	export let onSkipNext: (() => void) | null = null;
 	export let showSeekControls = true;
 	export let enableSeekGestures = true;
@@ -2340,7 +2340,11 @@
 			}
 			// Close player on mobile when video ends
 			if (isMobileViewport && typeof onClose === 'function') {
-				onClose();
+				onClose('mobile-ended-auto-close', {
+					duration,
+					currentTime,
+					remaining: Math.max(0, duration - currentTime)
+				});
 			}
 		};
 
@@ -3032,7 +3036,7 @@
 									<button
 										type="button"
 										class="youtube-fallback-secondary"
-										on:click={onClose}
+											on:click={() => onClose?.('youtube-gate-close-button')}
 									>
 										{m.tv_close()}
 									</button>
@@ -3118,7 +3122,7 @@
 									class="player-close-button"
 									aria-label={m.tv_closePlayer()}
 									data-jumpflix-gesture-ignore="true"
-									on:click={onClose}
+									on:click={() => onClose?.('player-close-button')}
 								>
 									<span class="icon" aria-hidden="true"><XIcon /></span>
 								</button>

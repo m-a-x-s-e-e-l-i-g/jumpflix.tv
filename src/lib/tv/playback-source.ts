@@ -18,6 +18,10 @@ export type PlaybackSource = {
 	keySuffix: string;
 };
 
+const BUNNY_HOST_HINTS = ['bunnycdn', 'b-cdn', 'mediadelivery', 'bunny'];
+
+const BUNNY_HOST_PATTERN = /(?:^|\.)((?:.*\.)?b-cdn\.net|(?:.*\.)?bunnycdn\.com|(?:.*\.)?mediadelivery\.net)$/i;
+
 function ensureProtocol(url: string) {
 	if (HAS_PROTOCOL.test(url)) return url;
 	if (url.startsWith('//')) return `https:${url}`;
@@ -172,4 +176,42 @@ export function getPublicProviderLinkSource(source: PlaybackSource | null) {
 	}
 
 	return null;
+}
+
+function readHostname(value: string): string | null {
+	const trimmed = value.trim();
+	if (!trimmed) return null;
+	try {
+		return new URL(ensureProtocol(trimmed)).hostname.toLowerCase();
+	} catch {
+		return null;
+	}
+}
+
+function includesBunnyHint(value: string): boolean {
+	const lower = value.toLowerCase();
+	return BUNNY_HOST_HINTS.some((hint) => lower.includes(hint));
+}
+
+export function isBunnyHostedSource(source: PlaybackSource | null): boolean {
+	if (!source) return false;
+	if (source.kind !== 'hls' && source.kind !== 'direct') return false;
+
+	const raw = source.src.trim();
+	if (!raw) return false;
+	if (includesBunnyHint(raw)) return true;
+
+	const hostname = readHostname(raw);
+	if (!hostname) return false;
+	if (BUNNY_HOST_PATTERN.test(hostname)) return true;
+	return includesBunnyHint(hostname);
+}
+
+export function isBunnyExclusiveMovie(
+	movie: Pick<Movie, 'streamUrl' | 'videoId' | 'vimeoId'> & { provider?: string | null }
+): boolean {
+	const source = resolveMoviePlaybackSource(movie);
+	if (isBunnyHostedSource(source)) return true;
+	const provider = String(movie.provider ?? '').trim().toLowerCase();
+	return provider.includes('bunny');
 }

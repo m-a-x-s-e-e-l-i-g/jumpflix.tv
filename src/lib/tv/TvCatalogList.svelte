@@ -5,6 +5,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import { familySafeOnly } from '$lib/tv/store';
 	import type { ContentItem, Movie, Series } from '$lib/tv/types';
+	import { isBunnyExclusiveMovie } from '$lib/tv/playback-source';
 	import { isContentUnavailable, isFamilySafeContent, isImage, keyFor } from '$lib/tv/utils';
 	import ShieldOffIcon from 'lucide-svelte/icons/shield-off';
 	import {
@@ -101,6 +102,10 @@
 		return `${item.type}:${item.id}`;
 	}
 
+	function isJumpflixExclusive(item: ContentItem): boolean {
+		return item.type === 'movie' ? isBunnyExclusiveMovie(item) : false;
+	}
+
 	function getWatchState(item: ContentItem, _watchVersion: number): RowWatchState {
 		if (!browser) {
 			return { isWatched: false, hasProgress: false, progressPercent: 0 };
@@ -173,6 +178,7 @@
 				{@const peopleSummary = peopleLine(item)}
 				{@const rowSelected = !!(selectedContent && selectedContent.id === item.id && selectedContent.type === item.type)}
 				{@const familySafeBlocked = familySafeOnlyEnabled && !isFamilySafeContent(item)}
+				{@const exclusive = isJumpflixExclusive(item)}
 				<button
 					type="button"
 					class:selected={rowSelected}
@@ -185,6 +191,16 @@
 					onclick={() => onSelect(item)}
 				>
 					<div class="catalog-thumb">
+						{#if exclusive}
+							<span class="catalog-thumb-exclusive" aria-label="Exclusive" title="Exclusive">
+								<img
+									class="catalog-thumb-exclusive__logo"
+									src="/favicon-32x32.png"
+									alt=""
+									aria-hidden="true"
+								/>
+							</span>
+						{/if}
 						{#if isImage(item.thumbnail)}
 							<Image
 								src={item.thumbnail}
@@ -347,6 +363,7 @@
 	}
 
 	.catalog-thumb {
+		position: relative;
 		aspect-ratio: 2 / 3;
 		width: 7rem;
 		overflow: hidden;
@@ -365,6 +382,37 @@
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
+	}
+
+	.catalog-thumb-exclusive {
+		position: absolute;
+		top: 0.45rem;
+		left: 0.45rem;
+		z-index: 2;
+		display: inline-flex;
+		align-items: center;
+		padding: 0.2rem;
+		border-radius: 0.45rem;
+		border: 1px solid rgba(253, 224, 71, 0.55);
+		background:
+			linear-gradient(155deg, rgba(156, 18, 18, 0.96), rgba(106, 16, 20, 0.9)),
+			repeating-linear-gradient(
+				45deg,
+				rgba(255, 255, 255, 0.08) 0,
+				rgba(255, 255, 255, 0.08) 1px,
+				transparent 1px,
+				transparent 4px
+			);
+		color: rgba(255, 250, 238, 0.95);
+		box-shadow: 0 8px 16px -12px rgba(127, 29, 29, 0.75);
+	}
+
+	.catalog-thumb-exclusive__logo {
+		width: 0.62rem;
+		height: 0.62rem;
+		border-radius: 0.18rem;
+		object-fit: cover;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.32);
 	}
 
 	.catalog-thumb-fallback {

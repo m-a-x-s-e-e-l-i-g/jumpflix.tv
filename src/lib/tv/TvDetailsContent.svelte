@@ -79,6 +79,7 @@
 	} from '$lib/review-events';
 	import { isFamilySafeContent } from '$lib/tv/utils';
 	import { dispatchXPopAwarded } from '$lib/xpop-events';
+	import { isBunnyExclusiveMovie } from '$lib/tv/playback-source';
 
 	let isAuthenticated = false;
 
@@ -996,6 +997,7 @@
 			? selected.externalUrl || (selected as any).trakt || undefined
 			: undefined;
 	$: familySafeBlocked = familySafeOnlyEnabled && selected ? !isFamilySafeContent(selected) : false;
+	$: isJumpflixExclusive = selected?.type === 'movie' ? isBunnyExclusiveMovie(selected) : false;
 </script>
 
 {#if selected}
@@ -1045,6 +1047,21 @@
 			<div class="detail-header-top">
 				<div>
 					<h1 class="detail-title jf-display">{selected.title}</h1>
+					{#if isJumpflixExclusive}
+						<div class="detail-exclusive-ribbon" role="note" aria-label="Only on JumpFlix, official archive release">
+							<img
+								class="detail-exclusive-ribbon__icon"
+								src="/images/jumpflix-exclusive.webp"
+								alt=""
+								aria-hidden="true"
+								loading="lazy"
+								decoding="async"
+							/>
+							<span class="detail-exclusive-ribbon__label">Only on JumpFlix</span>
+							<span aria-hidden="true">•</span>
+							<span>Official Archive Release</span>
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -1619,6 +1636,34 @@
 		font-size: clamp(2rem, 4vw, 3.6rem);
 		color: var(--jf-ink);
 		text-shadow: 0 18px 40px rgba(2, 6, 23, 0.6);
+	}
+
+	.detail-exclusive-ribbon {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		margin-top: 0.7rem;
+		padding: 0.45rem 0.75rem;
+		border-radius: 999px;
+		border: 1px solid rgba(252, 211, 77, 0.32);
+		background: linear-gradient(120deg, rgba(124, 22, 22, 0.45), rgba(8, 12, 24, 0.72));
+		color: rgba(248, 250, 252, 0.9);
+		font-size: 0.62rem;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		backdrop-filter: blur(10px);
+	}
+
+	.detail-exclusive-ribbon__label {
+		font-weight: 700;
+		color: rgba(255, 246, 214, 0.98);
+	}
+
+	.detail-exclusive-ribbon__icon {
+		width: 1rem;
+		height: 1rem;
+		flex: 0 0 auto;
+		object-fit: contain;
 	}
 
 	.detail-back {
@@ -2616,6 +2661,13 @@
 
 		.detail-title {
 			font-size: clamp(1.6rem, 8vw, 2.4rem);
+		}
+
+		.detail-exclusive-ribbon {
+			font-size: 0.56rem;
+			letter-spacing: 0.09em;
+			gap: 0.4rem;
+			padding: 0.4rem 0.6rem;
 		}
 
 		:global(.detail-suggest) {

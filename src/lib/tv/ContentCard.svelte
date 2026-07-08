@@ -14,7 +14,7 @@
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
-	import { resolveMoviePlaybackSource } from '$lib/tv/playback-source';
+	import { isBunnyExclusiveMovie, resolveMoviePlaybackSource } from '$lib/tv/playback-source';
 	import { isContentUnavailable, isFamilySafeContent } from '$lib/tv/utils';
 	import ShieldOffIcon from 'lucide-svelte/icons/shield-off';
 
@@ -139,6 +139,7 @@
 	$: familySafeOnlyEnabled = $familySafeOnly;
 	$: isFamilySafeBlocked = familySafeOnlyEnabled && !isFamilySafeContent(item);
 	$: contentUnavailable = isContentUnavailable(item);
+	$: isJumpflixExclusive = item.type === 'movie' ? isBunnyExclusiveMovie(item) : false;
 
 	// no loading lifecycle needed
 
@@ -229,6 +230,16 @@
 		{/if}
 
 		<div class="card-badges">
+			{#if isJumpflixExclusive}
+				<img
+					class="card-exclusive-icon"
+					src="/images/jumpflix-exclusive.webp"
+					alt="Exclusive"
+					title="Exclusive"
+					loading="lazy"
+					decoding="async"
+				/>
+			{/if}
 			{#if isRecentlyAdded && !isWatched}
 				<span class="card-badge card-badge--hot">{m.tv_new()}</span>
 			{/if}
@@ -308,6 +319,9 @@
 	}
 
 	.card-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.28rem;
 		font-size: 0.55rem;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
@@ -338,6 +352,13 @@
 		border-color: rgba(148, 163, 184, 0.55);
 		color: rgba(226, 232, 240, 0.9);
 		box-shadow: 0 10px 18px -14px rgba(15, 23, 42, 0.7);
+	}
+
+	.card-exclusive-icon {
+		display: block;
+		width: 1.5rem;
+		height: 1.5rem;
+		object-fit: contain;
 	}
 
 	.card-meta {

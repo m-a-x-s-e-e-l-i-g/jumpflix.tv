@@ -365,7 +365,7 @@
 			}
 			// Recover from lazy-chunk failures by resetting the open flag so
 			// the Play button becomes available again.
-			showPlayer.set(false);
+			closePlayer('player-modal-load-failed');
 			toast.error('Player failed to load. Please try again.');
 		} finally {
 			playerModalLoading = false;

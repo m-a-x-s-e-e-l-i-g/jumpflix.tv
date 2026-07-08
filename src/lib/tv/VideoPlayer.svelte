@@ -1765,19 +1765,13 @@
 	function setupPlaybackCompletion(player: MediaPlayerElement) {
 		if (!browser) return () => {};
 		let lastEmit = 0;
-		const isPlaybackAtEnd = () => {
-			const duration = Number(player.duration);
-			if (!Number.isFinite(duration) || duration <= 0) return false;
-			const currentTime = Number(player.currentTime ?? 0);
-			if (!Number.isFinite(currentTime) || currentTime < 0) return false;
-			const remaining = duration - currentTime;
-			// Some providers can emit a transient `ended` during pause/seek transitions.
-			// Treat completion as valid only when we're effectively at the tail.
-			return remaining <= 1.5;
-		};
 		const handleEnded = () => {
 			if (isSpotSuggestionWorkflowActive()) return;
-			if (!isPlaybackAtEnd()) return;
+			const endState = getPlaybackEndState(player);
+			if (!endState.isEnded) {
+				console.warn('[VideoPlayer] ignored transient ended event', endState);
+				return;
+			}
 			const now = Date.now();
 			if (now - lastEmit < 200) return;
 			lastEmit = now;
@@ -2331,19 +2325,18 @@
 			if (isSpotSuggestionWorkflowActive()) {
 				return;
 			}
-			const duration = Number(player.duration);
-			const currentTime = Number(player.currentTime ?? 0);
-			const hasValidDuration = Number.isFinite(duration) && duration > 0;
-			const hasValidCurrentTime = Number.isFinite(currentTime) && currentTime >= 0;
-			if (!hasValidDuration || !hasValidCurrentTime || duration - currentTime > 1.5) {
+			const endState = getPlaybackEndState(player);
+			if (!endState.isEnded) {
+				console.warn('[VideoPlayer] ignored mobile auto-close ended event', endState);
 				return;
 			}
 			// Close player on mobile when video ends
 			if (isMobileViewport && typeof onClose === 'function') {
 				onClose('mobile-ended-auto-close', {
-					duration,
-					currentTime,
-					remaining: Math.max(0, duration - currentTime)
+					duration: endState.duration,
+					currentTime: endState.currentTime,
+					remaining: endState.remaining,
+					mediaEnded: endState.mediaEnded
 				});
 			}
 		};
@@ -2639,6 +2632,55 @@
 		}
 
 		return mediaEl?.paused ?? true;
+	}
+
+	type PlaybackEndState = {
+		isEnded: boolean;
+		duration: number | null;
+		currentTime: number | null;
+		remaining: number | null;
+		mediaEnded: boolean | null;
+	};
+
+	function getPlaybackEndState(player: MediaPlayerElement): PlaybackEndState {
+		const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
+		const mediaEnded = mediaEl ? mediaEl.ended : null;
+		const duration = Number(player.duration);
+		const currentTime = Number(player.currentTime ?? 0);
+
+		if (!Number.isFinite(duration) || duration <= 0) {
+			return {
+				isEnded: mediaEnded === true,
+				duration: null,
+				currentTime: Number.isFinite(currentTime) ? currentTime : null,
+				remaining: null,
+				mediaEnded
+			};
+		}
+
+		if (!Number.isFinite(currentTime) || currentTime < 0) {
+			return {
+				isEnded: false,
+				duration,
+				currentTime: null,
+				remaining: null,
+				mediaEnded
+			};
+		}
+
+		const remaining = Math.max(0, duration - currentTime);
+		const isNearTail = remaining <= 0.25;
+		// For Bunny/HLS we can receive transient `ended` around pause/seek.
+		// Require native media to report ended when available.
+		const isEnded = mediaEnded === null ? isNearTail : mediaEnded && isNearTail;
+
+		return {
+			isEnded,
+			duration,
+			currentTime,
+			remaining,
+			mediaEnded
+		};
 	}
 
 	function toggleFullscreen(player: MediaPlayerElement, remote: RemoteControl | null) {

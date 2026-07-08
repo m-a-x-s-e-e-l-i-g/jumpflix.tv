@@ -138,6 +138,33 @@ export const selectedEpisode = writable<Episode | null>(null);
 export const selectedFacets = writable<SelectedFacets>({});
 export const activeFeedSlug = writable<string | null>(null);
 
+function setShowPlayerWithReason(
+	next: boolean,
+	reason: string,
+	detail?: Record<string, unknown>
+) {
+	if (browser) {
+		console.warn('[tv/store] showPlayer', {
+			next,
+			reason,
+			detail: detail ?? null,
+			selectedContent: get(selectedContent)
+				? {
+						id: get(selectedContent)?.id ?? null,
+						type: get(selectedContent)?.type ?? null
+					}
+				: null,
+			selectedEpisode: get(selectedEpisode)
+				? {
+						id: get(selectedEpisode)?.id ?? null,
+						position: get(selectedEpisode)?.position ?? null
+					}
+				: null
+		});
+	}
+	showPlayer.set(next);
+}
+
 // Track thumbnails that have successfully loaded so we can keep them cached
 export const loadedThumbnails = writable<Set<string>>(new Set());
 export function markThumbnailLoaded(src?: string) {
@@ -346,7 +373,7 @@ export function selectContent(item: ContentItem) {
 	unsub();
 	const idx = currentList.findIndex((i) => i.id === item.id && i.type === item.type);
 	selectedIndex.set(idx >= 0 ? idx : 0);
-	showPlayer.set(false);
+	setShowPlayerWithReason(false, 'selectContent', { itemId: item.id, itemType: item.type });
 	// Reset episode selection when switching content
 	selectedEpisode.set(null);
 }
@@ -373,7 +400,10 @@ export function openContent(item: ContentItem) {
 		return;
 	}
 	if (isInlinePlayable(item)) {
-		showPlayer.set(true);
+		setShowPlayerWithReason(true, 'openContent:inlinePlayable', {
+			itemId: item.id,
+			itemType: item.type
+		});
 	}
 }
 
@@ -384,7 +414,10 @@ export function openEpisode(ep: Episode) {
 		return;
 	}
 	selectedEpisode.set(ep);
-	showPlayer.set(true);
+	setShowPlayerWithReason(true, 'openEpisode', {
+		episodeId: ep.id,
+		episodePosition: ep.position ?? null
+	});
 }
 
 // Select an episode (do not open the player). Useful for preparing the Play button.
@@ -399,8 +432,8 @@ export function selectEpisode(ep: Episode) {
 	selectedEpisode.set(ep);
 }
 
-export function closePlayer() {
-	showPlayer.set(false);
+export function closePlayer(reason = 'closePlayer', detail?: Record<string, unknown>) {
+	setShowPlayerWithReason(false, reason, detail);
 	selectedEpisode.set(null);
 }
 

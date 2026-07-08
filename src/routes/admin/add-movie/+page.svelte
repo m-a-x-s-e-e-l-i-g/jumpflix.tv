@@ -24,6 +24,8 @@
 	let duration = $state('');
 	let videoId = $state('');
 	let vimeoId = $state('');
+	let streamUrl = $state('');
+	let thumbnailUrl = $state('');
 	let posterUrl = $state('');
 	let posterFilename = $state('');
 	let posterTouched = $state(false);
@@ -451,6 +453,27 @@
 		return /^https?:\/\//i.test(value.trim());
 	}
 
+	function isLocalAssetPath(value: string): boolean {
+		return /^\//.test(value.trim());
+	}
+
+	function isUsableImageSource(value: string): boolean {
+		const trimmed = value.trim();
+		if (!trimmed) return false;
+		return isHttpUrl(trimmed) || isLocalAssetPath(trimmed);
+	}
+
+	function toAbsoluteUrl(value: string): string {
+		const trimmed = value.trim();
+		if (!trimmed) return '';
+		if (isHttpUrl(trimmed)) return trimmed;
+		if (isLocalAssetPath(trimmed)) {
+			if (typeof window === 'undefined') return trimmed;
+			return new URL(trimmed, window.location.origin).toString();
+		}
+		return trimmed;
+	}
+
 	function updateYouTubeThumbFromVideoId(idRaw: string) {
 		const id = idRaw.trim();
 		if (!isYouTubeVideoId(id)) {
@@ -565,11 +588,24 @@
 		return null;
 	}
 
-	type ParsedSource = {
-		provider: 'youtube' | 'vimeo';
-		id: string;
-		externalUrl: string;
-	};
+	type ParsedSource =
+		| {
+				provider: 'youtube' | 'vimeo';
+				id: string;
+				externalUrl: string;
+		  }
+		| {
+				provider: 'hls' | 'bunny' | 'direct';
+				streamUrl: string;
+				externalUrl: string;
+		  };
+
+	function detectStreamProvider(url: string): 'hls' | 'bunny' | 'direct' {
+		const trimmed = url.trim();
+		if (/\.m3u8(?:$|[?#])/i.test(trimmed)) return 'hls';
+		if (/(bunnycdn|b-cdn|mediadelivery|bunny)/i.test(trimmed)) return 'bunny';
+		return 'direct';
+	}
 
 	function parseSource(url: string): ParsedSource | null {
 		const ytId = extractVideoId(url);
@@ -590,15 +626,26 @@
 			};
 		}
 
+		if (isHttpUrl(url)) {
+			const trimmed = url.trim();
+			return {
+				provider: detectStreamProvider(trimmed),
+				streamUrl: trimmed,
+				externalUrl: trimmed
+			};
+		}
+
 		return null;
 	}
 
 	async function generatePosterFromThumbnail() {
 		const hasYouTube = isYouTubeVideoId(videoId);
 		const hasVimeo = vimeoId.trim().length > 0;
+		const hasManualThumbnail = isUsableImageSource(thumbnailUrl);
 
-		if (!hasYouTube && !hasVimeo) {
-			posterGenerationError = 'Set a valid YouTube or Vimeo video ID first.';
+		if (!hasYouTube && !hasVimeo && !hasManualThumbnail) {
+			posterGenerationError =
+				'Set a valid YouTube/Vimeo video ID, or provide a thumbnail URL first.';
 			return;
 		}
 
@@ -623,8 +670,12 @@
 
 			if (hasYouTube) {
 				requestBody.videoId = videoId.trim();
+			} else if (hasManualThumbnail) {
+				requestBody.thumbnailUrl = toAbsoluteUrl(thumbnailUrl);
 			} else if (hasVimeo) {
-				const sourceThumb = vimeoThumbUrl.trim() || (isHttpUrl(posterUrl) ? posterUrl.trim() : '');
+				const sourceThumb =
+					(vimeoThumbUrl.trim() && toAbsoluteUrl(vimeoThumbUrl)) ||
+					(isUsableImageSource(posterUrl) ? toAbsoluteUrl(posterUrl) : '');
 				if (!sourceThumb) {
 					throw new Error('Load Vimeo metadata first so a thumbnail can be used for poster generation.');
 				}
@@ -673,9 +724,33 @@
 	async function fetchMetadata() {
 		const source = parseSource(sourceUrl);
 		if (!source) {
+			metaError =
+				'Could not extract a valid source. Paste a YouTube/Vimeo URL or an HLS/Bunny stream URL.';
+			return;
+		}
+
+		if (source.provider === 'hls' || source.provider === 'bunny' || source.provider === 'direct') {
+			provider = source.provider;
+			externalUrl = source.externalUrl;
+			streamUrl = source.streamUrl;
+			videoId = '';
+			vimeoId = '';
+			youtubeThumbUrl = '';
+			youtubeThumbCandidates = [];
+			youtubeThumbIndex = 0;
+			youtubeThumbFailed = false;
+			vimeoThumbUrl = '';
+			vimeoThumbFailed = false;
+			metaError = '';
+			metaFetched = true;
+			return;
+		}
+
+		if (!("id" in source)) {
 			metaError = 'Could not extract a valid YouTube or Vimeo video ID from this URL.';
 			return;
 		}
+
 		fetchingMeta = true;
 		metaError = '';
 		try {
@@ -717,6 +792,7 @@
 			if (source.provider === 'youtube') {
 				provider = source.provider;
 				externalUrl = source.externalUrl;
+				streamUrl = '';
 				videoId = data.videoId || source.id;
 				vimeoId = '';
 				vimeoThumbUrl = '';
@@ -724,10 +800,12 @@
 			} else {
 				provider = '';
 				externalUrl = '';
+				streamUrl = '';
 				vimeoId = data.videoId || source.id;
 				videoId = '';
 				const thumbUrl = typeof data.thumbnailUrl === 'string' ? data.thumbnailUrl.trim() : '';
 				vimeoThumbUrl = thumbUrl;
+				thumbnailUrl = thumbUrl;
 				vimeoThumbFailed = false;
 			}
 			if (!slugTouched) {
@@ -873,7 +951,7 @@
 		<h1 class="mt-2 text-3xl font-semibold text-white">Add New Film</h1>
 		<p class="mt-2 text-sm text-white/60">
 			Paste a YouTube or Vimeo URL to auto-populate metadata, then review and save. Paste a YouTube
-			playlist URL to create a series instead.
+			playlist URL to create a series instead. You can also paste an HLS/Bunny stream URL for manual entries.
 		</p>
 	</div>
 
@@ -892,7 +970,7 @@
 		<div class="flex gap-2">
 			<input
 				type="url"
-				placeholder="https://www.youtube.com/playlist?list=... or watch?v=... or vimeo.com/..."
+				placeholder="YouTube/Vimeo/playlist URL, or HLS/Bunny stream URL"
 				bind:value={sourceUrl}
 				oninput={() => {
 					const pid = extractPlaylistId(sourceUrl);
@@ -943,7 +1021,7 @@
 			<p class="mt-2 text-xs text-red-300">{playlistError}</p>
 		{/if}
 		{#if metaFetched && !metaError}
-			<p class="mt-2 text-xs text-green-300">✓ Metadata loaded — review and edit below.</p>
+			<p class="mt-2 text-xs text-green-300">✓ Source loaded — review and edit below.</p>
 		{/if}
 		{#if playlistFetched && !playlistError}
 			{#if normalizingPlaylist}
@@ -1384,6 +1462,24 @@
 					</label>
 
 					<label class="block space-y-1.5 sm:col-span-2">
+						<span class="text-xs text-white/60">Stream URL (HLS/Bunny/direct)</span>
+						<input
+							type="url"
+							name="stream_url"
+							bind:value={streamUrl}
+							oninput={() => {
+								if (!streamUrl.trim()) return;
+								provider = detectStreamProvider(streamUrl);
+								externalUrl = streamUrl.trim();
+								videoId = '';
+								vimeoId = '';
+							}}
+							placeholder="https://iframe.mediadelivery.net/.../playlist.m3u8"
+							class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 font-mono text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+						/>
+					</label>
+
+					<label class="block space-y-1.5 sm:col-span-2">
 						<span class="text-xs text-white/60">Duration</span>
 						<input
 							type="text"
@@ -1447,9 +1543,29 @@
 						>
 							Preview unavailable
 						</div>
+					{:else if thumbnailUrl}
+						<img
+							src={thumbnailUrl}
+							alt="Manual thumbnail preview"
+							class="mb-3 aspect-video w-full max-w-md rounded-lg border border-white/10 object-cover"
+							onerror={() => {
+								posterGenerationError = 'Thumbnail preview failed to load. Check the URL.';
+							}}
+						/>
 					{/if}
 					<input type="hidden" name="thumbnail" value={posterUrl} />
 					<p class="text-xs text-white/50">Poster path will be generated from the filename below.</p>
+				</label>
+
+				<label class="block space-y-1.5">
+					<span class="text-xs text-white/60">Thumbnail URL (optional)</span>
+					<input
+						type="url"
+						bind:value={thumbnailUrl}
+						placeholder="https://.../thumbnail.jpg"
+						class="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+					/>
+					<p class="text-xs text-white/50">Used as the source for poster generation when no video ID is set.</p>
 				</label>
 
 				<label class="block space-y-1.5">
@@ -1500,7 +1616,7 @@
 					<button
 						type="button"
 						onclick={generatePosterFromThumbnail}
-					disabled={generatingPoster || (!isYouTubeVideoId(videoId) && !vimeoId.trim()) || (!slug.trim() && !posterFilename.trim())}
+					disabled={generatingPoster || (!isYouTubeVideoId(videoId) && !vimeoId.trim() && !isUsableImageSource(thumbnailUrl)) || (!slug.trim() && !posterFilename.trim())}
 						class="inline-flex items-center justify-center rounded-xl bg-[#e50914] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#ff1a27] disabled:cursor-not-allowed disabled:opacity-40"
 					>
 						{generatingPoster ? 'Generating Poster…' : 'Generate Poster From Thumbnail'}

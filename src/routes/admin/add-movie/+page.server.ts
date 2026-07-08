@@ -97,6 +97,7 @@ export const actions: Actions = {
 
 		let youtubeVideoId = String(form.get('video_id') || '').trim() || null;
 		let vimeoId = String(form.get('vimeo_id') || '').trim() || null;
+		const streamUrl = String(form.get('stream_url') || '').trim() || null;
 
 		if (providerInput === 'vimeo') {
 			if (!vimeoId && youtubeVideoId) vimeoId = youtubeVideoId;
@@ -111,6 +112,11 @@ export const actions: Actions = {
 		if (!normalizedProvider) {
 			if (vimeoId && !youtubeVideoId) normalizedProvider = 'vimeo';
 			if (youtubeVideoId && !vimeoId) normalizedProvider = 'youtube';
+			if (streamUrl) {
+				if (/\.m3u8(?:$|[?#])/i.test(streamUrl)) normalizedProvider = 'hls';
+				else if (/(bunnycdn|b-cdn|mediadelivery|bunny)/i.test(streamUrl)) normalizedProvider = 'bunny';
+				else normalizedProvider = 'direct';
+			}
 		}
 
 		const supabase = createSupabaseServiceClient();
@@ -131,6 +137,7 @@ export const actions: Actions = {
 				paid: form.get('paid') === 'true',
 				provider: normalizedProvider,
 				external_url: String(form.get('external_url') || '').trim() || null,
+				stream_url: streamUrl,
 				trakt: String(form.get('trakt') || '').trim() || null,
 				creators: parseArrayInput(String(form.get('creators') || '')),
 				starring: parseArrayInput(String(form.get('starring') || ''))

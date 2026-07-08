@@ -341,6 +341,7 @@
 
 	let allowExitBack = false;
 	let exitConfirmUntil = 0;
+	let lastAppliedInitialSelectionKey: string | null = null;
 
 	const EXIT_CONFIRM_TIMEOUT_MS = 2000;
 
@@ -414,7 +415,14 @@
 
 	$effect(() => {
 		if (!initialItem) return;
-		selectContent(initialItem);
+		const nextInitialKey = `${initialItem.type}:${String(initialItem.id)}`;
+		if (nextInitialKey !== lastAppliedInitialSelectionKey) {
+			const current = get(selectedContent);
+			if (!current || current.id !== initialItem.id || current.type !== initialItem.type) {
+				selectContent(initialItem);
+			}
+			lastAppliedInitialSelectionKey = nextInitialKey;
+		}
 		if (
 			(initialItem as any).type === 'series' &&
 			typeof initialEpisodeNumber === 'number' &&

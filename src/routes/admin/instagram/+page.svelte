@@ -260,11 +260,58 @@
 
 	<div class="jf-surface-soft mt-6 rounded-2xl p-5">
 		<div>
-			<div class="text-sm font-medium text-white/80">Saved profiles</div>
+			<div class="text-sm font-medium text-white/80">Missing Instagram handles</div>
 			<div class="mt-1 text-xs text-white/60">
-				{pageData.profiles.length} saved · {pageData.knownPeople.length} known people in the catalog
+				{pageData.missingInstagramPeople.length} people missing handles · {pageData.knownPeople.length} known people in the catalog
 			</div>
 		</div>
+
+		{#if !pageData.missingInstagramPeople.length}
+			<div class="mt-4 text-sm text-white/60">All known people already have at least one saved handle.</div>
+		{:else}
+			<div class="mt-4 max-h-[28rem] space-y-2 overflow-y-auto pr-1">
+				{#each pageData.missingInstagramPeople as person (person.slug)}
+					<form method="POST" use:enhance class="rounded-xl border border-white/10 bg-black/20 p-3">
+						<input type="hidden" name="slug" value={person.slug} />
+						<div class="flex flex-wrap items-end justify-between gap-3">
+							<div class="min-w-0">
+								<a href={`/people/${person.slug}`} class="truncate text-sm font-medium text-white underline-offset-2 hover:underline">
+									{person.name}
+								</a>
+								<div class="mt-1 text-xs text-white/50">{roleLabel(person.roles)}</div>
+							</div>
+
+							<div class="flex flex-wrap items-center gap-2">
+								<label class="sr-only" for={`quick-handle-${person.slug}`}>Instagram handle</label>
+								<input
+									id={`quick-handle-${person.slug}`}
+									type="text"
+									name="instagram_handle"
+									placeholder="handle"
+									autocomplete="off"
+									class="w-44 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/35 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+								/>
+								<button
+									type="submit"
+									formaction="?/quickAdd"
+									disabled={!pageData.tableReady}
+									class="inline-flex items-center justify-center rounded-full bg-[#e50914] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#ff1a27] disabled:cursor-not-allowed disabled:opacity-60"
+								>
+									Quick add
+								</button>
+							</div>
+						</div>
+					</form>
+				{/each}
+			</div>
+		{/if}
+	</div>
+
+	<details class="jf-surface-soft mt-6 rounded-2xl p-5">
+		<summary class="cursor-pointer list-none text-sm font-medium text-white/80">
+			<span>Saved profiles ({pageData.profiles.length})</span>
+			<span class="ml-2 text-xs text-white/50">expand to manage or delete</span>
+		</summary>
 
 		{#if !pageData.profiles.length}
 			<div class="mt-4 text-sm text-white/60">No Instagram profiles saved yet.</div>
@@ -294,5 +341,5 @@
 				{/each}
 			</div>
 		{/if}
-	</div>
+	</details>
 </div>

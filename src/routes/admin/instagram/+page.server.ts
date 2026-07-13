@@ -193,9 +193,17 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	const knownPeople = await loadKnownPeople();
 	const profileState = await loadProfiles();
+	const knownPeopleList = sortKnownPeople(knownPeople.values());
+	const slugsWithHandles = new Set(
+		profileState.profiles
+			.filter((profile) => normalizeInstagramHandles(profile.instagram_handles).length > 0)
+			.map((profile) => profile.slug)
+	);
+	const missingInstagramPeople = knownPeopleList.filter((person) => !slugsWithHandles.has(person.slug));
 
 	return {
-		knownPeople: sortKnownPeople(knownPeople.values()),
+		knownPeople: knownPeopleList,
+		missingInstagramPeople,
 		profiles: profileState.profiles,
 		tableReady: profileState.tableReady,
 		error: profileState.error,
@@ -338,6 +346,79 @@ export const actions: Actions = {
 			result: {
 				updated: rows.length
 			}
+		};
+	},
+
+	quickAdd: async ({ request, locals }) => {
+		const { user } = await locals.safeGetSession();
+		requireAdmin(user);
+
+		const form = await request.formData();
+		const slug = typeof form.get('slug') === 'string' ? String(form.get('slug')).trim() : '';
+		const rawHandle = typeof form.get('instagram_handle') === 'string'
+			? String(form.get('instagram_handle')).trim()
+			: '';
+
+		if (!slug) return fail(400, { message: 'Person slug is required.' });
+		if (!rawHandle) return fail(400, { message: 'Instagram handle is required.' });
+
+		const handle = normalizeInstagramHandles([rawHandle])[0] ?? '';
+		if (!handle) {
+			return fail(400, {
+				message: 'Use a valid Instagram handle (letters, numbers, dot, underscore).'
+			});
+		}
+
+		const knownPeople = await loadKnownPeople();
+		const known = knownPeople.get(slug);
+		if (!known) return fail(400, { message: 'Unknown person slug.' });
+
+		const supabase = createSupabaseServiceClient();
+		const { data: existingRow, error: existingError } = await supabase
+			.from('person_profiles')
+			.select('slug, name, instagram_handles')
+			.eq('slug', slug)
+			.maybeSingle();
+
+		if (existingError) {
+			if (isMissingPersonProfilesTableError(existingError)) {
+				return fail(400, {
+					message: 'person_profiles table is missing. Run the latest Supabase migration first.'
+				});
+			}
+
+			return fail(400, { message: existingError.message });
+		}
+
+		const mergedHandles = normalizeInstagramHandles([
+			...normalizeInstagramHandles((existingRow as { instagram_handles?: string[] | null } | null)?.instagram_handles),
+			handle
+		]);
+
+		const { error } = await supabase.from('person_profiles').upsert(
+			[
+				{
+					slug,
+					name: known.name,
+					instagram_handles: mergedHandles
+				}
+			],
+			{ onConflict: 'slug' }
+		);
+
+		if (error) {
+			if (isMissingPersonProfilesTableError(error)) {
+				return fail(400, {
+					message: 'person_profiles table is missing. Run the latest Supabase migration first.'
+				});
+			}
+
+			return fail(400, { message: error.message });
+		}
+
+		return {
+			ok: true,
+			notice: `Saved @${handle} for ${known.name}.`
 		};
 	},
 

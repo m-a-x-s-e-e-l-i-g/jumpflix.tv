@@ -1858,6 +1858,18 @@
 			}
 		};
 
+		const releasePointerCapture = (pointerId: number | null) => {
+			if (pointerId === null) return;
+			if (typeof player.hasPointerCapture !== 'function') return;
+			try {
+				if (player.hasPointerCapture(pointerId)) {
+					player.releasePointerCapture(pointerId);
+				}
+			} catch {
+				// no-op
+			}
+		};
+
 		const finishLongPress = () => {
 			const wasActive = longPressActive;
 			longPressActive = false;
@@ -1940,6 +1952,13 @@
 			if (!isPrimaryPointer(event) || !shouldHandle(event)) return;
 
 			activePointerId = event.pointerId;
+			if (event.pointerType === 'touch' && typeof player.setPointerCapture === 'function') {
+				try {
+					player.setPointerCapture(event.pointerId);
+				} catch {
+					// no-op
+				}
+			}
 			lastPointerType = event.pointerType || null;
 			lastPointerClientX = event.clientX;
 			handledDoubleInClick = false;
@@ -1963,7 +1982,9 @@
 
 		const onPointerUp = (event: PointerEvent) => {
 			if (activePointerId === null || event.pointerId !== activePointerId) return;
+			const pointerId = activePointerId;
 			activePointerId = null;
+			releasePointerCapture(pointerId);
 			const wasLongPress = longPressActive;
 			finishLongPress();
 			if (wasLongPress || !shouldHandle(event) || event.pointerType !== 'touch') return;
@@ -1993,15 +2014,19 @@
 
 		const onPointerCancel = (event: PointerEvent) => {
 			if (activePointerId === null || event.pointerId !== activePointerId) return;
+			const pointerId = activePointerId;
 			activePointerId = null;
+			releasePointerCapture(pointerId);
 			clearTouchTapTimer();
 			suppressNextClick = false;
 			finishLongPress();
 		};
 
 		const onPointerLeave = (event: PointerEvent) => {
+			if (event.pointerType === 'touch') return;
 			if (activePointerId === null || event.pointerId !== activePointerId) return;
 			if (event.buttons === 0) {
+				releasePointerCapture(activePointerId);
 				activePointerId = null;
 				finishLongPress();
 			}
@@ -2112,6 +2137,7 @@
 			clearClickTimer();
 			clearTouchTapTimer();
 			finishLongPress();
+			releasePointerCapture(activePointerId);
 			activePointerId = null;
 			suppressNextClick = false;
 			handledDoubleInClick = false;
@@ -2706,20 +2732,17 @@
 	}
 
 	function setPlaybackRate(player: MediaPlayerElement, remote: RemoteControl | null, rate: number) {
-		if (remote?.changePlaybackRate) {
-			remote.changePlaybackRate(rate);
-			return;
-		}
+		const safeRate = Number.isFinite(rate) && rate > 0 ? rate : 1;
+		remote?.changePlaybackRate?.(safeRate);
 
 		const target = player as unknown as { playbackRate?: number };
 		if (typeof target.playbackRate === 'number' && !Number.isNaN(target.playbackRate)) {
-			target.playbackRate = rate;
-			return;
+			target.playbackRate = safeRate;
 		}
 
 		const mediaEl = player.querySelector('video, audio') as HTMLMediaElement | null;
 		if (mediaEl) {
-			mediaEl.playbackRate = rate;
+			mediaEl.playbackRate = safeRate;
 		}
 	}
 

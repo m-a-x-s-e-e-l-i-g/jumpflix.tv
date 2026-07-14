@@ -2007,6 +2007,12 @@
 			}
 		};
 
+		const onContextMenu = (event: MouseEvent) => {
+			if (!longPressActive && longPressTimer === null) return;
+			event.preventDefault();
+			event.stopImmediatePropagation();
+		};
+
 		const clearSpaceSlowTimer = () => {
 			if (spaceSlowTimer !== null) {
 				clearTimeout(spaceSlowTimer);
@@ -2104,6 +2110,7 @@
 		player.addEventListener('pointerup', onPointerUp);
 		player.addEventListener('pointercancel', onPointerCancel);
 		player.addEventListener('pointerleave', onPointerLeave);
+		player.addEventListener('contextmenu', onContextMenu, true);
 		player.addEventListener('wheel', onWheel, { passive: false });
 		doc.addEventListener('keydown', onSpaceKeyDown, true);
 		doc.addEventListener('keyup', onSpaceKeyUp, true);
@@ -2127,6 +2134,7 @@
 			player.removeEventListener('pointerup', onPointerUp);
 			player.removeEventListener('pointercancel', onPointerCancel);
 			player.removeEventListener('pointerleave', onPointerLeave);
+			player.removeEventListener('contextmenu', onContextMenu, true);
 			player.removeEventListener('wheel', onWheel);
 			if (provider && providerClickHandler) {
 				provider.removeEventListener('click', providerClickHandler);

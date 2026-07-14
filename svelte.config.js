@@ -12,8 +12,7 @@ const config = {
 		csrf: {
 			// OAuth token exchanges from external clients may omit or vary Origin.
 			// We keep endpoint-aware CSRF checks in src/hooks.server.ts instead.
-			checkOrigin: false,
-			trustedOrigins: ['https://chatgpt.com', 'https://chat.openai.com']
+			trustedOrigins: ['*']
 		}
 	}
 };

@@ -22,6 +22,9 @@ export default defineConfig(({ mode }) => ({
 			'lit-html': 'lit-html'
 		}
 	},
+	server: {
+		allowedHosts: ['desktop-hucdjae.tailcb2363.ts.net']
+	},
 	define:
 		mode === 'production'
 			? {}

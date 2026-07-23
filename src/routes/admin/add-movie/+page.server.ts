@@ -5,7 +5,7 @@ import { requireAdmin } from '$lib/server/admin';
 import { slugify } from '$lib/tv/slug';
 import { importSpotifyTracklistFromYouTube } from '$lib/server/tracklist-import.server';
 import { invalidateContentCache } from '$lib/server/content-service';
-import { fetchPlaylistItems } from '$lib/server/youtube-playlist.server';
+import { fetchPlaylistItems, type PlaylistItem } from '$lib/server/youtube-playlist.server';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const { user } = await locals.safeGetSession();
@@ -40,23 +40,64 @@ function parsePlaylistId(input: string): string | null {
 	return null;
 }
 
+type EpisodeOrder = 'playlist' | 'reverse' | 'oldest' | 'newest';
+
 type SeasonDraft = {
 	playlistId: string;
 	customName: string | null;
+	episodeOrder: EpisodeOrder;
+	excludedVideoIds: string[];
 };
+
+function parseEpisodeOrder(value: unknown): EpisodeOrder {
+	return value === 'reverse' || value === 'oldest' || value === 'newest' ? value : 'playlist';
+}
+
+function orderPlaylistItems(items: PlaylistItem[], episodeOrder: EpisodeOrder): PlaylistItem[] {
+	if (episodeOrder === 'playlist') return items;
+	if (episodeOrder === 'reverse') return items.toReversed();
+
+	const direction = episodeOrder === 'oldest' ? 1 : -1;
+	return items
+		.map((item, index) => ({ item, index, publishedAt: Date.parse(item.publishedAt ?? '') }))
+		.sort((a, b) => {
+			const aHasDate = Number.isFinite(a.publishedAt);
+			const bHasDate = Number.isFinite(b.publishedAt);
+			if (!aHasDate && !bHasDate) return a.index - b.index;
+			if (!aHasDate) return 1;
+			if (!bHasDate) return -1;
+			return (a.publishedAt - b.publishedAt) * direction || a.index - b.index;
+		})
+		.map(({ item }) => item);
+}
 
 function parseSeasonDrafts(form: FormData): SeasonDraft[] {
 	const raw = String(form.get('seasons_json') || '').trim();
 	if (raw) {
 		try {
-			const parsed = JSON.parse(raw) as Array<{ playlistId?: unknown; customName?: unknown }>;
+			const parsed = JSON.parse(raw) as Array<{
+				playlistId?: unknown;
+				customName?: unknown;
+				episodeOrder?: unknown;
+				excludedVideoIds?: unknown;
+			}>;
 			if (Array.isArray(parsed)) {
 				const drafts = parsed
 					.map((item) => {
 						const playlistId = parsePlaylistId(String(item?.playlistId || ''));
 						if (!playlistId) return null;
 						const customName = String(item?.customName || '').trim() || null;
-						return { playlistId, customName };
+						const excludedVideoIds = Array.isArray(item?.excludedVideoIds)
+							? item.excludedVideoIds
+								.map((id) => String(id).trim())
+								.filter((id) => /^[A-Za-z0-9_-]{6,}$/.test(id))
+							: [];
+						return {
+							playlistId,
+							customName,
+							episodeOrder: parseEpisodeOrder(item?.episodeOrder),
+							excludedVideoIds: [...new Set(excludedVideoIds)]
+						};
 					})
 					.filter((item): item is SeasonDraft => item !== null);
 				if (drafts.length > 0) return drafts;
@@ -72,7 +113,9 @@ function parseSeasonDrafts(form: FormData): SeasonDraft[] {
 	return [
 		{
 			playlistId: legacyPlaylistId,
-			customName: String(form.get('season_name') || '').trim() || null
+			customName: String(form.get('season_name') || '').trim() || null,
+			episodeOrder: 'playlist',
+			excludedVideoIds: []
 		}
 	];
 }
@@ -249,12 +292,15 @@ export const actions: Actions = {
 			if (!seasonRecord) continue;
 
 			try {
-				const items = await fetchPlaylistItems(season.playlistId);
+				const playlistItems = await fetchPlaylistItems(season.playlistId);
+				const excludedVideoIds = new Set(season.excludedVideoIds);
+				const includedItems = playlistItems.filter((item) => !excludedVideoIds.has(item.id));
+				const items = orderPlaylistItems(includedItems, season.episodeOrder);
 				if (items.length === 0) continue;
 
-				const episodes = items.map((item) => ({
+				const episodes = items.map((item, episodeIndex) => ({
 					season_id: seasonRecord.id,
-					episode_number: item.position,
+					episode_number: episodeIndex + 1,
 					video_id: item.id,
 					title: item.title,
 					thumbnail: item.thumbnail ?? null,

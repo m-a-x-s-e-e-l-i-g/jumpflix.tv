@@ -71,7 +71,14 @@
 	let blurhashError = $state('');
 
 	// Playlist / series state
-	type PlaylistItem = { id: string; title: string; description?: string; thumbnail?: string; position: number };
+	type PlaylistItem = {
+		id: string;
+		title: string;
+		description?: string;
+		publishedAt?: string;
+		thumbnail?: string;
+		position: number;
+	};
 	type PlaylistMeta = {
 		playlistId: string;
 		title: string;
@@ -95,8 +102,25 @@
 	let seriesCreators = $state('');
 	let seriesStarring = $state('');
 	let seriesPaid = $state(false);
-	type SeasonDraft = { playlistId: string; customName: string };
+	type EpisodeOrder = 'playlist' | 'reverse' | 'oldest' | 'newest';
+	type SeasonDraft = {
+		playlistId: string;
+		customName: string;
+		episodeOrder: EpisodeOrder;
+		excludedVideoIds: string[];
+	};
 	let seasonDrafts = $state<SeasonDraft[]>([]);
+	let orderedPlaylistItems = $derived(
+		orderPlaylistItems(playlistMeta?.items ?? [], seasonDrafts[0]?.episodeOrder ?? 'playlist')
+	);
+	let previewItems = $derived(
+		orderedPlaylistItems.filter(
+			(item) => !(seasonDrafts[0]?.excludedVideoIds ?? []).includes(item.id)
+		)
+	);
+	let previewEpisodeNumbers = $derived(
+		new Map(previewItems.map((item, index) => [item.id, index + 1]))
+	);
 	let seriesPosterUrl = $state('');
 	let seriesPosterFilename = $state('');
 	let seriesBlurhash = $state('');
@@ -140,7 +164,10 @@
 	}
 
 	function addSeasonDraft() {
-		seasonDrafts = [...seasonDrafts, { playlistId: '', customName: '' }];
+		seasonDrafts = [
+			...seasonDrafts,
+			{ playlistId: '', customName: '', episodeOrder: 'playlist', excludedVideoIds: [] }
+		];
 	}
 
 	function removeSeasonDraft(index: number) {
@@ -160,6 +187,40 @@
 		seasonDrafts = seasonDrafts.map((season, i) =>
 			i === index ? { ...season, customName: value } : season
 		);
+	}
+
+	function updateSeasonDraftOrder(index: number, episodeOrder: EpisodeOrder) {
+		seasonDrafts = seasonDrafts.map((season, i) =>
+			i === index ? { ...season, episodeOrder } : season
+		);
+	}
+
+	function setEpisodeIncluded(videoId: string, included: boolean) {
+		seasonDrafts = seasonDrafts.map((season, index) => {
+			if (index !== 0) return season;
+			const excludedVideoIds = included
+				? season.excludedVideoIds.filter((id) => id !== videoId)
+				: [...new Set([...season.excludedVideoIds, videoId])];
+			return { ...season, excludedVideoIds };
+		});
+	}
+
+	function orderPlaylistItems(items: PlaylistItem[], episodeOrder: EpisodeOrder): PlaylistItem[] {
+		if (episodeOrder === 'playlist') return items;
+		if (episodeOrder === 'reverse') return items.toReversed();
+
+		const direction = episodeOrder === 'oldest' ? 1 : -1;
+		return items
+			.map((item, index) => ({ item, index, publishedAt: Date.parse(item.publishedAt ?? '') }))
+			.sort((a, b) => {
+				const aHasDate = Number.isFinite(a.publishedAt);
+				const bHasDate = Number.isFinite(b.publishedAt);
+				if (!aHasDate && !bHasDate) return a.index - b.index;
+				if (!aHasDate) return 1;
+				if (!bHasDate) return -1;
+				return (a.publishedAt - b.publishedAt) * direction || a.index - b.index;
+			})
+			.map(({ item }) => item);
 	}
 
 	async function fetchPlaylistMetadata() {
@@ -185,7 +246,9 @@
 			seasonDrafts = [
 				{
 					playlistId: data.playlistId || detectedPlaylistId,
-					customName: seasonDrafts[0]?.customName ?? ''
+					customName: seasonDrafts[0]?.customName ?? '',
+					episodeOrder: seasonDrafts[0]?.episodeOrder ?? 'playlist',
+					excludedVideoIds: seasonDrafts[0]?.excludedVideoIds ?? []
 				},
 				...seasonDrafts.slice(1)
 			];
@@ -254,8 +317,8 @@
 	}
 
 	async function generateSeriesPoster() {
-		const firstVideoId = playlistMeta?.items[0]?.id ?? '';
-		const firstThumb = playlistMeta?.items[0]?.thumbnail ?? '';
+		const firstVideoId = previewItems[0]?.id ?? '';
+		const firstThumb = previewItems[0]?.thumbnail ?? '';
 		if (!firstVideoId && !firstThumb) {
 			seriesPosterGenerationError = 'No thumbnail available — load a playlist first.';
 			return;
@@ -1055,16 +1118,24 @@
 					<span
 						class="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-white/60"
 					>
-						{playlistMeta.videoCount} episode{playlistMeta.videoCount === 1 ? '' : 's'}
+						{previewItems.length} of {playlistMeta.videoCount} episode{playlistMeta.videoCount === 1 ? '' : 's'} selected
 					</span>
 					{#if playlistMeta.channelName}
 						<span class="text-xs text-white/40">{playlistMeta.channelName}</span>
 					{/if}
 				</div>
-				{#if playlistMeta.items.length > 0}
-					<div class="space-y-1.5">
-						{#each playlistMeta.items.slice(0, 5) as item (item.id)}
-							<div class="flex items-center gap-3 rounded-xl bg-white/[0.03] px-3 py-2">
+				{#if orderedPlaylistItems.length > 0}
+					<div class="max-h-[32rem] space-y-1.5 overflow-y-auto pr-1">
+						{#each orderedPlaylistItems as item (item.id)}
+							{@const episodeNumber = previewEpisodeNumbers.get(item.id)}
+							<label class={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition ${episodeNumber ? 'bg-white/[0.03]' : 'bg-white/[0.015] opacity-50'}`}>
+								<input
+									type="checkbox"
+									checked={Boolean(episodeNumber)}
+									onchange={(event) =>
+										setEpisodeIncluded(item.id, event.currentTarget.checked)}
+									class="h-4 w-4 shrink-0 accent-[#e50914]"
+								/>
 								{#if item.thumbnail}
 									<img
 										src={item.thumbnail}
@@ -1073,15 +1144,10 @@
 									/>
 								{/if}
 								<span class="min-w-0 truncate text-sm text-white/70"
-									><span class="mr-2 text-white/30">{item.position}.</span>{item.title}</span
+									><span class="mr-2 text-white/30">{episodeNumber ? `${episodeNumber}.` : 'Skip'}</span>{item.title}</span
 								>
-							</div>
+							</label>
 						{/each}
-						{#if playlistMeta.items.length > 5}
-							<p class="pl-3 text-xs text-white/35">
-								+ {playlistMeta.items.length - 5} more episodes
-							</p>
-						{/if}
 					</div>
 				{/if}
 			</div>
@@ -1175,7 +1241,7 @@
 												</button>
 											{/if}
 										</div>
-										<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+										<div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
 											<label class="block space-y-1.5">
 												<span class="text-xs text-white/60">Playlist URL or ID <span class="text-red-400">*</span></span>
 												<input
@@ -1198,6 +1264,23 @@
 													class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs text-white placeholder:text-white/40 focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
 												/>
 											</label>
+											<label class="block space-y-1.5">
+												<span class="text-xs text-white/60">Episode order</span>
+												<select
+													value={season.episodeOrder}
+													onchange={(e) =>
+														updateSeasonDraftOrder(
+															index,
+															(e.currentTarget as HTMLSelectElement).value as EpisodeOrder
+														)}
+													class="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs text-white focus:border-[#e50914] focus:ring-2 focus:ring-[#e50914]/70 focus:outline-none"
+												>
+													<option value="playlist" class="bg-zinc-900">As listed on YouTube</option>
+													<option value="reverse" class="bg-zinc-900">Reverse YouTube order</option>
+													<option value="oldest" class="bg-zinc-900">Oldest published first</option>
+													<option value="newest" class="bg-zinc-900">Newest published first</option>
+												</select>
+											</label>
 										</div>
 									</div>
 								{/each}
@@ -1211,17 +1294,17 @@
 			<div class="jf-surface-soft rounded-2xl p-5">
 				<div class="mb-4 text-sm font-medium text-white/80">Poster</div>
 				<div class="space-y-3">
-					<label class="block space-y-1.5">
+					<div class="space-y-1.5">
 						<span class="text-xs text-white/60">Thumbnail Preview</span>
-						{#if playlistMeta?.items[0]?.thumbnail}
+						{#if previewItems[0]?.thumbnail}
 							<img
-								src={playlistMeta.items[0].thumbnail}
+								src={previewItems[0].thumbnail}
 								alt="Episode 1 thumbnail"
 								class="mb-3 aspect-video w-full max-w-md rounded-lg border border-white/10 object-cover"
 							/>
 						{/if}
 						<p class="text-xs text-white/50">Poster will be generated from the first episode's thumbnail.</p>
-					</label>
+					</div>
 
 					<label class="block space-y-1.5">
 						<span class="text-xs text-white/60">Filename</span>
@@ -1268,7 +1351,7 @@
 						<button
 							type="button"
 							onclick={generateSeriesPoster}
-							disabled={generatingSeriesPoster || !playlistMeta?.items[0]?.id || (!seriesSlug.trim() && !seriesPosterFilename.trim())}
+							disabled={generatingSeriesPoster || !previewItems[0]?.id || (!seriesSlug.trim() && !seriesPosterFilename.trim())}
 							class="inline-flex items-center justify-center rounded-xl bg-[#e50914] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#ff1a27] disabled:cursor-not-allowed disabled:opacity-40"
 						>
 							{generatingSeriesPoster ? 'Generating Poster…' : 'Generate Poster From Thumbnail'}

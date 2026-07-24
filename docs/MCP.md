@@ -104,22 +104,25 @@ If OAuth is disabled and no static token is configured, the endpoint returns an 
 - `JUMPFLIX_MCP_BEARER_TOKEN` (preferred)
 - `MCP_BEARER_TOKEN` (fallback)
 - `JUMPFLIX_MCP_SESSION_MODE` (optional: `stateful` or `stateless`; default auto)
+- `JUMPFLIX_MCP_VERSION` (optional server implementation version; default `0.2.0`)
 - `JUMPFLIX_MCP_MAX_STRUCTURED_CONTENT_CHARS` (optional, default `120000`)
 - `JUMPFLIX_MCP_MAX_TEXT_CONTENT_CHARS` (optional, default `2000`)
 
-Catalog and spot data still rely on existing project env vars like Supabase keys and (for spot canonicalization) `PARKOUR_SPOT_API_KEY`.
+Catalog and spot data still rely on existing project env vars like Supabase keys and `PARKOUR_SPOT_API_KEY`. MCP spot reads resolve duplicate IDs without rewriting approved chapter rows.
 
 ## Response Size Controls
 
 The server now includes payload-size controls at two levels:
 
 - Tool-level optional limits:
-	- `catalog_get` supports `maxTracks` and `maxSeasons`.
-	- `catalog_by_spot` supports `maxChaptersPerItem`.
-	- `catalog_facets` supports `includeDescriptions`.
+  - `catalog_get` supports `maxTracks` and `maxSeasons`.
+  - `catalog_by_spot` supports `maxChaptersPerItem`.
+  - `catalog_list_episodes` supports `maxEpisodes`.
+  - `catalog_spots_in_item` supports `maxChapters`.
+  - `catalog_facets` supports `includeDescriptions`.
 - Transport-level fallback:
-	- If `structuredContent` is still too large, the server trims oversized sections and adds `transportLimit` metadata.
-	- If needed, a compact fallback payload is returned so the response stays deliverable.
+  - If `structuredContent` is still too large, the server trims oversized sections and adds `transportLimit` metadata.
+  - If needed, a compact fallback payload is returned so the response stays deliverable.
 
 If tool-level truncation is applied, payloads may include `resultLimit` metadata for clarity.
 
@@ -170,25 +173,97 @@ CIMD notes:
 - This server accepts CIMD clients with `token_endpoint_auth_method=none` and `token_endpoint_auth_method=private_key_jwt` (`RS256` + `jwks_uri`).
 - If you set `JUMPFLIX_MCP_OAUTH_CIMD_ALLOWED_HOSTS`, only those metadata document hosts are accepted.
 
+## Pagination and Result Metadata
+
+List tools accept both one-based `page`/`pageSize` parameters and an opaque `cursor`. When a response contains `hasMore: true`, pass its `nextCursor` to continue. A supplied cursor takes precedence over `page`.
+
+Catalog responses include:
+
+- `metadata.source`
+- `metadata.generatedAt`
+- `metadata.catalogUpdatedAt`
+- Canonical Jumpflix URLs and `jumpflix://` resource URIs
+- `transportLimit` or `resultLimit` when configured limits truncate a result
+
 ## Exposed Tools
 
+All tools declare read-only, non-destructive, idempotent MCP annotations. Tools that call parkour.spot additionally declare that they access an external system.
+
+### Core catalog tools
+
 - `catalog_search`
-: Search by text, feed preset, type, and facet filters with pagination and sort.
+  : Search by relevance-aware text, feed preset, type, people, provider, availability, rating, warning, duration, year, and creative-facet filters.
 
 - `catalog_get`
-: Fetch one media item by `id` or `slug`.
+  : Fetch full safe public metadata by `id` or `slug`, including description, warnings, official source, people, ratings, and tracks or season summaries. Raw/private stream URLs are not returned.
 
 - `catalog_by_person`
-: Resolve creator/athlete matches and list related media.
+  : Resolve creator/athlete matches and list related media.
 
 - `catalog_by_spot`
-: Resolve spot ID and return media linked by approved spot chapters.
+  : Resolve spot ID and return media linked by approved spot chapters.
 
 - `catalog_facets`
-: Return machine-readable facet taxonomy and content warning options.
+  : Return machine-readable facet taxonomy and content warning options.
 
 - `catalog_feeds`
-: Return feed presets and filter definitions.
+  : Return feed presets and filter definitions.
+
+### Public discovery tools
+
+- `catalog_list_episodes`
+  : Return season and episode metadata with canonical Jumpflix episode URLs.
+
+- `catalog_spots_in_item`
+  : Return approved parkour.spot chapters and timestamps for one film or series.
+
+- `spot_search`
+  : Search parkour.spot by text or geographic bounding box.
+
+- `person_search`
+  : Resolve partial creator or athlete names.
+
+- `person_get`
+  : Return a public person profile, roles, social links, and related titles.
+
+- `catalog_by_track`
+  : Find movie tracklist occurrences by song, artist, Jumpflix song ID, or Spotify track ID.
+
+- `catalog_discover`
+  : Return deterministic, explainable recommendations using text, seed titles, filters, facets, people, and community ratings.
+
+- `catalog_reviews`
+  : Return public community reviews for one title without exposing user IDs.
+
+## Resources
+
+Tools return compact `resource_link` content where useful. Clients can also list or read these resource templates directly:
+
+- `jumpflix://catalog/{type}/{slug}`
+- `jumpflix://people/{slug}`
+- `jumpflix://spots/{id}`
+- `jumpflix://feeds/{slug}`
+- `jumpflix://taxonomy/facets`
+
+Catalog and person templates support listing and URI-variable completion. Spot resources are resolved on demand.
+
+## Prompts
+
+The MCP server exposes four user-controlled prompt workflows:
+
+- `find-something-to-watch`
+- `explore-person`
+- `build-watchlist`
+- `explore-spots`
+
+## Verification
+
+Run the focused MCP utility contract tests and the project type checks:
+
+```bash
+npm run test:mcp
+npm run check
+```
 
 ## Notes
 

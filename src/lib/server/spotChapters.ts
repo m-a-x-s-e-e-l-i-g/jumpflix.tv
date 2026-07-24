@@ -183,6 +183,7 @@ export type ApprovedSpotChaptersQuery = {
 	mediaId: number;
 	mediaType: 'movie' | 'series';
 	playbackKey?: string | null;
+	persistCanonicalSpotIds?: boolean;
 };
 
 type SpotChapterRow = {
@@ -195,7 +196,10 @@ type SpotChapterRow = {
 	end_seconds?: number;
 };
 
-export async function canonicalizeSpotChapterRows(rows: SpotChapterRow[]): Promise<Map<number, string>> {
+export async function canonicalizeSpotChapterRows(
+	rows: SpotChapterRow[],
+	options: { persist?: boolean } = {}
+): Promise<Map<number, string>> {
 	const normalizedRows = rows.filter((row) => Number.isFinite(Number(row?.id)) && !!normalizeParkourSpotId(row?.spot_id));
 	if (normalizedRows.length === 0) return new Map<number, string>();
 
@@ -214,7 +218,7 @@ export async function canonicalizeSpotChapterRows(rows: SpotChapterRow[]): Promi
 			const finalSpotId = resolvedSpotIds.get(originalSpotId) ?? originalSpotId;
 			updatedSpotIds.set(Number(row.id), finalSpotId);
 
-			if (finalSpotId === originalSpotId) return;
+			if (finalSpotId === originalSpotId || options.persist === false) return;
 
 			await (supabase as any).from('spot_chapters').update({ spot_id: finalSpotId }).eq('id', row.id);
 		})
@@ -226,7 +230,7 @@ export async function canonicalizeSpotChapterRows(rows: SpotChapterRow[]): Promi
 export async function loadApprovedSpotChapters(
 	query: ApprovedSpotChaptersQuery
 ): Promise<ApprovedSpotChapter[]> {
-	const { mediaId, mediaType, playbackKey } = query;
+	const { mediaId, mediaType, playbackKey, persistCanonicalSpotIds = true } = query;
 	const supabase = createSupabaseServiceClient();
 
 	const trimmedKey = playbackKey?.trim?.() ? String(playbackKey).trim() : null;
@@ -270,7 +274,8 @@ export async function loadApprovedSpotChapters(
 			playback_key: row?.playback_key ?? null,
 			start_seconds: Number(row?.start_seconds),
 			end_seconds: Number(row?.end_seconds)
-		}))
+		})),
+		{ persist: persistCanonicalSpotIds }
 	);
 	const out: ApprovedSpotChapter[] = [];
 	for (const row of raw) {

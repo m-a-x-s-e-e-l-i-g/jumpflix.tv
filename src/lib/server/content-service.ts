@@ -288,10 +288,24 @@ function mapSeries(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryR
 const CONTENT_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 let contentCache: { items: ContentItem[]; fetchedAt: number } | null = null;
 let contentInFlight: Promise<ContentItem[]> | null = null;
+let lastContentLoadError: string | null = null;
+
+export function getContentServiceStatus(): {
+	lastError: string | null;
+	cachedItemCount: number;
+	cacheFetchedAt: string | null;
+} {
+	return {
+		lastError: lastContentLoadError,
+		cachedItemCount: contentCache?.items.length ?? 0,
+		cacheFetchedAt: contentCache ? new Date(contentCache.fetchedAt).toISOString() : null
+	};
+}
 
 export async function invalidateContentCache(): Promise<void> {
 	contentCache = null;
 	contentInFlight = null;
+	lastContentLoadError = null;
 	if (!isPrerenderCacheEnabled()) return;
 	try {
 		const fs = await import('fs/promises');
@@ -315,6 +329,7 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 	const diskCached = await readPrerenderCache<ContentItem[]>(CONTENT_CACHE_FILE);
 	if (diskCached) {
 		contentCache = { items: diskCached, fetchedAt: Date.now() };
+		lastContentLoadError = null;
 		return diskCached;
 	}
 
@@ -337,11 +352,13 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 
 			if (error) {
 				console.error('[content-service] Failed to load media items:', error);
+				lastContentLoadError = error.message || 'Failed to load media items.';
 				contentCache = { items: [], fetchedAt: Date.now() };
 				return [];
 			}
 
 			if (!data) {
+				lastContentLoadError = 'Catalog query returned no data.';
 				contentCache = { items: [], fetchedAt: Date.now() };
 				return [];
 			}
@@ -370,11 +387,14 @@ export async function fetchAllContent(): Promise<ContentItem[]> {
 			});
 
 			const sorted = items.sort((a, b) => a.title.localeCompare(b.title));
+			lastContentLoadError = null;
 			contentCache = { items: sorted, fetchedAt: Date.now() };
 			await writePrerenderCache(CONTENT_CACHE_FILE, sorted);
 			return sorted;
 		} catch (err) {
 			console.error('[content-service] Unexpected error:', err);
+			lastContentLoadError =
+				err instanceof Error ? err.message : 'Unexpected catalog loading error.';
 			contentCache = { items: [], fetchedAt: Date.now() };
 			return [];
 		} finally {

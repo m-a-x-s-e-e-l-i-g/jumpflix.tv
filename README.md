@@ -146,7 +146,7 @@ npm run preview   # locally preview built output
 
 ## MCP Server (Read-Only)
 
-JumpFlix ships with a remote MCP server for structured catalog discovery by LLM clients.
+JumpFlix ships with a remote MCP server for structured catalog discovery by LLM clients. It exposes public films, series, episodes, people, music, community reviews, and parkour.spot locations through read-only tools and resources.
 
 - Transport: Streamable HTTP
 - Default endpoint: `/mcp` on the app server
@@ -178,7 +178,7 @@ Legacy static token fallback:
 JUMPFLIX_MCP_BEARER_TOKEN="your-token"
 ```
 
-See `docs/MCP.md` for transport details, environment variables, and exposed tools.
+See `docs/MCP.md` for transport details, environment variables, tools, resource templates, and prompt workflows.
 
 `docs/MCP.md` includes both `User-Defined OAuth Client` and Dynamic Client Registration (DCR) connector setup paths.
 
@@ -186,7 +186,7 @@ See `docs/MCP.md` for transport details, environment variables, and exposed tool
 
 For ChatGPT-style CIMD clients, private_key_jwt (`RS256` + `jwks_uri`) is supported.
 
-`docs/MCP.md` also documents payload-size controls (`maxTracks`, `maxSeasons`, `maxChaptersPerItem`) and deployment guidance for streamable HTTP sessions on Netlify/serverless runtimes.
+`docs/MCP.md` also documents cursor pagination, advanced catalog filters, payload-size controls, and deployment guidance for streamable HTTP sessions on Netlify/serverless runtimes.
 
 ## 🗄 Supabase Setup
 

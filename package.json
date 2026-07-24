@@ -11,6 +11,7 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test:mcp": "node --import tsx --test tests/mcp/*.test.ts",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"admin": "tsx scripts/admin-cli.ts",

@@ -4,8 +4,6 @@
 	import { getParkourSpotUrl } from '$lib/utils';
 	import * as m from '$lib/paraglide/messages';
 
-	import 'leaflet/dist/leaflet.css';
-
 	type SpotInfo = {
 		id: string;
 		name: string;
@@ -239,6 +237,8 @@
 		let disposed = false;
 
 		void (async () => {
+			await import('leaflet/dist/leaflet.css');
+			if (disposed) return;
 			leaflet = await import('leaflet');
 			if (disposed || !leaflet || !mapContainer) return;
 

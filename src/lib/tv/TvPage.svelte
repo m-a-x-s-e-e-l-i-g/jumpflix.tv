@@ -67,6 +67,11 @@
 		initialSeasonNumber?: number | null;
 	}>();
 
+	// Seed the catalog synchronously so SSR and hydration do not briefly render
+	// the empty-results artwork before the page data reaches the store.
+	// svelte-ignore state_referenced_locally
+	setContent(content ?? []);
+
 	$effect(() => {
 		const pageContent = ($page?.data as any)?.content;
 		const items = Array.isArray(pageContent) ? pageContent : content;
@@ -816,7 +821,7 @@
 
 	const priorityKeys = $derived(
 		new Set(
-			(gridContent || []).slice(0, Math.max(columns * 2, 8)).map((it) => `${it.type}:${it.id}`)
+			(gridContent || []).slice(0, Math.max(columns, 1)).map((it) => `${it.type}:${it.id}`)
 		)
 	);
 </script>

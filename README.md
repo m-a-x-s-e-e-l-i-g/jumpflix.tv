@@ -1,497 +1,277 @@
 <div align="center">
 
-<picture>
-	<source media="(prefers-color-scheme: dark)" srcset="./static/images/jumpflix.webp" />
-	<img src="./static/images/jumpflix.webp" alt="JUMPFLIX – Parkour & Freerunning TV" width="420" />
-</picture>
+<img src="./static/images/jumpflix.webp" alt="JUMPFLIX logo" width="360" />
 
-### JUMPFLIX • Curated Parkour & Freerunning Movies & Series
+# Parkour cinema, curated for the culture
 
-<em>Open‑source, community‑driven streaming style catalog for the art of movement.</em>
+**Discover films, documentaries, series, and raw movement stories from the global parkour community.**
 
----
+[![Visit JUMPFLIX](https://img.shields.io/badge/Visit-JUMPFLIX.tv-e50914?style=for-the-badge)](https://www.jumpflix.tv/)
+
+[![Netlify Status](https://api.netlify.com/api/v1/badges/5b284dd6-29a6-4a8b-ae2f-69e3e2528b30/deploy-status)](https://app.netlify.com/projects/jumpflix/deploys)
+[![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 
 </div>
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/5b284dd6-29a6-4a8b-ae2f-69e3e2528b30/deploy-status)](https://app.netlify.com/projects/jumpflix/deploys) [![License: CC BY-NC-ND 4.0](https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
+![The JUMPFLIX home screen](./static/screenshots/hero.png)
 
-![jumpflix-tv-parkour-freerun-films-documentaries](https://github.com/user-attachments/assets/b1dae52c-3d6d-4117-a3cf-8e7a1f98c363)
+## What is JUMPFLIX?
 
-## ✨ What is JUMPFLIX?
+JUMPFLIX is a community-built home for parkour and freerunning films. It brings scattered videos, series, documentaries, and classics together in one calm, cinematic catalog.
 
-JUMPFLIX is a SvelteKit + Tailwind powered web app that curates the best parkour & freerunning feature films, documentaries and long‑form series—from legendary classics like _Jump London_ to modern community productions and all‑women showcases. It isn't a pirate streaming site: instead it links responsibly to official YouTube/Vimeo embeds and (where appropriate) to legitimate paid providers (e.g. STORROR+, JustWatch, Vimeo On Demand, etc.).
+It is not a pirate streaming service. JUMPFLIX plays or links to legitimate sources such as YouTube, Vimeo, creator-hosted video, and official paid providers. Creators keep their views, their credit, and control of their work.
 
-The goal: an elegant, fast, mobile‑friendly discovery hub honoring the culture, people, history & progression of parkour.
+You can browse and watch without an account. Signing in adds personal features such as watch progress, ratings, reviews, and contribution history.
 
-## 🔥 Core Highlights
+## What can you do?
 
-- 🔎 Search & live filtering by song, athlete, creator and title.
-- 🔀 Deterministic random ordering (stable shuffle per session) with multiple sort modes (title, year, duration)
-- 💸 Paid vs free toggle (surface free community films first if you want)
-- ▶️ Custom video player for YouTube / Vimeo with **slowmotion**!
-- ✅ Track what you've watched & progress tracking
-- 🌍 Internationalization (English + Dutch via Paraglide i18n)
-- 🗄️ Supabase backend for content management with interactive admin CLI
-- 📺 Automatic episode syncing from YouTube playlists (no API key needed)
-- 🎵 Spotify-backed movie tracklists (manual or YouTube import)
-- 🟪 BlurHash placeholders for smooth image loading
-- 🔎 SEO optimized with automatic sitemap generation and search engine submission
-- 📦 PWA support
+- **Find something worth watching** — search by title, creator, athlete, or even a song from a film.
+- **Browse by vibe** — use ready-made feeds or detailed filters for format, movement, environment, era, length, and more.
+- **Watch your way** — play supported videos inside JUMPFLIX, continue where you stopped, cast to another screen, or open the official provider.
+- **Keep track** — mark films as watched, save playback progress, rate releases with the Bangerometer, and write short reviews.
+- **Explore the culture** — follow creator and athlete credits, discover soundtracks, and see which real-world spots appear in each video.
+- **Travel through the archive** — use the Video Map to browse films by location and jump directly to mapped chapters.
+- **Take it with you** — install JUMPFLIX as a PWA and switch between English, Dutch, and Japanese.
+- **Help it grow** — submit missing films and suggest spot chapters from the site.
 
-## 🧱 Tech Stack
+> **Little secret:** hold the spacebar, or long-press the player, for slow motion.
 
-| Layer        | Stack                                                                            |
-| ------------ | -------------------------------------------------------------------------------- |
-| Framework    | SvelteKit (Svelte 5)                                                             |
-| Styling      | Tailwind CSS v4 + `tailwind-variants` + `tailwind-merge` + `tailwindcss-animate` |
-| UI Bits      | `bits-ui`, `svelte-sonner`, custom components                                    |
-| Video Player | Vidstack with YouTube/Vimeo providers                                            |
-| i18n         | `@inlang/paraglide-js` (messages generated from `/messages/*.json`)              |
-| Tooling      | Vite, TypeScript, ESLint, Prettier, svelte-check                                 |
-| Backend      | Supabase (PostgreSQL) with service-role admin access                             |
+## See it in action
 
-## 🗂 Directory Glimpse
+### Discover films without knowing what to search for
 
-```text
-src/
-  lib/
-    server/           # Supabase client + content service
-    tv/               # TV page components, store, types & utils
-    paraglide/        # Generated i18n runtime (do not edit manually)
-    components/       # Reusable UI components
-    assets/           # Static content data & blurhash mappings
-  routes/
-    +page.svelte      # Main TV experience
-    movie/[slug]/     # Individual movie pages
-    series/[slug]/    # Individual series pages
-    sitemap.xml/      # Dynamic sitemap generation
-supabase/             # SQL schema for Supabase project
-  migrations/         # Database migration files
-scripts/              # Admin CLI, seed scripts, blurhash, favicon, sitemap generation
-content/              # JSON seed data for movies & series
-messages/             # Source translation JSON (en, nl)
-project.inlang/       # Paraglide project settings
-static/
-  images/posters/     # Movie and series poster images
-  icons/              # PWA icons (generated)
-```
+Start with a curated feed, search across the catalog, or combine filters. Free and paid releases are clearly marked.
 
-## 🚀 Quick Start
+![Discovery feeds, search, filters, and the film catalog](./static/screenshots/discover.png)
 
-Clone & install dependencies:
+### More than a poster and a play button
+
+Film pages bring the story, facets, creators, athletes, soundtrack, ratings, reviews, and featured spots together.
+
+![A JUMPFLIX film detail page](./static/screenshots/film-details.png)
+
+### Find the films behind famous spots
+
+The Video Map connects approved video chapters to real parkour locations, with links back to [parkour.spot](https://parkour.spot/).
+
+![The JUMPFLIX Video Map](./static/screenshots/video-map.png)
+
+## Built for the community
+
+JUMPFLIX treats parkour films as culture worth preserving, not disposable content. The project aims to make important work easier to find while keeping the experience calm, fast, and respectful.
+
+- Official sources and providers are preferred.
+- Creators and athletes are credited whenever that information is available.
+- Paid releases stay paid; JUMPFLIX does not work around access restrictions.
+- The catalog is curated rather than generated by an engagement algorithm.
+- Community submissions are reviewed before they become part of the archive.
+
+## Frequently asked questions
+
+<details>
+<summary><strong>Do I need an account?</strong></summary>
+
+No. Browsing and watching are open. An account is only needed for personal features such as watch history, ratings, reviews, and suggestions.
+
+</details>
+
+<details>
+<summary><strong>Does JUMPFLIX host every video?</strong></summary>
+
+No. Most releases are embedded from or linked to their official source. Some content can also use creator-approved hosted streams.
+
+</details>
+
+<details>
+<summary><strong>Can I submit a film?</strong></summary>
+
+Yes. Choose **Submit a film** on [jumpflix.tv](https://www.jumpflix.tv/) and send the legitimate source URL. You can also contribute through a pull request.
+
+</details>
+
+<details>
+<summary><strong>Can I use JUMPFLIX on a TV or phone?</strong></summary>
+
+Yes. The interface is responsive, can be installed as a PWA, and supports AirPlay or Chromecast when the browser and video provider allow it.
+
+</details>
+
+---
+
+## Run JUMPFLIX locally
+
+Everything below is for contributors and people who want to run their own development copy.
+
+### Requirements
+
+- [Node.js](https://nodejs.org/) 20 or newer
+- npm
+- A [Supabase](https://supabase.com/) project
+
+### 1. Install the project
 
 ```bash
 git clone https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv.git
 cd jumpflix.tv
-npm install
+npm ci
 ```
 
-**Set up environment variables** - Create a `.env` file:
+### 2. Add the minimum configuration
+
+Copy `.env.example` to `.env`, then add your Supabase project values:
 
 ```bash
-# Supabase (required for content)
-PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-# Telegram (optional - for film submissions)
-TELEGRAM_BOT_TOKEN=
-TELEGRAM_CHANNEL_ID=
-
-# Spotify (optional - for Spotify-backed movie tracklists)
-# Used by the admin CLI to fetch track metadata and to auto-map YouTube track candidates.
-# Not required to run the web app.
-SPOTIFY_CLIENT_ID=
-SPOTIFY_CLIENT_SECRET=
-
-# Sitemap submission (optional)
-FORCE_SITEMAP_SUBMISSION=false
-
-# Funding sync (optional - for daily import of external cost data into project_costs)
-BUNNYNET_API_KEY=
-OPENAI_ADMIN_KEY=
-OPENAI_COSTS_START_DATE=2024-01-01
+PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
 ```
 
-See [Supabase Setup](#-supabase-setup) below for details.
+`SUPABASE_SERVICE_ROLE_KEY` is only required for privileged admin scripts and server-side maintenance. Never expose it to browser code or commit it to Git.
 
-Run the dev server:
+### 3. Apply the database schema
+
+The schema is stored as ordered SQL migrations in [`supabase/migrations`](./supabase/migrations). Apply them through the Supabase dashboard or link the project with the Supabase CLI and run:
+
+```bash
+supabase db push --linked
+```
+
+### 4. Start the app
 
 ```bash
 npm run dev
 ```
 
-Then open the printed local URL (typically `http://localhost:5173`). Add `-- --open` to auto‑launch:
+Open the local URL printed by Vite, usually <http://localhost:5173>.
 
-```bash
-npm run dev -- --open
-```
+## Everyday development commands
 
-Type safety & linting:
+| Command                    | What it does                                             |
+| -------------------------- | -------------------------------------------------------- |
+| `npm run dev`              | Start the development server                             |
+| `npm run check`            | Run Svelte and TypeScript diagnostics                    |
+| `npm run lint`             | Check formatting and ESLint rules                        |
+| `npm run format`           | Format the project                                       |
+| `npm run build:no-sitemap` | Create a production build without submitting the sitemap |
+| `npm run preview`          | Preview the production build locally                     |
+| `npm run test:mcp`         | Run the MCP server test suite                            |
+| `npm run admin`            | Open the interactive content-management CLI              |
+| `npm run backup`           | Create a local database backup                           |
 
-```bash
-npm run check      # svelte-check + TS
-npm run lint       # eslint + prettier check
-npm run format     # auto-format
-npm run sync:funding  # import external funding data into Supabase
-npm run sync:funding:debug:bunny  # print Bunny payload shape and mapped rows
-```
+The regular `npm run build` command also runs sitemap submission. Use `build:no-sitemap` for routine local verification.
 
-Build production bundle:
+## Optional configuration
 
-```bash
-npm run build
-npm run preview   # locally preview built output
-```
+Only the two public Supabase values are needed for the basic app. Other integrations are opt-in.
 
-## MCP Server (Read-Only)
+| Variable                                     | Used for                                                   |
+| -------------------------------------------- | ---------------------------------------------------------- |
+| `SUPABASE_SERVICE_ROLE_KEY`                  | Admin tools, protected maintenance, and server-side writes |
+| `ADMIN_EMAILS`, `ADMIN_USER_IDS`             | Access to browser-based admin pages                        |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`  | Film submission notifications                              |
+| `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | Looking up and importing soundtrack metadata               |
+| `PARKOUR_SPOT_API_KEY`                       | Resolving spot information from parkour.spot               |
+| `PARKOUR_SPOT_BEARER_TOKEN`                  | Authenticating the partner video API                       |
+| `OPENAI_API_KEY`                             | Optional admin metadata and poster tools                   |
+| `BUNNYNET_API_KEY`, `OPENAI_ADMIN_KEY`       | Optional project-cost import jobs                          |
 
-JumpFlix ships with a remote MCP server for structured catalog discovery by LLM clients. It exposes public films, series, episodes, people, music, community reviews, and parkour.spot locations through read-only tools and resources.
+See [`.env.example`](./.env.example) for the full list and [`docs/MCP.md`](./docs/MCP.md) for MCP-specific authentication settings.
 
-- Transport: Streamable HTTP
-- Default endpoint: `/mcp` on the app server
-- Auth: `Authorization: Bearer <token>` (OAuth access token recommended)
+## How it is built
 
-Start the app server:
+| Area              | Technology                                                       |
+| ----------------- | ---------------------------------------------------------------- |
+| Application       | SvelteKit 2, Svelte 5, TypeScript, Vite                          |
+| Interface         | Tailwind CSS 4, Bits UI, custom Svelte components                |
+| Data and accounts | Supabase Postgres and Supabase Auth                              |
+| Playback          | Vidstack with YouTube, Vimeo, HLS, and external-provider support |
+| Languages         | Paraglide JS with English, Dutch, and Japanese messages          |
+| App experience    | Service worker, web app manifest, installable PWA                |
+| Hosting           | Netlify adapter and deployment workflow                          |
 
-```bash
-npm run dev
-```
+The default catalog order uses a seeded shuffle. It feels varied, but remains stable during a session so cards do not jump around while somebody is browsing. Search, sorting, discovery feeds, and facet filters are applied on top of the same catalog model.
 
-OAuth mode (recommended for ChatGPT connectors):
+## Content management
 
-```bash
-JUMPFLIX_MCP_OAUTH_SIGNING_SECRET="replace-with-long-random-secret"
-JUMPFLIX_MCP_OAUTH_CLIENT_ID="jumpflix-chatgpt"
-JUMPFLIX_MCP_OAUTH_ENABLE_DCR="true"
-```
-
-Optional OAuth client secret:
-
-```bash
-JUMPFLIX_MCP_OAUTH_CLIENT_SECRET="replace-with-client-secret"
-```
-
-Legacy static token fallback:
-
-```bash
-JUMPFLIX_MCP_BEARER_TOKEN="your-token"
-```
-
-See `docs/MCP.md` for transport details, environment variables, tools, resource templates, and prompt workflows.
-
-`docs/MCP.md` includes both `User-Defined OAuth Client` and Dynamic Client Registration (DCR) connector setup paths.
-
-`docs/MCP.md` also includes Client Identifier Metadata Document (CIMD) support details.
-
-For ChatGPT-style CIMD clients, private_key_jwt (`RS256` + `jwks_uri`) is supported.
-
-`docs/MCP.md` also documents cursor pagination, advanced catalog filters, payload-size controls, and deployment guidance for streamable HTTP sessions on Netlify/serverless runtimes.
-
-## 🗄 Supabase Setup
-
-The app requires Supabase for content management. Here's how to set it up:
-
-1. **Create a Supabase project** at [supabase.com](https://supabase.com)
-2. **Apply the schema**: Run the SQL migrations in `supabase/migrations/` in order (starting with `202510310001_initial_schema.sql`) in your Supabase SQL editor
-
-<details>
-    <summary>Alternative method using the Supabase CLI</summary>
-
-  1. Get the latest stable release via [Github](https://github.com/supabase/cli)
-  2. Unpack and install the CLI, on Linux for example:  
-  `sudo dpkg -i supabase_2.75.0_linux_amd64.deb`
-  3. Obtain an Access Token via the [Dashboard](https://supabase.com/dashboard/account/tokens)
-  4. Authenticate the CLI with your Supabase account:  
-  `supabase login --no-browser --token $TOKEN`
-  5. Link the CLI to the remote project:  
-  `supabase link --project-ref $REF -p $PASSWORD`  
-  (In this case `$REF` is the randomized project slug and `$PASSWORD` is the pgsql password created on account setup)
-  6. `supabase migration list` should show the following:
-  ```
-   Local          | Remote | Time (UTC)          
-  ----------------|--------|---------------------
-   202510310001   |        | 202510310001        
-   20251103120000 |        | 2025-11-03 12:00:00 
-   20251103121500 |        | 2025-11-03 12:15:00 
-   ...
-  ```
-  > Notice the `Remote` column is empty, this means that the local migrations in the folder aren't synced up to your remote dashboard yet.  
-  7. Finally, sync local migrations to your remote instance:  
-  `supabase db push --linked`
-
-</details>
-
-3. **Get your credentials** from Project Settings → API:
-   - `PUBLIC_SUPABASE_URL`
-   - `PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-4. **Add to `.env`** (see above)
-5. **Seed the database** (optional):
+Run the interactive admin tool with:
 
 ```bash
 npm run admin
 ```
 
-Select "Add Movie" or "Add Series" to populate content, or use the seed files in `content/`.
+It can add and edit films or series, sync YouTube playlist episodes, maintain Spotify-backed tracklists, generate BlurHash placeholders, and review catalog metadata. Privileged actions require `SUPABASE_SERVICE_ROLE_KEY`.
 
-### Admin CLI
+More detail is available in [`scripts/README.md`](./scripts/README.md).
 
-The admin CLI (`scripts/admin-cli.ts`) provides an interactive interface for content management:
+## APIs and integrations
+
+### Read-only MCP server
+
+JUMPFLIX includes a remote MCP server at `/mcp` for structured, read-only catalog discovery. It exposes films, series, episodes, people, music, reviews, and parkour spots to compatible clients. OAuth and a static bearer-token fallback are supported.
+
+See [`docs/MCP.md`](./docs/MCP.md) for tools, resources, authentication, pagination, and deployment guidance.
+
+### Partner API
+
+Authenticated API endpoints expose video-to-spot mappings and approved spot chapters for integrations such as parkour.spot.
+
+See [`docs/API.md`](./docs/API.md) for the request and response formats.
+
+### Other project docs
+
+- [`docs/FACETS.md`](./docs/FACETS.md) — the catalog's browse and tagging model
+- [`docs/BLURHASH.md`](./docs/BLURHASH.md) — poster placeholder generation
+- [`docs/SITEMAP_SUBMISSION.md`](./docs/SITEMAP_SUBMISSION.md) — sitemap generation and submission
+- [`static/brand/README.md`](./static/brand/README.md) — source assets and icon generation
+
+## Project structure
+
+```text
+src/
+  lib/
+    components/       Reusable interface components
+    server/           Server-only data and integration code
+    tv/               Catalog, detail, and player components
+  routes/             Pages, APIs, OAuth, and MCP endpoints
+messages/             Source translations (en, nl, ja)
+scripts/              Admin, backup, import, and asset tools
+static/               Brand assets, posters, thumbnails, and screenshots
+supabase/migrations/  Ordered database schema changes
+tests/mcp/            MCP server tests
+docs/                 Focused technical documentation
+```
+
+## Contributing
+
+Pull requests are welcome, especially for:
+
+- verified films, documentaries, and series with legitimate source links;
+- missing creator or athlete credits;
+- translations;
+- accessibility and performance improvements;
+- corrections to metadata, tracklists, facets, or mapped spots.
+
+Before opening a pull request:
 
 ```bash
-npm run admin
+npm run lint
+npm run check
+npm run build:no-sitemap
 ```
 
-Features:
+Please read the [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) and keep content submissions respectful of creator rights.
 
-- 🎥 **Add Movie** - With auto-generated blurhash from thumbnails
-- 📺 **Add Series** - With automatic YouTube playlist episode syncing
-- 🔄 **Refresh Episodes** - Sync episodes from YouTube playlists (no API key needed)
-- 🎵 **Manage Tracklists** - Add Spotify-backed tracks with timestamps (manual or YouTube import)
-- 📋 **List All Content**
-- ✏️ **Edit Content**
-- 🗑️ **Delete Content**
+## License and attribution
 
-See `scripts/README.md` for detailed CLI documentation.
+The repository is licensed under [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
-### Environment variables
+Third-party videos, thumbnails, names, logos, and provider assets remain the property of their respective owners. This repository contains catalog metadata, interface code, and links or identifiers for externally hosted media; it does not grant rights to that third-party material.
 
-Create a `.env` (or populate your deployment provider) with:
+If an asset or listing raises a rights concern, please open an issue or pull request so it can be reviewed.
 
-```bash
-PUBLIC_SUPABASE_URL="https://YOUR-PROJECT.supabase.co"
-PUBLIC_SUPABASE_ANON_KEY="public-anon-key"
-SUPABASE_SERVICE_ROLE_KEY="service-role-key" # server-only
-ADMIN_EMAILS="you@example.com" # server-only (comma-separated)
-ADMIN_USER_IDS="" # server-only (comma-separated)
-PARKOUR_SPOT_API_KEY="" # server-only (used by /api/parkour-spot/* proxy)
-BUNNYNET_API_KEY="" # scripts/workflows only, used for Bunny.net billing import
-OPENAI_ADMIN_KEY="" # scripts/workflows only, used for external funding cost import
-OPENAI_COSTS_START_DATE="2024-01-01" # scripts/workflows only
-```
-
-`SUPABASE_SERVICE_ROLE_KEY` must never ship to the browser—it's reserved for privileged server-side operations.
-
-## Funding Sync
-
-Funding pages now read only from Supabase. External funding data should be imported into `project_costs` ahead of time.
-
-Run the importer locally:
-
-```bash
-npm run sync:funding
-```
-
-Debug only the Bunny import mapping:
-
-```bash
-npm run sync:funding:debug:bunny
-```
-
-You can also use `DEBUG_BUNNY_SYNC=1` when running the sync script manually.
-
-The repo also includes a daily GitHub Actions workflow at `.github/workflows/sync-funding.yml`. Configure these repository secrets before enabling it:
-
-- `PUBLIC_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `BUNNYNET_API_KEY`
-- `OPENAI_ADMIN_KEY`
-- `OPENAI_COSTS_START_DATE` (optional)
-
-The importer is idempotent for API-sourced records and updates existing imported rows by `source_system` + `source_reference`.
-
-## 🎵 Music / Spotify-backed Tracklists
-
-Movies can optionally include a timestamped tracklist (songs used in the film). Track metadata is stored in Supabase and the UI renders it in the movie details panel with links to open tracks on Spotify.
-
-**How it works**
-
-- Data lives in Supabase tables `songs` and `video_songs` (added via migration `20260203000000_add_video_tracklists.sql`).
-- Tracklists are readable publicly (RLS `select` is allowed), but writing is done via the admin CLI using your service role key.
-- The admin CLI can:
-  - Add a track manually from a Spotify URL/URI + a start timecode
-  - Import a “best-effort” tracklist from YouTube using:
-    - Timestamp chapters from the video description (e.g. `12:34 Artist — Title`)
-    - YouTube’s “Music in this video” attribution (when available)
-
-**Spotify setup (optional, required for importing/adding tracks)**
-
-To fetch track metadata and to map YouTube candidates to Spotify tracks, set these env vars (for scripts/CLI only):
-
-```bash
-SPOTIFY_CLIENT_ID=...
-SPOTIFY_CLIENT_SECRET=...
-```
-
-You can create credentials via the Spotify Developer Dashboard (a basic “app” is enough; the CLI uses the Client Credentials flow).
-
-**Using it**
-
-```bash
-npm run admin
-```
-
-Then choose **Manage Tracklists**:
-
-- **Manage a single movie tracklist** → view/add/import/clear
-- **Bulk import missing tracklists** → scans all movies and imports for those with 0 tracks
-
-## 🌐 Internationalization (Paraglide)
-
-Messages live in `/messages/{locale}.json`. Paraglide generates runtime modules into `src/lib/paraglide/` at build/dev time via the Vite plugin. Add a locale:
-
-1. Create `messages/fr.json` (follow schema).
-2. Add the locale code to `project.inlang/settings.json` under `locales`.
-3. Restart dev server (or re-run `npm run dev`).
-4. Import messages anywhere: `import * as m from '$lib/paraglide/messages';`
-
-## 🧪 Content Model
-
-Defined in `src/lib/supabase/types.ts`:
-
-```ts
-interface MediaItem {
-	id: number;
-	slug: string;
-	type: 'movie' | 'series';
-	title: string;
-	description?: string;
-	thumbnail?: string;
-	blurhash?: string;
-	paid?: boolean;
-	provider?: string;
-	external_url?: string;
-	year?: string;
-	duration?: string;
-	video_id?: string;
-	vimeo_id?: string;
-	trakt?: string;
-	creators?: string[];
-	starring?: string[];
-}
-```
-
-Helper utilities (`src/lib/tv/utils.ts`) provide deterministic shuffling, sorting, search matching, and embed URL builders.
-
-## 🧊 Deterministic Shuffle
-
-The grid's default ordering uses a seeded pseudo‑random generator → each session gets a stable “organic” ordering while still feeling non-linear. Sorting overrides (title, year, duration) apply after filtering.
-
-## 💡 Design Philosophy
-
-Minimal chrome, content first. Fast perceived performance. Respect creators by linking to official sources. Encourage exploration while remaining respectful to paid releases (clear paid badge & external provider links).
-
-## 🤝 Contributing
-
-Pull requests welcome—especially for:
-
-- New verified films / documentaries / series (include legit source links)
-- Additional locales (translations)
-- Accessibility refinements
-- Lightweight performance wins (bundle size, loading behavior)
-
-Content PR checklist:
-
-1. Use the **admin CLI** (`npm run admin`) to add content with proper validation
-2. Provide a `thumbnail` (web‑optimized `.webp` preferred; local images go in `static/images/posters/`)
-3. BlurHash will be auto-generated from thumbnails
-4. Include `creators` / `starring` arrays when known (credit people!)
-5. If paid: set `paid: true`, add `provider` & `external_url`
-6. For series: provide YouTube playlist IDs for automatic episode syncing
-7. Run `npm run lint && npm run check` before submitting
-
-Alternatively, use the JSON seed files in `content/` - see `content/README.md`.
-
-## 🔐 Licensing & Attribution
-
-This repository contains only metadata & links/IDs to third‑party hosted videos. Actual video content is not redistributed. Thumbnails sourced from official providers or TMDB style paths should respect their respective licenses/terms. Remove any asset you have rights concerns about via PR.
-
-Repository license: Creative Commons Attribution‑NonCommercial‑NoDerivatives 4.0 International (CC BY‑NC‑ND 4.0).
-
-- Attribution required — credit “Max Seelig — MAXmade.nl — Jumpflix.tv”.
-- NonCommercial — no commercial use.
-- NoDerivatives — you may not distribute modified versions.
-- Full legal code: [CC BY‑NC‑ND 4.0 legal code](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode)
-
-Notes:
-
-- Third‑party logos, thumbnails, and embedded videos remain under their own licenses/terms.
-- By contributing, you agree your contribution is included under the repository’s CC BY‑NC‑ND 4.0 license.
-- Because of “NoDerivatives”, redistribution of a modified fork is not permitted under this license.
-
-## 🛠 Deployment
-
-Currently adapter‑auto. For static/edge hosting (e.g. Netlify / Vercel) just build and deploy the output. If switching adapters, edit `svelte.config.js` accordingly.
-
-## 🧾 Scripts Overview
-
-| Script              | Purpose                                         |
-| ------------------- | ----------------------------------------------- |
-| `dev`               | Start Vite dev server                           |
-| `build`             | Production build + automatic sitemap submission |
-| `build:no-sitemap`  | Production build without sitemap submission     |
-| `preview`           | Preview built app                               |
-| `check`             | Type & Svelte diagnostics                       |
-| `lint`              | Prettier check + ESLint                         |
-| `generate:favicon`  | Generate favicon files                          |
-| `admin`             | Interactive admin CLI for content management    |
-| `submit-sitemap`    | Submit sitemap to search engines                |
-| `generate:blurhash` | Generate BlurHash placeholders for posters      |
-| `generate:icons`    | Generate PWA icons from brand assets            |
-| `generate:favicon`  | Generate favicon files                          |
-
-## 📦 Additional Features
-
-### BlurHash Placeholders
-
-Posters use BlurHash for smooth loading. Generate hashes for new posters:
-
-```bash
-npm run generate:blurhash
-```
-
-See `docs/BLURHASH.md` for details.
-
-### Sitemap & SEO
-
-The app automatically:
-
-- Generates a sitemap at `/sitemap.xml`
-- Submits to search engines after build (configurable)
-- Includes structured data (Schema.org) for movies and series
-
-See `docs/SITEMAP_SUBMISSION.md` for configuration.
-
-### PWA Icons
-
-Generate icons from your brand assets:
-
-```bash
-npm run generate:icons
-npm run generate:favicon
-```
-
-Place source images in `static/brand/` - see `static/brand/README.md`.
-
-## 📸 Visual Style
-
-Cards, subtle hover brightness, glassy sidebar (desktop), content-first grid. Dark mode images delivered via `<picture>`/CSS toggling. Layout aims to stay performant with large poster sets.
-
-## ❓ FAQ
-
-**Is this a streaming service?** No, it embeds or links to legitimate sources.  
-**Can I add my film?** Yes—use the admin CLI (`npm run admin`) or open a PR with metadata & links.  
-**How do I manage content?** Use the interactive admin CLI: `npm run admin`  
-**Do I need a YouTube API key?** No, episode syncing uses public Atom feeds.  
-**Why some posters 404 in dev?** Ensure local poster assets are saved under `static/images/posters/` and paths start with `/images/posters/...`.  
-**Why deterministic shuffle?** Keeps sessions feeling curated & avoids content "jitter" on each re-render.  
-**How do I update episodes?** Run "Refresh Episodes" in the admin CLI - it syncs from YouTube automatically.
-
-## 📄 License
-
-<a href="https://www.jumpflix.tv/">jumpflix.tv</a> © 2025 by <a href="https://www.maxmade.nl/">Max Seelig</a> is licensed under <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/">CC BY-NC-ND 4.0</a><img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/nc.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;"><img src="https://mirrors.creativecommons.org/presskit/icons/nd.svg" alt="" style="max-width: 1em;max-height:1em;margin-left: .2em;">
+<div align="center">
 
 ---
 
-Made with 🍿 by MAXmade
+[jumpflix.tv](https://www.jumpflix.tv/) · Made with 🍿 by [Max Seelig](https://www.maxmade.nl/)
+
+</div>

@@ -274,10 +274,14 @@ if (browser) {
 
 // Debounced search to avoid filtering on every keystroke
 function debounceStore<T>(src: Readable<T>, delay = 150): Readable<T> {
-	return derived(src, ($v, set) => {
-		const to = setTimeout(() => set($v), delay);
-		return () => clearTimeout(to);
-	});
+	return derived(
+		src,
+		($v, set) => {
+			const to = setTimeout(() => set($v), delay);
+			return () => clearTimeout(to);
+		},
+		get(src)
+	);
 }
 const debouncedSearch = debounceStore(searchQuery, 160);
 

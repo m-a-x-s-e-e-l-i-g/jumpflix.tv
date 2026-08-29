@@ -5,7 +5,7 @@
 // - Runtime cache images/icons with stale-while-revalidate
 // - Navigation: network-first with offline fallback to root when unavailable
 
-import { build, files, prerendered, version } from '$service-worker';
+import { build, prerendered, version } from '$service-worker';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -13,8 +13,9 @@ const APP_CACHE = `app-${version}`;
 const STATIC_CACHE = `static-${version}`;
 const IMAGE_CACHE = 'images-v1';
 
-// Everything we know at build time
-const PRECACHE_URLS = new Set<string>([...build, ...files, ...prerendered]);
+// Cache the application bundles and prerendered routes. Static catalog media is
+// cached on demand below instead of downloading the entire library at install.
+const PRECACHE_URLS = new Set<string>([...build, ...prerendered]);
 
 self.addEventListener('install', (event) => {
 	// Skip waiting so new SW activates immediately

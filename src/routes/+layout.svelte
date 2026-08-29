@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { onMount, setContext } from 'svelte';
+	import { onMount, setContext, tick, type Component } from 'svelte';
 	import { get } from 'svelte/store';
 	import type { Action } from 'svelte/action';
 	import { navigating, page } from '$app/stores';
@@ -28,7 +28,6 @@
 	import { getLocale, setLocale } from '$lib/paraglide/runtime.js';
 	import { m } from '$lib/paraglide/messages.js';
 	import TvPage from '$lib/tv/TvPage.svelte';
-	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import UserProfileButton from '$lib/components/UserProfileButton.svelte';
 	import AdminMenuButton from '$lib/components/AdminMenuButton.svelte';
 	import HelpTipsButton from '$lib/components/HelpTipsButton.svelte';
@@ -47,6 +46,20 @@
 	import { XPOP_AWARDED_EVENT, type XPopAwardDetail } from '$lib/xpop-events';
 	// We'll access the underlying custom element via a store reference set in the prompt component
 	let pwaInstallRef: any = null;
+	let PWAInstallPromptComponent = $state<Component<{ autoOpen?: boolean }> | null>(null);
+	let pwaInstallPromptLoad: Promise<void> | null = null;
+
+	function loadPwaInstallPrompt(): Promise<void> {
+		if (!pwaInstallPromptLoad) {
+			pwaInstallPromptLoad = import('$lib/components/PWAInstallPrompt.svelte').then(
+				async ({ default: component }) => {
+					PWAInstallPromptComponent = component;
+					await tick();
+				}
+			);
+		}
+		return pwaInstallPromptLoad;
+	}
 
 	type XPopOverlayParticle = {
 		id: number;
@@ -77,11 +90,13 @@
 		);
 	}
 
-	function openPwaInstallPrompt() {
+	async function openPwaInstallPrompt() {
 		if (isStandaloneMode()) {
 			toast.message(m.install_installed());
 			return;
 		}
+		await loadPwaInstallPrompt();
+		pwaInstallRef ??= document.querySelector('pwa-install');
 		if (!pwaInstallRef || typeof pwaInstallRef.showDialog !== 'function') {
 			if (import.meta.env.DEV) {
 				toast.message(m.install_dev());
@@ -115,6 +130,9 @@
 	// current locale from Paraglide (reactive state)
 	let currentLocale: 'en' | 'nl' | 'ja' = $state(getLocale() as any);
 	let sheetOpen = $state(false);
+	$effect(() => {
+		if (sheetOpen) void loadPwaInstallPrompt();
+	});
 	let reduceMotion = $state(false);
 	let systemReduceMotion = $state(false);
 	let showPopcorn = $state(false);
@@ -1040,22 +1058,24 @@
 	</SheetRoot>
 	{/if}
 
-	{#key currentLocale}
-		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
-		{#if $page.error}
-			{@render children?.()}
-		{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute || isLegalRoute || isVideoMapRoute || isAutoplayRoute}
-			{@render children?.()}
-		{:else}
-			<TvPage
-				content={data?.content ?? []}
-				initialItem={data?.item ?? null}
-				initialEpisodeNumber={data?.initialEpisodeNumber ?? null}
-				initialSeasonNumber={data?.initialSeasonNumber ?? null}
-			/>
-			{@render children?.()}
-		{/if}
-	{/key}
+	<main style="display: contents">
+		{#key currentLocale}
+			<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
+			{#if $page.error}
+				{@render children?.()}
+			{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute || isLegalRoute || isVideoMapRoute || isAutoplayRoute}
+				{@render children?.()}
+			{:else}
+				<TvPage
+					content={data?.content ?? []}
+					initialItem={data?.item ?? null}
+					initialEpisodeNumber={data?.initialEpisodeNumber ?? null}
+					initialSeasonNumber={data?.initialSeasonNumber ?? null}
+				/>
+				{@render children?.()}
+			{/if}
+		{/key}
+	</main>
 
 	{#if $page.url.pathname === '/' && !$page.error}
 		<footer class="border-t border-border/60 px-4 py-4 text-center text-[11px] text-muted-foreground/80">
@@ -1157,8 +1177,10 @@
 	<!-- Global toast container -->
 	<Toaster richColors position="bottom-center" theme="dark" />
 
-	<!-- Global PWA install prompt (manual trigger only) -->
-	<PWAInstallPrompt autoOpen={false} />
+	<!-- Load the manual-only installer after the settings sheet is opened. -->
+	{#if PWAInstallPromptComponent}
+		<PWAInstallPromptComponent autoOpen={false} />
+	{/if}
 </div>
 
 <style>

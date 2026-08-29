@@ -4,7 +4,6 @@
 	import { toast } from 'svelte-sonner';
 	import { normalizeParkourSpotId } from '$lib/utils';
 
-	import 'leaflet/dist/leaflet.css';
 	import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 	import markerIcon from 'leaflet/dist/images/marker-icon.png';
 	import markerShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -159,6 +158,8 @@
 		let disposed = false;
 
 		void (async () => {
+			await import('leaflet/dist/leaflet.css');
+			if (disposed) return;
 			leaflet = await import('leaflet');
 			if (disposed || !leaflet || !mapContainer) return;
 

@@ -206,6 +206,8 @@
 				decoding="async"
 				width={230}
 				height={345}
+				breakpoints={[180, 230, 360, 460, 640]}
+				sizes="(max-width: 767px) calc((100vw - 3.5rem) / 2), (max-width: 900px) 230px, min(320px, calc((100vw - 8rem) / 4))"
 				class={`${baseImageClass} ${imageOpacityClass}`}
 				cdn={dev ? undefined : 'netlify'}
 				layout="constrained"

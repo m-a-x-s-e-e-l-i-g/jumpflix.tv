@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { onMount, setContext } from 'svelte';
+	import { onDestroy, onMount, setContext } from 'svelte';
 	import { get } from 'svelte/store';
 	import type { Action } from 'svelte/action';
 	import { navigating, page } from '$app/stores';
@@ -118,6 +118,10 @@
 	let reduceMotion = $state(false);
 	let systemReduceMotion = $state(false);
 	let showPopcorn = $state(false);
+	let showNavigationLoading = $state(false);
+	let navigationLoadingTimer: ReturnType<typeof setTimeout> | null = null;
+	let navigationLoadingExitTimer: ReturnType<typeof setTimeout> | null = null;
+	let navigationLoadingStartedAt = 0;
 	let currentUserXp = $state<UserXpSummary | null>(data.userXp);
 	let xPopQueue = $state<XPopAwardDetail[]>([]);
 	let activeXPopReward = $state<XPopOverlayReward | null>(null);
@@ -149,6 +153,50 @@
 			return toPath === '/stats' || toPath.startsWith('/stats/');
 		})()
 	);
+
+	// Give slower client-side navigations a quiet, global progress signal without
+	// flashing it for links that resolve immediately.
+	$effect(() => {
+		const isNavigating = Boolean($navigating);
+
+		if (isNavigating) {
+			if (navigationLoadingExitTimer) {
+				clearTimeout(navigationLoadingExitTimer);
+				navigationLoadingExitTimer = null;
+			}
+
+			if (!showNavigationLoading && !navigationLoadingTimer) {
+				navigationLoadingTimer = setTimeout(() => {
+					navigationLoadingTimer = null;
+					if ($navigating) {
+						navigationLoadingStartedAt = Date.now();
+						showNavigationLoading = true;
+					}
+				}, 140);
+			}
+			return;
+		}
+
+		if (navigationLoadingTimer) {
+			clearTimeout(navigationLoadingTimer);
+			navigationLoadingTimer = null;
+		}
+
+		if (showNavigationLoading && !navigationLoadingExitTimer) {
+			const minimumVisibleTime = 220;
+			const elapsed = Date.now() - navigationLoadingStartedAt;
+			const remaining = Math.max(0, minimumVisibleTime - elapsed);
+			navigationLoadingExitTimer = setTimeout(() => {
+				navigationLoadingExitTimer = null;
+				showNavigationLoading = false;
+			}, remaining);
+		}
+	});
+
+	onDestroy(() => {
+		if (navigationLoadingTimer) clearTimeout(navigationLoadingTimer);
+		if (navigationLoadingExitTimer) clearTimeout(navigationLoadingExitTimer);
+	});
 
 	let lastScrollY = 0;
 	const scrollSubscribers = new Set<ScrollSubscriber>();
@@ -817,6 +865,13 @@
 {/if}
 
 <div class="relative z-[var(--z-index-content)]">
+	{#if showNavigationLoading}
+		<div class="navigation-loading" role="status" aria-live="polite">
+			<div class="navigation-loading__bar" aria-hidden="true"></div>
+			<span class="sr-only">Loading page…</span>
+		</div>
+	{/if}
+
 	<!-- Top-left settings cog that opens a left-side sheet -->
 	{#if !isAutoplayRoute}
 	<SheetRoot bind:open={sheetOpen}>
@@ -1162,6 +1217,48 @@
 </div>
 
 <style>
+	.navigation-loading {
+		position: fixed;
+		z-index: calc(var(--z-index-settings) + 1);
+		top: 0;
+		right: 0;
+		left: 0;
+		height: 3px;
+		pointer-events: none;
+		overflow: hidden;
+		background: color-mix(in oklch, var(--primary) 16%, transparent);
+		animation: navigationLoadingEnter 160ms ease-out both;
+	}
+
+	.navigation-loading__bar {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: -35%;
+		width: 35%;
+		background: var(--primary);
+		box-shadow: 0 0 16px color-mix(in oklch, var(--primary) 75%, transparent);
+		animation: navigationLoadingSweep 1050ms cubic-bezier(0.16, 1, 0.3, 1) infinite;
+	}
+
+	@keyframes navigationLoadingEnter {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@keyframes navigationLoadingSweep {
+		from {
+			transform: translate3d(0, 0, 0);
+		}
+		to {
+			transform: translate3d(385%, 0, 0);
+		}
+	}
+
 	.popcorn-layer {
 		position: fixed;
 		inset: 0;
@@ -1453,6 +1550,15 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
+		.navigation-loading {
+			animation: none;
+		}
+
+		.navigation-loading__bar {
+			left: 0;
+			width: 100%;
+			animation: none;
+		}
 		.popcorn-layer,
 		.popcorn-item {
 			transform: none !important;

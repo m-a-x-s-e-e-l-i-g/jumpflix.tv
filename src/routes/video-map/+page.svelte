@@ -188,18 +188,18 @@
 			clusterVideoTotal >= 90 ? 'is-intense' : clusterVideoTotal >= 35 ? 'is-strong' : 'is-soft';
 
 		const size = isGrouped
-			? clamp(36 + Math.sqrt(cluster.spots.length) * 5 + Math.log10(clusterVideoTotal + 1) * 4, 40, 70)
-			: clamp(30 + Math.sqrt(primaryCount) * 2.6, 31, 44);
+			? clamp(34 + Math.sqrt(cluster.spots.length) * 2.2 + Math.log10(clusterVideoTotal + 1) * 1.4, 34, 54)
+			: clamp(26 + Math.sqrt(primaryCount) * 1.2, 26, 34);
 
 		const groupedClass = isGrouped ? 'is-group' : 'is-single';
 		const selectedClass = isSelected ? 'is-selected' : '';
-		const metaBadge = isGrouped
-			? `<span class="video-map-pin-meta">${clusterVideoTotal}</span>`
-			: '';
+		const markerContent = isGrouped
+			? `<span class="video-map-pin-shell"><span class="video-map-pin-count">${labelValue}</span></span>`
+			: `<span class="video-map-pin-shell">${primaryCount > 1 ? `<span class="video-map-pin-count">${labelValue}</span>` : ''}</span>`;
 
 		return leaflet.divIcon({
 			className: 'video-map-pin-host',
-			html: `<div class="video-map-pin-wrap ${groupedClass} ${selectedClass} ${intensityClass}"><span class="video-map-pin-glow" aria-hidden="true"></span><span class="video-map-pin-rim" aria-hidden="true"></span><span class="video-map-pin-core"><span class="video-map-pin-count">${labelValue}</span></span>${metaBadge}</div>`,
+			html: `<div class="video-map-pin-wrap ${groupedClass} ${selectedClass} ${intensityClass}"><span class="video-map-pin-glow" aria-hidden="true"></span>${markerContent}</div>`,
 			iconSize: [size, size],
 			iconAnchor: [size / 2, size / 2]
 		});
@@ -240,8 +240,18 @@
 		const visible = filteredPoints.filter((point: MapSpotPoint) => inBounds(point, bounds));
 		viewportSpotIds = new Set(visible.map((point: MapSpotPoint) => point.spotId));
 
-		const clusters = clusterPoints(visible, map.getZoom());
 		const clusterSelectionSet = new Set(selectedClusterSpotIds);
+		const clusters = clusterSelectionSet.size > 0
+			? [
+					...clusterPoints(
+						visible.filter((point) => !clusterSelectionSet.has(point.spotId)),
+						map.getZoom()
+					),
+					...visible
+						.filter((point) => clusterSelectionSet.has(point.spotId))
+						.map((point) => ({ lat: point.lat, lng: point.lng, spots: [point] }))
+				]
+			: clusterPoints(visible, map.getZoom());
 
 		markersLayer.clearLayers();
 
@@ -271,9 +281,9 @@
 				selectedSpotId = null;
 				selectedClusterSpotIds = cluster.spots.map((spot) => spot.spotId);
 
-				if (map && map.getZoom() < 9) {
-					fitToPoints(cluster.spots, map.getZoom() + 3);
-				}
+				// Always zoom to the clicked cluster so its individual spots can become visible,
+				// even when the map is already relatively close to the cluster.
+				fitToPoints(cluster.spots, 19);
 
 				refreshMapMarkers(false);
 			});
@@ -322,26 +332,16 @@
 				maxBoundsViscosity: 1,
 				attributionControl: false
 			});
+			leaflet.control.attribution({ prefix: false, position: 'bottomleft' }).addTo(map);
 
 			leaflet
-				.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-					attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-					subdomains: 'abcd',
-					maxZoom: 20,
+				.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+					attribution:
+						'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+					maxZoom: 19,
 					noWrap: true,
 					bounds: worldBounds,
-					className: 'video-map-base-tiles'
-				})
-				.addTo(map);
-
-			leaflet
-				.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
-					subdomains: 'abcd',
-					maxZoom: 20,
-					opacity: 0.88,
-					noWrap: true,
-					bounds: worldBounds,
-					className: 'video-map-label-tiles'
+					className: 'video-map-osm-tiles'
 				})
 				.addTo(map);
 
@@ -746,11 +746,11 @@
 			radial-gradient(circle at 82% 84%, rgba(221, 70, 62, 0.08), transparent 40%),
 			linear-gradient(
 				180deg,
-				rgba(8, 11, 17, 0.02) 0%,
-				rgba(8, 11, 17, 0.1) 78%,
-				rgba(8, 11, 17, 0.16) 100%
+				rgba(8, 11, 17, 0.08) 0%,
+				rgba(8, 11, 17, 0.18) 78%,
+				rgba(8, 11, 17, 0.26) 100%
 			),
-			radial-gradient(circle at center, transparent 72%, rgba(2, 3, 5, 0.17) 100%);
+			radial-gradient(circle at center, transparent 68%, rgba(2, 3, 5, 0.24) 100%);
 	}
 
 	.video-map-map-overlay {
@@ -968,156 +968,137 @@
 	:global(.video-map-pin-host) {
 		background: none;
 		border: 0;
+		overflow: visible;
 	}
 
 	:global(.video-map-pin-wrap) {
 		position: relative;
 		width: 100%;
 		height: 100%;
-		display: grid;
-		place-items: center;
-		filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5));
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		filter: drop-shadow(0 3px 7px rgba(0, 0, 0, 0.38));
 	}
 
 	:global(.video-map-pin-glow) {
 		position: absolute;
-		inset: -9%;
+		inset: -18%;
 		border-radius: 999px;
-		opacity: 0.38;
+		opacity: 0.16;
 		background: radial-gradient(
 			circle,
-			rgba(221, 70, 62, 0.66) 0%,
-			rgba(221, 70, 62, 0.28) 45%,
+			rgba(221, 70, 62, 0.34) 0%,
+			rgba(221, 70, 62, 0.08) 48%,
 			rgba(221, 70, 62, 0) 72%
 		);
-		transform: scale(0.92);
+		transform: scale(0.9);
 		transition: opacity 160ms ease, transform 160ms ease;
 	}
 
-	:global(.video-map-pin-rim) {
-		position: absolute;
-		inset: 4%;
-		border-radius: 999px;
-		border: 1.6px solid rgba(255, 240, 236, 0.74);
-		background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.01));
-		box-shadow: 0 0 0 1px rgba(20, 8, 10, 0.5);
-		transition: border-color 160ms ease;
-	}
-
-	:global(.video-map-pin-core) {
+	:global(.video-map-pin-shell) {
 		position: relative;
-		z-index: 2;
-		width: 72%;
-		height: 72%;
+		z-index: 1;
 		display: grid;
 		place-items: center;
-		border-radius: 999px;
-		border: 1px solid rgba(255, 228, 224, 0.68);
+		width: 100%;
+		height: 100%;
+		border: 1px solid rgba(255, 235, 231, 0.58);
+		border-radius: 50%;
+		background: rgba(21, 24, 34, 0.58);
 		box-shadow:
-			inset 0 3px 6px rgba(255, 218, 214, 0.2),
-			0 4px 10px rgba(0, 0, 0, 0.35);
-		background: radial-gradient(circle at 34% 22%, #ffd5cf, #df4338 52%, #7a1d17 100%);
-		transition: transform 140ms ease;
+			inset 0 0 0 3px rgba(221, 70, 62, 0.12),
+			inset 0 1px 0 rgba(255, 255, 255, 0.16),
+			0 2px 7px rgba(0, 0, 0, 0.42);
+		backdrop-filter: blur(4px);
+		transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 	}
 
-	:global(.video-map-pin-wrap.is-single .video-map-pin-core) {
-		background: radial-gradient(circle at 35% 24%, #ffd1c9, #cf4338 54%, #681b16 100%);
+	:global(.video-map-pin-wrap.is-single .video-map-pin-shell) {
+		width: 64%;
+		height: 64%;
+		border-color: rgba(255, 226, 221, 0.64);
+		background: rgba(196, 58, 51, 0.62);
+		box-shadow:
+			inset 0 0 0 2px rgba(255, 238, 234, 0.08),
+			0 2px 5px rgba(0, 0, 0, 0.34);
 	}
 
-	:global(.video-map-pin-wrap.is-group .video-map-pin-core) {
-		background: radial-gradient(circle at 35% 22%, #ffe5df, #f14f42 48%, #862019 100%);
+	:global(.video-map-pin-wrap.is-group .video-map-pin-shell::before),
+	:global(.video-map-pin-wrap.is-group .video-map-pin-shell::after) {
+		content: '';
+		position: absolute;
+		z-index: 0;
+		inset: 0.16rem;
+		border: 1px solid rgba(221, 70, 62, 0.18);
+		border-radius: 50%;
+		background: transparent;
+	}
+
+	:global(.video-map-pin-wrap.is-group .video-map-pin-shell::before) {
+		transform: translate(-0.14rem, 0.14rem);
+		opacity: 0.75;
+	}
+
+	:global(.video-map-pin-wrap.is-group .video-map-pin-shell::after) {
+		transform: translate(-0.26rem, 0.26rem);
+		opacity: 0.45;
 	}
 
 	:global(.video-map-pin-count) {
+		position: relative;
+		z-index: 1;
 		display: block;
-		font-weight: 800;
-		font-size: 0.8rem;
+		font-size: 0.68rem;
+		font-weight: 700;
 		line-height: 1;
-		color: #fff;
-		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.46);
+		letter-spacing: -0.02em;
+		color: rgba(255, 245, 242, 0.92);
+		text-align: center;
+		text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 	}
 
-	:global(.video-map-pin-meta) {
-		position: absolute;
-		top: -6%;
-		right: -9%;
-		z-index: 3;
-		min-width: 1.2rem;
-		height: 1.2rem;
-		padding: 0 0.28rem;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 999px;
-		font-size: 0.57rem;
-		font-weight: 800;
-		line-height: 1;
-		letter-spacing: 0.02em;
-		color: #ffe7e4;
-		border: 1px solid rgba(255, 225, 221, 0.74);
-		background: linear-gradient(145deg, #2b0b0b, #7a1d17 56%, #a62b22 100%);
-		box-shadow: 0 6px 12px -7px rgba(0, 0, 0, 0.8);
-		pointer-events: none;
+	:global(.video-map-pin-wrap.is-single .video-map-pin-count) {
+		font-size: 0.58rem;
+		font-weight: 750;
 	}
 
-	:global(.video-map-pin-wrap.is-soft .video-map-pin-glow) {
-		opacity: 0.26;
-	}
-
-	:global(.video-map-pin-wrap.is-strong .video-map-pin-glow) {
-		opacity: 0.4;
-	}
-
-	:global(.video-map-pin-wrap.is-intense .video-map-pin-glow) {
-		opacity: 0.55;
-		transform: scale(1);
-	}
-
-	:global(.video-map-pin-wrap:hover .video-map-pin-core) {
-		transform: scale(1.04);
+	:global(.video-map-pin-wrap:hover .video-map-pin-shell) {
+		transform: scale(1.06);
+		border-color: rgba(255, 247, 244, 0.82);
 	}
 
 	:global(.video-map-pin-wrap:hover .video-map-pin-glow) {
-		transform: scale(1.02);
-		opacity: 0.5;
+		transform: scale(1.04);
+		opacity: 0.26;
 	}
 
-	:global(.video-map-pin-wrap.is-selected .video-map-pin-rim) {
-		border-color: #fff;
+	:global(.video-map-pin-wrap.is-selected .video-map-pin-shell) {
+		border-color: rgba(255, 248, 245, 0.96);
 		box-shadow:
-			0 0 0 3px rgba(255, 255, 255, 0.36),
-			0 0 0 7px rgba(221, 70, 62, 0.36);
-		animation: video-map-pin-pulse 1.8s ease-out infinite;
+			0 0 0 2px rgba(255, 255, 255, 0.24),
+			0 0 0 4px rgba(221, 70, 62, 0.16),
+			0 3px 8px rgba(0, 0, 0, 0.42);
 	}
 
-	:global(.video-map-pin-wrap.is-selected .video-map-pin-core) {
-		border-color: rgba(255, 255, 255, 0.9);
+	:global(.video-map-pin-wrap.is-selected .video-map-pin-glow) {
+		opacity: 0.32;
+		transform: scale(1.04);
 	}
 
-	@keyframes video-map-pin-pulse {
-		0% {
-			box-shadow:
-				0 0 0 3px rgba(255, 255, 255, 0.36),
-				0 0 0 7px rgba(221, 70, 62, 0.36);
-		}
-		70% {
-			box-shadow:
-				0 0 0 2px rgba(255, 255, 255, 0.1),
-				0 0 0 11px rgba(221, 70, 62, 0.02);
-		}
-		100% {
-			box-shadow:
-				0 0 0 3px rgba(255, 255, 255, 0),
-				0 0 0 13px rgba(221, 70, 62, 0);
-		}
+	:global(.video-map-pin-wrap.is-soft .video-map-pin-glow) {
+		opacity: 0.1;
 	}
 
-	:global(.video-map-canvas .video-map-base-tiles) {
-		filter: saturate(1.1) contrast(1.08) brightness(1.08);
+	:global(.video-map-pin-wrap.is-strong .video-map-pin-glow) {
+		opacity: 0.14;
 	}
 
-	:global(.video-map-canvas .video-map-label-tiles) {
-		filter: saturate(0.92) contrast(1.14) brightness(1.24);
+	:global(.video-map-pin-wrap.is-intense .video-map-pin-glow) {
+		opacity: 0.18;
+	}
+	:global(.video-map-canvas .video-map-osm-tiles) {
+		filter: invert(0.94) hue-rotate(180deg) saturate(0.42) brightness(0.62) contrast(1.18);
 	}
 
 	:global(.video-map-canvas .leaflet-control-zoom) {
@@ -1149,16 +1130,19 @@
 	}
 
 	:global(.video-map-canvas .leaflet-control-attribution) {
-		background: rgba(6, 8, 12, 0.84);
-		color: rgba(236, 222, 219, 0.74);
-		padding: 0.15rem 0.38rem;
-		border-top-left-radius: 0.5rem;
-		border: 1px solid rgba(255, 255, 255, 0.14);
-		backdrop-filter: blur(6px);
+		background: transparent;
+		color: rgba(236, 222, 219, 0.48);
+		padding: 0.08rem 0.18rem;
+		border: 0;
+		font-size: 0.58rem;
+		line-height: 1.15;
+		opacity: 0.72;
+		box-shadow: none;
+		backdrop-filter: none;
 	}
 
 	:global(.video-map-canvas .leaflet-control-attribution a) {
-		color: color-mix(in oklch, var(--vm-accent) 70%, white 30%);
+		color: color-mix(in oklch, var(--vm-accent) 58%, white 42%);
 	}
 
 	@media (max-width: 1020px) {
@@ -1203,6 +1187,17 @@
 		.video-thumb-fallback {
 			width: 56px;
 			height: 82px;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:global(.video-map-pin-wrap .video-map-pin-shell),
+		:global(.video-map-pin-wrap .video-map-pin-glow) {
+			transition: none;
+		}
+
+		:global(.video-map-pin-wrap.is-selected .video-map-pin-shell) {
+			animation: none;
 		}
 	}
 </style>

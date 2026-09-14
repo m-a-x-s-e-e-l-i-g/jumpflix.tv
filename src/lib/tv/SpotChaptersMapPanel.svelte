@@ -250,21 +250,14 @@
 				worldCopyJump: true,
 				attributionControl: false
 			});
+			leaflet.control.attribution({ prefix: false, position: 'bottomleft' }).addTo(map);
 
 			leaflet
-				.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-					subdomains: 'abcd',
-					maxZoom: 20,
-					className: 'detail-spot-map-base'
-				})
-				.addTo(map);
-
-			leaflet
-				.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
-					subdomains: 'abcd',
-					maxZoom: 20,
-					opacity: 0.88,
-					className: 'detail-spot-map-labels'
+				.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+					attribution:
+						'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+					maxZoom: 19,
+					className: 'detail-spot-map-osm'
 				})
 				.addTo(map);
 
@@ -546,12 +539,24 @@
 		color: rgba(229, 236, 246, 0.92);
 	}
 
-	:global(.detail-spot-map-canvas .detail-spot-map-base) {
-		filter: saturate(1.08) contrast(1.08) brightness(1.08);
+	:global(.detail-spot-map-canvas .detail-spot-map-osm) {
+		filter: invert(0.94) hue-rotate(180deg) saturate(0.42) brightness(0.62) contrast(1.18);
 	}
 
-	:global(.detail-spot-map-canvas .detail-spot-map-labels) {
-		filter: saturate(0.92) contrast(1.14) brightness(1.22);
+	:global(.detail-spot-map-canvas .leaflet-control-attribution) {
+		background: transparent;
+		color: rgba(236, 222, 219, 0.48);
+		padding: 0.08rem 0.18rem;
+		border: 0;
+		font-size: 0.58rem;
+		line-height: 1.15;
+		opacity: 0.72;
+		box-shadow: none;
+		backdrop-filter: none;
+	}
+
+	:global(.detail-spot-map-canvas .leaflet-control-attribution a) {
+		color: rgba(234, 184, 178, 0.72);
 	}
 
 	:global(.detail-spot-map-canvas .leaflet-control-zoom) {

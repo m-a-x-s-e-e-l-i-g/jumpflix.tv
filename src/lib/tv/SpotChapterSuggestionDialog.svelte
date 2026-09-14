@@ -281,7 +281,7 @@
 
 					<div class="rounded-xl border border-white/10 bg-white/5 p-4">
 						<div class="mb-3 text-sm font-medium text-white/80">Pick a spot</div>
-						<ParkourSpotPicker bind:spotId />
+						<ParkourSpotPicker bind:spotId {mediaId} {mediaType} {playbackKey} />
 					</div>
 
 					<div class="flex flex-wrap items-center justify-between gap-3">

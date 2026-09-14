@@ -17,10 +17,23 @@
 		raw: any;
 	};
 
-	let { spotId = $bindable('') } = $props<{ spotId?: string }>();
+	type MediaType = 'movie' | 'series';
+
+	let {
+		spotId = $bindable(''),
+		mediaId = null,
+		mediaType = null,
+		playbackKey = null
+	} = $props<{
+		spotId?: string;
+		mediaId?: number | null;
+		mediaType?: MediaType | null;
+		playbackKey?: string | null;
+	}>();
 
 	let query = $state('');
 	let results = $state<SpotCandidate[]>([]);
+	let videoSpots = $state<SpotCandidate[]>([]);
 	let selected = $state<SpotCandidate | null>(null);
 	let isLoading = $state(false);
 
@@ -30,8 +43,12 @@
 	let markersLayer: import('leaflet').LayerGroup | null = null;
 
 	let lastSearchAbort: AbortController | null = null;
+	let videoSpotsAbort: AbortController | null = null;
 	let queryTimer: ReturnType<typeof setTimeout> | null = null;
 	let moveTimer: ReturnType<typeof setTimeout> | null = null;
+	let videoSpotsRequestKey = '';
+	let videoSpotsLoadingKey = '';
+	let didFitVideoSpotsKey = '';
 
 	function normalizeCandidate(raw: any): SpotCandidate | null {
 		const id = String(raw?.id ?? raw?.spotId ?? '').trim();
@@ -39,7 +56,8 @@
 		const name = String(raw?.name ?? raw?.title ?? raw?.displayName ?? id).trim() || id;
 
 		const latRaw = raw?.lat ?? raw?.latitude ?? raw?.location?.lat ?? raw?.location?.latitude;
-		const lngRaw = raw?.lng ?? raw?.lon ?? raw?.longitude ?? raw?.location?.lng ?? raw?.location?.longitude;
+		const lngRaw =
+			raw?.lng ?? raw?.lon ?? raw?.longitude ?? raw?.location?.lng ?? raw?.location?.longitude;
 		const lat = typeof latRaw === 'number' ? latRaw : Number(String(latRaw ?? ''));
 		const lng = typeof lngRaw === 'number' ? lngRaw : Number(String(lngRaw ?? ''));
 		if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
@@ -64,6 +82,47 @@
 		return out;
 	}
 
+	function extractVideoSpots(payload: any): SpotCandidate[] {
+		const chapters = Array.isArray(payload?.chapters) ? payload.chapters : [];
+		const seen = new Set<string>();
+		const out: SpotCandidate[] = [];
+
+		for (const chapter of chapters) {
+			const candidate = normalizeCandidate(chapter?.spot ?? chapter);
+			if (!candidate || seen.has(candidate.id)) continue;
+			seen.add(candidate.id);
+			out.push(candidate);
+		}
+
+		return out;
+	}
+
+	function getMediaRequestKey(): string {
+		if (!mediaId || !mediaType || (mediaType === 'series' && !playbackKey?.trim())) return '';
+		return `${mediaId}:${mediaType}:${playbackKey?.trim() ?? ''}`;
+	}
+
+	function fitToCandidates(candidates: SpotCandidate[], maxZoom = 14) {
+		if (!map || !leaflet || candidates.length === 0) return;
+
+		if (candidates.length === 1) {
+			map.setView([candidates[0].lat, candidates[0].lng], maxZoom, { animate: true });
+			return;
+		}
+
+		const bounds = leaflet.latLngBounds(
+			candidates.map((candidate) => [candidate.lat, candidate.lng] as [number, number])
+		);
+		if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24], maxZoom });
+	}
+
+	function fitVideoSpotsIfNeeded() {
+		const requestKey = getMediaRequestKey();
+		if (!map || !requestKey || !videoSpots.length || didFitVideoSpotsKey === requestKey) return;
+		fitToCandidates(videoSpots);
+		didFitVideoSpotsKey = requestKey;
+	}
+
 	function clearMarkers() {
 		if (!markersLayer) return;
 		markersLayer.clearLayers();
@@ -79,6 +138,52 @@
 				spotId = c.id;
 			});
 			marker.addTo(markersLayer);
+		}
+	}
+
+	async function loadVideoSpots() {
+		if (!browser) return;
+
+		const requestKey = getMediaRequestKey();
+		if (!requestKey) {
+			videoSpotsAbort?.abort();
+			videoSpots = [];
+			videoSpotsRequestKey = '';
+			didFitVideoSpotsKey = '';
+			return;
+		}
+		if (videoSpotsRequestKey === requestKey || videoSpotsLoadingKey === requestKey) return;
+
+		videoSpotsAbort?.abort();
+		const abort = new AbortController();
+		videoSpotsAbort = abort;
+		videoSpotsLoadingKey = requestKey;
+
+		try {
+			const url = new URL('/api/spot-chapters', window.location.origin);
+			url.searchParams.set('mediaId', String(mediaId));
+			url.searchParams.set('mediaType', mediaType as MediaType);
+			if (playbackKey?.trim()) url.searchParams.set('playbackKey', playbackKey.trim());
+
+			const res = await fetch(url.toString(), { signal: abort.signal, cache: 'no-store' });
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) throw new Error(data?.error || 'Failed to load video spots');
+
+			const nextVideoSpots = extractVideoSpots(data);
+			if (abort.signal.aborted) return;
+
+			videoSpots = nextVideoSpots;
+			videoSpotsRequestKey = requestKey;
+			if (!query.trim()) {
+				results = nextVideoSpots;
+				renderMarkers(nextVideoSpots);
+				fitVideoSpotsIfNeeded();
+				if (nextVideoSpots.length === 0 && map) queueBoundsSearch();
+			}
+		} catch (err: any) {
+			if (!abort.signal.aborted) toast.error(err?.message || 'Failed to load video spots');
+		} finally {
+			if (videoSpotsLoadingKey === requestKey) videoSpotsLoadingKey = '';
 		}
 	}
 
@@ -99,6 +204,7 @@
 
 			results = extractCandidates(data);
 			renderMarkers(results);
+			fitToCandidates(results);
 		} catch (err: any) {
 			if (abort.signal.aborted) return;
 			toast.error(err?.message || 'Failed to search spots');
@@ -111,7 +217,10 @@
 		if (queryTimer) clearTimeout(queryTimer);
 		queryTimer = setTimeout(() => {
 			const q = query.trim();
-			if (!q) return;
+			if (!q) {
+				if (map) queueBoundsSearch();
+				return;
+			}
 			void runSearch({ q });
 		}, 350);
 	}
@@ -188,7 +297,13 @@
 				queueBoundsSearch();
 			});
 
-			queueBoundsSearch();
+			if (getMediaRequestKey()) {
+				void loadVideoSpots();
+				renderMarkers(videoSpots);
+				fitVideoSpotsIfNeeded();
+			} else {
+				queueBoundsSearch();
+			}
 
 			const normalizedSpotId = normalizeParkourSpotId(spotId) ?? spotId.trim();
 			if (normalizedSpotId) {
@@ -208,8 +323,14 @@
 
 	onDestroy(() => {
 		lastSearchAbort?.abort();
+		videoSpotsAbort?.abort();
 		if (queryTimer) clearTimeout(queryTimer);
 		if (moveTimer) clearTimeout(moveTimer);
+	});
+
+	$effect(() => {
+		getMediaRequestKey();
+		void loadVideoSpots();
 	});
 
 	$effect(() => {
@@ -235,8 +356,8 @@
 				type="search"
 				bind:value={query}
 				oninput={() => queueQuerySearch()}
-				placeholder="Search for a spot…"
-				class="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/30"
+				placeholder="Search spot, city or country…"
+				class="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-white/30 focus:outline-none"
 			/>
 		</label>
 
@@ -246,13 +367,14 @@
 				type="text"
 				bind:value={spotId}
 				placeholder="ID, parkour.spot URL, or pasted share text"
-				class="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/30"
+				class="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:ring-2 focus:ring-white/30 focus:outline-none"
 			/>
 		</label>
 	</div>
 
 	<div class="text-[11px] text-white/50">
-		Paste a direct ID, a full Parkour.Spot URL, or share text containing a Parkour.Spot link.
+		Search by spot, city or country, or paste a direct Parkour·Spot id or URL. The map zooms to all
+		matching spots.
 	</div>
 
 	<div class="overflow-hidden rounded-xl border border-white/10 bg-black/30">

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { onDestroy, onMount } from 'svelte';
+	import { onDestroy, onMount, untrack } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { normalizeParkourSpotId } from '$lib/utils';
 
@@ -47,8 +47,8 @@
 	let queryTimer: ReturnType<typeof setTimeout> | null = null;
 	let moveTimer: ReturnType<typeof setTimeout> | null = null;
 	let videoSpotsRequestKey = '';
-	let videoSpotsLoadingKey = '';
 	let didFitVideoSpotsKey = '';
+	let movingMapProgrammatically = false;
 
 	function normalizeCandidate(raw: any): SpotCandidate | null {
 		const id = String(raw?.id ?? raw?.spotId ?? '').trim();
@@ -105,15 +105,30 @@
 	function fitToCandidates(candidates: SpotCandidate[], maxZoom = 14) {
 		if (!map || !leaflet || candidates.length === 0) return;
 
-		if (candidates.length === 1) {
-			map.setView([candidates[0].lat, candidates[0].lng], maxZoom, { animate: true });
-			return;
-		}
+		movingMapProgrammatically = true;
+		try {
+			if (candidates.length === 1) {
+				map.setView([candidates[0].lat, candidates[0].lng], maxZoom, { animate: false });
+				return;
+			}
 
-		const bounds = leaflet.latLngBounds(
-			candidates.map((candidate) => [candidate.lat, candidate.lng] as [number, number])
-		);
-		if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24], maxZoom });
+			const bounds = leaflet.latLngBounds(
+				candidates.map((candidate) => [candidate.lat, candidate.lng] as [number, number])
+			);
+			if (bounds.isValid()) map.fitBounds(bounds, { padding: [24, 24], maxZoom, animate: false });
+		} finally {
+			movingMapProgrammatically = false;
+		}
+	}
+
+	function panToCandidate(candidate: SpotCandidate) {
+		if (!map) return;
+		movingMapProgrammatically = true;
+		try {
+			map.panTo([candidate.lat, candidate.lng], { animate: false });
+		} finally {
+			movingMapProgrammatically = false;
+		}
 	}
 
 	function fitVideoSpotsIfNeeded() {
@@ -141,10 +156,9 @@
 		}
 	}
 
-	async function loadVideoSpots() {
+	async function loadVideoSpots(requestKey: string) {
 		if (!browser) return;
 
-		const requestKey = getMediaRequestKey();
 		if (!requestKey) {
 			videoSpotsAbort?.abort();
 			videoSpots = [];
@@ -152,12 +166,18 @@
 			didFitVideoSpotsKey = '';
 			return;
 		}
-		if (videoSpotsRequestKey === requestKey || videoSpotsLoadingKey === requestKey) return;
+		if (videoSpotsRequestKey === requestKey) return;
 
 		videoSpotsAbort?.abort();
 		const abort = new AbortController();
 		videoSpotsAbort = abort;
-		videoSpotsLoadingKey = requestKey;
+		videoSpotsRequestKey = requestKey;
+		videoSpots = [];
+		didFitVideoSpotsKey = '';
+		if (!query.trim()) {
+			results = [];
+			renderMarkers([]);
+		}
 
 		try {
 			const url = new URL('/api/spot-chapters', window.location.origin);
@@ -173,8 +193,9 @@
 			if (abort.signal.aborted) return;
 
 			videoSpots = nextVideoSpots;
-			videoSpotsRequestKey = requestKey;
 			if (!query.trim()) {
+				if (moveTimer) clearTimeout(moveTimer);
+				lastSearchAbort?.abort();
 				results = nextVideoSpots;
 				renderMarkers(nextVideoSpots);
 				fitVideoSpotsIfNeeded();
@@ -182,8 +203,6 @@
 			}
 		} catch (err: any) {
 			if (!abort.signal.aborted) toast.error(err?.message || 'Failed to load video spots');
-		} finally {
-			if (videoSpotsLoadingKey === requestKey) videoSpotsLoadingKey = '';
 		}
 	}
 
@@ -204,20 +223,29 @@
 
 			results = extractCandidates(data);
 			renderMarkers(results);
-			fitToCandidates(results);
 		} catch (err: any) {
 			if (abort.signal.aborted) return;
 			toast.error(err?.message || 'Failed to search spots');
 		} finally {
-			if (!abort.signal.aborted) isLoading = false;
+			if (lastSearchAbort === abort) isLoading = false;
 		}
 	}
 
 	function queueQuerySearch() {
 		if (queryTimer) clearTimeout(queryTimer);
+		if (moveTimer) clearTimeout(moveTimer);
+		lastSearchAbort?.abort();
 		queryTimer = setTimeout(() => {
 			const q = query.trim();
 			if (!q) {
+				const mediaKey = getMediaRequestKey();
+				if (mediaKey && videoSpotsRequestKey === mediaKey) {
+					lastSearchAbort?.abort();
+					results = videoSpots;
+					renderMarkers(videoSpots);
+					fitVideoSpotsIfNeeded();
+					return;
+				}
 				if (map) queueBoundsSearch();
 				return;
 			}
@@ -229,7 +257,7 @@
 		if (!map) return;
 		if (moveTimer) clearTimeout(moveTimer);
 		moveTimer = setTimeout(() => {
-			if (!map) return;
+			if (!map || query.trim()) return;
 			const bounds = map.getBounds();
 			const sw = bounds.getSouthWest();
 			const ne = bounds.getNorthEast();
@@ -255,7 +283,6 @@
 				spotId = c.id;
 				results = [c];
 				renderMarkers([c]);
-				if (map) map.setView([c.lat, c.lng], Math.max(map.getZoom(), 14));
 			}
 		} catch (err: any) {
 			toast.error(err?.message || 'Failed to fetch spot');
@@ -293,22 +320,15 @@
 				.addTo(map);
 
 			map.on('moveend', () => {
-				if (query.trim()) return;
+				if (movingMapProgrammatically || query.trim()) return;
 				queueBoundsSearch();
 			});
 
 			if (getMediaRequestKey()) {
-				void loadVideoSpots();
-				renderMarkers(videoSpots);
+				renderMarkers(results);
 				fitVideoSpotsIfNeeded();
 			} else {
 				queueBoundsSearch();
-			}
-
-			const normalizedSpotId = normalizeParkourSpotId(spotId) ?? spotId.trim();
-			if (normalizedSpotId) {
-				if (normalizedSpotId !== spotId.trim()) spotId = normalizedSpotId;
-				await hydrateSelectedById(normalizedSpotId);
 			}
 		})();
 
@@ -329,8 +349,8 @@
 	});
 
 	$effect(() => {
-		getMediaRequestKey();
-		void loadVideoSpots();
+		const requestKey = getMediaRequestKey();
+		untrack(() => void loadVideoSpots(requestKey));
 	});
 
 	$effect(() => {
@@ -373,8 +393,8 @@
 	</div>
 
 	<div class="text-[11px] text-white/50">
-		Search by spot, city or country, or paste a direct Parkour·Spot id or URL. The map zooms to all
-		matching spots.
+		Search by spot, city or country, or paste a direct Parkour·Spot id or URL. The map initially
+		shows the spots in this video.
 	</div>
 
 	<div class="overflow-hidden rounded-xl border border-white/10 bg-black/30">
@@ -404,7 +424,7 @@
 					onclick={() => {
 						selected = r;
 						spotId = r.id;
-						map?.setView([r.lat, r.lng], Math.max(map?.getZoom?.() ?? 12, 14));
+						panToCandidate(r);
 					}}
 				>
 					<span class="min-w-0 truncate">{r.name}</span>

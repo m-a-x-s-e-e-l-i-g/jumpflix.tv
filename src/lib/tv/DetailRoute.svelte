@@ -20,15 +20,7 @@
 <TvDetailPanel {...props} />
 
 {#if collections.length || related.length}
-	<nav aria-label={m.tv_exploreMore()} class="explore-more">
-		<div class="explore-heading">
-			<div>
-				<p class="explore-eyebrow">JUMPFLIX / {m.tv_feedStripLabel()}</p>
-				<h2 class="jf-display">{m.tv_exploreMore()}</h2>
-			</div>
-			<span class="explore-mark" aria-hidden="true"></span>
-		</div>
-
+	<div class="explore-more">
 		{#if collections.length}
 			<div class="explore-collections">
 				{#each collections as feed}
@@ -62,46 +54,15 @@
 				{/each}
 			</ul>
 		{/if}
-	</nav>
+	</div>
 {/if}
 
 <style>
 	.explore-more {
 		max-width: 72rem;
-		margin: clamp(2.5rem, 5vw, 5rem) auto 0;
-		padding: clamp(2rem, 4vw, 3.5rem) 1.5rem clamp(3.5rem, 7vw, 6rem);
+		margin: clamp(1.5rem, 3vw, 2.5rem) auto 0;
+		padding: clamp(1.25rem, 2vw, 2rem) 1.5rem clamp(3.5rem, 7vw, 6rem);
 		border-top: 1px solid rgba(248, 250, 252, 0.18);
-	}
-
-	.explore-heading {
-		display: flex;
-		align-items: end;
-		justify-content: space-between;
-		gap: 2rem;
-		margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
-	}
-
-	.explore-eyebrow {
-		margin: 0 0 0.65rem;
-		color: var(--jf-ink-muted);
-		font-size: 0.7rem;
-		font-weight: 650;
-		letter-spacing: 0.2em;
-		text-transform: uppercase;
-	}
-
-	.explore-heading h2 {
-		font-size: clamp(2rem, 4vw, 3.5rem);
-		font-weight: 600;
-		line-height: 1.15;
-	}
-
-	.explore-mark {
-		width: 3.5rem;
-		height: 0.2rem;
-		flex: none;
-		margin-bottom: 0.55rem;
-		background: var(--primary);
 	}
 
 	.explore-collections {
@@ -226,10 +187,6 @@
 
 		.explore-title {
 			min-height: 5.5rem;
-		}
-
-		.explore-mark {
-			width: 2rem;
 		}
 	}
 

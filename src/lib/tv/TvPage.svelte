@@ -851,20 +851,11 @@
 	{#if isDetailRoute}
 		{@render children?.()}
 	{:else}
-		<section class="relative isolate overflow-hidden pt-24 sm:pt-32">
+		<section class={collection ? 'relative isolate overflow-hidden pt-12 sm:pt-16' : 'relative isolate overflow-hidden pt-24 sm:pt-32'}>
 			<div class="hero-overlay" aria-hidden="true"></div>
 
 			{#if collection}
-				<div class="mx-auto w-full max-w-6xl px-6 pb-6">
-					<a href={localizeHref('/')} class="text-sm text-muted-foreground hover:text-foreground"
-						>← {m.tv_backToCatalog()}</a
-					>
-					<p class="jf-label mt-8 text-primary">JUMPFLIX · {m.tv_feedStripLabel()}</p>
-					<h1 class="jf-display mt-3 text-4xl leading-tight sm:text-6xl">{collection.title()}</h1>
-					<p class="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground">
-						{collection.introduction()}
-					</p>
-				</div>
+				<TvHeroSection {logoTilt} {collection} />
 			{:else if profileContext}
 				<div class="mx-auto w-full max-w-6xl px-6">
 					<div class="mt-6 min-w-0">

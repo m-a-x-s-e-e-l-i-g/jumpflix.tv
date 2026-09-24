@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ContentItem } from './types';
+	import { getUrlForItem } from './slug';
 	import { isImage } from './utils';
 	import { Image } from '@unpic/svelte';
 	import { blurhashToCssGradientString } from '@unpic/placeholder';
@@ -154,21 +155,24 @@
 	let loaded = false;
 	$: alreadyLoaded = item.thumbnail ? $loadedThumbnails.has(item.thumbnail) : false;
 	$: if (alreadyLoaded) loaded = true;
-	$: imageOpacityClass = loaded ? 'opacity-100' : 'opacity-0';
+	$: imageOpacityClass = 'opacity-100';
 	$: baseImageClass = `relative inset-0 w-full h-full object-cover z-10 transition-opacity duration-500 ease-out ${isWatched ? 'opacity-30' : ''}`;
 </script>
 
-<div
+<a
+	href={getUrlForItem(item)}
 	class="card-shell group"
 	class:transform={!isMobile}
 	class:hover:scale-105={!isMobile}
 	class:transition-all={!isMobile}
 	class:duration-300={!isMobile}
 	class:scale-105={!isMobile && isSelected}
-	on:click={() => onSelect(item)}
-	on:keydown={(e) => e.key === 'Enter' && onSelect(item)}
-	tabindex="0"
-	role="button"
+	on:click={(event) => {
+		if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+			return;
+		event.preventDefault();
+		onSelect(item);
+	}}
 >
 	<div
 		class="card-frame"
@@ -225,7 +229,9 @@
 
 		{#if isFamilySafeBlocked}
 			<div class="card-family-safe-overlay">
-				<span class="card-family-safe-pill" aria-label="Not family-safe"><ShieldOffIcon size={13} /></span>
+				<span class="card-family-safe-pill" aria-label="Not family-safe"
+					><ShieldOffIcon size={13} /></span
+				>
 			</div>
 		{/if}
 
@@ -273,7 +279,10 @@
 
 		<!-- Progress bar at bottom -->
 		{#if hasProgress}
-			<div class="card-progress" aria-label={`${m.tv_continueWatchingAt()} ${progressDisplayPercent}%`}>
+			<div
+				class="card-progress"
+				aria-label={`${m.tv_continueWatchingAt()} ${progressDisplayPercent}%`}
+			>
 				<div class="card-progress-inner">
 					<div class="card-progress-label">
 						<span>{m.tv_continue()}</span>
@@ -286,11 +295,18 @@
 			</div>
 		{/if}
 	</div>
-</div>
+</a>
 
 <style>
 	.card-shell {
+		display: block;
 		cursor: pointer;
+	}
+
+	.card-shell:focus-visible {
+		outline: 2px solid var(--primary);
+		outline-offset: 4px;
+		border-radius: 20px;
 	}
 
 	.card-frame {

@@ -1,5 +1,7 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
+	import JsonLd from '$lib/components/JsonLd.svelte';
+	import { getLocale } from '$lib/paraglide/runtime';
 	// TvPage is rendered persistently from +layout.svelte
 	// This page contributes only head metadata
 	let {} = $props();
@@ -17,21 +19,21 @@
 	<meta name="twitter:title" content="JUMPFLIX — Parkour & Freerunning Films" />
 	<meta name="twitter:description" content={m.tv_description()} />
 	<meta name="twitter:image" content="https://www.jumpflix.tv/images/jumpflix.webp" />
-	<!-- JSON-LD Website -->
-	<script type="application/ld+json">
-		{
-			"@context": "https://schema.org",
-			"@type": "WebSite",
-			"name": "JUMPFLIX",
-			"url": "https://www.jumpflix.tv/",
-			"inLanguage": "%paraglide.lang%",
-			"potentialAction": {
-				"@type": "SearchAction",
-				"target": "https://www.jumpflix.tv/?q={search_term_string}",
-				"query-input": "required name=search_term_string"
-			}
-		}
-	</script>
 </svelte:head>
 
 <!-- Content rendered in layout -->
+
+<JsonLd
+	value={{
+		'@context': 'https://schema.org',
+		'@type': 'WebSite',
+		name: 'JUMPFLIX',
+		url: 'https://www.jumpflix.tv/',
+		inLanguage: getLocale(),
+		potentialAction: {
+			'@type': 'SearchAction',
+			target: 'https://www.jumpflix.tv/?q={search_term_string}',
+			'query-input': 'required name=search_term_string'
+		}
+	}}
+/>

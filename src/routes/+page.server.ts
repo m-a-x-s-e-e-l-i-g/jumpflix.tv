@@ -1,9 +1,10 @@
 import { fail, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { sendTelegramMessage } from '$lib/server/telegram';
+import { fetchAllContent } from '$lib/server/content-service';
 
 export const load: PageServerLoad = async ({ parent, setHeaders }) => {
-	const parentData = await parent();
+	const [parentData, content] = await Promise.all([parent(), fetchAllContent()]);
 	const isAuthenticated = Boolean((parentData as any)?.session || (parentData as any)?.user);
 	setHeaders({
 		'Cache-Control': isAuthenticated
@@ -12,7 +13,7 @@ export const load: PageServerLoad = async ({ parent, setHeaders }) => {
 		Vary: 'Cookie'
 	});
 
-	return {};
+	return { content };
 };
 
 export const actions: Actions = {

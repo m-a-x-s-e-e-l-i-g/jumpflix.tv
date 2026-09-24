@@ -47,7 +47,6 @@ function removeUndefined<T extends Record<string, any>>(obj: T): T {
 const PRERENDER_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const PRERENDER_CACHE_DIR = '.cache';
 const CONTENT_CACHE_FILE = 'jumpflix-content.json';
-const EPISODES_CACHE_FILE = 'jumpflix-episodes.json';
 
 function isPrerenderCacheEnabled(): boolean {
 	return typeof process !== 'undefined' && process.env?.JUMPFLIX_PRERENDER_CACHE === '1';
@@ -197,7 +196,8 @@ function mapMovie(
 							title: song.title,
 							artist: song.artist,
 							durationMs: song.duration_ms ?? undefined,
-							explicit: typeof (song as any).explicit === 'boolean' ? (song as any).explicit : undefined
+							explicit:
+								typeof (song as any).explicit === 'boolean' ? (song as any).explicit : undefined
 						})
 					});
 				})
@@ -317,16 +317,18 @@ export async function invalidateContentCache(): Promise<void> {
 	}
 }
 
-export async function fetchAllContent(): Promise<ContentItem[]> {
+export async function fetchAllContent(options: { maxAgeMs?: number } = {}): Promise<ContentItem[]> {
 	const now = Date.now();
-	if (contentCache && now - contentCache.fetchedAt < CONTENT_CACHE_TTL_MS) {
+	if (contentCache && now - contentCache.fetchedAt < (options.maxAgeMs ?? CONTENT_CACHE_TTL_MS)) {
 		return contentCache.items;
 	}
 	if (contentInFlight) {
 		return contentInFlight;
 	}
 
-	const diskCached = await readPrerenderCache<ContentItem[]>(CONTENT_CACHE_FILE);
+	const diskCached = options.maxAgeMs === undefined
+		? await readPrerenderCache<ContentItem[]>(CONTENT_CACHE_FILE)
+		: null;
 	if (diskCached) {
 		contentCache = { items: diskCached, fetchedAt: Date.now() };
 		lastContentLoadError = null;
@@ -441,21 +443,59 @@ export async function fetchMovieBySlug(slug: string): Promise<Movie | null> {
 	return mapMovie(row, ratingSummary ?? null);
 }
 
-type SeriesEpisodeEntry = {
+export async function fetchSeriesBySlug(slug: string): Promise<Series | null> {
+	const supabase = createSupabaseClient();
+	const { data, error } = await supabase
+		.from('media_items')
+		.select('*, series_seasons (*, series_episodes (*))')
+		.eq('type', 'series')
+		.eq('slug', slug)
+		.maybeSingle();
+	if (error) throw new Error(`Failed to load series ${slug}: ${error.message}`);
+	if (!data) return null;
+	const { data: ratingSummary } = await supabase
+		.from('media_ratings_summary')
+		.select('*')
+		.eq('media_id', data.id)
+		.maybeSingle<MediaRatingSummaryRow>();
+	const row = data as unknown as MediaItemWithSeasons;
+	const series = mapSeries(row, ratingSummary ?? null);
+	// The series' own episodes belong on its detail page, including during SSR.
+	for (const season of series.seasons) {
+		const source = row.series_seasons?.find((entry) => entry.id === season.id);
+		season.episodes = (source?.series_episodes ?? [])
+			.slice()
+			.sort((a, b) => a.episode_number - b.episode_number)
+			.map((episode) =>
+				removeUndefined({
+					id: episode.video_id ?? String(episode.id),
+					title: episode.title ?? `Episode ${episode.episode_number}`,
+					description: episode.description ?? undefined,
+					publishedAt: episode.published_at ?? undefined,
+					thumbnail: episode.thumbnail ?? undefined,
+					position: episode.episode_number,
+					duration: episode.duration ?? undefined,
+					externalUrl: episode.video_id?.trim() ? undefined : series.externalUrl
+				})
+			);
+	}
+	return series;
+}
+
+export type SeriesEpisodeEntry = {
 	slug: string;
 	seasonNumber: number;
 	episodeNumber: number;
+	updatedAt?: string;
 };
 
 export async function fetchSeriesEpisodeEntries(): Promise<SeriesEpisodeEntry[]> {
 	try {
-		const cached = await readPrerenderCache<SeriesEpisodeEntry[]>(EPISODES_CACHE_FILE);
-		if (cached) return cached;
-
 		const supabase = createSupabaseClient();
 		const { data, error } = await supabase.from('series_episodes').select(
 			`
 					episode_number,
+					updated_at,
 					season:series_seasons (
 						season_number,
 						series:media_items ( slug, type )
@@ -465,7 +505,7 @@ export async function fetchSeriesEpisodeEntries(): Promise<SeriesEpisodeEntry[]>
 
 		if (error) {
 			console.error('[content-service] Failed to load series episodes:', error);
-			return [];
+			throw new Error(error.message);
 		}
 
 		const entries: SeriesEpisodeEntry[] = [];
@@ -475,20 +515,20 @@ export async function fetchSeriesEpisodeEntries(): Promise<SeriesEpisodeEntry[]>
 			const slug = row?.season?.series?.slug;
 			const type = row?.season?.series?.type;
 			if (type !== 'series' || !slug) continue;
-			if (!Number.isFinite(episodeNumber) || episodeNumber < 1) continue;
-			if (!Number.isFinite(seasonNumber) || seasonNumber < 1) continue;
+			if (!Number.isSafeInteger(episodeNumber) || episodeNumber < 1) continue;
+			if (!Number.isSafeInteger(seasonNumber) || seasonNumber < 1) continue;
 			entries.push({
 				slug,
 				seasonNumber: Math.floor(seasonNumber),
-				episodeNumber: Math.floor(episodeNumber)
+				episodeNumber,
+				updatedAt: row.updated_at ?? undefined
 			});
 		}
 
-		await writePrerenderCache(EPISODES_CACHE_FILE, entries);
 		return entries;
 	} catch (err) {
 		console.error('[content-service] Unexpected error loading episodes:', err);
-		return [];
+		throw err;
 	}
 }
 

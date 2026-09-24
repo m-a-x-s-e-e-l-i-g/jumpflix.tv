@@ -102,9 +102,9 @@
 		children: any;
 		data: {
 			content?: ContentItem[];
-			item: ContentItem | null;
-			initialEpisodeNumber: number | null;
-			initialSeasonNumber: number | null;
+			item?: ContentItem | null;
+			initialEpisodeNumber?: number | null;
+			initialSeasonNumber?: number | null;
 			userXp: UserXpSummary | null;
 			session: any;
 			user: any;
@@ -941,9 +941,9 @@
 				{/if}
 			</div>
 
-			{#if isDetailRoute && $user && data?.item}
+			{#if isDetailRoute && $user && $page.data.item}
 				<ContentSuggestionDialog
-					selected={data.item}
+					selected={$page.data.item}
 					selectedEpisode={$selectedEpisodeStore}
 					selectedSeasonNumber={data.initialSeasonNumber ?? null}
 					triggerAriaLabel="Suggest change / report issue"
@@ -1103,10 +1103,10 @@
 			{@render children?.()}
 		{:else}
 			<TvPage
-				content={data?.content ?? []}
-				initialItem={data?.item ?? null}
-				initialEpisodeNumber={data?.initialEpisodeNumber ?? null}
-				initialSeasonNumber={data?.initialSeasonNumber ?? null}
+				content={$page.data.content ?? []}
+				initialItem={$page.data.item ?? null}
+				initialEpisodeNumber={$page.data.initialEpisodeNumber ?? null}
+				initialSeasonNumber={$page.data.initialSeasonNumber ?? null}
 			/>
 			{@render children?.()}
 		{/if}

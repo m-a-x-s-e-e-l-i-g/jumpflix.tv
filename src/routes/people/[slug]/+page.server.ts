@@ -1,6 +1,10 @@
 import type { PageServerLoad } from './$types';
 import { createSupabaseClient } from '$lib/server/supabaseClient';
-import { isMissingPersonProfilesTableError, normalizeInstagramHandles } from '$lib/server/person-profiles';
+import { fetchAllContent } from '$lib/server/content-service';
+import {
+	isMissingPersonProfilesTableError,
+	normalizeInstagramHandles
+} from '$lib/server/person-profiles';
 import type { ContentItem } from '$lib/tv/types';
 import { slugify } from '$lib/tv/slug';
 import { error, redirect } from '@sveltejs/kit';
@@ -24,8 +28,7 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 	if (!slug) throw error(404, 'Person not found');
 	if (rawParam !== slug) throw redirect(301, `/people/${slug}`);
 
-	const parentData = await parent();
-	const content = ((parentData as unknown as { content?: ContentItem[] }).content ?? []) as ContentItem[];
+	const [parentData, content] = await Promise.all([parent(), fetchAllContent()]);
 
 	const displayNameCounts = new Map<string, number>();
 	const includedKeys = new Set<string>();

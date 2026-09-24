@@ -60,10 +60,7 @@
 	import SpotChaptersMapPanel from '$lib/tv/SpotChaptersMapPanel.svelte';
 	import ContentWarningIcon from '$lib/components/ContentWarningIcon.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import {
-		CONTENT_WARNING_DESCRIPTIONS,
-		CONTENT_WARNING_LABELS
-	} from '$lib/tv/facet-options';
+	import { CONTENT_WARNING_DESCRIPTIONS, CONTENT_WARNING_LABELS } from '$lib/tv/facet-options';
 	import {
 		dispatchRatingUpdated,
 		RATING_UPDATED_EVENT,
@@ -918,8 +915,18 @@
 		}
 	}
 
-	// Fetch only when currentFetchId changes
-	$: if (browser && currentFetchId) {
+	$: serverEpisodes =
+		selected?.type === 'series'
+			? selected.seasons.find((season) => season.seasonNumber === selectedSeasonNum)?.episodes
+			: undefined;
+	// Route loaders provide the selected series' episodes for SSR and immediate navigation.
+	// Retain the fetch fallback for catalog records that have only season summaries.
+	$: if (serverEpisodes) {
+		_episodesController?.abort();
+		_episodesFetchVersion += 1;
+		episodes = serverEpisodes;
+		loadingEpisodes = false;
+	} else if (browser && currentFetchId) {
 		loadingEpisodes = true;
 		episodes = [];
 		_episodesController?.abort();
@@ -1098,7 +1105,11 @@
 				<div>
 					<h1 class="detail-title jf-display">{selected.title}</h1>
 					{#if isJumpflixExclusive}
-						<div class="detail-exclusive-ribbon" role="note" aria-label="Only on JumpFlix, official archive release">
+						<div
+							class="detail-exclusive-ribbon"
+							role="note"
+							aria-label="Only on JumpFlix, official archive release"
+						>
 							<img
 								class="detail-exclusive-ribbon__icon"
 								src="/images/jumpflix-exclusive.webp"
@@ -1189,7 +1200,8 @@
 						<button
 							type="button"
 							class="detail-icon detail-icon--label"
-							on:click={() => updateAvailabilityStatus(contentUnavailable ? 'available' : 'unavailable')}
+							on:click={() =>
+								updateAvailabilityStatus(contentUnavailable ? 'available' : 'unavailable')}
 							disabled={availabilitySaving}
 							title={contentUnavailable ? 'Mark available' : 'Mark unavailable'}
 							aria-label={contentUnavailable ? 'Mark available' : 'Mark unavailable'}
@@ -1212,10 +1224,16 @@
 												aria-label={`${warning.label}: ${warning.description}`}
 											>
 												<span class="sr-only">{warning.label}</span>
-												<ContentWarningIcon warning={warning.key} className="h-[0.9rem] w-[0.9rem]" />
+												<ContentWarningIcon
+													warning={warning.key}
+													className="h-[0.9rem] w-[0.9rem]"
+												/>
 											</span>
 										</Tooltip.Trigger>
-										<Tooltip.Content class="border border-gray-700 bg-gray-900 text-white" arrowClasses="bg-gray-900">
+										<Tooltip.Content
+											class="border border-gray-700 bg-gray-900 text-white"
+											arrowClasses="bg-gray-900"
+										>
 											{#snippet children()}
 												<p class="font-medium">{warning.label}</p>
 												<p class="detail-warning-tooltip-text">{warning.description}</p>
@@ -1271,7 +1289,9 @@
 					<div class="detail-play-observer" bind:this={playObserverEl}>
 						{#if !$showPlayer}
 							<button
-								disabled={contentUnavailable || familySafeBlocked || (isSeriesWithoutEpisode && !seriesExternalSourceUrl)}
+								disabled={contentUnavailable ||
+									familySafeBlocked ||
+									(isSeriesWithoutEpisode && !seriesExternalSourceUrl)}
 								on:click={handlePlayClick}
 								class="detail-play"
 							>
@@ -1469,11 +1489,24 @@
 									{#each episodes as ep}
 										{@const epProgress = getEpisodeWatchProgress(ep.id, watchProgressMap)}
 										<li>
-											<button
-												type="button"
+											<a
+												href={getEpisodeUrl(selected, {
+													episodeNumber: ep.position ?? 1,
+													seasonNumber: selectedSeasonNum
+												})}
 												class={`detail-episode ${selectedEpisode && selectedEpisode.id === ep.id ? 'detail-episode--active' : ''}`}
-												on:click={() =>
-													onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeasonNum)}
+												on:click={(event) => {
+													if (
+														event.button !== 0 ||
+														event.metaKey ||
+														event.ctrlKey ||
+														event.shiftKey ||
+														event.altKey
+													)
+														return;
+													event.preventDefault();
+													onSelectEpisode(ep.id, decode(ep.title), ep.position, selectedSeasonNum);
+												}}
 											>
 												<div class="detail-episode-thumb">
 													{#if ep.thumbnail}
@@ -1500,7 +1533,7 @@
 													<span>{m.tv_ep()} {ep.position}</span>
 													<strong>{decode(ep.title)}</strong>
 												</div>
-											</button>
+											</a>
 											{#if isAuthenticated}
 												<button
 													type="button"
@@ -1529,7 +1562,8 @@
 									<p class="detail-muted">{m.tv_selectEpisodeToSeeSpots()}</p>
 								{:else}
 									{@const selectedEpisodeId = selectedEpisode?.id ? String(selectedEpisode.id) : ''}
-									{@const isEpisodeResolved = Boolean(selectedEpisodeId) && !selectedEpisodeId.startsWith('pos:')}
+									{@const isEpisodeResolved =
+										Boolean(selectedEpisodeId) && !selectedEpisodeId.startsWith('pos:')}
 									{#if !isEpisodeResolved}
 										<p class="detail-muted">Loading episode…</p>
 									{:else if spotChaptersLoading}
@@ -1616,13 +1650,18 @@
 						<div class="detail-reviews-list">
 							{#each reviews as r (r.id)}
 								{@const authorName = (r.author_name ?? '').trim()}
-								{@const authorLabel = getPublicUserNameOrFallback({ name: authorName || null }, 'Anonymous')}
+								{@const authorLabel = getPublicUserNameOrFallback(
+									{ name: authorName || null },
+									'Anonymous'
+								)}
 								{@const isMyReview = Boolean($authUser?.id && r.user_id === $authUser.id)}
 								<article class="detail-review-item">
 									<div class="detail-review-meta">
 										<div class="detail-review-meta-main">
 											{#if authorName}
-												<a href={`/stats/${r.user_id}`} class="detail-review-author-link">{authorLabel}</a>
+												<a href={`/stats/${r.user_id}`} class="detail-review-author-link"
+													>{authorLabel}</a
+												>
 											{:else}
 												<span>{authorLabel}</span>
 											{/if}
@@ -1855,7 +1894,6 @@
 		color: rgba(248, 250, 252, 0.95);
 	}
 
-
 	.detail-icon--label {
 		width: auto;
 		padding: 0 0.7rem;
@@ -2083,7 +2121,7 @@
 		display: grid;
 		gap: 1.6rem;
 		align-items: start;
-			overflow-x: hidden;
+		overflow-x: hidden;
 		min-width: 0;
 	}
 
@@ -2379,7 +2417,9 @@
 
 	.detail-tags a {
 		text-decoration: none;
-		transition: color 150ms ease, border-color 150ms ease;
+		transition:
+			color 150ms ease,
+			border-color 150ms ease;
 	}
 
 	.detail-tags a:hover {

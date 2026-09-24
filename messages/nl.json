@@ -386,5 +386,11 @@
 	"stats_upTo50": "Tot 50",
 	"stats_allWatchedItemsAreRatedNice": "Alle bekeken items zijn beoordeeld (mooi).",
 	"stats_durationMinutes": "{minutes} min",
-	"stats_durationHoursMinutes": "{hours}u {minutes}m"
+	"stats_durationHoursMinutes": "{hours}u {minutes}m",
+	"tv_collection_documentaries_intro": "Ontdek parkourdocumentaires over de mensen, crews en verhalen achter de beweging. Bekijk interviews, persoonlijke reizen en een nadere blik op de freerunningcultuur.",
+	"tv_collection_fictionFilms_intro": "Parkour ontmoet verhalen. Ontdek speelfilms waarin beweging, achtervolgingen en de mensen erachter onderdeel worden van het verhaal.",
+	"tv_collection_movieNight_intro": "Ga zitten voor een langere filmavond. Deze collectie bevat films van 60 tot 160 minuten, van parkourverhalen tot lange speelfilms.",
+	"tv_collection_oldskoolClassics_intro": "Herbeleef de vroege jaren van parkour op beeld. Ontdek films en video’s uit 2015 of eerder, met de beweging en crews uit die tijd.",
+	"tv_collection_educational_intro": "Bekijk hoe parkour werkt. Ontdek tutorials, lezingen en uitleg uit de community, met ideeën voor je eigen training.",
+	"tv_collection_sendIt_intro": "Grote sprongen en volledige toewijding. Ontdek films met de tag big sends, waarin atleten afstand, hoogte en hun eigen grenzen opzoeken."
 }

@@ -47,7 +47,6 @@
 		if (previousShowWatched !== null) showWatched.set(previousShowWatched);
 		if (previousSortBy !== null) sortBy.set(previousSortBy);
 	});
-
 </script>
 
 <svelte:head>
@@ -60,7 +59,7 @@
 				? `All films and series created by ${data.name}.`
 				: `All films and series featuring ${data.name}.`}
 	/>
-	<link rel="canonical" href={`https://www.jumpflix.tv/people/${data.slug}/`} />
+	<link rel="canonical" href={`https://www.jumpflix.tv/people/${data.slug}`} />
 	<meta property="og:title" content={`${data.name} — ${roleLabel} — JUMPFLIX`} />
 	<meta
 		property="og:description"
@@ -70,7 +69,7 @@
 				? `All films and series created by ${data.name}.`
 				: `All films and series featuring ${data.name}.`}
 	/>
-	<meta property="og:url" content={`https://www.jumpflix.tv/people/${data.slug}/`} />
+	<meta property="og:url" content={`https://www.jumpflix.tv/people/${data.slug}`} />
 </svelte:head>
 
 <!-- Content rendered in layout (TvPage uses data.content) -->

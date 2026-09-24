@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build && npm run submit-sitemap",
+		"build": "vite build",
 		"build:no-sitemap": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -21,7 +21,9 @@
 		"submit-sitemap": "node scripts/submit-sitemap.mjs",
 		"generate:blurhash": "node scripts/generate-blurhash.mjs",
 		"generate:icons": "node scripts/generate-icons.mjs",
-		"generate:favicon": "node scripts/generate-favicon.mjs"
+		"generate:favicon": "node scripts/generate-favicon.mjs",
+		"test:seo": "node --import tsx --test tests/seo/*.test.ts",
+		"check:sitemap": "node scripts/check-sitemap.mjs"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",

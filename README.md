@@ -157,7 +157,7 @@ Open the local URL printed by Vite, usually <http://localhost:5173>.
 | `npm run admin`            | Open the interactive content-management CLI              |
 | `npm run backup`           | Create a local database backup                           |
 
-The regular `npm run build` command also runs sitemap submission. Use `build:no-sitemap` for routine local verification.
+`npm run build` creates a production build without contacting search engines. The sitemap is served dynamically; use `npm run check:sitemap` to verify its public URL. `build:no-sitemap` remains a compatible build alias.
 
 ## Optional configuration
 

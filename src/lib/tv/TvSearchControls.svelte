@@ -1,10 +1,11 @@
 <script lang="ts">
-  import type { Writable } from 'svelte/store';
-  import Switch from '$lib/components/ui/Switch.svelte';
-  import * as m from '$lib/paraglide/messages';
-  import type { SortBy, SelectedFacets } from '$lib/tv/types';
-  import { FEEDS } from '$lib/tv/feeds';
-  import FacetFilterPanel from './FacetFilterPanel.svelte';
+	import type { Writable } from 'svelte/store';
+	import Switch from '$lib/components/ui/Switch.svelte';
+	import * as m from '$lib/paraglide/messages';
+	import type { SortBy, SelectedFacets } from '$lib/tv/types';
+	import { FEEDS } from '$lib/tv/feeds';
+	import FacetFilterPanel from './FacetFilterPanel.svelte';
+	import { activeFeedSlug } from './store';
 
 	interface Props {
 		searchQuery: Writable<string>;
@@ -12,10 +13,10 @@
 		showWatched: Writable<boolean>;
 		sortBy: Writable<SortBy>;
 		selectedFacets: Writable<SelectedFacets>;
-		activeFeedSlug: Writable<string | null>;
+		collectionSlug?: string;
 	}
 
-	let { searchQuery, showPaid, showWatched, sortBy, selectedFacets, activeFeedSlug }: Props =
+	let { searchQuery, showPaid, showWatched, sortBy, selectedFacets, collectionSlug }: Props =
 		$props();
 
 	function clearSearch() {
@@ -27,28 +28,20 @@
 		sortBy.set(target.value as SortBy);
 	}
 
-	function toggleFeed(slug: string) {
-		activeFeedSlug.update((current) => (current === slug ? null : slug));
-	}
-
-	function clearFeed() {
-		activeFeedSlug.set(null);
-	}
-
-  const containerClass = 'tv-search-surface';
-  const labelClass = 'tv-search-toggle';
-  const selectClass = 'tv-search-select';
-  const sortOptions: Array<{ value: SortBy; label: () => string }> = [
-    { value: 'default', label: () => m.tv_sort_random() },
-    { value: 'added-desc', label: () => m.tv_sort_addedDesc() },
-    { value: 'title-asc', label: () => m.tv_sort_titleAsc() },
-    { value: 'year-desc', label: () => m.tv_sort_yearDesc() },
-    { value: 'year-asc', label: () => m.tv_sort_yearAsc() },
-    { value: 'duration-asc', label: () => m.tv_sort_durationAsc() },
-    { value: 'duration-desc', label: () => m.tv_sort_durationDesc() },
-    { value: 'rating-desc', label: () => m.tv_sort_ratingDesc() },
-    { value: 'rating-asc', label: () => m.tv_sort_ratingAsc() }
-  ];
+	const containerClass = 'tv-search-surface';
+	const labelClass = 'tv-search-toggle';
+	const selectClass = 'tv-search-select';
+	const sortOptions: Array<{ value: SortBy; label: () => string }> = [
+		{ value: 'default', label: () => m.tv_sort_random() },
+		{ value: 'added-desc', label: () => m.tv_sort_addedDesc() },
+		{ value: 'title-asc', label: () => m.tv_sort_titleAsc() },
+		{ value: 'year-desc', label: () => m.tv_sort_yearDesc() },
+		{ value: 'year-asc', label: () => m.tv_sort_yearAsc() },
+		{ value: 'duration-asc', label: () => m.tv_sort_durationAsc() },
+		{ value: 'duration-desc', label: () => m.tv_sort_durationDesc() },
+		{ value: 'rating-desc', label: () => m.tv_sort_ratingDesc() },
+		{ value: 'rating-asc', label: () => m.tv_sort_ratingAsc() }
+	];
 </script>
 
 <div id="search" class="search-wrap">
@@ -61,21 +54,20 @@
 
 			<div class="feed-strip-grid">
 				{#each FEEDS as feed (feed.slug)}
-					<button
-						type="button"
+					<a
+						href={`/collections/${feed.slug}`}
 						class="feed-card"
-						class:selected={$activeFeedSlug === feed.slug}
-						onclick={() => toggleFeed(feed.slug)}
-						aria-pressed={$activeFeedSlug === feed.slug}
+						class:selected={collectionSlug === feed.slug}
+						aria-current={collectionSlug === feed.slug ? 'page' : undefined}
 					>
 						<span class="feed-card-title">{feed.title()}</span>
 						<span class="feed-card-description">{feed.description()}</span>
-					</button>
+					</a>
 				{/each}
 			</div>
 
-			{#if $activeFeedSlug}
-				<button type="button" class="feed-reset" onclick={clearFeed}>{m.tv_clearFeed()}</button>
+			{#if collectionSlug}
+				<a href="/" class="feed-reset">{m.tv_clearFeed()}</a>
 			{/if}
 		</div>
 
@@ -137,18 +129,22 @@
 				</div>
 
 				<div class="search-select">
-				  <select value={$sortBy} onchange={handleSortChange} class={selectClass} aria-label={m.tv_sortLabel()}>
-				    {#each sortOptions as option (option.value)}
-				      <option value={option.value}>{option.label()}</option>
-				    {/each}
-				  </select>
-				  <span class="search-caret" aria-hidden="true">▾</span>
+					<select
+						value={$sortBy}
+						onchange={handleSortChange}
+						class={selectClass}
+						aria-label={m.tv_sortLabel()}
+					>
+						{#each sortOptions as option (option.value)}
+							<option value={option.value}>{option.label()}</option>
+						{/each}
+					</select>
+					<span class="search-caret" aria-hidden="true">▾</span>
 				</div>
 			</div>
 		</div>
 	</div>
 </div>
-
 
 <style>
 	.search-wrap {
@@ -190,9 +186,21 @@
 		inset: 0;
 		border-radius: inherit;
 		background:
-			radial-gradient(120% 110% at 10% 0%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 62%),
-			radial-gradient(90% 90% at 100% 0%, color-mix(in oklch, var(--foreground) 6%, transparent), transparent 68%),
-			linear-gradient(180deg, color-mix(in oklch, var(--foreground) 4%, transparent), transparent 26%);
+			radial-gradient(
+				120% 110% at 10% 0%,
+				color-mix(in oklch, var(--primary) 12%, transparent),
+				transparent 62%
+			),
+			radial-gradient(
+				90% 90% at 100% 0%,
+				color-mix(in oklch, var(--foreground) 6%, transparent),
+				transparent 68%
+			),
+			linear-gradient(
+				180deg,
+				color-mix(in oklch, var(--foreground) 4%, transparent),
+				transparent 26%
+			);
 		opacity: 1;
 		pointer-events: none;
 	}

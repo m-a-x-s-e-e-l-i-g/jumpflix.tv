@@ -5,6 +5,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import { familySafeOnly } from '$lib/tv/store';
 	import type { ContentItem, Movie, Series } from '$lib/tv/types';
+	import { getUrlForItem } from '$lib/tv/slug';
 	import { isBunnyExclusiveMovie } from '$lib/tv/playback-source';
 	import { isContentUnavailable, isFamilySafeContent, isImage, keyFor } from '$lib/tv/utils';
 	import ShieldOffIcon from 'lucide-svelte/icons/shield-off';
@@ -176,19 +177,33 @@
 				{@const itemRating = ratingLabel(item)}
 				{@const hasRating = itemRating !== UNRATED}
 				{@const peopleSummary = peopleLine(item)}
-				{@const rowSelected = !!(selectedContent && selectedContent.id === item.id && selectedContent.type === item.type)}
+				{@const rowSelected = !!(
+					selectedContent &&
+					selectedContent.id === item.id &&
+					selectedContent.type === item.type
+				)}
 				{@const familySafeBlocked = familySafeOnlyEnabled && !isFamilySafeContent(item)}
 				{@const exclusive = isJumpflixExclusive(item)}
-				<button
-					type="button"
+				<a
+					href={getUrlForItem(item)}
 					class:selected={rowSelected}
 					class="catalog-row"
-					aria-pressed={rowSelected}
 					aria-disabled={familySafeBlocked}
 					data-family-safe-blocked={familySafeBlocked ? '' : undefined}
 					aria-label={rowAriaLabel(item, watchState, itemRating)}
 					data-item-key={itemKey}
-					onclick={() => onSelect(item)}
+					onclick={(event) => {
+						if (
+							event.button !== 0 ||
+							event.metaKey ||
+							event.ctrlKey ||
+							event.shiftKey ||
+							event.altKey
+						)
+							return;
+						event.preventDefault();
+						onSelect(item);
+					}}
 				>
 					<div class="catalog-thumb">
 						{#if exclusive}
@@ -237,11 +252,14 @@
 								<span class="catalog-badge catalog-badge--watched">{m.tv_showWatched()}</span>
 							{:else if watchState.hasProgress}
 								<span class="catalog-badge catalog-badge--progress">
-									{m.tv_continue()} {watchState.progressPercent}%
+									{m.tv_continue()}
+									{watchState.progressPercent}%
 								</span>
 							{/if}
 							{#if familySafeBlocked}
-								<span class="catalog-badge catalog-badge--family-safe" aria-label="Not family-safe"><ShieldOffIcon size={12} /></span>
+								<span class="catalog-badge catalog-badge--family-safe" aria-label="Not family-safe"
+									><ShieldOffIcon size={12} /></span
+								>
 							{/if}
 						</div>
 
@@ -254,9 +272,15 @@
 						{/if}
 
 						{#if watchState.hasProgress}
-							<div class="catalog-progress" aria-label={`${m.tv_continueWatchingAt()} ${watchState.progressPercent}%`}>
+							<div
+								class="catalog-progress"
+								aria-label={`${m.tv_continueWatchingAt()} ${watchState.progressPercent}%`}
+							>
 								<div class="catalog-progress-track">
-									<div class="catalog-progress-fill" style:width={`${watchState.progressPercent}%`}></div>
+									<div
+										class="catalog-progress-fill"
+										style:width={`${watchState.progressPercent}%`}
+									></div>
 								</div>
 							</div>
 						{/if}
@@ -267,7 +291,7 @@
 							★ {ratingText(itemRating)}
 						</span>
 					</div>
-				</button>
+				</a>
 			{/each}
 		</div>
 	{/if}
@@ -368,12 +392,11 @@
 		width: 7rem;
 		overflow: hidden;
 		border-radius: calc(var(--radius) + 0.1rem);
-		background:
-			linear-gradient(
-				180deg,
-				color-mix(in oklch, var(--primary) 12%, transparent),
-				color-mix(in oklch, var(--background) 82%, var(--card) 18%)
-			);
+		background: linear-gradient(
+			180deg,
+			color-mix(in oklch, var(--primary) 12%, transparent),
+			color-mix(in oklch, var(--background) 82%, var(--card) 18%)
+		);
 		border: 1px solid color-mix(in oklch, var(--foreground) 10%, transparent);
 		box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--background) 25%, transparent);
 	}
@@ -507,7 +530,7 @@
 	}
 
 	.catalog-description,
-		.catalog-people {
+	.catalog-people {
 		margin: 0.55rem 0 0;
 		overflow: hidden;
 		display: -webkit-box;

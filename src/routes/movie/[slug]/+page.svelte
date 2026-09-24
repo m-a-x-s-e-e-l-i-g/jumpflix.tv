@@ -3,6 +3,7 @@
 	import { YOUTUBE_ID_PATTERN, resolveMoviePlaybackSource } from '$lib/tv/playback-source';
 	import { env } from '$env/dynamic/public';
 	import { decode } from 'html-entities';
+	import { verifiedDate } from '$lib/seo';
 	// TvPage is rendered in layout; we only set head tags here
 	export let data: { item: any };
 
@@ -45,12 +46,6 @@
 		return people.length ? people : undefined;
 	};
 
-	const inferUploadDate = (year?: string) => {
-		if (!year) return undefined;
-		const clean = year.trim();
-		return /^\d{4}$/.test(clean) ? `${clean}-01-01` : undefined;
-	};
-
 	const jsonLd = (payload: Record<string, unknown> | null | undefined) => {
 		if (!payload) return '';
 		const json = JSON.stringify(
@@ -62,7 +57,7 @@
 			},
 			2
 		);
-		return json.replace(/<\/script/gi, '<\\/script');
+		return json.replace(/</g, '\\u003c');
 	};
 
 	let jsonLdMovie = '';
@@ -74,7 +69,6 @@
 				'@context': 'https://schema.org',
 				'@type': 'Movie',
 				name: decode(item.title ?? ''),
-				datePublished: inferUploadDate(item.year),
 				description: desc,
 				image,
 				url,
@@ -85,21 +79,25 @@
 
 	$: moviePlaybackSource = item ? resolveMoviePlaybackSource(item) : null;
 	$: jsonLdEmbedUrl =
-		moviePlaybackSource?.kind === 'youtube' && YOUTUBE_ID_PATTERN.test(String(item?.videoId ?? '').trim())
+		moviePlaybackSource?.kind === 'youtube' &&
+		YOUTUBE_ID_PATTERN.test(String(item?.videoId ?? '').trim())
 			? `https://www.youtube.com/embed/${String(item.videoId).trim()}`
 			: moviePlaybackSource?.kind === 'vimeo' && String(item?.vimeoId ?? '').trim()
 				? `https://player.vimeo.com/video/${encodeURIComponent(String(item.vimeoId).trim())}`
 				: undefined;
 
+	// Only emit video rich-result markup when its required publication date is known.
+	// A film's release year does not establish the video's upload date.
+	$: uploadDate = verifiedDate(item?.publishedAt);
 	$: jsonLdVideo =
-		item && moviePlaybackSource
+		item && moviePlaybackSource && uploadDate
 			? jsonLd({
 					'@context': 'https://schema.org',
 					'@type': 'VideoObject',
 					name: decode(item.title ?? ''),
 					description: desc,
 					thumbnailUrl: [image],
-					uploadDate: inferUploadDate(item.year),
+					uploadDate,
 					contentUrl:
 						moviePlaybackSource?.kind === 'hls' || moviePlaybackSource?.kind === 'direct'
 							? moviePlaybackSource.src

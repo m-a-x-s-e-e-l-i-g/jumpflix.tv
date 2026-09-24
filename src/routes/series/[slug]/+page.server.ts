@@ -1,4 +1,3 @@
-import { fetchRelatedContent } from '$lib/server/content-service';
 import { publicCacheHeaders } from '$lib/server/public-cache';
 import type { PageServerLoad } from './$types';
 import { fetchSeriesBySlug } from '$lib/server/content-service';
@@ -12,5 +11,5 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 	const isAuthenticated = Boolean((parentData as any)?.session || (parentData as any)?.user);
 	setHeaders(publicCacheHeaders(isAuthenticated));
 
-	return { item, related: await fetchRelatedContent(item), initialSeasonNumber: item.seasons[0]?.seasonNumber ?? 1 };
+	return { item, initialSeasonNumber: item.seasons[0]?.seasonNumber ?? 1 };
 };

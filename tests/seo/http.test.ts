@@ -28,6 +28,11 @@ test(
 		const series = paths.find((path) => path.startsWith('/series/'))!;
 		for (const path of [film, series]) {
 			const detail = await page(path);
+			assert.doesNotMatch(
+				detail.html,
+				/class="[^"]*explore-(?:more|collections|titles)/,
+				'no recommendation section on detail pages'
+			);
 			assert.match(
 				detail.html,
 				/<h1\b[^>]*class="[^"]*detail-title/,
@@ -49,11 +54,13 @@ test(
 			const dataResponse = await fetch(new URL(`${path}/__data.json`, base));
 			const data = await dataResponse.json();
 			for (const node of data.nodes ?? []) {
-				if (node?.data?.[0])
+				if (node?.data?.[0]) {
 					assert.ok(
 						!Object.hasOwn(node.data[0], 'content'),
 						'no catalog in any serialized detail loader'
 					);
+					assert.ok(!Object.hasOwn(node.data[0], 'related'), 'no recommendations in detail data');
+				}
 			}
 		}
 		for (const slug of [
@@ -78,6 +85,11 @@ test(
 		assert.ok(episodeUrl, 'episodes are included in the sitemap');
 		const episodePath = new URL(episodeUrl).pathname;
 		const episode = await page(episodePath);
+		assert.doesNotMatch(
+			episode.html,
+			/class="[^"]*explore-(?:more|collections|titles)/,
+			'no recommendation section on episodes'
+		);
 		assert.ok(episode.schemas.some((schema) => schema['@type'] === 'TVEpisode'));
 		const episodeSchema = episode.schemas.find((schema) => schema['@type'] === 'TVEpisode');
 		const h1 = episode.html

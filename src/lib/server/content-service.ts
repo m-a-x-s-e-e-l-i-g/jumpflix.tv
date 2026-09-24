@@ -397,36 +397,6 @@ export async function fetchSeriesBySlug(slug: string): Promise<Series | null> {
 	return series;
 }
 
-/** A bounded recommendation query; never load the entire catalog on a detail request. */
-export async function fetchRelatedContent(item: ContentItem): Promise<ContentItem[]> {
-	if (!item.facets?.type) return [];
-	try {
-		const { data, error } = await createSupabaseClient()
-			.from('media_items')
-			.select('id, slug, title, type, year')
-			.eq('facet_type', item.facets.type)
-			.neq('id', Number(item.id))
-			.order('updated_at', { ascending: false })
-			.limit(4);
-		if (error) return [];
-		return (data ?? [])
-			.filter((row) => row.slug)
-			.map((row) =>
-				row.type === 'series'
-					? { id: row.id, slug: row.slug!, title: row.title, type: 'series', seasons: [] }
-					: {
-							id: row.id,
-							slug: row.slug!,
-							title: row.title,
-							type: 'movie',
-							year: row.year ?? undefined
-						}
-			);
-	} catch {
-		return []; // Recommendations must not prevent the film or episode from loading.
-	}
-}
-
 export type SeriesEpisodeEntry = {
 	slug: string;
 	seasonNumber: number;

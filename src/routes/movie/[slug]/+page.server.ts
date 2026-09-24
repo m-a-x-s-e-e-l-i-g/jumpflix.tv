@@ -1,4 +1,3 @@
-import { fetchRelatedContent } from '$lib/server/content-service';
 import { publicCacheHeaders } from '$lib/server/public-cache';
 import type { PageServerLoad } from './$types';
 import { fetchMovieBySlug } from '$lib/server/content-service';
@@ -12,5 +11,5 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 
 	setHeaders(publicCacheHeaders(isAuthenticated));
 
-	return { item, related: await fetchRelatedContent(item) };
+	return { item };
 };

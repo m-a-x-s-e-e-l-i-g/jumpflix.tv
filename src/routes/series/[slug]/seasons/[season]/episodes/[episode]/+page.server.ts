@@ -1,4 +1,3 @@
-import { fetchRelatedContent } from '$lib/server/content-service';
 import { publicCacheHeaders } from '$lib/server/public-cache';
 import type { PageServerLoad } from './$types';
 import { fetchSeriesBySlug } from '$lib/server/content-service';
@@ -17,7 +16,6 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 
 	return {
 		item,
-		related: await fetchRelatedContent(item),
 		episode: selection.episode,
 		initialEpisodeNumber: selection.episodeNumber,
 		initialSeasonNumber: selection.seasonNumber

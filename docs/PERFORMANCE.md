@@ -15,7 +15,6 @@ The visible detail poster is eager and high-priority, with responsive Netlify Im
 - Invalidation prevents an older in-flight request from overwriting a newer snapshot.
 - Anonymous public pages cache in the browser for 60 seconds and at the CDN for five minutes, with five minutes of stale-while-revalidate.
 - Authenticated and degraded responses use `private, no-store`. Cookie and language variants are separated.
-- Related-title queries return at most four public records and do not fetch the full catalog.
 
 ## Language URLs
 

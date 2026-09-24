@@ -1,9 +1,6 @@
 <script lang="ts">
 	import { user, loading } from '$lib/stores/authStore';
 	import { supabase } from '$lib/supabaseClient';
-	import AuthDialog from '$lib/components/AuthDialog.svelte';
-	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
-	import { SheetTrigger } from '$lib/components/ui/sheet';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import UserCheckIcon from '@lucide/svelte/icons/user-check';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
@@ -85,7 +82,6 @@
 			notation: 'compact',
 			maximumFractionDigits: value >= 1000 ? 1 : 0
 		}).format(value);
-
 </script>
 
 {#if $loading}
@@ -99,19 +95,21 @@
 		<button
 			bind:this={buttonRef}
 			onclick={() => (showUserMenu = !showUserMenu)}
-			class="group relative inline-flex h-9 cursor-pointer items-center gap-0.75 overflow-visible rounded-full border border-border/85 bg-background/88 pl-0.5 pr-1.5 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/55 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+			class="group relative inline-flex h-9 cursor-pointer items-center gap-0.75 overflow-visible rounded-full border border-border/85 bg-background/88 pr-1.5 pl-0.5 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/55 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 			aria-label={xp ? `User menu, ${formatNumber(xp.total)} XPop` : 'User menu'}
 			title={xp ? m.stats_xpEarned({ xp: formatNumber(xp.total) }) : undefined}
 		>
-			<span class="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground/5 ring-1 ring-foreground/6 transition-colors group-hover:bg-foreground/8">
-			{#if $user.user_metadata?.name}
-				<span class="text-xs font-semibold">
-					{getInitials($user.user_metadata.name)}
-				</span>
-			{:else}
-				<UserCheckIcon class="size-5" />
-			{/if}
-		</span>
+			<span
+				class="inline-flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground/5 ring-1 ring-foreground/6 transition-colors group-hover:bg-foreground/8"
+			>
+				{#if $user.user_metadata?.name}
+					<span class="text-xs font-semibold">
+						{getInitials($user.user_metadata.name)}
+					</span>
+				{:else}
+					<UserCheckIcon class="size-5" />
+				{/if}
+			</span>
 
 			{#if xp}
 				<span
@@ -122,7 +120,9 @@
 						iconClass="h-[1.05rem] w-[1.05rem]"
 						textClass="text-[9px] leading-none font-semibold tracking-[0.14em] normal-case text-primary-foreground/78"
 					/>
-					<span class="inline-flex min-w-8 items-center justify-center rounded-full bg-primary-foreground/14 px-1.5 py-0.5 text-[10px] leading-none font-semibold tabular-nums text-primary-foreground">
+					<span
+						class="inline-flex min-w-8 items-center justify-center rounded-full bg-primary-foreground/14 px-1.5 py-0.5 text-[10px] leading-none font-semibold text-primary-foreground tabular-nums"
+					>
 						{formatCompactNumber(xp.total)}
 					</span>
 				</span>
@@ -179,21 +179,34 @@
 	</div>
 {:else}
 	<div class="flex items-center gap-2">
-		<AuthDialog bind:open={authDialogOpen}>
-			<SheetTrigger>
-				<button
-					class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
-					aria-label="Sign In"
-				>
-					<UserIcon class="size-5" />
-				</button>
-			</SheetTrigger>
-		</AuthDialog>
+		<button
+			class="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
+			aria-label="Sign In"
+			onclick={() => (authDialogOpen = true)}
+		>
+			<UserIcon class="size-5" />
+		</button>
+
 		<span class="text-xs font-medium text-muted-foreground">{m.help_tip_login()}</span>
 	</div>
 {/if}
 
-<SettingsDialog bind:open={settingsDialogOpen} />
+{#if authDialogOpen}
+	{#await import('./AuthDialog.svelte')}
+		<p role="status">Loading…</p>
+	{:then module}
+		<module.default bind:open={authDialogOpen} />
+	{:catch}
+		<p role="alert">Unable to load sign in. Please reload and try again.</p>
+	{/await}
+{/if}
+{#if settingsDialogOpen}
+	{#await import('./SettingsDialog.svelte') then module}
+		<module.default bind:open={settingsDialogOpen} />
+	{:catch}
+		<p role="alert">Unable to load settings. Please reload and try again.</p>
+	{/await}
+{/if}
 
 <style>
 	/* Close menu when clicking outside */

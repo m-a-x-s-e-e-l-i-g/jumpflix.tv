@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localizeHref } from '$lib/paraglide/runtime';
 	import type { Writable } from 'svelte/store';
 	import Switch from '$lib/components/ui/Switch.svelte';
 	import * as m from '$lib/paraglide/messages';
@@ -55,7 +56,7 @@
 			<div class="feed-strip-grid">
 				{#each FEEDS as feed (feed.slug)}
 					<a
-						href={`/collections/${feed.slug}`}
+						href={localizeHref(`/collections/${feed.slug}`)}
 						class="feed-card"
 						class:selected={collectionSlug === feed.slug}
 						aria-current={collectionSlug === feed.slug ? 'page' : undefined}
@@ -67,7 +68,7 @@
 			</div>
 
 			{#if collectionSlug}
-				<a href="/" class="feed-reset">{m.tv_clearFeed()}</a>
+				<a href={localizeHref('/')} class="feed-reset">{m.tv_clearFeed()}</a>
 			{/if}
 		</div>
 

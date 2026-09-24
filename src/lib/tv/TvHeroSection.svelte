@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localizeHref } from '$lib/paraglide/runtime';
 	import { Image } from '@unpic/svelte';
 	import { dev } from '$app/environment';
 	import SubmitFilmDialog from '$lib/components/SubmitFilmDialog.svelte';
@@ -19,7 +20,7 @@
 	<div class="hero-grid">
 		<div class="hero-main">
 			<div class="hero-logo-stack">
-				<a href="/" aria-label="Go to homepage" data-sveltekit-reload class="hero-logo-link">
+				<a href={localizeHref('/')} aria-label="Go to homepage" data-sveltekit-reload class="hero-logo-link">
 					<Image
 						src="/images/jumpflix.webp"
 						alt="JUMPFLIX parkour tv"
@@ -41,7 +42,7 @@
 			<p class="hero-dek">{m.tv_heroTagline()}</p>
 
 			<div class="hero-actions">
-				<a href="/#search" on:click={handleStartWatching} class="hero-cta">
+				<a href={localizeHref('/#search')} on:click={handleStartWatching} class="hero-cta">
 					{m.tv_heroCtaWatch()}
 					<svg
 						xmlns="http://www.w3.org/2000/svg"

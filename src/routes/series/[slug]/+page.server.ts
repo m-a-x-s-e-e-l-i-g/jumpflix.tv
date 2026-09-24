@@ -1,3 +1,5 @@
+import { fetchRelatedContent } from '$lib/server/content-service';
+import { publicCacheHeaders } from '$lib/server/public-cache';
 import type { PageServerLoad } from './$types';
 import { fetchSeriesBySlug } from '$lib/server/content-service';
 import { error } from '@sveltejs/kit';
@@ -8,12 +10,7 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 	if (!item) throw error(404, 'Series not found');
 
 	const isAuthenticated = Boolean((parentData as any)?.session || (parentData as any)?.user);
-	setHeaders({
-		'Cache-Control': isAuthenticated
-			? 'private, no-store'
-			: 'public, max-age=43200, s-maxage=43200, stale-while-revalidate=86400',
-		Vary: 'Cookie'
-	});
+	setHeaders(publicCacheHeaders(isAuthenticated));
 
-	return { item, initialSeasonNumber: item.seasons[0]?.seasonNumber ?? 1 };
+	return { item, related: await fetchRelatedContent(item), initialSeasonNumber: item.seasons[0]?.seasonNumber ?? 1 };
 };

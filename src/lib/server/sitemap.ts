@@ -27,7 +27,7 @@ export function buildSitemap(site: string, content: ContentItem[], episodes: Epi
 		const existing = entries.get(path);
 		entries.set(path, date && (!existing || date > existing) ? date : existing);
 	}
-	for (const path of ['/', '/about', '/video-map', '/stats']) add(path);
+	for (const path of ['/', '/nl', '/ja', '/about', '/video-map', '/stats']) add(path);
 	for (const item of content) {
 		if (!item.slug) continue;
 		add(getUrlForItem(item), item.updatedAt);
@@ -50,9 +50,11 @@ export function buildSitemap(site: string, content: ContentItem[], episodes: Epi
 	}
 	for (const feed of FEEDS) {
 		const path = `/collections/${feed.slug}`;
+		add(`/nl${path}`);
+		add(`/ja${path}`);
 		add(path);
 		for (const item of content.filter((entry) => matchesFeed(entry, feed.slug)))
-			add(path, item.updatedAt);
+			for (const prefix of ['', '/nl', '/ja']) add(prefix + path, item.updatedAt);
 	}
 	const origin = site.replace(/\/$/, '');
 	const urls = [...entries]

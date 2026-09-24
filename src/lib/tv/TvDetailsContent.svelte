@@ -2,7 +2,8 @@
 	import type { ContentItem, ContentWarning, Episode, Movie } from './types';
 	import { isContentUnavailable, isInlinePlayable } from './utils';
 	import { getUrlForItem, getEpisodeUrl } from './slug';
-	import { browser } from '$app/environment';
+	import { browser, dev } from '$app/environment';
+	import { Image } from '@unpic/svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { toast } from 'svelte-sonner';
@@ -1103,7 +1104,8 @@
 		<header class="detail-header">
 			<div class="detail-header-top">
 				<div>
-					<h1 class="detail-title jf-display">{selected.title}</h1>
+					<h1 class="detail-title jf-display">{selectedEpisode?.title || selected.title}</h1>
+					{#if selectedEpisode}<a href={getUrlForItem(selected)} class="detail-muted">{selected.title}</a>{/if}
 					{#if isJumpflixExclusive}
 						<div
 							class="detail-exclusive-ribbon"
@@ -1272,7 +1274,7 @@
 						</div>
 					{/if}
 					{#if resolvedPosterUrl}
-						<img src={displayPosterUrl} alt={selected.title} loading="lazy" decoding="async" />
+						<Image src={displayPosterUrl} alt={selected.title} width={540} height={810} layout="constrained" cdn={dev ? undefined : 'netlify'} loading="eager" fetchpriority="high" decoding="async" />
 					{:else}
 						<div class="detail-poster-fallback"></div>
 					{/if}
@@ -1281,7 +1283,7 @@
 				<section class="detail-section detail-overview detail-overview--aside">
 					<div class="detail-overview-copy">
 						<h2>{m.tv_overview()}</h2>
-						<p>{selected.description || m.tv_noDescription()}</p>
+						<p>{selectedEpisode?.description || selected.description || m.tv_noDescription()}</p>
 					</div>
 				</section>
 
@@ -1372,7 +1374,7 @@
 					<section class="detail-section detail-overview">
 						<div class="detail-overview-copy">
 							<h2>{m.tv_overview()}</h2>
-							<p>{selected.description || m.tv_noDescription()}</p>
+							<p>{selectedEpisode?.description || selected.description || m.tv_noDescription()}</p>
 						</div>
 					</section>
 

@@ -3,7 +3,6 @@
 	import { getUrlForItem } from './slug';
 	import { isImage } from './utils';
 	import { Image } from '@unpic/svelte';
-	import { blurhashToCssGradientString } from '@unpic/placeholder';
 	import { dev } from '$app/environment';
 	import { familySafeOnly, loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
 	import {
@@ -29,8 +28,7 @@
 	export let showRatingBadge = false;
 
 	let error = false;
-	$: blurhash = item.blurhash;
-	$: background = blurhash ? blurhashToCssGradientString(blurhash) : undefined;
+	const background = 'linear-gradient(145deg, #201b20, #141416)';
 
 	$: altSuffix = item.type === 'movie' ? ' poster' : ' thumbnail';
 

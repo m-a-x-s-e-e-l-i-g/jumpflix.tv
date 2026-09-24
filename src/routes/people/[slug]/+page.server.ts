@@ -1,3 +1,6 @@
+import { toCatalogSummary } from '$lib/tv/catalog-summary';
+import { getContentServiceStatus } from '$lib/server/content-service';
+import { publicCacheHeaders } from '$lib/server/public-cache';
 import type { PageServerLoad } from './$types';
 import { createSupabaseClient } from '$lib/server/supabaseClient';
 import { fetchAllContent } from '$lib/server/content-service';
@@ -111,12 +114,7 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 	}
 
 	const isAuthenticated = Boolean((parentData as any)?.session || (parentData as any)?.user);
-	setHeaders({
-		'Cache-Control': isAuthenticated
-			? 'private, no-store'
-			: 'public, max-age=43200, s-maxage=43200, stale-while-revalidate=86400',
-		Vary: 'Cookie'
-	});
+	setHeaders(publicCacheHeaders(isAuthenticated, Boolean(getContentServiceStatus().lastError)));
 
-	return { content: filtered, name, slug, roles, instagramHandles };
+	return { content: filtered.map(toCatalogSummary), name, slug, roles, instagramHandles };
 };

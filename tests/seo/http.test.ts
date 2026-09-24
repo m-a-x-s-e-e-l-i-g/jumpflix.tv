@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { decode } from 'html-entities';
 
 // Run against a local preview with JUMPFLIX_TEST_URL=http://127.0.0.1:5173.
 // Requests are read-only and use records discovered from the site's own HTML/sitemap.
@@ -27,6 +28,17 @@ test(
 		const series = paths.find((path) => path.startsWith('/series/'))!;
 		for (const path of [film, series]) {
 			const detail = await page(path);
+			assert.match(
+				detail.html,
+				/<h1\b[^>]*class="[^"]*detail-title/,
+				'detail remains server-rendered'
+			);
+			assert.ok(
+				[...detail.html.matchAll(/<img\b[^>]*>/g)].some(
+					([tag]) => tag.includes('loading="eager"') && tag.includes('fetchpriority="high"')
+				),
+				'visible poster is prioritized'
+			);
 			for (const schema of detail.schemas) {
 				if (schema['@type'] === 'VideoObject') assert.ok(schema.uploadDate);
 			}
@@ -67,6 +79,15 @@ test(
 		const episodePath = new URL(episodeUrl).pathname;
 		const episode = await page(episodePath);
 		assert.ok(episode.schemas.some((schema) => schema['@type'] === 'TVEpisode'));
+		const episodeSchema = episode.schemas.find((schema) => schema['@type'] === 'TVEpisode');
+		const h1 = episode.html
+			.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1]
+			?.replace(/<[^>]*>/g, '')
+			.trim();
+		assert.ok(
+			h1 && episodeSchema.name.startsWith(decode(h1)),
+			'episode title is visible in the main heading'
+		);
 		for (const path of [
 			episodePath.replace(/\/episodes\/\d+$/, '/episodes/99999'),
 			episodePath.replace(/\/seasons\/\d+\//, '/seasons/99999/'),
@@ -76,5 +97,34 @@ test(
 		]) {
 			assert.equal((await fetch(new URL(path, base))).status, 404, path);
 		}
+	}
+);
+
+test(
+	'translated discovery URLs have stable locales, canonical and reciprocal alternate links',
+	{ skip: !base, timeout: 90000 },
+	async () => {
+		for (const locale of ['en', 'nl', 'ja']) {
+			for (const suffix of ['', '/collections/documentaries']) {
+				const path = (locale === 'en' ? '' : '/' + locale) + suffix || '/';
+				const response = await fetch(new URL(path, base), {
+					headers: {
+						'Accept-Language': locale === 'nl' ? 'ja' : 'nl',
+						Cookie: 'PARAGLIDE_LOCALE=ja'
+					}
+				});
+				assert.equal(response.status, 200, path);
+				assert.equal(new URL(response.url).pathname, path);
+				const html = await response.text();
+				assert.ok(html.includes(`<html lang="${locale}"`), path);
+				assert.ok(html.includes(`rel="canonical" href="https://www.jumpflix.tv${path}"`), path);
+				for (const language of ['en', 'nl', 'ja', 'x-default'])
+					assert.ok(html.includes(`hreflang="${language}"`));
+				const data = await fetch(new URL(path.replace(/\/$/, '') + '/__data.json', base));
+				assert.equal(data.status, 200, 'localized client navigation data');
+				assert.match(data.headers.get('content-type') ?? '', /json/);
+			}
+		}
+		assert.equal((await fetch(new URL('/nl/movie/not-translated', base))).status, 404);
 	}
 );

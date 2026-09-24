@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { getContext, onMount, tick } from 'svelte';
+	import { deLocalizeUrl, localizeHref } from '$lib/paraglide/runtime';
+	import { getContext, setContext, onMount, tick } from 'svelte';
 	import InstagramIcon from '@lucide/svelte/icons/instagram';
 	import LayoutGridIcon from '@lucide/svelte/icons/layout-grid';
 	import ListIcon from '@lucide/svelte/icons/list';
@@ -12,8 +13,6 @@
 	import TvCatalogGrid from '$lib/tv/TvCatalogGrid.svelte';
 	import TvCatalogList from '$lib/tv/TvCatalogList.svelte';
 	import TvPageBackdrop from '$lib/tv/TvPageBackdrop.svelte';
-	import TvDetailPanel from '$lib/tv/TvDetailPanel.svelte';
-	import RatingPromptDialog from '$lib/components/RatingPromptDialog.svelte';
 	import { getUserRating } from '$lib/ratings';
 	import {
 		visibleContent,
@@ -53,11 +52,13 @@
 	import { SCROLL_CONTEXT_KEY, type ScrollSubscription } from '$lib/scroll-context';
 
 	let {
+		children,
 		content = [],
 		initialItem = null,
 		initialEpisodeNumber = null,
 		initialSeasonNumber = null
 	} = $props<{
+		children?: import('svelte').Snippet;
 		content?: ContentItem[];
 		initialItem?: ContentItem | null;
 		initialEpisodeNumber?: number | null;
@@ -67,7 +68,7 @@
 	let lastCollectionPath = $state<string | null>(null);
 
 	$effect(() => {
-		const path = $page.url.pathname;
+		const path = deLocalizeUrl($page.url).pathname;
 		if (path.startsWith('/collections/') && path !== lastCollectionPath) {
 			searchQuery.set('');
 			selectedFacets.set({});
@@ -111,7 +112,7 @@
 	let restoreCatalogScroll = false;
 
 	const isDetailRoute = $derived(
-		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
+		deLocalizeUrl($page.url).pathname.startsWith('/movie/') || deLocalizeUrl($page.url).pathname.startsWith('/series/')
 	);
 
 	type ProfileContext = {
@@ -275,12 +276,14 @@
 		return `All films and series featuring ${name}.`;
 	}
 
-	const profileContext = $derived(computeProfileContext($page.url.pathname, $page.data));
+	const profileContext = $derived(computeProfileContext(deLocalizeUrl($page.url).pathname, $page.data));
 
 	const isDetailPathname = (pathname: string) =>
 		pathname.startsWith('/movie/') || pathname.startsWith('/series/');
-	const isCatalogPathname = (pathname: string) =>
-		pathname === '/' || pathname.startsWith('/collections/') || pathname.startsWith('/people/');
+	const isCatalogPathname = (pathname: string) => {
+		const path = deLocalizeUrl(new URL(pathname, 'https://www.jumpflix.tv')).pathname;
+		return path === '/' || path.startsWith('/collections/') || path.startsWith('/people/');
+	};
 
 	const profileStats = $derived(
 		profileContext ? computeProfileStats(($page.data as any)?.content) : null
@@ -421,7 +424,7 @@
 		if (!browser) return;
 		if (!isAndroidStandalone()) return;
 		if (!isMobile) return;
-		if (window.location.pathname !== '/') return;
+		if (deLocalizeUrl(window.location.href).pathname !== '/') return;
 		if (get(showPlayer)) return;
 
 		const state: any = window.history.state;
@@ -431,7 +434,7 @@
 
 	if (browser) {
 		const initialPage = get(page);
-		if (initialPage.url.pathname === '/') {
+		if (deLocalizeUrl(initialPage.url).pathname === '/') {
 			const initialQuery = initialPage.url.searchParams.get('q');
 			// Only sync from URL when `q` is explicitly present.
 			// Otherwise, keep the persisted store value (e.g., localStorage) to avoid
@@ -443,7 +446,7 @@
 	}
 
 	function nav(url: string, opts?: { replace?: boolean }) {
-		goto(url, { replaceState: !!opts?.replace, noScroll: true, keepFocus: true });
+		goto(localizeHref(url), { replaceState: !!opts?.replace, noScroll: true, keepFocus: true });
 	}
 
 	$effect(() => {
@@ -658,7 +661,7 @@
 			}
 
 			// Double-back to exit on catalog overview
-			if (window.location.pathname === '/' && !get(showPlayer)) {
+			if (deLocalizeUrl(window.location.href).pathname === '/' && !get(showPlayer)) {
 				const now = Date.now();
 				if (now > exitConfirmUntil) {
 					exitConfirmUntil = now + EXIT_CONFIRM_TIMEOUT_MS;
@@ -720,8 +723,8 @@
 		});
 
 		const unsubPage = page.subscribe((p) => {
-			currentPath = `${p.url.pathname}${p.url.search}`;
-			if (p.url.pathname === '/') {
+			currentPath = `${deLocalizeUrl(p.url).pathname}${p.url.search}`;
+			if (deLocalizeUrl(p.url).pathname === '/') {
 				const nextQuery = p.url.searchParams.get('q');
 				// Only sync from URL when `q` is explicitly present.
 				if (nextQuery !== null && nextQuery !== get(searchQuery)) {
@@ -830,30 +833,30 @@
 			(gridContent || []).slice(0, Math.max(columns * 2, 8)).map((it) => `${it.type}:${it.id}`)
 		)
 	);
+	setContext('jumpflix-detail-props', () => ({
+		selected: selectedForDetail,
+		openContent: handleOpenContent,
+		openExternal: openExternalContent,
+		onOpenEpisode: handleOpenEpisode,
+		onSelectEpisode: handleSelectEpisode,
+		selectedEpisode: mounted && $selectedEpisode && $selectedEpisode.id !== routeEpisode?.id ? $selectedEpisode : (routeEpisode ?? $selectedEpisode ?? null),
+		initialSeasonNumber,
+		ratingRefreshToken
+	}));
+
 </script>
 
 <div class="tv-page relative isolate min-h-screen overflow-x-hidden bg-background text-foreground">
 	<TvPageBackdrop />
 	{#if isDetailRoute}
-		<TvDetailPanel
-			selected={selectedForDetail}
-			openContent={handleOpenContent}
-			openExternal={openExternalContent}
-			onOpenEpisode={handleOpenEpisode}
-			onSelectEpisode={handleSelectEpisode}
-			selectedEpisode={mounted
-				? ($selectedEpisode ?? routeEpisode ?? null)
-				: (routeEpisode ?? null)}
-			{initialSeasonNumber}
-			{ratingRefreshToken}
-		/>
+		{@render children?.()}
 	{:else}
 		<section class="relative isolate overflow-hidden pt-24 sm:pt-32">
 			<div class="hero-overlay" aria-hidden="true"></div>
 
 			{#if collection}
 				<div class="mx-auto w-full max-w-6xl px-6 pb-6">
-					<a href="/" class="text-sm text-muted-foreground hover:text-foreground"
+					<a href={localizeHref('/')} class="text-sm text-muted-foreground hover:text-foreground"
 						>← {m.tv_backToCatalog()}</a
 					>
 					<p class="jf-label mt-8 text-primary">JUMPFLIX · {m.tv_feedStripLabel()}</p>
@@ -1046,6 +1049,7 @@
 		</div>
 	{/if}
 </div>
+{#if !isDetailRoute}{@render children?.()}{/if}
 {#if $showPlayer}
 	{#if PlayerModalComponent}
 		<PlayerModalComponent
@@ -1060,11 +1064,15 @@
 	{/if}
 {/if}
 
-<RatingPromptDialog
+{#if ratingDialogOpen}
+{#await import('$lib/components/RatingPromptDialog.svelte') then module}
+<module.default
 	bind:open={ratingDialogOpen}
 	movie={ratingDialogMovie}
 	on:ratingSaved={handleRatingSaved}
 />
+{/await}
+{/if}
 
 <style>
 	:global(.tv-page) {

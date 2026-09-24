@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DetailRoute from '$lib/tv/DetailRoute.svelte';
 	import { getUrlForItem } from '$lib/tv/slug';
 	import { YOUTUBE_ID_PATTERN, resolveMoviePlaybackSource } from '$lib/tv/playback-source';
 	import { env } from '$env/dynamic/public';
@@ -144,3 +145,5 @@
 </svelte:head>
 
 <!-- Content rendered in layout -->
+
+<DetailRoute />

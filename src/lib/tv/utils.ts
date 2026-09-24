@@ -120,7 +120,7 @@ export function matchesSearch(item: ContentItem, q: string): boolean {
 	// - token match on artist words
 	if (trimmed && item.type === 'movie') {
 		const movie: Movie = item;
-		const tracks: VideoTrack[] | undefined = movie.tracks;
+		const tracks = movie.tracks ?? movie.musicSearch?.map(([title, artist]) => ({ song: { title, artist } }));
 		if (Array.isArray(tracks) && tracks.length) {
 			const qTitle = normalizeTitleExact(trimmed);
 			if (qTitle) {

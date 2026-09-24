@@ -1,3 +1,5 @@
+import { error as httpError } from '@sveltejs/kit';
+import { ResilientCache } from './resilient-cache';
 import { createSupabaseClient } from '$lib/server/supabaseClient';
 import type { Database } from '$lib/supabase/types';
 import type {
@@ -42,44 +44,6 @@ function removeUndefined<T extends Record<string, any>>(obj: T): T {
 		}
 	}
 	return result as T;
-}
-
-const PRERENDER_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const PRERENDER_CACHE_DIR = '.cache';
-const CONTENT_CACHE_FILE = 'jumpflix-content.json';
-
-function isPrerenderCacheEnabled(): boolean {
-	return typeof process !== 'undefined' && process.env?.JUMPFLIX_PRERENDER_CACHE === '1';
-}
-
-async function readPrerenderCache<T>(fileName: string): Promise<T | null> {
-	if (!isPrerenderCacheEnabled()) return null;
-	try {
-		const fs = await import('fs/promises');
-		const path = await import('path');
-		const cachePath = path.join(process.cwd(), PRERENDER_CACHE_DIR, fileName);
-		const raw = await fs.readFile(cachePath, 'utf-8');
-		const parsed = JSON.parse(raw) as { fetchedAt?: number; items?: T };
-		if (!parsed?.items || !parsed?.fetchedAt) return null;
-		if (Date.now() - parsed.fetchedAt > PRERENDER_CACHE_TTL_MS) return null;
-		return parsed.items;
-	} catch {
-		return null;
-	}
-}
-
-async function writePrerenderCache<T>(fileName: string, items: T): Promise<void> {
-	if (!isPrerenderCacheEnabled()) return;
-	try {
-		const fs = await import('fs/promises');
-		const path = await import('path');
-		const cacheDir = path.join(process.cwd(), PRERENDER_CACHE_DIR);
-		await fs.mkdir(cacheDir, { recursive: true });
-		const cachePath = path.join(cacheDir, fileName);
-		await fs.writeFile(cachePath, JSON.stringify({ fetchedAt: Date.now(), items }));
-	} catch {
-		// Best-effort cache; ignore failures.
-	}
 }
 
 // Helper to map facets from database row
@@ -285,10 +249,7 @@ function mapSeries(row: MediaItemWithSeasons, ratingSummary: MediaRatingSummaryR
 	});
 }
 
-const CONTENT_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
-let contentCache: { items: ContentItem[]; fetchedAt: number } | null = null;
-let contentInFlight: Promise<ContentItem[]> | null = null;
-let lastContentLoadError: string | null = null;
+const contentCache = new ResilientCache<ContentItem[]>();
 
 export function getContentServiceStatus(): {
 	lastError: string | null;
@@ -296,47 +257,22 @@ export function getContentServiceStatus(): {
 	cacheFetchedAt: string | null;
 } {
 	return {
-		lastError: lastContentLoadError,
-		cachedItemCount: contentCache?.items.length ?? 0,
-		cacheFetchedAt: contentCache ? new Date(contentCache.fetchedAt).toISOString() : null
+		lastError: contentCache.lastError,
+		cachedItemCount: contentCache.value?.length ?? 0,
+		cacheFetchedAt:
+			Number.isFinite(contentCache.fetchedAt) && contentCache.value
+				? new Date(contentCache.fetchedAt).toISOString()
+				: null
 	};
 }
 
 export async function invalidateContentCache(): Promise<void> {
-	contentCache = null;
-	contentInFlight = null;
-	lastContentLoadError = null;
-	if (!isPrerenderCacheEnabled()) return;
-	try {
-		const fs = await import('fs/promises');
-		const path = await import('path');
-		const cachePath = path.join(process.cwd(), PRERENDER_CACHE_DIR, CONTENT_CACHE_FILE);
-		await fs.unlink(cachePath);
-	} catch {
-		// best-effort
-	}
+	contentCache.invalidate();
 }
 
 export async function fetchAllContent(options: { maxAgeMs?: number } = {}): Promise<ContentItem[]> {
-	const now = Date.now();
-	if (contentCache && now - contentCache.fetchedAt < (options.maxAgeMs ?? CONTENT_CACHE_TTL_MS)) {
-		return contentCache.items;
-	}
-	if (contentInFlight) {
-		return contentInFlight;
-	}
-
-	const diskCached = options.maxAgeMs === undefined
-		? await readPrerenderCache<ContentItem[]>(CONTENT_CACHE_FILE)
-		: null;
-	if (diskCached) {
-		contentCache = { items: diskCached, fetchedAt: Date.now() };
-		lastContentLoadError = null;
-		return diskCached;
-	}
-
-	contentInFlight = (async () => {
-		try {
+	try {
+		return await contentCache.get(async () => {
 			const supabase = createSupabaseClient();
 			const { data, error } = await supabase.from('media_items').select(
 				`
@@ -352,18 +288,8 @@ export async function fetchAllContent(options: { maxAgeMs?: number } = {}): Prom
 					`
 			);
 
-			if (error) {
-				console.error('[content-service] Failed to load media items:', error);
-				lastContentLoadError = error.message || 'Failed to load media items.';
-				contentCache = { items: [], fetchedAt: Date.now() };
-				return [];
-			}
-
-			if (!data) {
-				lastContentLoadError = 'Catalog query returned no data.';
-				contentCache = { items: [], fetchedAt: Date.now() };
-				return [];
-			}
+			if (error) throw new Error(error.message);
+			if (!data) throw new Error('Catalog query returned no data');
 
 			const rows = data as unknown as MediaItemWithSeasonsAndTracks[];
 			const summaryByMediaId = new Map<number, MediaRatingSummaryRow>();
@@ -389,22 +315,11 @@ export async function fetchAllContent(options: { maxAgeMs?: number } = {}): Prom
 			});
 
 			const sorted = items.sort((a, b) => a.title.localeCompare(b.title));
-			lastContentLoadError = null;
-			contentCache = { items: sorted, fetchedAt: Date.now() };
-			await writePrerenderCache(CONTENT_CACHE_FILE, sorted);
 			return sorted;
-		} catch (err) {
-			console.error('[content-service] Unexpected error:', err);
-			lastContentLoadError =
-				err instanceof Error ? err.message : 'Unexpected catalog loading error.';
-			contentCache = { items: [], fetchedAt: Date.now() };
-			return [];
-		} finally {
-			contentInFlight = null;
-		}
-	})();
-
-	return contentInFlight;
+		}, options.maxAgeMs);
+	} catch {
+		httpError(503, 'Catalog temporarily unavailable. Please try again shortly.');
+	}
 }
 
 export async function fetchMovieBySlug(slug: string): Promise<Movie | null> {
@@ -480,6 +395,36 @@ export async function fetchSeriesBySlug(slug: string): Promise<Series | null> {
 			);
 	}
 	return series;
+}
+
+/** A bounded recommendation query; never load the entire catalog on a detail request. */
+export async function fetchRelatedContent(item: ContentItem): Promise<ContentItem[]> {
+	if (!item.facets?.type) return [];
+	try {
+		const { data, error } = await createSupabaseClient()
+			.from('media_items')
+			.select('id, slug, title, type, year')
+			.eq('facet_type', item.facets.type)
+			.neq('id', Number(item.id))
+			.order('updated_at', { ascending: false })
+			.limit(4);
+		if (error) return [];
+		return (data ?? [])
+			.filter((row) => row.slug)
+			.map((row) =>
+				row.type === 'series'
+					? { id: row.id, slug: row.slug!, title: row.title, type: 'series', seasons: [] }
+					: {
+							id: row.id,
+							slug: row.slug!,
+							title: row.title,
+							type: 'movie',
+							year: row.year ?? undefined
+						}
+			);
+	} catch {
+		return []; // Recommendations must not prevent the film or episode from loading.
+	}
 }
 
 export type SeriesEpisodeEntry = {

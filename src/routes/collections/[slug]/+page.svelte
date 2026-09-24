@@ -1,4 +1,7 @@
 <script lang="ts">
+	import * as m from '$lib/paraglide/messages';
+	import { localizeHref } from '$lib/paraglide/runtime';
+	import LanguageAlternates from '$lib/components/LanguageAlternates.svelte';
 	import { env } from '$env/dynamic/public';
 	import { getFeedBySlug } from '$lib/tv/feeds';
 	import { getUrlForItem } from '$lib/tv/slug';
@@ -7,8 +10,8 @@
 	let { data }: { data: PageData } = $props();
 	const feed = $derived(getFeedBySlug(data.collectionSlug)!);
 	const origin = (env.PUBLIC_SITE_URL || 'https://www.jumpflix.tv').replace(/\/$/, '');
-	const url = $derived(`${origin}/collections/${feed.slug}`);
-	const title = $derived(`${feed.title()} — Parkour Films & Series | JUMPFLIX`);
+	const url = $derived(origin + localizeHref(`/collections/${feed.slug}`));
+	const title = $derived(`${feed.title()} — ${m.tv_collectionSeoSuffix()} | JUMPFLIX`);
 </script>
 
 <svelte:head>
@@ -43,3 +46,5 @@
 		}
 	}}
 />
+
+<LanguageAlternates path={`/collections/${feed.slug}`} />

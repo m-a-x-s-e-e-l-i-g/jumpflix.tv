@@ -108,7 +108,7 @@
 		display: inline-block;
 		color: #e63b28;
 		font-weight: 800;
-		transform: perspective(100px) rotateX(calc(31deg + var(--logo-scroll-tilt, 0deg))) scaleX(var(--logo-stretch, 1.04));
+		transform: perspective(100px) rotateX(calc(31deg + var(--logo-scroll-tilt, 0deg))) scaleX(1.04);
 		transform-origin: center top;
 		filter: saturate(110%) contrast(110%);
 		text-shadow: var(--hero-logo-text-shadow);
@@ -121,11 +121,6 @@
 		text-align: center;
 		line-height: 0.86;
 		user-select: none;
-	}
-
-	.hero-shell--collection .hero-logo-text {
-		--logo-stretch: 1.8;
-		font-size: clamp(3rem, 5.5vw, 5rem);
 	}
 
 	.hero-shell--collection .hero-title {
@@ -190,11 +185,6 @@
 		.hero-logo-text {
 			font-size: clamp(1.4rem, 9vw, 3.2rem);
 			letter-spacing: 0.12em;
-		}
-
-		.hero-shell--collection .hero-logo-text {
-			--logo-stretch: 1.55;
-			font-size: clamp(2rem, 8vw, 3rem);
 		}
 
 		.hero-shell--collection .hero-title {

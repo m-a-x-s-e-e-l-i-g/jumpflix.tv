@@ -76,6 +76,7 @@ export interface Movie extends BaseContent {
 	creators?: string[];
 	starring?: string[];
 	tracks?: VideoTrack[]; // Optional Spotify-backed tracklist
+	musicSearch?: [title: string, artist: string][]; // Compact catalog-only search data
 }
 
 export interface Series extends BaseContent {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { deLocalizeUrl, localizeHref } from '$lib/paraglide/runtime';
 	import '../app.css';
 	import { onDestroy, onMount, setContext } from 'svelte';
 	import { get } from 'svelte/store';
@@ -30,9 +31,7 @@
 	import TvPage from '$lib/tv/TvPage.svelte';
 	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import UserProfileButton from '$lib/components/UserProfileButton.svelte';
-	import AdminMenuButton from '$lib/components/AdminMenuButton.svelte';
 	import HelpTipsButton from '$lib/components/HelpTipsButton.svelte';
-	import ContentSuggestionDialog from '$lib/components/ContentSuggestionDialog.svelte';
 	import Switch from '$lib/components/ui/Switch.svelte';
 	import { withUtm } from '$lib/utils';
 	import { familySafeOnly, selectedEpisode as selectedEpisodeStore } from '$lib/tv/store';
@@ -97,14 +96,18 @@
 		}
 	}
 
+	onMount(() => {
+		if (import.meta.env.PROD) void import('$lib/performance').then(({ startWebVitals }) => startWebVitals()).catch(() => {});
+	});
+
 	// data from +layout.ts
 	let { children, data } = $props<{
 		children: any;
 		data: {
 			content?: ContentItem[];
-			item: ContentItem | null;
-			initialEpisodeNumber: number | null;
-			initialSeasonNumber: number | null;
+			item?: ContentItem | null;
+			initialEpisodeNumber?: number | null;
+			initialSeasonNumber?: number | null;
 			userXp: UserXpSummary | null;
 			session: any;
 			user: any;
@@ -129,23 +132,23 @@
 	let xPopParticleSeed = 0;
 	let xPopTimer: ReturnType<typeof setTimeout> | null = null;
 
-	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
+	const isAdminRoute = $derived(deLocalizeUrl($page.url).pathname.startsWith('/admin'));
 	const isStatsRoute = $derived(
-		$page.url.pathname === '/stats' || $page.url.pathname.startsWith('/stats/')
+		deLocalizeUrl($page.url).pathname === '/stats' || deLocalizeUrl($page.url).pathname.startsWith('/stats/')
 	);
-	const isAboutRoute = $derived($page.url.pathname === '/about');
-	const isCostsRoute = $derived(/\/costs$/.test(String($page.url.pathname)));
+	const isAboutRoute = $derived(deLocalizeUrl($page.url).pathname === '/about');
+	const isCostsRoute = $derived(/\/costs$/.test(String(deLocalizeUrl($page.url).pathname)));
 	const isLegalRoute = $derived(
-		$page.url.pathname === '/privacy-policy' || $page.url.pathname === '/terms-of-service'
+		deLocalizeUrl($page.url).pathname === '/privacy-policy' || deLocalizeUrl($page.url).pathname === '/terms-of-service'
 	);
 	const isVideoMapRoute = $derived(
-		$page.url.pathname === '/video-map' || $page.url.pathname.startsWith('/video-map/')
+		deLocalizeUrl($page.url).pathname === '/video-map' || deLocalizeUrl($page.url).pathname.startsWith('/video-map/')
 	);
-	const isAutoplayRoute = $derived(String($page.url.pathname) === '/autoplay');
+	const isAutoplayRoute = $derived(String(deLocalizeUrl($page.url).pathname) === '/autoplay');
 	const isDetailRoute = $derived(
-		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
+		deLocalizeUrl($page.url).pathname.startsWith('/movie/') || deLocalizeUrl($page.url).pathname.startsWith('/series/')
 	);
-	const isPeopleRoute = $derived($page.url.pathname.startsWith('/people/'));
+	const isPeopleRoute = $derived(deLocalizeUrl($page.url).pathname.startsWith('/people/'));
 	const isNavigatingToStats = $derived(
 		(() => {
 			const toPath = $navigating?.to?.url?.pathname;
@@ -770,15 +773,7 @@
 
 	// Switch locale without full page reload for instant UX
 	async function changeLocale(code: 'en' | 'nl' | 'ja') {
-		// Avoid default reload behavior; update local state to trigger re-render
-		await (setLocale as any)(code, { reload: false });
-		currentLocale = code;
-
-		// Close settings sheet and show a toast
-		sheetOpen = false;
-		const lang = langs.find((l) => l.code === code);
-		const label = lang?.label ?? code.toUpperCase();
-		toast.message(m.settings_languageChanged({ language: label }));
+		await setLocale(code);
 	}
 
 	// Keep the <html lang> attribute in sync
@@ -894,7 +889,7 @@
 
 				{#if isStatsRoute || isAdminRoute || isAboutRoute || isCostsRoute || isLegalRoute || isVideoMapRoute || isDetailRoute || isPeopleRoute}
 					<a
-						href="/"
+						href={localizeHref('/')}
 						aria-label={isDetailRoute || isPeopleRoute ? m.tv_backToCatalog() : 'Catalog'}
 						class={isDetailRoute || isPeopleRoute
 							? 'relative inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border bg-background/90 px-3 text-sm font-medium text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none'
@@ -934,25 +929,29 @@
 
 				{#if !isDetailRoute && !isPeopleRoute}
 					{#if data?.isAdmin && $user}
-						<AdminMenuButton />
+						{#await import('$lib/components/AdminMenuButton.svelte') then module}
+							<module.default />
+						{/await}
 					{/if}
 
 					<UserProfileButton xp={currentUserXp} />
 				{/if}
 			</div>
 
-			{#if isDetailRoute && $user && data?.item}
-				<ContentSuggestionDialog
-					selected={data.item}
+			{#if isDetailRoute && $user && $page.data.item}
+				{#await import('$lib/components/ContentSuggestionDialog.svelte') then module}
+				<module.default
+					selected={$page.data.item}
 					selectedEpisode={$selectedEpisodeStore}
-					selectedSeasonNumber={data.initialSeasonNumber ?? null}
+					selectedSeasonNumber={$page.data.initialSeasonNumber ?? null}
 					triggerAriaLabel="Suggest change / report issue"
 					triggerClass="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>
 					{#snippet trigger()}
 						<PencilIcon class="size-4" />
 					{/snippet}
-				</ContentSuggestionDialog>
+				</module.default>
+				{/await}
 			{/if}
 		</nav>
 
@@ -1103,16 +1102,17 @@
 			{@render children?.()}
 		{:else}
 			<TvPage
-				content={data?.content ?? []}
-				initialItem={data?.item ?? null}
-				initialEpisodeNumber={data?.initialEpisodeNumber ?? null}
-				initialSeasonNumber={data?.initialSeasonNumber ?? null}
-			/>
-			{@render children?.()}
+				content={$page.data.content ?? []}
+				initialItem={$page.data.item ?? null}
+				initialEpisodeNumber={$page.data.initialEpisodeNumber ?? null}
+				initialSeasonNumber={$page.data.initialSeasonNumber ?? null}
+			>
+				{@render children?.()}
+			</TvPage>
 		{/if}
 	{/key}
 
-	{#if $page.url.pathname === '/' && !$page.error}
+	{#if deLocalizeUrl($page.url).pathname === '/' && !$page.error}
 		<footer class="border-t border-border/60 px-4 py-4 text-center text-[11px] text-muted-foreground/80">
 			<p class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
 				<span>Made by</span>

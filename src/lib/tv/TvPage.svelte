@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { getContext, onMount, tick } from 'svelte';
+	import { deLocalizeUrl, localizeHref } from '$lib/paraglide/runtime';
+	import { getContext, setContext, onMount, tick } from 'svelte';
 	import InstagramIcon from '@lucide/svelte/icons/instagram';
 	import LayoutGridIcon from '@lucide/svelte/icons/layout-grid';
 	import ListIcon from '@lucide/svelte/icons/list';
@@ -12,8 +13,6 @@
 	import TvCatalogGrid from '$lib/tv/TvCatalogGrid.svelte';
 	import TvCatalogList from '$lib/tv/TvCatalogList.svelte';
 	import TvPageBackdrop from '$lib/tv/TvPageBackdrop.svelte';
-	import TvDetailPanel from '$lib/tv/TvDetailPanel.svelte';
-	import RatingPromptDialog from '$lib/components/RatingPromptDialog.svelte';
 	import { getUserRating } from '$lib/ratings';
 	import {
 		visibleContent,
@@ -38,6 +37,8 @@
 		activeFeedSlug
 	} from '$lib/tv/store';
 	import { slugify } from '$lib/tv/slug';
+	import { getFeedBySlug } from '$lib/tv/feeds';
+	import { buildRankMap, filterAndSortContent } from '$lib/tv/utils';
 	import {
 		getLatestWatchProgressByBaseId,
 		getSeriesProgressSummary,
@@ -46,37 +47,56 @@
 	import type { ContentItem, Episode, Movie } from '$lib/tv/types';
 	import { browser } from '$app/environment';
 	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
-	import {
-		buildItemUrl,
-		buildPageTitle,
-		extractSeasonEpisodeFromPath,
-		openExternalContent
-	} from '$lib/tv/helpers/navigation';
+	import { buildItemUrl, openExternalContent } from '$lib/tv/helpers/navigation';
 	import { computeColumns } from '$lib/tv/helpers/grid';
 	import { SCROLL_CONTEXT_KEY, type ScrollSubscription } from '$lib/scroll-context';
 
 	let {
+		children,
 		content = [],
 		initialItem = null,
 		initialEpisodeNumber = null,
 		initialSeasonNumber = null
 	} = $props<{
+		children?: import('svelte').Snippet;
 		content?: ContentItem[];
 		initialItem?: ContentItem | null;
 		initialEpisodeNumber?: number | null;
 		initialSeasonNumber?: number | null;
 	}>();
+	const routeEpisode = $derived(($page.data as any).episode as Episode | undefined);
+	let lastCollectionPath = $state<string | null>(null);
 
 	$effect(() => {
+		const path = deLocalizeUrl($page.url).pathname;
+		if (path.startsWith('/collections/') && path !== lastCollectionPath) {
+			searchQuery.set('');
+			selectedFacets.set({});
+			activeFeedSlug.set(null);
+			sortBy.set('default');
+			lastCollectionPath = path;
+		} else if (!path.startsWith('/collections/')) {
+			lastCollectionPath = null;
+		}
 		const pageContent = ($page?.data as any)?.content;
 		const items = Array.isArray(pageContent) ? pageContent : content;
-		setContent(items ?? []);
+		setContent(initialItem ? [initialItem] : (items ?? []));
 	});
 
 	let isMobile = $state(false);
+	let mounted = $state(false);
+	// Use request-local data for SSR; never populate shared module stores on the server.
+	const initialCatalog = $derived(
+		filterAndSortContent(content, buildRankMap(content, new Date().toISOString().slice(0, 10)), {
+			searchQuery: $page.url.searchParams.get('q') ?? '',
+			showPaid: true,
+			showWatched: true,
+			sortBy: 'default'
+		})
+	);
+	const collection = $derived(getFeedBySlug(($page.data as any).collectionSlug));
 	let gridEl = $state<HTMLElement | null>(null);
 	let currentPath = $state('');
-	let pageTitle = $state<string | null>(null);
 	let logoTilt = $state(0);
 	let columns = $state(1);
 	let PlayerModalComponent = $state<any>(null);
@@ -88,10 +108,11 @@
 	let ratingRefreshToken = $state(0);
 	let ratingDialogCheckToken = 0;
 	let lastCatalogScrollY = 0;
+	let lastCatalogPath = '/';
 	let restoreCatalogScroll = false;
 
 	const isDetailRoute = $derived(
-		$page.url.pathname.startsWith('/movie/') || $page.url.pathname.startsWith('/series/')
+		deLocalizeUrl($page.url).pathname.startsWith('/movie/') || deLocalizeUrl($page.url).pathname.startsWith('/series/')
 	);
 
 	type ProfileContext = {
@@ -106,10 +127,7 @@
 		if (!match) return null;
 		const dataName = pageData?.name;
 		const dataSlug = pageData?.slug;
-		const roles = pageData?.roles as
-			| { creator?: boolean; athlete?: boolean }
-			| null
-			| undefined;
+		const roles = pageData?.roles as { creator?: boolean; athlete?: boolean } | null | undefined;
 		const raw = match[1] ?? '';
 		let fallback = raw;
 		try {
@@ -120,7 +138,9 @@
 		const name = typeof dataName === 'string' && dataName.trim() ? dataName : fallback;
 		const slug = typeof dataSlug === 'string' && dataSlug.trim() ? dataSlug : raw;
 		const instagramHandles = Array.isArray(pageData?.instagramHandles)
-			? pageData.instagramHandles.filter((value: unknown): value is string => typeof value === 'string')
+			? pageData.instagramHandles.filter(
+					(value: unknown): value is string => typeof value === 'string'
+				)
 			: [];
 		const kinds: Array<'creator' | 'athlete'> = [];
 		if (roles?.creator) kinds.push('creator');
@@ -136,7 +156,10 @@
 		total: number;
 	};
 
-	function itemMatchesPersonRole(item: any, personSlug: string): { creator: boolean; athlete: boolean } {
+	function itemMatchesPersonRole(
+		item: any,
+		personSlug: string
+	): { creator: boolean; athlete: boolean } {
 		const creators = item?.creators;
 		const starring = item?.starring;
 		const creatorNames = Array.isArray(creators) ? (creators as unknown[]) : [];
@@ -253,19 +276,27 @@
 		return `All films and series featuring ${name}.`;
 	}
 
-	const profileContext = $derived(computeProfileContext($page.url.pathname, $page.data));
+	const profileContext = $derived(computeProfileContext(deLocalizeUrl($page.url).pathname, $page.data));
 
 	const isDetailPathname = (pathname: string) =>
 		pathname.startsWith('/movie/') || pathname.startsWith('/series/');
+	const isCatalogPathname = (pathname: string) => {
+		const path = deLocalizeUrl(new URL(pathname, 'https://www.jumpflix.tv')).pathname;
+		return path === '/' || path.startsWith('/collections/') || path.startsWith('/people/');
+	};
 
-	const profileStats = $derived(profileContext ? computeProfileStats(($page.data as any)?.content) : null);
+	const profileStats = $derived(
+		profileContext ? computeProfileStats(($page.data as any)?.content) : null
+	);
 	const profileCreditStats = $derived(
 		profileContext
 			? computeProfileCreditStats(($page.data as any)?.content, profileContext.slug)
 			: null
 	);
 	const profileWatchSummary = $derived(
-		profileContext ? computeProfileWatchSummary(($page.data as any)?.content, $watchHistoryVersion) : null
+		profileContext
+			? computeProfileWatchSummary(($page.data as any)?.content, $watchHistoryVersion)
+			: null
 	);
 
 	const profileBlurb = $derived(profileContext ? computeProfileBlurb(profileContext) : null);
@@ -281,7 +312,10 @@
 		if (!slug) return;
 		if (slug === lastProfileSlug) return;
 		lastProfileSlug = slug;
-		const roles = ($page.data as any)?.roles as { creator?: boolean; athlete?: boolean } | null | undefined;
+		const roles = ($page.data as any)?.roles as
+			| { creator?: boolean; athlete?: boolean }
+			| null
+			| undefined;
 		profileShowCreator = Boolean(roles?.creator);
 		profileShowAthlete = Boolean(roles?.athlete);
 		if (!roles?.creator && !roles?.athlete) {
@@ -309,15 +343,17 @@
 	const gridContent = $derived(
 		profileContext
 			? filterProfileContentByRole(
-					$visibleContent,
+					mounted ? $visibleContent : initialCatalog,
 					profileContext.slug,
 					profileShowCreator,
 					profileShowAthlete
 				)
-			: $visibleContent
+			: mounted
+				? $visibleContent
+				: initialCatalog
 	);
 
-	const currentCatalogView = $derived($catalogView);
+	const currentCatalogView = $derived(mounted ? $catalogView : 'grid');
 
 	async function scrollAfterNav(target: number) {
 		if (!browser) return;
@@ -337,7 +373,7 @@
 		});
 	}
 
-	const selectedForDetail = $derived($selectedContent ?? initialItem ?? null);
+	const selectedForDetail = $derived(initialItem ?? $selectedContent ?? null);
 
 	let allowExitBack = false;
 	let exitConfirmUntil = 0;
@@ -388,7 +424,7 @@
 		if (!browser) return;
 		if (!isAndroidStandalone()) return;
 		if (!isMobile) return;
-		if (window.location.pathname !== '/') return;
+		if (deLocalizeUrl(window.location.href).pathname !== '/') return;
 		if (get(showPlayer)) return;
 
 		const state: any = window.history.state;
@@ -398,7 +434,7 @@
 
 	if (browser) {
 		const initialPage = get(page);
-		if (initialPage.url.pathname === '/') {
+		if (deLocalizeUrl(initialPage.url).pathname === '/') {
 			const initialQuery = initialPage.url.searchParams.get('q');
 			// Only sync from URL when `q` is explicitly present.
 			// Otherwise, keep the persisted store value (e.g., localStorage) to avoid
@@ -410,7 +446,7 @@
 	}
 
 	function nav(url: string, opts?: { replace?: boolean }) {
-		goto(url, { replaceState: !!opts?.replace, noScroll: true, keepFocus: true });
+		goto(localizeHref(url), { replaceState: !!opts?.replace, noScroll: true, keepFocus: true });
 	}
 
 	$effect(() => {
@@ -429,7 +465,7 @@
 			Number.isFinite(initialEpisodeNumber)
 		) {
 			const n = Math.max(1, Math.floor(initialEpisodeNumber));
-			selectEpisode({ id: `pos:${n}`, title: `Episode ${n}`, position: n } as any);
+			selectEpisode(routeEpisode ?? { id: `pos:${n}`, title: `Episode ${n}`, position: n });
 		}
 	});
 
@@ -611,6 +647,7 @@
 	}
 
 	onMount(() => {
+		mounted = true;
 		currentPath = `${get(page).url.pathname}${get(page).url.search}`;
 
 		// In Android standalone (installed PWA), require double-back to exit on catalog overview.
@@ -624,7 +661,7 @@
 			}
 
 			// Double-back to exit on catalog overview
-			if (window.location.pathname === '/' && !get(showPlayer)) {
+			if (deLocalizeUrl(window.location.href).pathname === '/' && !get(showPlayer)) {
 				const now = Date.now();
 				if (now > exitConfirmUntil) {
 					exitConfirmUntil = now + EXIT_CONFIRM_TIMEOUT_MS;
@@ -647,7 +684,8 @@
 			if (!browser || !nav.from || !nav.to) return;
 			const fromPath = nav.from.url.pathname;
 			const toPath = nav.to.url.pathname;
-			if (fromPath === '/' && isDetailPathname(toPath)) {
+			if (isCatalogPathname(fromPath) && isDetailPathname(toPath)) {
+				lastCatalogPath = fromPath;
 				lastCatalogScrollY = window.scrollY;
 				restoreCatalogScroll = true;
 			}
@@ -657,11 +695,11 @@
 			if (!browser || !nav.from || !nav.to) return;
 			const fromPath = nav.from.url.pathname;
 			const toPath = nav.to.url.pathname;
-			if (fromPath === '/' && isDetailPathname(toPath)) {
+			if (isCatalogPathname(fromPath) && isDetailPathname(toPath)) {
 				void scrollAfterNav(0);
 				return;
 			}
-			if (restoreCatalogScroll && isDetailPathname(fromPath) && toPath === '/') {
+			if (restoreCatalogScroll && isDetailPathname(fromPath) && toPath === lastCatalogPath) {
 				void scrollAfterNav(lastCatalogScrollY);
 				restoreCatalogScroll = false;
 			}
@@ -685,8 +723,8 @@
 		});
 
 		const unsubPage = page.subscribe((p) => {
-			currentPath = `${p.url.pathname}${p.url.search}`;
-			if (p.url.pathname === '/') {
+			currentPath = `${deLocalizeUrl(p.url).pathname}${p.url.search}`;
+			if (deLocalizeUrl(p.url).pathname === '/') {
 				const nextQuery = p.url.searchParams.get('q');
 				// Only sync from URL when `q` is explicitly present.
 				if (nextQuery !== null && nextQuery !== get(searchQuery)) {
@@ -696,7 +734,6 @@
 				selectedContent.set(null);
 				selectedEpisode.set(null);
 				selectedIndex.set(0);
-				pageTitle = null;
 
 				armOverviewExitTrap();
 			}
@@ -705,7 +742,7 @@
 		if (initialItem && (initialItem as any).type === 'series') {
 			if (initialEpisodeNumber && Number.isFinite(initialEpisodeNumber)) {
 				const n = Math.max(1, Math.floor(initialEpisodeNumber));
-				selectEpisode({ id: `pos:${n}`, title: `Episode ${n}`, position: n } as any);
+				selectEpisode(routeEpisode ?? { id: `pos:${n}`, title: `Episode ${n}`, position: n });
 			}
 		}
 
@@ -791,209 +828,196 @@
 		};
 	});
 
-	$effect(() => {
-		if (!browser || !$selectedContent || !isDetailPathname(currentPath)) return;
-		const fromPath = extractSeasonEpisodeFromPath(currentPath);
-		const hasEpisodeInPath = typeof fromPath.episode === 'number';
-		const episodeHint = hasEpisodeInPath ? fromPath.episode : undefined;
-		const seasonHint =
-			fromPath.season ??
-			(typeof initialSeasonNumber === 'number'
-				? Math.max(1, Math.floor(initialSeasonNumber))
-				: undefined);
-		pageTitle = buildPageTitle($selectedContent, { season: seasonHint, episode: episodeHint });
-
-		const shouldSyncBaseUrl = !($selectedContent.type === 'series' && $selectedEpisode);
-		if (shouldSyncBaseUrl) {
-			const target = buildItemUrl($selectedContent);
-			const current = currentPath;
-			if (current !== target) {
-				nav(target, { replace: true });
-				currentPath = target;
-			}
-		}
-	});
-
 	const priorityKeys = $derived(
 		new Set(
 			(gridContent || []).slice(0, Math.max(columns * 2, 8)).map((it) => `${it.type}:${it.id}`)
 		)
 	);
-</script>
+	setContext('jumpflix-detail-props', () => ({
+		selected: selectedForDetail,
+		openContent: handleOpenContent,
+		openExternal: openExternalContent,
+		onOpenEpisode: handleOpenEpisode,
+		onSelectEpisode: handleSelectEpisode,
+		selectedEpisode: mounted && $selectedEpisode && $selectedEpisode.id !== routeEpisode?.id ? $selectedEpisode : (routeEpisode ?? $selectedEpisode ?? null),
+		initialSeasonNumber,
+		ratingRefreshToken
+	}));
 
-<svelte:head>
-	{#if pageTitle}
-		<title>{pageTitle}</title>
-	{/if}
-</svelte:head>
+</script>
 
 <div class="tv-page relative isolate min-h-screen overflow-x-hidden bg-background text-foreground">
 	<TvPageBackdrop />
 	{#if isDetailRoute}
-		<TvDetailPanel
-			selected={selectedForDetail}
-			openContent={handleOpenContent}
-			openExternal={openExternalContent}
-			onOpenEpisode={handleOpenEpisode}
-			onSelectEpisode={handleSelectEpisode}
-			selectedEpisode={$selectedEpisode}
-			{initialSeasonNumber}
-			{ratingRefreshToken}
-		/>
+		{@render children?.()}
 	{:else}
-		<section class="relative isolate overflow-hidden pt-24 sm:pt-32">
+		<section class={collection ? 'relative isolate overflow-hidden pt-12 sm:pt-16' : 'relative isolate overflow-hidden pt-24 sm:pt-32'}>
 			<div class="hero-overlay" aria-hidden="true"></div>
 
-			{#if profileContext}
+			{#if collection}
+				<TvHeroSection {logoTilt} {collection} />
+			{:else if profileContext}
 				<div class="mx-auto w-full max-w-6xl px-6">
 					<div class="mt-6 min-w-0">
-							<h1 class="truncate text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-								{profileContext.name}
-							</h1>
+						<h1 class="truncate text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+							{profileContext.name}
+						</h1>
 
-							{#if profileCreditStats}
-								<div class="mt-5 grid gap-3 sm:grid-cols-3">
-									<div class="rounded-xl border border-border/60 bg-background/60 p-4">
-										<div class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-											Athlete in
-										</div>
-										<div class="mt-2 text-4xl font-semibold tracking-tight text-foreground">
-											{profileCreditStats.athleteCount}
-										</div>
-										<div class="mt-1 text-xs text-muted-foreground">videos</div>
-									</div>
-
-									<div class="rounded-xl border border-border/60 bg-background/60 p-4">
-										<div class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-											Creator of
-										</div>
-										<div class="mt-2 text-4xl font-semibold tracking-tight text-foreground">
-											{profileCreditStats.creatorCount}
-										</div>
-										<div class="mt-1 text-xs text-muted-foreground">videos</div>
-									</div>
-
-									<div class="rounded-xl border border-border/60 bg-background/60 p-4">
-										<div class="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-											You watched
-										</div>
-										<div class="mt-2 text-4xl font-semibold tracking-tight text-foreground">
-											{#if profileWatchSummary}
-												{profileWatchSummary.percent}%
-											{:else}
-												—
-											{/if}
-										</div>
-										<div class="mt-1 text-xs text-muted-foreground">of this person</div>
-									</div>
-								</div>
-
-								<div class="mt-4 flex flex-wrap items-center gap-2">
-									<button
-										type="button"
-										disabled={!profileContext.kinds.includes('athlete')}
-										onclick={() => {
-											profileShowAthlete = !profileShowAthlete;
-										}}
-										class={
-											`cursor-pointer rounded-full border border-border/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wider transition disabled:cursor-not-allowed ${
-												profileShowAthlete
-													? 'bg-background/60 text-foreground'
-													: 'bg-background/30 text-muted-foreground'
-											} disabled:opacity-50`
-										}
+						{#if profileCreditStats}
+							<div class="mt-5 grid gap-3 sm:grid-cols-3">
+								<div class="rounded-xl border border-border/60 bg-background/60 p-4">
+									<div
+										class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
 									>
-										Athlete
-									</button>
-									<button
-										type="button"
-										disabled={!profileContext.kinds.includes('creator')}
-										onclick={() => {
-											profileShowCreator = !profileShowCreator;
-										}}
-										class={
-											`cursor-pointer rounded-full border border-border/60 px-3 py-1 text-[11px] font-medium uppercase tracking-wider transition disabled:cursor-not-allowed ${
-												profileShowCreator
-													? 'bg-background/60 text-foreground'
-													: 'bg-background/30 text-muted-foreground'
-											} disabled:opacity-50`
-										}
+										Athlete in
+									</div>
+									<div class="mt-2 text-4xl font-semibold tracking-tight text-foreground">
+										{profileCreditStats.athleteCount}
+									</div>
+									<div class="mt-1 text-xs text-muted-foreground">videos</div>
+								</div>
+
+								<div class="rounded-xl border border-border/60 bg-background/60 p-4">
+									<div
+										class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
 									>
-										Creator
-									</button>
+										Creator of
+									</div>
+									<div class="mt-2 text-4xl font-semibold tracking-tight text-foreground">
+										{profileCreditStats.creatorCount}
+									</div>
+									<div class="mt-1 text-xs text-muted-foreground">videos</div>
 								</div>
-							{/if}
-							{#if profileBlurb}
-								<p class="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-									{profileBlurb}
-								</p>
-							{/if}
-							{#if profileContext.instagramHandles.length}
-								<div class="mt-4 flex flex-wrap items-center gap-2">
-									{#each profileContext.instagramHandles as handle (handle)}
-										<a
-											href={`https://instagram.com/${handle}`}
-											target="_blank"
-											rel="noopener noreferrer"
-											class="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-border hover:bg-background"
-										>
-											<InstagramIcon class="size-3.5" />
-											<span>@{handle}</span>
-										</a>
-									{/each}
+
+								<div class="rounded-xl border border-border/60 bg-background/60 p-4">
+									<div
+										class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
+									>
+										You watched
+									</div>
+									<div class="mt-2 text-4xl font-semibold tracking-tight text-foreground">
+										{#if profileWatchSummary}
+											{profileWatchSummary.percent}%
+										{:else}
+											—
+										{/if}
+									</div>
+									<div class="mt-1 text-xs text-muted-foreground">of this person</div>
 								</div>
-							{/if}
-						</div>
+							</div>
+
+							<div class="mt-4 flex flex-wrap items-center gap-2">
+								<button
+									type="button"
+									disabled={!profileContext.kinds.includes('athlete')}
+									onclick={() => {
+										profileShowAthlete = !profileShowAthlete;
+									}}
+									class={`cursor-pointer rounded-full border border-border/60 px-3 py-1 text-[11px] font-medium tracking-wider uppercase transition disabled:cursor-not-allowed ${
+										profileShowAthlete
+											? 'bg-background/60 text-foreground'
+											: 'bg-background/30 text-muted-foreground'
+									} disabled:opacity-50`}
+								>
+									Athlete
+								</button>
+								<button
+									type="button"
+									disabled={!profileContext.kinds.includes('creator')}
+									onclick={() => {
+										profileShowCreator = !profileShowCreator;
+									}}
+									class={`cursor-pointer rounded-full border border-border/60 px-3 py-1 text-[11px] font-medium tracking-wider uppercase transition disabled:cursor-not-allowed ${
+										profileShowCreator
+											? 'bg-background/60 text-foreground'
+											: 'bg-background/30 text-muted-foreground'
+									} disabled:opacity-50`}
+								>
+									Creator
+								</button>
+							</div>
+						{/if}
+						{#if profileBlurb}
+							<p class="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+								{profileBlurb}
+							</p>
+						{/if}
+						{#if profileContext.instagramHandles.length}
+							<div class="mt-4 flex flex-wrap items-center gap-2">
+								{#each profileContext.instagramHandles as handle (handle)}
+									<a
+										href={`https://instagram.com/${handle}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-border hover:bg-background"
+									>
+										<InstagramIcon class="size-3.5" />
+										<span>@{handle}</span>
+									</a>
+								{/each}
+							</div>
+						{/if}
+					</div>
 				</div>
 			{:else}
 				<TvHeroSection {logoTilt} />
 			{/if}
 
 			{#if !isProfileRoute}
-				<TvSearchControls {searchQuery} {showPaid} {showWatched} {sortBy} {selectedFacets} {activeFeedSlug} />
+				<TvSearchControls
+					{searchQuery}
+					{showPaid}
+					{showWatched}
+					{sortBy}
+					{selectedFacets}
+					collectionSlug={collection?.slug}
+				/>
 			{/if}
 
 			<div class="catalog-toolbar" aria-label="Catalog view controls">
-					<div class="catalog-view-switch" role="group" aria-label="Catalog view">
-						<button
-							type="button"
-							class:active={$catalogView === 'grid'}
-							class="catalog-view-button"
-							aria-pressed={$catalogView === 'grid'}
-							title="Grid view"
-							onclick={() => catalogView.set('grid')}
-						>
-							<LayoutGridIcon class="size-4" />
-							<span class="sr-only">Grid view</span>
-						</button>
-						<button
-							type="button"
-							class:active={$catalogView === 'list'}
-							class="catalog-view-button"
-							aria-pressed={$catalogView === 'list'}
-							title="List view"
-							onclick={() => catalogView.set('list')}
-						>
-							<ListIcon class="size-4" />
-							<span class="sr-only">List view</span>
-						</button>
-					</div>
-					{#if !isMobile}
-						<label class="catalog-zoom">
-							<span>{m.tv_zoom()}</span>
-							<input
-								type="range"
-								min="0.8"
-								max="1"
-								step="0.1"
-								value={$gridScale}
-								oninput={handleScaleChange}
-							/>
-						</label>
-					{/if}
+				<div class="catalog-view-switch" role="group" aria-label="Catalog view">
+					<button
+						type="button"
+						class:active={$catalogView === 'grid'}
+						class="catalog-view-button"
+						aria-pressed={$catalogView === 'grid'}
+						title="Grid view"
+						onclick={() => catalogView.set('grid')}
+					>
+						<LayoutGridIcon class="size-4" />
+						<span class="sr-only">Grid view</span>
+					</button>
+					<button
+						type="button"
+						class:active={$catalogView === 'list'}
+						class="catalog-view-button"
+						aria-pressed={$catalogView === 'list'}
+						title="List view"
+						onclick={() => catalogView.set('list')}
+					>
+						<ListIcon class="size-4" />
+						<span class="sr-only">List view</span>
+					</button>
 				</div>
-    </section>
-    <div class="catalog-section" style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}>
+				{#if !isMobile}
+					<label class="catalog-zoom">
+						<span>{m.tv_zoom()}</span>
+						<input
+							type="range"
+							min="0.8"
+							max="1"
+							step="0.1"
+							value={$gridScale}
+							oninput={handleScaleChange}
+						/>
+					</label>
+				{/if}
+			</div>
+		</section>
+		<div
+			class="catalog-section"
+			style:min-height={catalogMinHeight ? `${catalogMinHeight}px` : undefined}
+		>
 			{#if currentCatalogView === 'list'}
 				<TvCatalogList
 					bind:listElement={gridEl}
@@ -1008,14 +1032,15 @@
 					selectedContent={$selectedContent}
 					sortBy={$sortBy}
 					{isMobile}
-					priorityKeys={priorityKeys}
+					{priorityKeys}
 					gridScale={isMobile ? 1 : $gridScale}
 					onSelect={handleSelect}
 				/>
 			{/if}
-    </div>
-  {/if}
+		</div>
+	{/if}
 </div>
+{#if !isDetailRoute}{@render children?.()}{/if}
 {#if $showPlayer}
 	{#if PlayerModalComponent}
 		<PlayerModalComponent
@@ -1030,11 +1055,15 @@
 	{/if}
 {/if}
 
-<RatingPromptDialog
+{#if ratingDialogOpen}
+{#await import('$lib/components/RatingPromptDialog.svelte') then module}
+<module.default
 	bind:open={ratingDialogOpen}
 	movie={ratingDialogMovie}
 	on:ratingSaved={handleRatingSaved}
 />
+{/await}
+{/if}
 
 <style>
 	:global(.tv-page) {
@@ -1174,7 +1203,7 @@
 	}
 
 	.catalog-view-button:hover,
-		.catalog-view-button:focus-visible {
+	.catalog-view-button:focus-visible {
 		background: rgba(255, 255, 255, 0.08);
 		color: rgba(248, 250, 252, 0.96);
 		outline: none;

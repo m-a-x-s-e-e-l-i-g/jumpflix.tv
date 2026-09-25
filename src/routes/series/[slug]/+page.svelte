@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DetailRoute from '$lib/tv/DetailRoute.svelte';
 	import { getUrlForItem } from '$lib/tv/slug';
 	import { env } from '$env/dynamic/public';
 	import { decode } from 'html-entities';
@@ -49,3 +50,5 @@
 </svelte:head>
 
 <!-- Content rendered in layout -->
+
+<DetailRoute />

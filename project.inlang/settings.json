@@ -10,6 +10,6 @@
 	"baseLocale": "en",
 	"locales": ["en", "nl", "ja"],
 	"plugin.inlang.paraglide-js": {
-		"strategy": ["cookie", "preferredLanguage", "baseLocale"]
+		"strategy": ["url", "cookie", "preferredLanguage", "baseLocale"]
 	}
 }

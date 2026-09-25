@@ -19,7 +19,9 @@
 
 	const OVERSCAN_ROWS = 4;
 	let startIndex = 0;
-	let endIndex = 0;
+	// Render every catalog link on the server and for the first hydration pass.
+	// Viewport virtualization starts only after mounting, preserving no-JS browsing.
+	let endIndex = visibleContent.length;
 	let rowHeight = 280;
 	let rowGap = 24;
 	let columns = 1;

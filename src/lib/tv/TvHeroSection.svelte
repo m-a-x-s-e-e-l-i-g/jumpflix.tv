@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { localizeHref } from '$lib/paraglide/runtime';
 	import { Image } from '@unpic/svelte';
 	import { dev } from '$app/environment';
 	import SubmitFilmDialog from '$lib/components/SubmitFilmDialog.svelte';
 	import * as m from '$lib/paraglide/messages';
+	import type { FeedDefinition } from './feeds';
 
 	export let logoTilt = 0;
+	export let collection: FeedDefinition | null = null;
 
 	function handleStartWatching(event: MouseEvent) {
 		event.preventDefault();
@@ -15,11 +18,16 @@
 	}
 </script>
 
-<div class="hero-shell">
+<div class="hero-shell" class:hero-shell--collection={Boolean(collection)}>
 	<div class="hero-grid">
 		<div class="hero-main">
 			<div class="hero-logo-stack">
-				<a href="/" aria-label="Go to homepage" data-sveltekit-reload class="hero-logo-link">
+				<a
+					href={localizeHref('/')}
+					aria-label="Go to homepage"
+					data-sveltekit-reload
+					class="hero-logo-link"
+				>
 					<Image
 						src="/images/jumpflix.webp"
 						alt="JUMPFLIX parkour tv"
@@ -32,35 +40,37 @@
 						decoding="async"
 					/>
 				</a>
-				<h1 class="hero-logo-text">
+				<svelte:element this={collection ? 'div' : 'h1'} class="hero-logo-text">
 					<span style={`--logo-scroll-tilt: ${logoTilt.toFixed(3)}deg;`}>JUMPFLIX</span>
-				</h1>
+				</svelte:element>
 			</div>
 
-			<h2 class="hero-title jf-display">{m.tv_heroHeading()}</h2>
-			<p class="hero-dek">{m.tv_heroTagline()}</p>
+			<svelte:element this={collection ? 'h1' : 'h2'} class="hero-title jf-display"
+				>{collection ? collection.title() : m.tv_heroHeading()}</svelte:element
+			>
+			<p class="hero-dek">{collection ? collection.introduction() : m.tv_heroTagline()}</p>
 
-			<div class="hero-actions">
-				<a href="/#search" on:click={handleStartWatching} class="hero-cta">
-					{m.tv_heroCtaWatch()}
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="22"
-						height="22"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-						><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path
-							d="M18 13l-6 6"
-						/><path d="M6 13l6 6" /></svg
-					>
-				</a>
-				<SubmitFilmDialog label={m.tv_heroCtaSubmit()} />
-			</div>
+			{#if !collection}<div class="hero-actions">
+					<a href={localizeHref('/#search')} on:click={handleStartWatching} class="hero-cta">
+						{m.tv_heroCtaWatch()}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="22"
+							height="22"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+							><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path
+								d="M18 13l-6 6"
+							/><path d="M6 13l6 6" /></svg
+						>
+					</a>
+					<SubmitFilmDialog label={m.tv_heroCtaSubmit()} />
+				</div>{/if}
 		</div>
 	</div>
 </div>
@@ -111,6 +121,10 @@
 		text-align: center;
 		line-height: 0.86;
 		user-select: none;
+	}
+
+	.hero-shell--collection .hero-title {
+		font-size: clamp(3rem, 6.5vw, 5rem);
 	}
 
 	.hero-title {
@@ -171,6 +185,10 @@
 		.hero-logo-text {
 			font-size: clamp(1.4rem, 9vw, 3.2rem);
 			letter-spacing: 0.12em;
+		}
+
+		.hero-shell--collection .hero-title {
+			font-size: clamp(2.5rem, 9vw, 3.3rem);
 		}
 
 		.hero-actions {

@@ -1,88 +1,24 @@
-# Sitemap Submission Configuration
+# Sitemap discovery and verification
 
-This document outlines the environment variables and configuration options for automatic sitemap submission.
+The sitemap at /sitemap.xml is generated from current catalog records at request time. It contains films, series, existing episodes, people, public overview pages, and all six collection routes. It is cached for five minutes; the catalog snapshot used by this route is refreshed at most every five minutes. Catalog updates therefore do not require a deployment to appear in the sitemap (allow up to ten minutes across both caches).
 
-## Environment Variables
+Canonical URLs use the same slashless paths as internal links. A lastmod value is included only when a source modification timestamp is known; build time is never substituted. Failed database reads return HTTP 503 rather than publishing a truncated sitemap.
 
-### Required
+## Search engine setup
 
-- `PUBLIC_SITE_URL`: The base URL of your site (e.g., `https://www.jumpflix.tv`)
-  - Used to construct the sitemap URL for submission
-  - Defaults to `https://www.jumpflix.tv` if not set
+The production robots.txt already declares https://www.jumpflix.tv/sitemap.xml. Verify the domain in Google Search Console and Bing Webmaster Tools, then submit that sitemap URL in each account. Use their reports to check indexing; a successful HTTP request is not evidence that URLs are indexed.
 
-### Optional
+Google retired its unauthenticated sitemap ping endpoint. Builds no longer call it, Bing's legacy ping endpoint, or an unverified IndexNow endpoint.
 
-- `NODE_ENV`: Set to `production` to enable automatic sitemap submission
-  - Sitemap submission is skipped in non-production environments by default
-- `FORCE_SITEMAP_SUBMISSION`: Set to `true` to force sitemap submission even in non-production environments
-  - Note: Submissions are also skipped when `PUBLIC_SITE_URL` points to localhost (e.g., <http://localhost:5173>)
-    unless `FORCE_SITEMAP_SUBMISSION=true` is set. This prevents accidental submissions during local development.
+## Commands
 
-## How It Works
+- npm run build: build the application without search-engine submissions.
+- npm run check:sitemap: perform a read-only check of PUBLIC_SITE_URL/sitemap.xml (defaults to production).
+- npm run submit-sitemap: legacy compatibility alias for the availability check; does not submit anything.
+- npm run test:seo: run metadata, episode, feed, and sitemap regression tests. Set JUMPFLIX_TEST_URL to a running local preview URL to also test HTTP responses.
 
-1. **During Build**: When you run `npm run build`, the sitemap is generated as part of the SvelteKit prerendering process
-2. **After Build**: The `scripts/submit-sitemap.mjs` script automatically runs and submits the sitemap to:
-   - **Bing/IndexNow**: Uses the modern IndexNow API (supports Bing, Yandex, and other search engines)
-   - **Google**: Attempts traditional ping method (may be deprecated)
+For local checks, set PUBLIC_SITE_URL or JUMPFLIX_TEST_URL to the local server URL, as applicable. Never treat a local sitemap check as a production submission.
 
-## Submission Methods
+## Movie publication dates
 
-### Modern Approach (Recommended)
-
-- **IndexNow API**: Automatically submits to Bing, Yandex, and other participating search engines
-- **Google Search Console API**: For reliable Google submissions (requires setup)
-- **Bing Webmaster Tools API**: For advanced Bing integration (requires setup)
-
-### Legacy Approach (Limited)
-
-- **Ping Endpoints**: Traditional ping URLs (increasingly deprecated)
-
-## Manual Submission
-
-You can also manually submit the sitemap by running:
-
-```bash
-npm run submit-sitemap
-```
-
-## Build Without Submission
-
-If you want to build without automatically submitting the sitemap, use:
-
-```bash
-npm run build:no-sitemap
-```
-
-## Submission Results
-
-The script will output the results of each submission attempt:
-
-- ✅ Success indicators for successful submissions
-- ⚠️ Warning indicators for deprecated methods that still work
-- ❌ Error indicators with details for failed submissions
-- 📊 Summary of successful vs. total submissions
-
-## Recommended Setup for Production
-
-For the most reliable sitemap submissions, consider setting up:
-
-### Google Search Console
-
-1. Verify your site at [Google Search Console](https://search.google.com/search-console)
-2. Use the Search Console API for programmatic submissions
-3. Manual fallback: Submit via the Search Console dashboard
-
-### Bing Webmaster Tools
-
-1. Verify your site at [Bing Webmaster Tools](https://www.bing.com/webmasters)
-2. The IndexNow API should work automatically
-3. Manual fallback: Submit via the Webmaster Tools dashboard
-
-## Notes
-
-- Sitemap submission failures will not cause the build to fail
-- The script automatically constructs the sitemap URL based on your `PUBLIC_SITE_URL`
-- IndexNow submissions happen automatically and support multiple search engines
-- The script validates sitemap accessibility before attempting submissions
-- Google's traditional ping method is deprecated but the script attempts it for backwards compatibility
-- Localhost guard: When `PUBLIC_SITE_URL` is localhost/127.0.0.1/::1/.local, submission is skipped by default
+The catalog currently stores movie release years, not verified video publication timestamps. Movie JSON-LD no longer guesses January 1 as an upload date. Movie and breadcrumb metadata remain; VideoObject markup is emitted only when a verified publication date is available. Episode metadata uses its stored published_at value when available. Movie video-rich-result eligibility requires verified publication metadata as well as an eligible watch page.

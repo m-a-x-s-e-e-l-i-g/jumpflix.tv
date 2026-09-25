@@ -36,12 +36,14 @@ export type FeedDefinition = {
 	slug: string;
 	title: () => string;
 	description: () => string;
+	introduction: () => string;
 	filter: FeedFilter;
 };
 
 export const FEEDS: FeedDefinition[] = [
 	{
 		slug: 'documentaries',
+		introduction: () => m.tv_collection_documentaries_intro(),
 		title: () => m.tv_feed_documentaries_title(),
 		description: () => m.tv_feed_documentaries_description(),
 		filter: {
@@ -52,6 +54,7 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'fiction-films',
+		introduction: () => m.tv_collection_fictionFilms_intro(),
 		title: () => m.tv_feed_fictionFilms_title(),
 		description: () => m.tv_feed_fictionFilms_description(),
 		filter: {
@@ -62,6 +65,7 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'movie-night',
+		introduction: () => m.tv_collection_movieNight_intro(),
 		title: () => m.tv_feed_movieNight_title(),
 		description: () => m.tv_feed_movieNight_description(),
 		filter: {
@@ -72,6 +76,7 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'oldskool-classics',
+		introduction: () => m.tv_collection_oldskoolClassics_intro(),
 		title: () => m.tv_feed_oldskoolClassics_title(),
 		description: () => m.tv_feed_oldskoolClassics_description(),
 		filter: {
@@ -80,6 +85,7 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'educational',
+		introduction: () => m.tv_collection_educational_intro(),
 		title: () => m.tv_feed_educational_title(),
 		description: () => m.tv_feed_educational_description(),
 		filter: {
@@ -90,6 +96,7 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'send-it',
+		introduction: () => m.tv_collection_sendIt_intro(),
 		title: () => m.tv_feed_sendIt_title(),
 		description: () => m.tv_feed_sendIt_description(),
 		filter: {

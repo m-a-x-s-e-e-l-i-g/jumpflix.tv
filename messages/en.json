@@ -386,5 +386,13 @@
 	"stats_noRatingsYet": "No ratings yet.",
 	"stats_watchedButNotRated": "Watched but not rated",
 	"stats_upTo50": "Up to 50",
-	"stats_allWatchedItemsAreRatedNice": "All watched items are rated (nice)."
+	"stats_allWatchedItemsAreRatedNice": "All watched items are rated (nice).",
+	"tv_collection_documentaries_intro": "Explore parkour documentaries about the people, crews, and stories behind the movement. Find interviews, personal journeys, and a closer look at freerunning culture.",
+	"tv_collection_fictionFilms_intro": "Parkour meets storytelling. Explore narrative films where movement, chases, and the people behind them become part of the story.",
+	"tv_collection_movieNight_intro": "Settle in for a longer watch. This collection brings together films between 60 and 160 minutes, from parkour stories to feature-length cinema.",
+	"tv_collection_oldskoolClassics_intro": "Revisit the early years of parkour on screen. Explore films and videos released in 2015 or earlier, and discover the movement and crews of those eras.",
+	"tv_collection_educational_intro": "Look closer at how parkour works. Explore tutorials, talks, and explanations from the community, with ideas to take back to your own practice.",
+	"tv_collection_sendIt_intro": "Big jumps and full commitment. Explore films tagged for big sends, with athletes pushing distance, height, and their own limits.",
+	"tv_homeSeoTitle": "JUMPFLIX — Parkour & Freerunning Films, Docs, and Series",
+	"tv_collectionSeoSuffix": "Parkour Films & Series"
 }

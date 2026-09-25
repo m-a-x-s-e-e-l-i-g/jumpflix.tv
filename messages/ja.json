@@ -386,5 +386,13 @@
 	"stats_noRatingsYet": "まだ評価がありません。",
 	"stats_watchedButNotRated": "視聴済み（未評価）",
 	"stats_upTo50": "最大50件",
-	"stats_allWatchedItemsAreRatedNice": "視聴したものはすべて評価済みです（いいね）。"
+	"stats_allWatchedItemsAreRatedNice": "視聴したものはすべて評価済みです（いいね）。",
+	"tv_collection_documentaries_intro": "パルクールの動きを支える人々、クルー、物語を描いたドキュメンタリー。インタビューや個人の歩みを通して、フリーランニングの文化を深く知ることができます。",
+	"tv_collection_fictionFilms_intro": "パルクールと物語の出会い。動きや追跡シーン、そこに関わる人々が物語を紡ぐフィクション映画を集めました。",
+	"tv_collection_movieNight_intro": "じっくり映画を楽しみたい夜に。パルクールの物語から長編映画まで、60〜160分の作品を集めました。",
+	"tv_collection_oldskoolClassics_intro": "映像で振り返るパルクールの初期。2015年以前に公開された作品から、当時の動きやクルーを見つけてください。",
+	"tv_collection_educational_intro": "パルクールをもっと深く理解するために。コミュニティによるチュートリアルやトーク、解説から、自分の練習につながるヒントを探せます。",
+	"tv_collection_sendIt_intro": "大きなジャンプと全力の挑戦。距離や高さ、そして自分自身の限界に挑むアスリートたちの、big sendsタグ付き作品を集めました。",
+	"tv_homeSeoTitle": "JUMPFLIX — パルクール映画・ドキュメンタリー・シリーズ",
+	"tv_collectionSeoSuffix": "パルクール映画・シリーズ"
 }

@@ -3,6 +3,8 @@
 	import { getUrlForItem } from '$lib/tv/slug';
 	import { env } from '$env/dynamic/public';
 	import { decode } from 'html-entities';
+	import JsonLd from '$lib/components/JsonLd.svelte';
+	import { buildContentSchema } from '$lib/tv/structured-data';
 	// TvPage is rendered in layout; we only set head tags here
 	export let data: { item: any; episodes: any[] };
 	// Derived state (reactive)
@@ -14,7 +16,7 @@
 	let url: string;
 
 	$: item = data?.item;
-	$: title = item ? `${item.title} — Parkour Series on JUMPFLIX` : 'Series — JUMPFLIX';
+	$: title = item ? `${decode(item.title)} — Parkour Series on JUMPFLIX` : 'Series — JUMPFLIX';
 	const normalizeDesc = (value?: string) => value?.replace(/\s+/g, ' ').trim() ?? '';
 	const clipDesc = (value: string, max = 160) => {
 		if (!value) return '';
@@ -50,5 +52,19 @@
 </svelte:head>
 
 <!-- Content rendered in layout -->
+
+{#if item}
+	<JsonLd value={buildContentSchema(item, origin)} />
+	<JsonLd
+		value={{
+			'@context': 'https://schema.org',
+			'@type': 'BreadcrumbList',
+			itemListElement: [
+				{ '@type': 'ListItem', position: 1, name: 'Home', item: origin },
+				{ '@type': 'ListItem', position: 2, name: decode(item.title), item: url }
+			]
+		}}
+	/>
+{/if}
 
 <DetailRoute />

@@ -3,6 +3,7 @@
 	import { decode } from 'html-entities';
 	import JsonLd from './JsonLd.svelte';
 	import { verifiedDate } from '$lib/seo';
+	import { isoDuration } from '$lib/tv/structured-data';
 	import { getEpisodeUrl, getUrlForItem } from '$lib/tv/slug';
 	import type { Episode, Series } from '$lib/tv/types';
 	let {
@@ -41,15 +42,18 @@
 	const episodeSchema = $derived({
 		'@context': 'https://schema.org',
 		'@type': 'TVEpisode',
+		'@id': `${url}#episode`,
 		name,
 		description,
 		image,
 		url,
 		episodeNumber: data.initialEpisodeNumber,
 		datePublished: publishedAt,
+		duration: isoDuration(data.episode.duration),
 		partOfSeason: { '@type': 'TVSeason', seasonNumber: data.initialSeasonNumber },
 		partOfSeries: {
 			'@type': 'TVSeries',
+			'@id': `${origin + getUrlForItem(data.item)}#series`,
 			name: decode(data.item.title),
 			url: origin + getUrlForItem(data.item)
 		}

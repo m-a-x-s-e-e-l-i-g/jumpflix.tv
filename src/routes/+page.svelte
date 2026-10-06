@@ -29,9 +29,23 @@
 	value={{
 		'@context': 'https://schema.org',
 		'@type': 'WebSite',
+		'@id': 'https://www.jumpflix.tv/#website',
 		name: 'JUMPFLIX',
+		alternateName: 'Jumpflix',
+		description: m.tv_description(),
 		url: canonical(),
 		inLanguage: getLocale(),
+		about: [
+			{ '@type': 'Thing', name: 'Parkour cinema' },
+			{ '@type': 'Thing', name: 'Freerunning films' }
+		],
+		publisher: {
+			'@type': 'Organization',
+			'@id': 'https://www.jumpflix.tv/#organization',
+			name: 'JUMPFLIX',
+			url: 'https://www.jumpflix.tv/',
+			logo: 'https://www.jumpflix.tv/images/jumpflix.webp'
+		},
 		potentialAction: {
 			'@type': 'SearchAction',
 			target: canonical() + '?q={search_term_string}',

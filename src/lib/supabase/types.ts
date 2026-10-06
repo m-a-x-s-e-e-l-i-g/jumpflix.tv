@@ -271,6 +271,7 @@ export type Database = {
 					duration: string | null;
 					video_id: string | null;
 					vimeo_id: string | null;
+					video_metadata: Json | null;
 					trakt: string | null;
 					creators: string[] | null;
 					starring: string[] | null;
@@ -317,6 +318,7 @@ export type Database = {
 					duration?: string | null;
 					video_id?: string | null;
 					vimeo_id?: string | null;
+					video_metadata?: Json | null;
 					trakt?: string | null;
 					creators?: string[] | null;
 					starring?: string[] | null;
@@ -363,6 +365,7 @@ export type Database = {
 					duration?: string | null;
 					video_id?: string | null;
 					vimeo_id?: string | null;
+					video_metadata?: Json | null;
 					trakt?: string | null;
 					creators?: string[] | null;
 					starring?: string[] | null;

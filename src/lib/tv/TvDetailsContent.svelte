@@ -78,6 +78,7 @@
 	import { isFamilySafeContent } from '$lib/tv/utils';
 	import { dispatchXPopAwarded } from '$lib/xpop-events';
 	import { isBunnyExclusiveMovie } from '$lib/tv/playback-source';
+	import MovieWatchPlayer from './MovieWatchPlayer.svelte';
 
 	let isAuthenticated = false;
 
@@ -1249,6 +1250,12 @@
 				</div>
 			</div>
 		</header>
+
+		{#if selected.type === 'movie' && !familySafeBlocked && !$showPlayer}
+			{#key `${selected.id}:${(selected as Movie).streamUrl}:${(selected as Movie).videoId}:${(selected as Movie).vimeoId}`}
+				<MovieWatchPlayer movie={selected} />
+			{/key}
+		{/if}
 
 		<div class="detail-grid">
 			<aside class="detail-aside">

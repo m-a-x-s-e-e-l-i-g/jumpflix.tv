@@ -1,5 +1,6 @@
 import { error as httpError } from '@sveltejs/kit';
 import { ResilientCache } from './resilient-cache';
+import { storedVideoDate } from '../tv/video-discovery';
 import { createSupabaseClient } from '$lib/server/supabaseClient';
 import type { Database } from '$lib/supabase/types';
 import type {
@@ -167,7 +168,7 @@ function mapMovie(
 				})
 		: undefined;
 
-	return removeUndefined({
+	const movie = removeUndefined({
 		id: row.id,
 		slug: row.slug,
 		type: 'movie' as const,
@@ -195,6 +196,7 @@ function mapMovie(
 		createdAt: row.created_at ?? undefined,
 		updatedAt: row.updated_at ?? undefined
 	});
+	return removeUndefined({ ...movie, publishedAt: storedVideoDate(movie, row.video_metadata) });
 }
 
 function mapSeason(

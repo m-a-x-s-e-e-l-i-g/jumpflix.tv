@@ -23,7 +23,8 @@
 		"generate:icons": "node scripts/generate-icons.mjs",
 		"generate:favicon": "node scripts/generate-favicon.mjs",
 		"test:seo": "node --import tsx --test tests/seo/*.test.ts",
-		"check:sitemap": "node scripts/check-sitemap.mjs"
+		"check:sitemap": "node scripts/check-sitemap.mjs",
+		"backfill:video-metadata": "tsx scripts/backfill-video-metadata.ts"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",

@@ -1,6 +1,12 @@
-# allow crawling everything by default
+# OpenAI search discovery and ordinary search crawlers share the public catalog.
+# GPTBot (model training) is independent of OAI-SearchBot (ChatGPT search).
+User-agent: OAI-SearchBot
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin
+Disallow: /oauth/
+Disallow: /reset-password
+Disallow: /stats/
 
 # Sitemap
 Sitemap: https://www.jumpflix.tv/sitemap.xml

@@ -5,6 +5,7 @@
 	import { env } from '$env/dynamic/public';
 	import { decode } from 'html-entities';
 	import { verifiedDate } from '$lib/seo';
+	import { buildContentSchema, isoDuration } from '$lib/tv/structured-data';
 	// TvPage is rendered in layout; we only set head tags here
 	export let data: { item: any };
 
@@ -18,7 +19,7 @@
 
 	$: item = data?.item;
 	$: title = item
-		? `${decode(item.title)} (${item.year}) — Parkour Film on JUMPFLIX`
+		? `${decode(item.title)}${item.year ? ` (${item.year})` : ''} — Parkour Film on JUMPFLIX`
 		: 'Movie — JUMPFLIX';
 	const normalizeDesc = (value?: string) => value?.replace(/\s+/g, ' ').trim() ?? '';
 	const clipDesc = (value: string, max = 160) => {
@@ -38,15 +39,6 @@
 		: 'https://www.jumpflix.tv/images/jumpflix.webp';
 	$: url = item ? `${origin}${getUrlForItem(item)}` : origin;
 
-	const toPeople = (names?: string[]) => {
-		if (!Array.isArray(names)) return undefined;
-		const people = names
-			.map((name) => (typeof name === 'string' ? decode(name).trim() : ''))
-			.filter(Boolean)
-			.map((name) => ({ '@type': 'Person', name }));
-		return people.length ? people : undefined;
-	};
-
 	const jsonLd = (payload: Record<string, unknown> | null | undefined) => {
 		if (!payload) return '';
 		const json = JSON.stringify(
@@ -65,18 +57,7 @@
 	let jsonLdVideo = '';
 	let jsonLdBreadcrumb = '';
 
-	$: jsonLdMovie = item
-		? jsonLd({
-				'@context': 'https://schema.org',
-				'@type': 'Movie',
-				name: decode(item.title ?? ''),
-				description: desc,
-				image,
-				url,
-				actor: toPeople(item.starring),
-				creator: toPeople(item.creators)
-			})
-		: '';
+	$: jsonLdMovie = item ? jsonLd(buildContentSchema(item, origin)) : '';
 
 	$: moviePlaybackSource = item ? resolveMoviePlaybackSource(item) : null;
 	$: jsonLdEmbedUrl =
@@ -95,8 +76,11 @@
 			? jsonLd({
 					'@context': 'https://schema.org',
 					'@type': 'VideoObject',
+					'@id': `${url}#video`,
 					name: decode(item.title ?? ''),
-					description: desc,
+					description: item.description ? decode(item.description) : desc,
+					duration: isoDuration(item.duration),
+					about: { '@id': `${url}#movie` },
 					thumbnailUrl: [image],
 					uploadDate,
 					contentUrl:

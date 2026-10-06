@@ -1,6 +1,9 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
 	import { withUtm } from '$lib/utils';
+	import JsonLd from '$lib/components/JsonLd.svelte';
+	const description =
+		'JUMPFLIX is a curated resource for parkour and freerunning cinema, connecting films, documentaries and series with their creators, athletes and viewing links.';
 
 	type AboutFundingSummary = {
 		totalCosts: Array<{ amount: number; currency: string }>;
@@ -53,8 +56,32 @@
 </script>
 
 <svelte:head>
-	<title>About JUMPFLIX</title>
+	<title>About JUMPFLIX — Parkour & Freerunning Cinema</title>
+	<meta name="description" content={description} />
+	<link rel="canonical" href="https://www.jumpflix.tv/about" />
+	<meta property="og:title" content="About JUMPFLIX — Parkour & Freerunning Cinema" />
+	<meta property="og:description" content={description} />
+	<meta property="og:url" content="https://www.jumpflix.tv/about" />
 </svelte:head>
+
+<JsonLd
+	value={{
+		'@context': 'https://schema.org',
+		'@type': 'AboutPage',
+		url: 'https://www.jumpflix.tv/about',
+		name: 'About JUMPFLIX',
+		description,
+		isPartOf: { '@id': 'https://www.jumpflix.tv/#website' },
+		mainEntity: {
+			'@type': 'Organization',
+			'@id': 'https://www.jumpflix.tv/#organization',
+			name: 'JUMPFLIX',
+			url: 'https://www.jumpflix.tv/',
+			description,
+			logo: 'https://www.jumpflix.tv/images/jumpflix.webp'
+		}
+	}}
+/>
 
 <div class="mx-auto w-full max-w-6xl p-4 md:p-8">
 	<div
@@ -90,6 +117,17 @@
 		<h1 class="mt-4 text-3xl font-semibold tracking-tight md:text-5xl">{m.about_title()}</h1>
 		<p class="mt-2 max-w-3xl text-sm text-muted-foreground md:text-base">
 			{m.about_subtitle()}
+		</p>
+		<p class="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground md:text-base">
+			{description} Browse the <a href="/" class="underline underline-offset-4">full catalog</a>,
+			<a href="/collections/documentaries" class="underline underline-offset-4"
+				>parkour documentaries</a
+			>,
+			<a href="/collections/fiction-films" class="underline underline-offset-4">fiction films</a> or
+			<a href="/collections/oldskool-classics" class="underline underline-offset-4"
+				>oldskool classics</a
+			>. Each title has its own page. Paid titles are marked, with links to their external
+			providers.
 		</p>
 
 		<div class="mt-6 flex flex-wrap gap-2">

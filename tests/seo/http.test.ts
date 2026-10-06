@@ -20,6 +20,12 @@ test(
 		}
 		const home = await page('/');
 		assert.ok(!home.html.includes('%paraglide.lang%'));
+		const website = home.schemas.find((schema) => schema['@type'] === 'WebSite');
+		assert.ok(website?.description && website?.publisher?.name === 'JUMPFLIX');
+		assert.match(home.html, /parkour and freerunning cinema/i);
+		const robots = await fetch(new URL('/robots.txt', base));
+		assert.equal(robots.status, 200);
+		assert.match(await robots.text(), /User-agent: OAI-SearchBot/);
 		const paths = [...home.html.matchAll(/<a\b[^>]*href="(\/(?:movie|series)\/[^"?]+)"/g)].map(
 			(match) => match[1]
 		);
@@ -46,6 +52,14 @@ test(
 			);
 			for (const schema of detail.schemas) {
 				if (schema['@type'] === 'VideoObject') assert.ok(schema.uploadDate);
+			}
+			const work = detail.schemas.find(
+				(schema) => schema['@type'] === (path === film ? 'Movie' : 'TVSeries')
+			);
+			assert.ok(work?.['@id'] && work?.url.endsWith(path), 'work has a stable canonical identity');
+			if (path === series) {
+				assert.ok(work.containsSeason.length > 0);
+				assert.ok(work.containsSeason.some((season: any) => season.episode?.length > 0));
 			}
 			assert.ok(
 				Buffer.byteLength(detail.html) < Buffer.byteLength(home.html) / 2,
@@ -92,6 +106,8 @@ test(
 		);
 		assert.ok(episode.schemas.some((schema) => schema['@type'] === 'TVEpisode'));
 		const episodeSchema = episode.schemas.find((schema) => schema['@type'] === 'TVEpisode');
+		assert.ok(episodeSchema['@id'].endsWith('#episode'));
+		assert.ok(episodeSchema.partOfSeries['@id'].endsWith('#series'));
 		const h1 = episode.html
 			.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/)?.[1]
 			?.replace(/<[^>]*>/g, '')

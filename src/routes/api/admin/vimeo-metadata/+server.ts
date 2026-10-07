@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { requireAdmin } from '$lib/server/admin';
+import { vimeoUploadDate } from '$lib/server/video-metadata';
 
 function inferYearFromIsoDate(isoDate: string): string {
 	const clean = isoDate.trim();
@@ -28,6 +29,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const oembedUrl = `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(videoUrl)}`;
 
 	let body: {
+		video_id?: unknown;
 		title?: unknown;
 		description?: unknown;
 		author_name?: unknown;
@@ -47,7 +49,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		throw error(502, `Could not fetch Vimeo metadata: ${msg}`);
 	}
 
-	const publishedAt = typeof body.upload_date === 'string' ? body.upload_date : '';
+	const publishedAt = vimeoUploadDate(body, videoId) || '';
 	const year = publishedAt ? inferYearFromIsoDate(publishedAt) : '';
 	const durationSeconds = Number(body.duration) || 0;
 

@@ -2,64 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { requireAdmin } from '$lib/server/admin';
 
-function extractBalancedJson(html: string, marker: string): unknown {
-	const idx = html.indexOf(marker);
-	if (idx === -1) return null;
-	const braceStart = html.indexOf('{', idx);
-	if (braceStart === -1) return null;
-
-	let depth = 0;
-	let inString = false;
-	let escape = false;
-
-	for (let i = braceStart; i < html.length; i++) {
-		const ch = html[i];
-		if (inString) {
-			if (escape) {
-				escape = false;
-			} else if (ch === '\\') {
-				escape = true;
-			} else if (ch === '"') {
-				inString = false;
-			}
-			continue;
-		}
-		if (ch === '"') {
-			inString = true;
-			continue;
-		}
-		if (ch === '{') depth++;
-		if (ch === '}') depth--;
-		if (depth === 0) {
-			try {
-				return JSON.parse(html.slice(braceStart, i + 1));
-			} catch {
-				return null;
-			}
-		}
-	}
-	return null;
-}
-
-function extractYouTubePlayerResponse(html: string): Record<string, unknown> | null {
-	const result =
-		extractBalancedJson(html, 'ytInitialPlayerResponse') ||
-		extractBalancedJson(html, 'var ytInitialPlayerResponse') ||
-		extractBalancedJson(html, 'window["ytInitialPlayerResponse"]');
-	return result && typeof result === 'object' ? (result as Record<string, unknown>) : null;
-}
-
-
-function toRecord(value: unknown): Record<string, unknown> | null {
-	return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : null;
-}
-
-function pickFirstString(...values: unknown[]): string {
-	for (const v of values) {
-		if (typeof v === 'string' && v.trim()) return v.trim();
-	}
-	return '';
-}
+import { extractYouTubePlayerResponse, youtubeUploadDate } from '$lib/server/video-metadata';
 
 function inferYearFromIsoDate(isoDate: string): string {
 	const clean = isoDate.trim();
@@ -104,9 +47,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const d = details as Record<string, unknown>;
 	const lengthSeconds = Number(d.lengthSeconds) || 0;
 
-	const microformat = toRecord((player as any)?.microformat)?.playerMicroformatRenderer;
-	const micro = toRecord(microformat);
-	const publishedAt = pickFirstString((micro as any)?.uploadDate, (micro as any)?.publishDate);
+	const publishedAt = youtubeUploadDate(html, videoId) || '';
 	const year = publishedAt ? inferYearFromIsoDate(publishedAt) : '';
 
 	return json({

@@ -68,7 +68,7 @@ test('source-bound metadata stops emitting a date after the playback source chan
 	assert.equal(storedVideoDate(movie, { ...metadata, publishedAt: '2003' }), undefined);
 });
 
-test('VideoObject links the visible source to the canonical film and verified upload date', () => {
+test('VideoObject links the playback source to the canonical film and verified upload date', () => {
 	const schema = buildMovieVideoSchema(
 		{ ...movie, publishedAt: upload },
 		'https://www.jumpflix.tv'
@@ -88,7 +88,7 @@ test('VideoObject links the visible source to the canonical film and verified up
 	);
 });
 
-test('paid, unavailable and invalid sources expose neither player nor VideoObject', () => {
+test('paid, unavailable and invalid sources expose no VideoObject source', () => {
 	for (const item of [
 		{ ...movie, paid: true },
 		{ ...movie, availabilityStatus: 'unavailable' as const },

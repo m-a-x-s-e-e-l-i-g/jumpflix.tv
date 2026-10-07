@@ -4,13 +4,11 @@ import { createServer } from 'vite';
 import type { Movie } from '../../src/lib/tv/types';
 
 test(
-	'film players are in server HTML without interaction or autoplay',
+	'detail loader uses source-bound upload metadata without provider requests',
 	{ timeout: 90000 },
 	async () => {
 		const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
 		try {
-			const { default: Player } = await vite.ssrLoadModule('/src/lib/tv/MovieWatchPlayer.svelte');
-			const { render } = await vite.ssrLoadModule('svelte/server');
 			const movie: Movie = {
 				id: 1,
 				slug: 'sample',
@@ -18,25 +16,6 @@ test(
 				title: 'Sample film',
 				videoId: 'l8fSXGP9wvQ'
 			};
-			const html = (props: Partial<Movie>) =>
-				render(Player, { props: { movie: { ...movie, ...props } } }).body as string;
-			assert.match(html({}), /<iframe[^>]+src="https:\/\/www.youtube.com\/embed\/l8fSXGP9wvQ"/);
-			assert.match(
-				html({ videoId: undefined, vimeoId: '12345' }),
-				/<iframe[^>]+src="https:\/\/player.vimeo.com\/video\/12345"/
-			);
-			for (const streamUrl of ['https://example.com/film.mp4', 'https://example.com/film.m3u8']) {
-				assert.match(html({ streamUrl }), /<video[^>]*controls[^>]*preload="none"/);
-				assert.ok(html({ streamUrl }).includes(`src="${streamUrl}"`));
-			}
-			assert.doesNotMatch(html({}), /autoplay[="?]/);
-			for (const props of [
-				{ paid: true },
-				{ availabilityStatus: 'unavailable' as const },
-				{ videoId: '' }
-			]) {
-				assert.doesNotMatch(html(props), /<(?:iframe|video)\b/);
-			}
 			// Exercise the actual detail loader mapping with a PostgREST fixture, without a database write.
 			const service = await vite.ssrLoadModule('/src/lib/server/content-service.ts');
 			const originalFetch = globalThis.fetch;

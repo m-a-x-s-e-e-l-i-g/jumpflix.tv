@@ -1,8 +1,8 @@
 # Film video discovery
 
-Film pages render a visible, paused YouTube/Vimeo iframe or native video element in server HTML. The URL matches the `VideoObject` source. HLS streams use native playback where available and hls.js otherwise. Paid/external and unavailable films do not expose an inline player or video schema. The existing Family safe filter also blocks the inline player.
+Film pages keep the existing JUMPFLIX layout and **Play now** flow. Playback opens the enhanced custom player with its watch progress, XP and completion features. No additional provider/native player is rendered on the detail page.
 
-The inline player uses provider/native controls. It does **not** record JUMPFLIX watch progress, XP or completion. The existing **Play now** button opens the enhanced JUMPFLIX player, with those features, and removes the inline player until it closes. This is a visible product change for review.
+The server emits `VideoObject` metadata only when the film has a verified upload date for its current playback source and a valid thumbnail. Paid/external, unavailable and Family safe blocked films omit video schema.
 
 `media_items.video_metadata` stores `{sourceKey, publishedAt}`. `publishedAt` comes from the matching YouTube video's `uploadDate` or Vimeo video's `upload_date`; it is not inferred from the film's release year, catalog timestamps or YouTube's separate publication field. Invalid or missing dates are omitted. If the playback source changes, the stored date stops being used. Public page loads read stored metadata and do not make provider requests.
 
@@ -37,4 +37,4 @@ Vimeo's timezone-free timestamps are reduced to their calendar date; midnight in
 
 Direct/HLS streams need a verified date from their source owner before they can emit video markup; this import does not guess one. Episodes retain their existing date/markup path.
 
-Google recommends ordinary HTML video elements and says video loading must not depend on user actions. See [video discovery guidance](https://developers.google.com/search/docs/appearance/video) and [VideoObject requirements](https://developers.google.com/search/docs/appearance/structured-data/video). These changes support discovery; indexing is not verified by the local tests.
+This PR improves metadata while preserving the viewing experience. It does not solve player discovery without interaction: Google recommends ordinary HTML video elements and says video loading must not depend on user actions. The current custom player still loads after Play now. There is no hidden or crawler-only player. See [video discovery guidance](https://developers.google.com/search/docs/appearance/video) and [VideoObject requirements](https://developers.google.com/search/docs/appearance/structured-data/video). Video indexing is not verified or guaranteed by these changes or the local tests.

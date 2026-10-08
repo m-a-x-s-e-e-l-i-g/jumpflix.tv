@@ -26,6 +26,21 @@ npm install
 
 ## Usage
 
+### Funding Sync
+
+`npm run sync:funding` imports OpenAI costs and Bunny.net bills into Supabase.
+It requires `PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` plus
+`OPENAI_ADMIN_KEY` and/or `BUNNYNET_API_KEY` for the configured providers.
+The daily GitHub Actions workflow uses the corresponding repository secrets.
+
+`OPENAI_COSTS_START_DATE` optionally limits OpenAI imports to a later start date.
+Older dates are clamped to the rolling 365-day UTC reporting window. If OpenAI
+reports a later supported cutoff, the import retries once at that date.
+Previously imported costs before the fetched window are preserved.
+
+Run `npm run test:funding` to verify the sync with mocked provider and database
+responses. The tests do not import or modify live funding data.
+
 ### Admin CLI
 
 Run the admin CLI for content management:

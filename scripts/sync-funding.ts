@@ -2,6 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
+import { pathToFileURL } from 'node:url';
 import type { Database, Json } from '../src/lib/supabase/types';
 
 dotenv.config({ path: '.env' });
@@ -22,6 +23,7 @@ type ExternalFundingSource = {
 	sourceSystem: string;
 	displayName: string;
 	rows: ProjectCostInsert[] | null;
+	reconcileFrom?: string;
 };
 
 const OPENAI_COSTS_START_FALLBACK = '2024-01-01';
@@ -254,11 +256,16 @@ function toInteger(value: unknown): number | null {
 	return Math.trunc(parsed);
 }
 
-function getOpenAICostsStartTime(): number {
+export function getOpenAICostsStartTime(now = new Date()): number {
 	const configured = optionalEnv('OPENAI_COSTS_START_DATE') ?? OPENAI_COSTS_START_FALLBACK;
 	const parsed = Date.parse(`${configured}T00:00:00Z`);
-	if (Number.isFinite(parsed)) return Math.floor(parsed / 1000);
-	return Math.floor(Date.parse(`${OPENAI_COSTS_START_FALLBACK}T00:00:00Z`) / 1000);
+	const requested = Number.isFinite(parsed)
+		? parsed
+		: Date.parse(`${OPENAI_COSTS_START_FALLBACK}T00:00:00Z`);
+	// OpenAI only reports the past year. Align with its UTC daily buckets.
+	const earliest =
+		Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - 365 * 24 * 60 * 60 * 1000;
+	return Math.floor(Math.max(requested, earliest) / 1000);
 }
 
 function parseOpenAIBucketRows(bucket: OpenAICostBucket): ProjectCostInsert[] {
@@ -310,7 +317,10 @@ function parseOpenAIBucketRows(bucket: OpenAICostBucket): ProjectCostInsert[] {
 	}));
 }
 
-async function fetchOpenAICostRows(): Promise<ProjectCostInsert[] | null> {
+export async function fetchOpenAICostRows(): Promise<{
+	rows: ProjectCostInsert[];
+	reconcileFrom: string;
+} | null> {
 	const apiKey = optionalEnv('OPENAI_ADMIN_KEY');
 	if (!apiKey) {
 		console.log('[funding-sync] OPENAI_ADMIN_KEY not configured, skipping OpenAI cost import.');
@@ -324,10 +334,12 @@ async function fetchOpenAICostRows(): Promise<ProjectCostInsert[] | null> {
 
 	const rows: ProjectCostInsert[] = [];
 	let page: string | null = null;
+	let startTime = getOpenAICostsStartTime();
+	let retriedLookback = false;
 
-	do {
+	while (true) {
 		const url = new URL('https://api.openai.com/v1/organization/costs');
-		url.searchParams.set('start_time', String(getOpenAICostsStartTime()));
+		url.searchParams.set('start_time', String(startTime));
 		url.searchParams.set('bucket_width', '1d');
 		url.searchParams.set('limit', '180');
 		if (page) url.searchParams.set('page', page);
@@ -335,7 +347,32 @@ async function fetchOpenAICostRows(): Promise<ProjectCostInsert[] | null> {
 		const response = await fetch(url, { headers });
 		if (!response.ok) {
 			const detail = await response.text().catch(() => '');
-			throw new Error(`OpenAI costs import failed: ${response.status} ${detail || response.statusText}`);
+			if (response.status === 400 && !retriedLookback) {
+				let error: { code?: string; message?: string } | undefined;
+				try {
+					error = JSON.parse(detail)?.error;
+				} catch {
+					// Non-JSON errors retain the normal failure behavior below.
+				}
+				const earliestDate =
+					typeof error?.message === 'string'
+						? error.message.match(/Earliest supported start date: (\d{4}-\d{2}-\d{2}) \(UTC\)/)?.[1]
+						: undefined;
+				const earliestTime = earliestDate ? Date.parse(`${earliestDate}T00:00:00Z`) / 1000 : NaN;
+				if (error?.code === 'reporting_lookback_exceeded' && earliestTime > startTime) {
+					startTime = earliestTime;
+					retriedLookback = true;
+					rows.length = 0;
+					page = null;
+					console.log(
+						`[funding-sync] OpenAI reporting window starts at ${earliestDate}; retrying.`
+					);
+					continue;
+				}
+			}
+			throw new Error(
+				`OpenAI costs import failed: ${response.status} ${detail || response.statusText}`
+			);
 		}
 
 		const payload = (await response.json()) as {
@@ -346,12 +383,14 @@ async function fetchOpenAICostRows(): Promise<ProjectCostInsert[] | null> {
 
 		const buckets = Array.isArray(payload.data) ? (payload.data as OpenAICostBucket[]) : [];
 		rows.push(...buckets.flatMap(parseOpenAIBucketRows));
-		page = payload.has_more === true && typeof payload.next_page === 'string' && payload.next_page
-			? payload.next_page
-			: null;
-	} while (page);
+		page =
+			payload.has_more === true && typeof payload.next_page === 'string' && payload.next_page
+				? payload.next_page
+				: null;
+		if (!page) break;
+	}
 
-	return rows;
+	return { rows, reconcileFrom: new Date(startTime * 1000).toISOString() };
 }
 
 async function fetchBunnyBillingRows(): Promise<ProjectCostInsert[] | null> {
@@ -444,18 +483,22 @@ function createSupabaseServiceClient() {
 	});
 }
 
-async function syncImportedCosts(
+export async function syncImportedCosts(
 	supabase: ReturnType<typeof createClient<Database>>,
 	sourceSystem: string,
 	displayName: string,
-	rows: ProjectCostInsert[]
+	rows: ProjectCostInsert[],
+	reconcileFrom?: string
 ) {
-	const { data: existingRows, error: existingError } = await supabase
+	let existingQuery = supabase
 		.from('project_costs')
 		.select(
 			'id, title, description, vendor, category, amount, currency, occurred_at, coverage, entry_method, is_public, metadata, source_system, source_reference'
 		)
 		.eq('source_system', sourceSystem);
+	// Older costs are archived history, not stale rows missing from this API window.
+	if (reconcileFrom) existingQuery = existingQuery.gte('occurred_at', reconcileFrom);
+	const { data: existingRows, error: existingError } = await existingQuery;
 
 	if (existingError) {
 		throw new Error(existingError.message);
@@ -501,7 +544,7 @@ async function syncImportedCosts(
 	return { inserted: inserts.length, updated: updates.length, deleted: staleIds.length };
 }
 
-async function main() {
+export async function main() {
 	if (DEBUG_BUNNY) {
 		console.log('[funding-sync][bunny-debug] Bunny debug mode enabled.');
 		const bunnyRows = await fetchBunnyBillingRows();
@@ -514,11 +557,13 @@ async function main() {
 		return;
 	}
 
+	const openAICosts = await fetchOpenAICostRows();
 	const sources: ExternalFundingSource[] = [
 		{
 			sourceSystem: OPENAI_SOURCE_SYSTEM,
 			displayName: 'OpenAI costs',
-			rows: await fetchOpenAICostRows()
+			rows: openAICosts?.rows ?? null,
+			reconcileFrom: openAICosts?.reconcileFrom
 		},
 		{
 			sourceSystem: BUNNY_SOURCE_SYSTEM,
@@ -538,13 +583,21 @@ async function main() {
 
 	const supabase = createSupabaseServiceClient();
 	for (const source of configuredSources) {
-		await syncImportedCosts(supabase, source.sourceSystem, source.displayName, source.rows);
+		await syncImportedCosts(
+			supabase,
+			source.sourceSystem,
+			source.displayName,
+			source.rows,
+			source.reconcileFrom
+		);
 	}
 
 	console.log('[funding-sync] Funding sync completed.');
 }
 
-main().catch((error) => {
-	console.error('[funding-sync] Sync failed:', error);
-	process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+	main().catch((error) => {
+		console.error('[funding-sync] Sync failed:', error);
+		process.exit(1);
+	});
+}

@@ -14,6 +14,35 @@ Series structured data connects real seasons and episodes to their canonical URL
 Unknown dates and runtimes are omitted. A film's release year or catalog insertion
 date must never be used to invent a video's upload date.
 
+## Lightweight film guide
+
+`/discover` is a standalone, English HTML film reference on the existing domain.
+It has no application shell, executable JavaScript, player, analytics or login.
+The complete alphabetical title index and matching `CollectionPage` / `ItemList`
+structured data are in the initial HTML. The same document is served to people
+and crawlers; this is not a bot-specific alternate page. Typography uses optional
+Google Fonts with local fallbacks; no poster images or player assets are loaded.
+
+The guide includes live catalog totals, existing collections, recent **catalog
+additions**, credited people/crews and practical viewing information. Credits are
+counted once per title, even when someone appears as both creator and athlete.
+Unavailable entries are retained and labeled. Counts are catalog facts, not
+popularity rankings or a guarantee that a provider is currently playable.
+
+`/llms-full.txt` publishes a plain-text snapshot with full synopses, known years,
+runtimes, access labels, credit links and actual episode URLs. It deliberately
+projects public metadata instead of serializing entire records: playback sources,
+provider URLs, music metadata and user information are excluded. `llms.txt` links
+to this snapshot, the guide and the existing collections. It is a convenience for
+clients that read it, not a prerequisite or a guarantee for AI search visibility.
+
+Both responses reuse the existing live catalog cache (five-minute freshness) and
+are CDN-cacheable for five minutes, with five minutes of stale-while-revalidate.
+These cache windows can add up; the snapshot is not real-time. They never fetch provider metadata. Failed
+catalog loads return HTTP 503 with `no-store`, including failed refreshes with an
+older cached catalog. The guide's check date reflects the actual catalog fetch.
+The main catalog links to the guide, and the sitemap includes `/discover`.
+
 ## Verification
 
 - `npm run check`

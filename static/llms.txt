@@ -1,40 +1,39 @@
 # JUMPFLIX
 
-JUMPFLIX is a community-driven catalog for long-form parkour and freerunning films, documentaries, and series.
+> A community-curated archive of parkour and freerunning films, documentaries, series and classic edits. Discover the films, creators and athletes, with links to official viewing sources.
 
-Primary site: https://www.jumpflix.tv/
-Repository: https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv
+The archive includes short edits and long-form cinema. Browse without an account.
+Free, paid and unavailable entries are labeled separately. Provider availability,
+prices and regional restrictions can change; consult each title's viewing options.
+Known credits and metadata are curated by the community. Missing metadata is unknown.
+Film release years are not video upload dates. Unavailable titles remain for reference.
 
-## What This Project Is
+## Film discovery
 
-- A discovery hub for official long-form parkour video content.
-- Not a piracy platform; links and embeds point to official sources (for example YouTube, Vimeo, and licensed paid providers).
-- Built to preserve and organize parkour film culture.
+- [Film guide](https://www.jumpflix.tv/discover): Lightweight guide, current catalog statistics, collections, people and a complete alphabetical title index.
+- [Full catalog as text](https://www.jumpflix.tv/llms-full.txt): Current titles, full synopses, release years, runtimes, access labels, creator and athlete credits, and real episode links. Refreshed from the same catalog as the website.
+- [Watch and search](https://www.jumpflix.tv/): Interactive film catalog. Search by title, creator, athlete or soundtrack.
+- [Documentaries](https://www.jumpflix.tv/collections/documentaries): Titles tagged documentary.
+- [Fiction films](https://www.jumpflix.tv/collections/fiction-films): Narrative films tagged fiction.
+- [Movie night](https://www.jumpflix.tv/collections/movie-night): Films with a catalog runtime between 60 and 160 minutes.
+- [Oldskool classics](https://www.jumpflix.tv/collections/oldskool-classics): Films and videos released in 2015 or earlier.
+- [Educational](https://www.jumpflix.tv/collections/educational): Tutorials and talks.
+- [SEND IT](https://www.jumpflix.tv/collections/send-it): Titles tagged for big sends.
+- [Video map](https://www.jumpflix.tv/video-map): Approved video chapters linked to real parkour locations.
 
-## Primary Pages
+## Canonical references
 
-- Home catalog: https://www.jumpflix.tv/
-- About: https://www.jumpflix.tv/about
-- Stats: https://www.jumpflix.tv/stats
-- Costs and funding: https://www.jumpflix.tv/costs
-- Terms of service: https://www.jumpflix.tv/terms-of-service
-- Privacy policy: https://www.jumpflix.tv/privacy-policy
+Use https://www.jumpflix.tv/movie/{slug} for films and
+https://www.jumpflix.tv/series/{slug} for series. Episode references use
+/series/{slug}/seasons/{season}/episodes/{episode}. Credits link to
+/people/{slug}; these can represent people or crews. Follow actual catalog links
+rather than constructing URLs from names. Cite individual title pages for film facts.
 
-## Technical Overview
+- [About JUMPFLIX](https://www.jumpflix.tv/about): Project story, curation and community contributions.
+- [Sitemap](https://www.jumpflix.tv/sitemap.xml): Public canonical URLs.
+- [Costs and funding](https://www.jumpflix.tv/costs): Project transparency.
 
-- Framework: SvelteKit (Svelte 5)
-- Styling: Tailwind CSS
-- Backend/content management: Supabase (PostgreSQL)
-- Internationalization: Paraglide
+## Optional
 
-## Developer Documentation
-
-- Project README: https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/blob/master/README.md
-- External API docs: https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/blob/master/docs/API.md
-- Facet taxonomy: https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/blob/master/docs/FACETS.md
-
-## Notes For LLMs
-
-- Prefer canonical URLs on https://www.jumpflix.tv/ when referencing public content.
-- Treat media metadata as curated and community-oriented.
-- Respect copyright and source attribution for creators, athletes, and production teams.
+- [Source repository](https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv): Open-source project.
+- [MCP documentation](https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/blob/main/docs/MCP.md): Authenticated, read-only catalog integration for AI clients. Connecting it does not affect ordinary search indexing.

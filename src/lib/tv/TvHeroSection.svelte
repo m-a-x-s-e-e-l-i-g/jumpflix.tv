@@ -70,12 +70,25 @@
 						>
 					</a>
 					<SubmitFilmDialog label={m.tv_heroCtaSubmit()} />
+					<a href="/discover" data-sveltekit-reload class="hero-guide-link">
+						{m.tv_heroCtaGuide()}
+					</a>
 				</div>{/if}
 		</div>
 	</div>
 </div>
 
 <style>
+	.hero-guide-link {
+		font-size: 0.875rem;
+		color: var(--muted-foreground);
+		text-underline-offset: 4px;
+	}
+
+	.hero-guide-link:hover {
+		color: var(--foreground);
+	}
+
 	.hero-shell {
 		position: relative;
 		z-index: 10;

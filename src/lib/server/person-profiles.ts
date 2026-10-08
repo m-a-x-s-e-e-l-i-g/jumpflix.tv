@@ -314,6 +314,35 @@ export function findPersonMatchCandidates(
 	return ranked.slice(0, limit);
 }
 
+/** Index the only candidates that can reach the matcher's 0.6 score threshold. */
+export function createPersonMatchIndex(knownPeople: Iterable<KnownPerson>) {
+	const people = Array.from(knownPeople);
+	const byToken = new Map<string, number[]>();
+	for (const [index, person] of people.entries()) {
+		for (const token of new Set(tokenizeName(person.name))) {
+			const bucket = byToken.get(token) ?? [];
+			bucket.push(index);
+			byToken.set(token, bucket);
+		}
+	}
+
+	return {
+		findCandidates(inputName: string, excludeSlug: string, limit = 5): PersonMatchCandidate[] {
+			// Without a shared token, edit similarity and prefix matching contribute
+			// at most 0.55. Such pairs cannot qualify, even after rounding to 3 decimals.
+			const indices = new Set<number>();
+			for (const token of tokenizeName(inputName)) {
+				for (const index of byToken.get(token) ?? []) indices.add(index);
+			}
+			const candidates = Array.from(indices)
+				.sort((a, b) => a - b)
+				.map((index) => people[index])
+				.filter((person) => person.slug !== excludeSlug);
+			return findPersonMatchCandidates(inputName, candidates, limit);
+		}
+	};
+}
+
 export function chooseSuggestedPerson(candidates: PersonMatchCandidate[]): PersonMatchCandidate | null {
 	const [first, second] = candidates;
 	if (!first) return null;

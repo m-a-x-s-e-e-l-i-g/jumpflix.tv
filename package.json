@@ -12,6 +12,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test:mcp": "node --import tsx --test tests/mcp/*.test.ts",
+		"test:admin": "node --import tsx --test tests/admin/*.test.ts",
 		"test:funding": "node --import tsx --test tests/funding/*.test.ts",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",

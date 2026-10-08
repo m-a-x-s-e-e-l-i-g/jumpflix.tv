@@ -2,8 +2,8 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { requireAdmin } from '$lib/server/admin';
-import { fetchAllContent, invalidateContentCache } from '$lib/server/content-service';
-import { findPersonMatchCandidates, movePersonProfile } from '$lib/server/person-profiles';
+import { fetchPeopleCredits, invalidateContentCache } from '$lib/server/content-service';
+import { createPersonMatchIndex, movePersonProfile } from '$lib/server/person-profiles';
 import { slugify } from '$lib/tv/slug';
 
 type MediaRow = {
@@ -187,7 +187,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const { user } = await locals.safeGetSession();
 	requireAdmin(user);
 
-	const content = await fetchAllContent();
+	const content = await fetchPeopleCredits();
 
 	type PersonAggregate = {
 		slug: string;
@@ -287,12 +287,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 		}
 	>();
 
+	const matchIndex = createPersonMatchIndex(knownPeople);
 	for (const person of knownPeople) {
-		const candidates = findPersonMatchCandidates(
-			person.name,
-			knownPeople.filter((candidate) => candidate.slug !== person.slug),
-			6
-		);
+		const candidates = matchIndex.findCandidates(person.name, person.slug, 6);
 
 		for (const candidate of candidates) {
 			const other = peopleBySlugLookup.get(candidate.slug);

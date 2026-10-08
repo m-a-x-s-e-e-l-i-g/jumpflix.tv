@@ -19,12 +19,13 @@ function metadata(item: DiscoveryCatalog['items'][number]) {
 
 const css = `
 :root {
-	color-scheme: light;
-	--paper: oklch(0.968 0.012 83);
-	--ink: oklch(0.26 0.024 45);
-	--muted: oklch(0.48 0.024 45);
-	--line: oklch(0.83 0.022 75);
-	--red: oklch(0.47 0.16 29);
+	color-scheme: dark;
+	--paper: oklch(0.112 0.038 263.5);
+	--ink: oklch(0.96 0.01 250.2);
+	--muted: oklch(0.76 0.03 256.8);
+	--line: rgba(248, 250, 252, 0.18);
+	--red: #e63b28;
+	--surface: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(12, 17, 32, 0.82));
 }
 * {
 	box-sizing: border-box;
@@ -35,9 +36,15 @@ html {
 body {
 	margin: 0;
 	background: var(--paper);
+	background-image:
+		radial-gradient(140% 120% at 18% 0%, rgba(229, 9, 20, 0.18), transparent 68%),
+		radial-gradient(130% 120% at 78% 0%, rgba(37, 99, 235, 0.12), transparent 72%),
+		linear-gradient(180deg, rgba(5, 7, 18, 0.92), rgba(8, 13, 26, 0.98) 55%, rgba(5, 7, 18, 1));
+	background-size: 100% 1000px;
+	background-repeat: no-repeat;
 	color: var(--ink);
 	font:
-		16px/1.65 'Public Sans',
+		16px/1.65 'Inter', 'Segoe UI',
 		sans-serif;
 }
 a {
@@ -102,10 +109,21 @@ header {
 	border-bottom: 1px solid var(--line);
 }
 .brand {
+	display: inline-flex;
+	align-items: center;
+	gap: 12px;
+	color: var(--red);
 	font-weight: 800;
-	letter-spacing: 0.1em;
+	font-size: 1.25rem;
+	letter-spacing: 0.14em;
 	text-decoration: none;
-	border-bottom: 3px solid var(--red);
+}
+.brand img {
+	width: 36px;
+	height: auto;
+}
+.brand span {
+	transform: perspective(500px) rotateX(31deg) scaleX(1.04);
 }
 nav {
 	display: flex;
@@ -115,6 +133,8 @@ nav {
 }
 nav a {
 	text-decoration: none;
+	color: var(--muted);
+	padding: 8px 0;
 }
 .hero {
 	padding: 64px 0 40px;
@@ -139,16 +159,21 @@ nav a {
 	margin: 24px 0;
 }
 .button {
-	background: var(--ink);
-	color: var(--paper);
-	padding: 12px 20px;
+	background: linear-gradient(120deg, rgba(229, 9, 20, 0.95), rgba(229, 9, 20, 0.7));
+	color: #fff;
+	padding: 0.85rem 1.8rem;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 999px;
+	box-shadow: 0 10px 30px -16px rgba(229, 9, 20, 0.75);
 	text-decoration: none;
-	font-weight: 600;
-	font-size: 0.9rem;
+	font-weight: 700;
+	font-size: 0.78rem;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
 }
 .button:hover {
 	background: var(--red);
-	color: var(--paper);
+	color: #fff;
 }
 .small {
 	font-size: 0.8rem;
@@ -159,9 +184,10 @@ nav a {
 	grid-template-columns: repeat(4, 1fr);
 	gap: 24px;
 	margin: 0;
-	padding: 28px 0;
-	border-top: 1px solid var(--line);
-	border-bottom: 1px solid var(--line);
+	padding: 28px;
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: 14px;
 }
 .figures div {
 	display: flex;
@@ -195,7 +221,15 @@ nav a {
 	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 0 32px;
 }
-.collection,
+.collection-list {
+	gap: 16px;
+}
+.collection {
+	padding: 24px;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: var(--surface);
+}
 .recent {
 	padding: 24px 0;
 	border-top: 1px solid var(--line);
@@ -297,13 +331,13 @@ footer a {
 		padding: 0 20px;
 	}
 	header {
-		align-items: flex-start;
+		align-items: center;
+		flex-wrap: wrap;
 		gap: 16px;
 	}
 	nav {
-		gap: 12px;
-		justify-content: flex-end;
-		font-size: 0.75rem;
+		gap: 20px;
+		font-size: 0.8rem;
 	}
 	.hero {
 		padding: 40px 0 28px;
@@ -311,6 +345,7 @@ footer a {
 	.figures {
 		grid-template-columns: repeat(2, 1fr);
 		gap: 20px;
+		padding: 20px;
 	}
 	.section {
 		grid-template-columns: 1fr;
@@ -364,13 +399,13 @@ export function renderDiscoveryPage(catalog: DiscoveryCatalog, checkedAt: string
 <title>${html(DISCOVERY_TITLE)}</title><meta name="description" content="${html(DISCOVERY_DESCRIPTION)}">
 <link rel="canonical" href="${html(origin)}/discover"><link rel="icon" href="/favicon.ico">
 <link rel="alternate" type="text/plain" href="${html(origin)}/llms-full.txt" title="JUMPFLIX catalog as text">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;500&amp;family=Public+Sans:wght@400;600;700;800&amp;display=optional">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;family=Merriweather:wght@400;500&amp;display=optional">
 <meta property="og:type" content="website"><meta property="og:title" content="${html(DISCOVERY_TITLE)}">
 <meta property="og:description" content="${html(DISCOVERY_DESCRIPTION)}"><meta property="og:url" content="${html(origin)}/discover">
 <meta property="og:image" content="${html(origin)}/images/jumpflix.webp"><meta name="twitter:card" content="summary_large_image">
 <style>${css}</style><script type="application/ld+json">${serializeJsonLd(schema)}</script>
 </head><body><a class="skip" href="#main">Skip to film guide</a><div class="wrap">
-<header><a class="brand" href="${html(origin)}/">JUMPFLIX</a><nav aria-label="Main navigation"><a href="#collections">Collections</a><a href="#titles">Title index</a><a href="${html(origin)}/">Open catalog ↗</a></nav></header>
+<header><a class="brand" href="${html(origin)}/"><img src="/images/jumpflix.webp" width="93" height="118" alt=""><span>JUMPFLIX</span></a><nav aria-label="Main navigation"><a href="#collections">Collections</a><a href="#titles">Title index</a><a href="${html(origin)}/">Open catalog ↗</a></nav></header>
 <main id="main"><section class="hero" aria-labelledby="guide-title"><div class="eyebrow">The film guide</div>
 <h1 id="guide-title">A field guide to parkour cinema.</h1>
 <p class="dek">Parkour and freerunning films, documentaries, series and classic edits. A community-curated archive of movement, stories and the people behind them.</p>

@@ -22,6 +22,8 @@ The complete alphabetical title index and matching `CollectionPage` / `ItemList`
 structured data are in the initial HTML. The same document is served to people
 and crawlers; this is not a bot-specific alternate page. Typography uses optional
 Google Fonts with local fallbacks; no poster images or player assets are loaded.
+The guide uses the main catalog's dark JUMPFLIX palette, logo, Inter/Merriweather
+typography and red buttons, with a compact standalone stylesheet.
 
 The guide includes live catalog totals, existing collections, recent **catalog
 additions**, credited people/crews and practical viewing information. Credits are

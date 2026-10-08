@@ -1,3 +1,4 @@
+import { photoUrl } from '$lib/server/person-photo-url';
 import { toCatalogSummary } from '$lib/tv/catalog-summary';
 import { getContentServiceStatus } from '$lib/server/content-service';
 import { publicCacheHeaders } from '$lib/server/public-cache';
@@ -94,11 +95,12 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 	};
 
 	let instagramHandles: string[] = [];
+	let profilePhoto: string | null = null;
 	try {
 		const supabase = createSupabaseClient();
 		const { data: profile, error: profileError } = await supabase
 			.from('person_profiles')
-			.select('instagram_handles')
+			.select('*')
 			.eq('slug', slug)
 			.maybeSingle();
 
@@ -108,6 +110,7 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 			}
 		} else {
 			instagramHandles = normalizeInstagramHandles(profile?.instagram_handles ?? []);
+			profilePhoto = photoUrl(supabase, profile?.profile_photo_path);
 		}
 	} catch (profileError) {
 		console.warn('[people] Failed to initialize person profiles query:', profileError);
@@ -116,5 +119,12 @@ export const load: PageServerLoad = async ({ params, parent, setHeaders }) => {
 	const isAuthenticated = Boolean((parentData as any)?.session || (parentData as any)?.user);
 	setHeaders(publicCacheHeaders(isAuthenticated, Boolean(getContentServiceStatus().lastError)));
 
-	return { content: filtered.map(toCatalogSummary), name, slug, roles, instagramHandles };
+	return {
+		content: filtered.map(toCatalogSummary),
+		name,
+		slug,
+		roles,
+		instagramHandles,
+		profilePhoto
+	};
 };

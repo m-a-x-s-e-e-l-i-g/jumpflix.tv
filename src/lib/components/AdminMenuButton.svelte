@@ -76,6 +76,14 @@
 			</a>
 
 			<a
+				href="/admin/people/photos"
+				onclick={() => (showAdminMenu = false)}
+				class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
+			>
+				<WrenchIcon class="size-4" /><span>Athlete photos</span>
+			</a>
+
+			<a
 				href="/admin/people"
 				onclick={() => (showAdminMenu = false)}
 				class="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"

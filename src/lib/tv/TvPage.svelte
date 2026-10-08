@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PersonAvatar from '$lib/components/PersonAvatar.svelte';
 	import { deLocalizeUrl, localizeHref } from '$lib/paraglide/runtime';
 	import { getContext, setContext, onMount, tick } from 'svelte';
 	import InstagramIcon from '@lucide/svelte/icons/instagram';
@@ -120,6 +121,7 @@
 		slug: string;
 		kinds: Array<'creator' | 'athlete'>;
 		instagramHandles: string[];
+		profilePhoto: string | null;
 	} | null;
 
 	function computeProfileContext(pathname: string, pageData: any): ProfileContext {
@@ -145,7 +147,13 @@
 		const kinds: Array<'creator' | 'athlete'> = [];
 		if (roles?.creator) kinds.push('creator');
 		if (roles?.athlete) kinds.push('athlete');
-		return { name, slug, kinds, instagramHandles };
+		return {
+			name,
+			slug,
+			kinds,
+			instagramHandles,
+			profilePhoto: typeof pageData?.profilePhoto === 'string' ? pageData.profilePhoto : null
+		};
 	}
 
 	type ProfileCreditStats = {
@@ -859,9 +867,14 @@
 			{:else if profileContext}
 				<div class="mx-auto w-full max-w-6xl px-6">
 					<div class="mt-6 min-w-0">
-						<h1 class="truncate text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-							{profileContext.name}
-						</h1>
+						<div class="flex items-center gap-5 sm:gap-7">
+							<PersonAvatar name={profileContext.name} src={profileContext.profilePhoto} large />
+							<h1
+								class="min-w-0 text-3xl font-semibold tracking-tight break-words text-foreground sm:text-4xl"
+							>
+								{profileContext.name}
+							</h1>
+						</div>
 
 						{#if profileCreditStats}
 							<div class="mt-5 grid gap-3 sm:grid-cols-3">

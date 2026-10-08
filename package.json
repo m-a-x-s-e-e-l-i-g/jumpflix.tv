@@ -12,7 +12,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test:mcp": "node --import tsx --test tests/mcp/*.test.ts",
-		"test:admin": "node --import tsx --test tests/admin/*.test.ts",
+		"test:admin": "node --import tsx --test --test-concurrency=1 tests/admin/*.test.ts",
 		"test:funding": "node --import tsx --test tests/funding/*.test.ts",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
@@ -53,7 +53,6 @@
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
 		"prettier-plugin-tailwindcss": "^0.6.11",
-		"sharp": "^0.35.3",
 		"svelte": "^5.55.7",
 		"svelte-check": "^4.0.0",
 		"tailwind-variants": "^1.0.0",
@@ -87,7 +86,8 @@
 		"tailwind-merge": "^3.3.1",
 		"vidstack": "^1.12.0-next.5",
 		"web-vitals": "6.2.2",
-		"zod": "^4.4.3"
+		"zod": "^4.4.3",
+		"sharp": "^0.35.3"
 	},
 	"overrides": {
 		"@sveltejs/kit": {

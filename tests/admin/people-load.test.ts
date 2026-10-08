@@ -11,7 +11,7 @@ type LoadResult = {
 		lookAlikeMatches: { left: KnownPerson; right: KnownPerson }[];
 	};
 };
-let load: (event: ReturnType<typeof event>) => Promise<LoadResult>;
+let load: (input: ReturnType<typeof event>) => Promise<LoadResult>;
 const originalFetch = globalThis.fetch;
 const admin = { id: 'people-loader-test', email: 'people-loader-test@example.com' };
 const testEnv = {

@@ -164,6 +164,9 @@ export type Database = {
 					slug: string;
 					name: string;
 					instagram_handles: string[];
+					profile_photo_path: string | null;
+					profile_photo_source: string | null;
+					profile_photo_handle: string | null;
 					created_at: string;
 					updated_at: string;
 				};
@@ -171,6 +174,9 @@ export type Database = {
 					slug: string;
 					name: string;
 					instagram_handles?: string[];
+					profile_photo_path?: string | null;
+					profile_photo_source?: string | null;
+					profile_photo_handle?: string | null;
 					created_at?: string;
 					updated_at?: string;
 				};
@@ -178,6 +184,9 @@ export type Database = {
 					slug?: string;
 					name?: string;
 					instagram_handles?: string[];
+					profile_photo_path?: string | null;
+					profile_photo_source?: string | null;
+					profile_photo_handle?: string | null;
 					created_at?: string;
 					updated_at?: string;
 				};

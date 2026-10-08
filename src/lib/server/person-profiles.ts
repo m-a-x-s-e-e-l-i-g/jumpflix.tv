@@ -6,6 +6,9 @@ export type PersonProfileRow = {
 	slug: string;
 	name: string;
 	instagram_handles: string[] | null;
+	profile_photo_path?: string | null;
+	profile_photo_source?: string | null;
+	profile_photo_handle?: string | null;
 	created_at?: string;
 	updated_at?: string;
 };
@@ -371,7 +374,7 @@ export async function movePersonProfile(
 
 	const { data, error } = await supabase
 		.from('person_profiles')
-		.select('slug, name, instagram_handles')
+		.select('*')
 		.in('slug', [fromSlug, toSlug]);
 
 	if (error) {
@@ -394,7 +397,14 @@ export async function movePersonProfile(
 		{
 			slug: toSlug,
 			name: opts.toName.trim() || toRow?.name || fromRow?.name || toSlug,
-			instagram_handles: instagramHandles
+			instagram_handles: instagramHandles,
+			...(toRow?.profile_photo_path || !fromRow?.profile_photo_path
+				? {}
+				: {
+						profile_photo_path: fromRow.profile_photo_path,
+						profile_photo_source: fromRow.profile_photo_source,
+						profile_photo_handle: fromRow.profile_photo_handle
+					})
 		},
 		{ onConflict: 'slug' }
 	);
@@ -402,7 +412,10 @@ export async function movePersonProfile(
 	if (upsertError) throw new Error(upsertError.message);
 
 	if (fromRow) {
-		const { error: deleteError } = await supabase.from('person_profiles').delete().eq('slug', fromSlug);
+		const { error: deleteError } = await supabase
+			.from('person_profiles')
+			.delete()
+			.eq('slug', fromSlug);
 		if (deleteError) throw new Error(deleteError.message);
 	}
 }

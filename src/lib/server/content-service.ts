@@ -290,6 +290,24 @@ export async function fetchPeopleCredits(): Promise<
 	}
 }
 
+export async function fetchInstagramCredits(): Promise<
+	Pick<MediaItemRow, 'slug' | 'title' | 'type' | 'creators' | 'starring'>[]
+> {
+	const supabase = createSupabaseClient();
+	const rows: Pick<MediaItemRow, 'slug' | 'title' | 'type' | 'creators' | 'starring'>[] = [];
+	const pageSize = 1000;
+	for (let offset = 0; ; offset += pageSize) {
+		const { data, error } = await supabase
+			.from('media_items')
+			.select('slug, title, type, creators, starring')
+			.order('id', { ascending: true })
+			.range(offset, offset + pageSize - 1);
+		if (error || !data) httpError(503, 'People temporarily unavailable. Please try again shortly.');
+		rows.push(...data);
+		if (data.length < pageSize) return rows;
+	}
+}
+
 export async function fetchAllContent(options: { maxAgeMs?: number } = {}): Promise<ContentItem[]> {
 	try {
 		return await contentCache.get(async () => {

@@ -11,7 +11,12 @@ type LoadResult = {
 		lookAlikeMatches: { left: KnownPerson; right: KnownPerson }[];
 	};
 };
-let load: (event: ReturnType<typeof event>) => Promise<LoadResult>;
+let load: (input: ReturnType<typeof event>) => Promise<LoadResult>;
+let instagramLoad: (input: ReturnType<typeof event>) => Promise<{
+	instagramCredits: unknown[];
+	missingInstagramPeople: { slug: string }[];
+}>;
+let quickAdd: (input: ReturnType<typeof event> & { request: Request }) => Promise<unknown>;
 const originalFetch = globalThis.fetch;
 const admin = { id: 'people-loader-test', email: 'people-loader-test@example.com' };
 const testEnv = {
@@ -35,6 +40,9 @@ before(async () => {
 	Object.assign(process.env, testEnv);
 	server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
 	({ load } = await server.ssrLoadModule('/src/routes/admin/people/+page.server.ts'));
+	const instagram = await server.ssrLoadModule('/src/routes/admin/instagram/+page.server.ts');
+	instagramLoad = instagram.load;
+	quickAdd = instagram.actions.quickAdd;
 });
 
 after(async () => {
@@ -96,4 +104,91 @@ test('people loader returns a retriable error when a later credits page fails', 
 	};
 	await assert.rejects(load(event()), (error: unknown) => hasStatus(error, 503));
 	assert.equal(calls, 2);
+});
+
+test('Instagram loads credit context and profiles without songs, episodes or ratings', async () => {
+	globalThis.fetch = async (input) => {
+		const url = new URL(input instanceof Request ? input.url : String(input));
+		if (url.pathname === '/rest/v1/media_items') {
+			assert.equal(url.searchParams.get('select'), 'slug,title,type,creators,starring');
+			return Response.json([
+				{
+					slug: 'a-film',
+					title: 'A Film',
+					type: 'movie',
+					creators: ['Linked Creator'],
+					starring: ['Sam Jones']
+				}
+			]);
+		}
+		assert.equal(url.pathname, '/rest/v1/person_profiles');
+		return Response.json([
+			{ slug: 'linked-creator', name: 'Linked Creator', instagram_handles: ['creatorpk'] }
+		]);
+	};
+	const result = await instagramLoad(event());
+	assert.equal(result.instagramCredits.length, 1);
+	assert.deepEqual(
+		result.missingInstagramPeople.map((person) => person.slug),
+		['sam-jones']
+	);
+});
+
+test('approval saves the selected handle and preserves existing handles', async () => {
+	let writes = 0;
+	globalThis.fetch = async (input, init) => {
+		const url = new URL(input instanceof Request ? input.url : String(input));
+		if (url.pathname === '/rest/v1/media_items') {
+			assert.equal(url.searchParams.get('select'), 'creators,starring');
+			return Response.json([{ creators: [], starring: ['Sam Jones'] }]);
+		}
+		assert.equal(url.pathname, '/rest/v1/person_profiles');
+		if (init?.method === 'POST') {
+			writes++;
+			assert.deepEqual(JSON.parse(String(init.body)), [
+				{ slug: 'sam-jones', name: 'Sam Jones', instagram_handles: ['existinghandle', 'samjones'] }
+			]);
+			return new Response(null, { status: 201 });
+		}
+		return Response.json({
+			slug: 'sam-jones',
+			name: 'Sam Jones',
+			instagram_handles: ['existinghandle']
+		});
+	};
+	const body = new FormData();
+	body.set('slug', 'sam-jones');
+	body.set('instagram_handle', '@SamJones');
+	const request = new Request('https://jumpflix.example/admin/instagram?/quickAdd', {
+		method: 'POST',
+		body
+	});
+	await quickAdd({ ...event(), request });
+	assert.equal(writes, 1);
+});
+
+test('Instagram includes saved profiles beyond the first API page', async () => {
+	let profilePages = 0;
+	globalThis.fetch = async (input) => {
+		const url = new URL(input instanceof Request ? input.url : String(input));
+		if (url.pathname === '/rest/v1/media_items') {
+			return Response.json([
+				{ slug: 'a-film', title: 'A Film', type: 'movie', creators: [], starring: ['Sam Jones'] }
+			]);
+		}
+		assert.equal(url.pathname, '/rest/v1/person_profiles');
+		assert.equal(Number(url.searchParams.get('offset')), profilePages++ * 1000);
+		return Response.json(
+			profilePages === 1
+				? Array.from({ length: 1000 }, (_, i) => ({
+						slug: `person-${i}`,
+						name: `Person ${i}`,
+						instagram_handles: [`handle${i}`]
+					}))
+				: [{ slug: 'sam-jones', name: 'Sam Jones', instagram_handles: ['samjones'] }]
+		);
+	};
+	const result = await instagramLoad(event());
+	assert.equal(profilePages, 2);
+	assert.deepEqual(result.missingInstagramPeople, []);
 });

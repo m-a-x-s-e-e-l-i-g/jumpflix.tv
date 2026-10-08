@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import InstagramFollowing from '$lib/components/admin/InstagramFollowing.svelte';
 
 	let { form, data } = $props();
 
@@ -100,6 +101,9 @@
 			Deleted profile <span class="font-semibold">{actionForm.deletedSlug}</span>.
 		</div>
 	{/if}
+
+	<InstagramFollowing missingPeople={pageData.missingInstagramPeople} credits={pageData.instagramCredits}
+		profiles={pageData.profiles} tableReady={pageData.tableReady && !pageData.error} />
 
 	<div class="jf-surface-soft mt-6 rounded-2xl p-5">
 		<form method="POST" use:enhance class="space-y-4">

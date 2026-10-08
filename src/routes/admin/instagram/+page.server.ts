@@ -2,7 +2,7 @@ import { env } from '$env/dynamic/private';
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { requireAdmin } from '$lib/server/admin';
-import { fetchAllContent } from '$lib/server/content-service';
+import { fetchInstagramCredits, fetchPeopleCredits } from '$lib/server/content-service';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import OpenAI from 'openai';
 import {
@@ -97,16 +97,26 @@ async function formatBulkInstagramInputWithAI(input: string): Promise<string> {
 }
 
 async function loadKnownPeople() {
-	const content = await fetchAllContent();
+	const content = await fetchPeopleCredits();
 	return buildKnownPeopleMap(content);
 }
 
 async function loadProfiles(): Promise<{ profiles: PersonProfileRow[]; tableReady: boolean; error: string | null }> {
 	const supabase = createSupabaseServiceClient();
-	const { data, error } = await supabase
-		.from('person_profiles')
-		.select('slug, name, instagram_handles, created_at, updated_at')
-		.order('name', { ascending: true });
+	const profiles: PersonProfileRow[] = [];
+	let error: { code?: string; message: string } | null = null;
+	for (let offset = 0; ; offset += 1000) {
+		const result = await supabase
+			.from('person_profiles')
+			.select('slug, name, instagram_handles, created_at, updated_at')
+			.order('name', { ascending: true })
+			.order('slug', { ascending: true })
+			.range(offset, offset + 999);
+		if (result.error) { error = result.error; break; }
+		const page = (result.data ?? []) as PersonProfileRow[];
+		profiles.push(...page);
+		if (page.length < 1000) break;
+	}
 
 	if (error) {
 		if (isMissingPersonProfilesTableError(error)) {
@@ -125,7 +135,7 @@ async function loadProfiles(): Promise<{ profiles: PersonProfileRow[]; tableRead
 	}
 
 	return {
-		profiles: ((data ?? []) as PersonProfileRow[]).map((row) => ({
+		profiles: profiles.map((row) => ({
 			...row,
 			instagram_handles: normalizeInstagramHandles(row.instagram_handles)
 		})),
@@ -191,8 +201,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const { user } = await locals.safeGetSession();
 	requireAdmin(user);
 
-	const knownPeople = await loadKnownPeople();
-	const profileState = await loadProfiles();
+	const [instagramCredits, profileState] = await Promise.all([fetchInstagramCredits(), loadProfiles()]);
+	const knownPeople = buildKnownPeopleMap(instagramCredits);
 	const knownPeopleList = sortKnownPeople(knownPeople.values());
 	const slugsWithHandles = new Set(
 		profileState.profiles
@@ -202,6 +212,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const missingInstagramPeople = knownPeopleList.filter((person) => !slugsWithHandles.has(person.slug));
 
 	return {
+		instagramCredits,
 		knownPeople: knownPeopleList,
 		missingInstagramPeople,
 		profiles: profileState.profiles,

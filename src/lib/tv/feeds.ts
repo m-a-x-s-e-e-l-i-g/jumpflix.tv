@@ -1,4 +1,5 @@
 import * as m from '$lib/paraglide/messages';
+import type { Locale } from '$lib/paraglide/runtime';
 
 import type { ContentItem, Facets } from './types';
 
@@ -34,18 +35,18 @@ export type FeedFilter = {
 
 export type FeedDefinition = {
 	slug: string;
-	title: () => string;
-	description: () => string;
-	introduction: () => string;
+	title: (locale?: Locale) => string;
+	description: (locale?: Locale) => string;
+	introduction: (locale?: Locale) => string;
 	filter: FeedFilter;
 };
 
 export const FEEDS: FeedDefinition[] = [
 	{
 		slug: 'documentaries',
-		introduction: () => m.tv_collection_documentaries_intro(),
-		title: () => m.tv_feed_documentaries_title(),
-		description: () => m.tv_feed_documentaries_description(),
+		introduction: (locale) => m.tv_collection_documentaries_intro({}, { locale }),
+		title: (locale) => m.tv_feed_documentaries_title({}, { locale }),
+		description: (locale) => m.tv_feed_documentaries_description({}, { locale }),
 		filter: {
 			facets: {
 				type: ['documentary']
@@ -54,9 +55,9 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'fiction-films',
-		introduction: () => m.tv_collection_fictionFilms_intro(),
-		title: () => m.tv_feed_fictionFilms_title(),
-		description: () => m.tv_feed_fictionFilms_description(),
+		introduction: (locale) => m.tv_collection_fictionFilms_intro({}, { locale }),
+		title: (locale) => m.tv_feed_fictionFilms_title({}, { locale }),
+		description: (locale) => m.tv_feed_fictionFilms_description({}, { locale }),
 		filter: {
 			facets: {
 				type: ['fiction']
@@ -65,9 +66,9 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'movie-night',
-		introduction: () => m.tv_collection_movieNight_intro(),
-		title: () => m.tv_feed_movieNight_title(),
-		description: () => m.tv_feed_movieNight_description(),
+		introduction: (locale) => m.tv_collection_movieNight_intro({}, { locale }),
+		title: (locale) => m.tv_feed_movieNight_title({}, { locale }),
+		description: (locale) => m.tv_feed_movieNight_description({}, { locale }),
 		filter: {
 			itemTypes: ['movie'],
 			durationMinMinutes: 60,
@@ -76,18 +77,18 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'oldskool-classics',
-		introduction: () => m.tv_collection_oldskoolClassics_intro(),
-		title: () => m.tv_feed_oldskoolClassics_title(),
-		description: () => m.tv_feed_oldskoolClassics_description(),
+		introduction: (locale) => m.tv_collection_oldskoolClassics_intro({}, { locale }),
+		title: (locale) => m.tv_feed_oldskoolClassics_title({}, { locale }),
+		description: (locale) => m.tv_feed_oldskoolClassics_description({}, { locale }),
 		filter: {
 			yearMax: 2015
 		}
 	},
 	{
 		slug: 'educational',
-		introduction: () => m.tv_collection_educational_intro(),
-		title: () => m.tv_feed_educational_title(),
-		description: () => m.tv_feed_educational_description(),
+		introduction: (locale) => m.tv_collection_educational_intro({}, { locale }),
+		title: (locale) => m.tv_feed_educational_title({}, { locale }),
+		description: (locale) => m.tv_feed_educational_description({}, { locale }),
 		filter: {
 			facets: {
 				type: ['tutorial', 'talk']
@@ -96,9 +97,9 @@ export const FEEDS: FeedDefinition[] = [
 	},
 	{
 		slug: 'send-it',
-		introduction: () => m.tv_collection_sendIt_intro(),
-		title: () => m.tv_feed_sendIt_title(),
-		description: () => m.tv_feed_sendIt_description(),
+		introduction: (locale) => m.tv_collection_sendIt_intro({}, { locale }),
+		title: (locale) => m.tv_feed_sendIt_title({}, { locale }),
+		description: (locale) => m.tv_feed_sendIt_description({}, { locale }),
 		filter: {
 			facets: {
 				movement: ['big-sends']

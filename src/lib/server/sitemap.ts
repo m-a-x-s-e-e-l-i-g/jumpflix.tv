@@ -27,7 +27,7 @@ export function buildSitemap(site: string, content: ContentItem[], episodes: Epi
 		const existing = entries.get(path);
 		entries.set(path, date && (!existing || date > existing) ? date : existing);
 	}
-	for (const path of ['/', '/nl', '/ja', '/about', '/video-map', '/stats']) add(path);
+	for (const path of ['/', '/nl', '/ja', '/about', '/discover', '/video-map', '/stats']) add(path);
 	for (const item of content) {
 		if (!item.slug) continue;
 		add(getUrlForItem(item), item.updatedAt);

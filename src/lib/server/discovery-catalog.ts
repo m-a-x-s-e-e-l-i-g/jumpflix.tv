@@ -135,6 +135,8 @@ export function renderCatalogText(catalog: DiscoveryCatalog, checkedAt: string |
 		'',
 		'JUMPFLIX is a community-curated archive of parkour and freerunning cinema. It includes short edits as well as long-form films, documentaries and series. Film pages link to official viewing sources and credit known creators and athletes.',
 		'Browsing does not require an account. Free and paid entries are labeled separately; availability and regional restrictions can change. Unavailable entries remain in the archive for reference. Release years describe films, not video upload dates. Missing metadata is unknown.',
+		'Catalog search supports titles, creators, athletes, song titles and artists from credited soundtracks. Where spot chapters and timed music credits are available, the video player shows the current parkour spot and song during playback, with links to parkour.spot and Spotify when available.',
+		`Find videos by parkour spot: ${origin}/video-map — search by spot name or explore the map to open films and series linked to each location.`,
 		'',
 		'## Catalog statistics',
 		'',

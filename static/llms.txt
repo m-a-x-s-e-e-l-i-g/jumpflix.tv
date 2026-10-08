@@ -12,14 +12,18 @@ Film release years are not video upload dates. Unavailable titles remain for ref
 
 - [Film guide](https://www.jumpflix.tv/discover): Lightweight guide, current catalog statistics, collections, people and a complete alphabetical title index.
 - [Full catalog as text](https://www.jumpflix.tv/llms-full.txt): Current titles, full synopses, release years, runtimes, access labels, creator and athlete credits, and real episode links. Refreshed from the same catalog as the website.
-- [Watch and search](https://www.jumpflix.tv/): Interactive film catalog. Search by title, creator, athlete or soundtrack.
+- [Watch and search](https://www.jumpflix.tv/): Interactive film catalog. Search by title, creator, athlete, song title or artist from credited soundtracks.
 - [Documentaries](https://www.jumpflix.tv/collections/documentaries): Titles tagged documentary.
 - [Fiction films](https://www.jumpflix.tv/collections/fiction-films): Narrative films tagged fiction.
 - [Movie night](https://www.jumpflix.tv/collections/movie-night): Films with a catalog runtime between 60 and 160 minutes.
 - [Oldskool classics](https://www.jumpflix.tv/collections/oldskool-classics): Films and videos released in 2015 or earlier.
 - [Educational](https://www.jumpflix.tv/collections/educational): Tutorials and talks.
 - [SEND IT](https://www.jumpflix.tv/collections/send-it): Titles tagged for big sends.
-- [Video map](https://www.jumpflix.tv/video-map): Approved video chapters linked to real parkour locations.
+- [Video map](https://www.jumpflix.tv/video-map): Find films and series by parkour spot. Search by spot name or explore mapped locations and their linked videos.
+
+Where spot chapters and timed music credits are available, the video player shows
+the current parkour spot and song as the video plays. Spot labels link to parkour.spot;
+music labels link to Spotify when a track link is available.
 
 ## Canonical references
 

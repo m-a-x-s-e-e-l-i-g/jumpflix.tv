@@ -1,11 +1,11 @@
 <script lang="ts">
 	import DetailRoute from '$lib/tv/DetailRoute.svelte';
 	import { getUrlForItem } from '$lib/tv/slug';
-	import { YOUTUBE_ID_PATTERN, resolveMoviePlaybackSource } from '$lib/tv/playback-source';
+	import { buildMovieVideoSchema } from '$lib/tv/video-discovery';
 	import { env } from '$env/dynamic/public';
 	import { decode } from 'html-entities';
-	import { verifiedDate } from '$lib/seo';
-	import { buildContentSchema, isoDuration } from '$lib/tv/structured-data';
+
+	import { buildContentSchema } from '$lib/tv/structured-data';
 	// TvPage is rendered in layout; we only set head tags here
 	export let data: { item: any };
 
@@ -59,38 +59,7 @@
 
 	$: jsonLdMovie = item ? jsonLd(buildContentSchema(item, origin)) : '';
 
-	$: moviePlaybackSource = item ? resolveMoviePlaybackSource(item) : null;
-	$: jsonLdEmbedUrl =
-		moviePlaybackSource?.kind === 'youtube' &&
-		YOUTUBE_ID_PATTERN.test(String(item?.videoId ?? '').trim())
-			? `https://www.youtube.com/embed/${String(item.videoId).trim()}`
-			: moviePlaybackSource?.kind === 'vimeo' && String(item?.vimeoId ?? '').trim()
-				? `https://player.vimeo.com/video/${encodeURIComponent(String(item.vimeoId).trim())}`
-				: undefined;
-
-	// Only emit video rich-result markup when its required publication date is known.
-	// A film's release year does not establish the video's upload date.
-	$: uploadDate = verifiedDate(item?.publishedAt);
-	$: jsonLdVideo =
-		item && moviePlaybackSource && uploadDate
-			? jsonLd({
-					'@context': 'https://schema.org',
-					'@type': 'VideoObject',
-					'@id': `${url}#video`,
-					name: decode(item.title ?? ''),
-					description: item.description ? decode(item.description) : desc,
-					duration: isoDuration(item.duration),
-					about: { '@id': `${url}#movie` },
-					thumbnailUrl: [image],
-					uploadDate,
-					contentUrl:
-						moviePlaybackSource?.kind === 'hls' || moviePlaybackSource?.kind === 'direct'
-							? moviePlaybackSource.src
-							: undefined,
-					embedUrl: jsonLdEmbedUrl,
-					url
-				})
-			: '';
+	$: jsonLdVideo = item ? jsonLd(buildMovieVideoSchema(item, origin)) : '';
 
 	$: jsonLdBreadcrumb = item
 		? jsonLd({

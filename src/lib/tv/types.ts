@@ -67,6 +67,7 @@ export interface BaseContent {
 
 export interface Movie extends BaseContent {
 	type: 'movie';
+	publishedAt?: string; // Verified provider upload date for the current playback source
 	year?: string;
 	duration?: string; // e.g. "1h 12m" or "40m"
 	videoId?: string; // YouTube

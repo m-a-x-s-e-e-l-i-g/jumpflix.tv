@@ -4,7 +4,8 @@
 	import { onDestroy, onMount, setContext } from 'svelte';
 	import { get } from 'svelte/store';
 	import type { Action } from 'svelte/action';
-	import { navigating, page } from '$app/stores';
+	import { navigating } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { ContentItem } from '$lib/tv/types';
 	import { supabase } from '$lib/supabaseClient';
@@ -132,23 +133,23 @@
 	let xPopParticleSeed = 0;
 	let xPopTimer: ReturnType<typeof setTimeout> | null = null;
 
-	const isAdminRoute = $derived(deLocalizeUrl($page.url).pathname.startsWith('/admin'));
+	const isAdminRoute = $derived(deLocalizeUrl(page.url).pathname.startsWith('/admin'));
 	const isStatsRoute = $derived(
-		deLocalizeUrl($page.url).pathname === '/stats' || deLocalizeUrl($page.url).pathname.startsWith('/stats/')
+		deLocalizeUrl(page.url).pathname === '/stats' || deLocalizeUrl(page.url).pathname.startsWith('/stats/')
 	);
-	const isAboutRoute = $derived(deLocalizeUrl($page.url).pathname === '/about');
-	const isCostsRoute = $derived(/\/costs$/.test(String(deLocalizeUrl($page.url).pathname)));
+	const isAboutRoute = $derived(deLocalizeUrl(page.url).pathname === '/about');
+	const isCostsRoute = $derived(/\/costs$/.test(String(deLocalizeUrl(page.url).pathname)));
 	const isLegalRoute = $derived(
-		deLocalizeUrl($page.url).pathname === '/privacy-policy' || deLocalizeUrl($page.url).pathname === '/terms-of-service'
+		deLocalizeUrl(page.url).pathname === '/privacy-policy' || deLocalizeUrl(page.url).pathname === '/terms-of-service'
 	);
 	const isVideoMapRoute = $derived(
-		deLocalizeUrl($page.url).pathname === '/video-map' || deLocalizeUrl($page.url).pathname.startsWith('/video-map/')
+		deLocalizeUrl(page.url).pathname === '/video-map' || deLocalizeUrl(page.url).pathname.startsWith('/video-map/')
 	);
-	const isAutoplayRoute = $derived(String(deLocalizeUrl($page.url).pathname) === '/autoplay');
+	const isAutoplayRoute = $derived(String(deLocalizeUrl(page.url).pathname) === '/autoplay');
 	const isDetailRoute = $derived(
-		deLocalizeUrl($page.url).pathname.startsWith('/movie/') || deLocalizeUrl($page.url).pathname.startsWith('/series/')
+		deLocalizeUrl(page.url).pathname.startsWith('/movie/') || deLocalizeUrl(page.url).pathname.startsWith('/series/')
 	);
-	const isPeopleRoute = $derived(deLocalizeUrl($page.url).pathname.startsWith('/people/'));
+	const isPeopleRoute = $derived(deLocalizeUrl(page.url).pathname.startsWith('/people/'));
 	const isNavigatingToStats = $derived(
 		(() => {
 			const toPath = $navigating?.to?.url?.pathname;
@@ -938,12 +939,12 @@
 				{/if}
 			</div>
 
-			{#if isDetailRoute && $user && $page.data.item}
+			{#if isDetailRoute && $user && page.data.item}
 				{#await import('$lib/components/ContentSuggestionDialog.svelte') then module}
 				<module.default
-					selected={$page.data.item}
+					selected={page.data.item}
 					selectedEpisode={$selectedEpisodeStore}
-					selectedSeasonNumber={$page.data.initialSeasonNumber ?? null}
+					selectedSeasonNumber={page.data.initialSeasonNumber ?? null}
 					triggerAriaLabel="Suggest change / report issue"
 					triggerClass="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-sm transition hover:-translate-y-0.5 hover:bg-muted/60 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
 				>
@@ -1096,23 +1097,23 @@
 
 	{#key currentLocale}
 		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
-		{#if $page.error}
+		{#if page.error}
 			{@render children?.()}
 		{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute || isLegalRoute || isVideoMapRoute || isAutoplayRoute}
 			{@render children?.()}
 		{:else}
 			<TvPage
-				content={$page.data.content ?? []}
-				initialItem={$page.data.item ?? null}
-				initialEpisodeNumber={$page.data.initialEpisodeNumber ?? null}
-				initialSeasonNumber={$page.data.initialSeasonNumber ?? null}
+				content={page.data.content ?? []}
+				initialItem={page.data.item ?? null}
+				initialEpisodeNumber={page.data.initialEpisodeNumber ?? null}
+				initialSeasonNumber={page.data.initialSeasonNumber ?? null}
 			>
 				{@render children?.()}
 			</TvPage>
 		{/if}
 	{/key}
 
-	{#if deLocalizeUrl($page.url).pathname === '/' && !$page.error}
+	{#if deLocalizeUrl(page.url).pathname === '/' && !page.error}
 		<footer class="border-t border-border/60 px-4 py-4 text-center text-[11px] text-muted-foreground/80">
 			<p class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
 				<span>Made by</span>

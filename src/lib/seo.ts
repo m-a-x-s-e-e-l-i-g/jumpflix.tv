@@ -8,6 +8,13 @@ export function serializeJsonLd(value: unknown): string {
 
 export function verifiedDate(value?: string): string | undefined {
 	if (!value || !/^\d{4}-\d{2}-\d{2}(?:T|$)/.test(value)) return undefined;
+	const calendarDate = value.slice(0, 10);
+	const calendarTime = Date.parse(`${calendarDate}T00:00:00Z`);
+	if (
+		!Number.isFinite(calendarTime) ||
+		new Date(calendarTime).toISOString().slice(0, 10) !== calendarDate
+	)
+		return undefined;
 	const time = Date.parse(value);
 	return Number.isFinite(time) ? new Date(time).toISOString() : undefined;
 }

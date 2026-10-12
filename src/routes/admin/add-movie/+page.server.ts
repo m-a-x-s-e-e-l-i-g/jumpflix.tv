@@ -6,6 +6,7 @@ import { slugify } from '$lib/tv/slug';
 import { importSpotifyTracklistFromYouTube } from '$lib/server/tracklist-import.server';
 import { invalidateContentCache } from '$lib/server/content-service';
 import { fetchPlaylistItems, type PlaylistItem } from '$lib/server/youtube-playlist.server';
+import { fetchMovieVideoMetadata } from '$lib/server/video-metadata';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const { user } = await locals.safeGetSession();
@@ -163,6 +164,15 @@ export const actions: Actions = {
 		}
 
 		const supabase = createSupabaseServiceClient();
+		// Re-fetch from the selected provider on the server; never trust a browser-supplied date.
+		let videoMetadata = null;
+		try {
+			videoMetadata = await fetchMovieVideoMetadata({
+				id: 0, slug, type: 'movie', title, paid: form.get('paid') === 'true',
+				videoId: youtubeVideoId ?? undefined, vimeoId: vimeoId ?? undefined,
+				streamUrl: streamUrl ?? undefined
+			});
+		} catch { /* Missing provider metadata must not prevent saving a film. */ }
 
 		const { data, error } = await supabase
 			.from('media_items')
@@ -175,6 +185,7 @@ export const actions: Actions = {
 				duration: String(form.get('duration') || '').trim() || null,
 				video_id: youtubeVideoId,
 				vimeo_id: vimeoId,
+				video_metadata: videoMetadata,
 				thumbnail: String(form.get('thumbnail') || '').trim() || null,
 				blurhash: String(form.get('blurhash') || '').trim() || null,
 				paid: form.get('paid') === 'true',

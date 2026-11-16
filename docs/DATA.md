@@ -6,6 +6,8 @@ Jumpflix publishes a complete snapshot of its public parkour and freerunning cat
 - [Latest release metadata](https://raw.githubusercontent.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/master/data/latest.json) gives the dated release asset URLs and schema version.
 - [GitHub Releases](https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/releases) has dated snapshots tagged `data-YYYY-MM`. Each release includes `catalog.json` and `catalog.schema.json`. Use a dated download to pin a snapshot.
 
+GitHub labels the public data snapshots as pre-releases so its **Latest** badge is reserved for app releases.
+
 ```js
 const url =
 	'https://raw.githubusercontent.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/master/data/catalog.json';

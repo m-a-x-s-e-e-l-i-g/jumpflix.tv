@@ -41,7 +41,7 @@ jobs:
           fi
           if [ "$draft" = true ]; then
             gh release upload "$tag" .cache/catalog/catalog.json .cache/catalog/catalog.schema.json --clobber
-            gh release edit "$tag" --draft=false --latest=false
+            gh release edit "$tag" --draft=false --prerelease --latest=false
           fi
 
           mkdir -p data

@@ -1,0 +1,60 @@
+name: Publish catalog
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 5 1 * *'
+
+concurrency:
+  group: publish-catalog
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Export and validate catalog
+        run: node --import tsx scripts/export-catalog.ts
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
+      - name: Publish snapshot and update download links
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          month=$(TZ=Europe/Amsterdam date +%Y-%m)
+          tag="data-$month"
+          if ! draft=$(gh release view "$tag" --json isDraft --jq .isDraft); then
+            gh release create "$tag" --draft --target "$GITHUB_SHA" \
+              --title "Jumpflix catalog · $month" \
+              --notes 'Monthly public catalog snapshot. See [dataset documentation](https://github.com/m-a-x-s-e-e-l-i-g/jumpflix.tv/blob/master/docs/DATA.md) for fields, attribution, and reuse.'
+            draft=true
+          fi
+          if [ "$draft" = true ]; then
+            gh release upload "$tag" .cache/catalog/catalog.json .cache/catalog/catalog.schema.json --clobber
+            gh release edit "$tag" --draft=false --latest=false
+          fi
+
+          mkdir -p data
+          gh release download "$tag" --pattern catalog.json --dir data --clobber
+          base="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$tag"
+          jq --arg tag "$tag" --arg base "$base" \
+            '{tag: $tag, schemaVersion, generatedAt, downloadUrl: ($base + "/catalog.json"), schemaUrl: ($base + "/catalog.schema.json")}' \
+            data/catalog.json > data/latest.json
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/catalog.json data/latest.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Publish catalog snapshot for $month"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"

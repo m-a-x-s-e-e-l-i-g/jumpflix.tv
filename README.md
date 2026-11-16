@@ -264,6 +264,8 @@ Please read the [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) and keep content su
 
 The repository is licensed under [Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International](https://creativecommons.org/licenses/by-nc-nd/4.0/).
 
+The monthly [public catalog snapshots](./docs/DATA.md) have their own [CC BY 4.0 license](https://creativecommons.org/licenses/by/4.0/) for the compilation and original metadata.
+
 Third-party videos, thumbnails, names, logos, and provider assets remain the property of their respective owners. This repository contains catalog metadata, interface code, and links or identifiers for externally hosted media; it does not grant rights to that third-party material.
 
 If an asset or listing raises a rights concern, please open an issue or pull request so it can be reviewed.

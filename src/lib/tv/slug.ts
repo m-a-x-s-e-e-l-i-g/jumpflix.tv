@@ -12,7 +12,7 @@ export function slugify(input: string): string {
 		.replace(/-{2,}/g, '-');
 }
 
-export function getUrlForItem(item: ContentItem): string {
+export function getUrlForItem(item: Pick<ContentItem, 'slug' | 'type'>): string {
 	if (!item?.slug) return '/';
 	if (item.type === 'movie') {
 		return `/movie/${item.slug}`;
@@ -23,7 +23,7 @@ export function getUrlForItem(item: ContentItem): string {
 // Build a pretty URL for a specific episode within a series.
 // Example: /series/<slug>/episodes/7 or /series/<slug>/seasons/1/episodes/7
 export function getEpisodeUrl(
-	series: Series,
+	series: Pick<Series, 'slug' | 'type'>,
 	opts: { episodeNumber: number; seasonNumber?: number }
 ): string {
 	const base = getUrlForItem(series); // /series/<slug>

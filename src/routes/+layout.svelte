@@ -145,7 +145,10 @@
 	const isVideoMapRoute = $derived(
 		deLocalizeUrl(page.url).pathname === '/video-map' || deLocalizeUrl(page.url).pathname.startsWith('/video-map/')
 	);
-	const isAutoplayRoute = $derived(String(deLocalizeUrl(page.url).pathname) === '/autoplay');
+	const isPlayerRoute = $derived(
+		deLocalizeUrl(page.url).pathname === '/autoplay' ||
+			deLocalizeUrl(page.url).pathname.startsWith('/player/')
+	);
 	const isDetailRoute = $derived(
 		deLocalizeUrl(page.url).pathname.startsWith('/movie/') || deLocalizeUrl(page.url).pathname.startsWith('/series/')
 	);
@@ -869,7 +872,7 @@
 	{/if}
 
 	<!-- Top-left settings cog that opens a left-side sheet -->
-	{#if !isAutoplayRoute}
+	{#if !isPlayerRoute}
 	<SheetRoot bind:open={sheetOpen}>
 		<nav
 			class="absolute top-4 right-4 left-4 z-[var(--z-index-settings)] flex items-start justify-between gap-2"
@@ -1099,7 +1102,7 @@
 		<!-- Persist TvPage across route changes; children still render for head/meta in pages -->
 		{#if page.error}
 			{@render children?.()}
-		{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute || isLegalRoute || isVideoMapRoute || isAutoplayRoute}
+		{:else if isAdminRoute || isStatsRoute || isAboutRoute || isCostsRoute || isLegalRoute || isVideoMapRoute || isPlayerRoute}
 			{@render children?.()}
 		{:else}
 			<TvPage

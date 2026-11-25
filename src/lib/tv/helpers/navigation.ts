@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { getEpisodeUrl, getUrlForItem } from '$lib/tv/slug';
 import type { ContentItem } from '$lib/tv/types';
 import { withUtm } from '$lib/utils';

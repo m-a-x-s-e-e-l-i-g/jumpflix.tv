@@ -1,10 +1,12 @@
 import { deLocalizeUrl } from '$lib/paraglide/runtime';
-import type { HandleClientError } from '@sveltejs/kit';
+import type { HandleClientError, Reroute } from '@sveltejs/kit/hooks';
 
-export const reroute = (request) => deLocalizeUrl(request.url).pathname;
+export const reroute: Reroute = (request) => deLocalizeUrl(request.url).pathname;
 
-export const handleError: HandleClientError = async ({ error, event, status, message }) => {
+export const handleError: HandleClientError = async ({ kind, error, event }) => {
+	if (kind === 'app') return;
 	const errorId = crypto.randomUUID();
+	const { status, message } = kind === 'unknown' ? { status: 500, message: 'Internal Error' } : error;
 
 	// Log client-side errors for debugging
 	console.error('Client Error:', {

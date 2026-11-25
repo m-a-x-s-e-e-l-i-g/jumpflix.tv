@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { tick } from 'svelte';
 	import ContentWarningIcon from '$lib/components/ContentWarningIcon.svelte';
 	import XIcon from '@lucide/svelte/icons/x';

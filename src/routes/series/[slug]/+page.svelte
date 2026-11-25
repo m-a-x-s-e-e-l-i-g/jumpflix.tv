@@ -1,7 +1,7 @@
 <script lang="ts">
 	import DetailRoute from '$lib/tv/DetailRoute.svelte';
 	import { getUrlForItem } from '$lib/tv/slug';
-	import { env } from '$env/dynamic/public';
+	import * as env from '$app/env/public';
 	import { decode } from 'html-entities';
 	import JsonLd from '$lib/components/JsonLd.svelte';
 	import { buildContentSchema } from '$lib/tv/structured-data';

@@ -1,6 +1,8 @@
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tailwindcss from '@tailwindcss/vite';
+import adapter from '@sveltejs/adapter-netlify';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vite';
 import { vite as vidstack } from 'vidstack/plugins';
 
@@ -8,7 +10,16 @@ export default defineConfig(({ mode }) => ({
 	plugins: [
 		tailwindcss(),
 		vidstack({ include: /VideoPlayer\.svelte$/ }),
-		sveltekit(),
+		sveltekit({
+			adapter: adapter(),
+			alias: { $lib: 'src/lib' },
+			preprocess: vitePreprocess(),
+			csrf: {
+				// OAuth clients can use external origins. Site forms are checked in hooks.server.ts.
+				trustedOrigins: ['*']
+			},
+			version: { pollInterval: 0 }
+		}),
 		paraglideVitePlugin({
 			project: './project.inlang',
 			outdir: './src/lib/paraglide',
@@ -59,10 +70,10 @@ export default defineConfig(({ mode }) => ({
 					'globalThis.litProdMode': 'true'
 				},
 	build: {
-		rollupOptions: {
+		rolldownOptions: {
 			output: {
-				manualChunks: {
-					'vendor-sonner': ['svelte-sonner']
+				codeSplitting: {
+					groups: [{ name: 'vendor-sonner', test: /[\\/]node_modules[\\/]svelte-sonner[\\/]/ }]
 				}
 			}
 		}

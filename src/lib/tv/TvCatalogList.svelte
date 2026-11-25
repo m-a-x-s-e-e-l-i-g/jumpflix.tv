@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import { dev } from '$app/environment';
+	import { browser } from '$app/env';
+	import { dev } from '$app/env';
 	import { Image } from '@unpic/svelte';
 	import * as m from '$lib/paraglide/messages';
 	import { familySafeOnly } from '$lib/tv/store';

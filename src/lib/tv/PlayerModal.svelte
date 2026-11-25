@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { fade, scale } from 'svelte/transition';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { familySafeOnly } from '$lib/tv/store';
 	import { isFamilySafeContent } from '$lib/tv/utils';
 	import type { ContentItem, Episode } from './types';

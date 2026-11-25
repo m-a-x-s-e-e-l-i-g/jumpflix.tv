@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import ContentCard from '$lib/tv/ContentCard.svelte';
 	import type { ContentItem, SortBy } from '$lib/tv/types';
 	import * as m from '$lib/paraglide/messages';

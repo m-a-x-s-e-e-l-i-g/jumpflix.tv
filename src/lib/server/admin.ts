@@ -1,4 +1,4 @@
-import { ADMIN_EMAILS, ADMIN_USER_IDS } from '$env/static/private';
+import { ADMIN_EMAILS, ADMIN_USER_IDS } from '$app/env/private';
 import { error } from '@sveltejs/kit';
 import type { User } from '@supabase/supabase-js';
 

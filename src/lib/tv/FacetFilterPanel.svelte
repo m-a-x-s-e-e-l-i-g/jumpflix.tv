@@ -20,7 +20,7 @@
 		DialogTitle
 	} from '$lib/components/ui/dialog';
 	import * as m from '$lib/paraglide/messages';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 
 	interface Props {
 		selectedFacets: Writable<SelectedFacets>;

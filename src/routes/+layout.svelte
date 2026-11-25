@@ -4,8 +4,7 @@
 	import { onDestroy, onMount, setContext } from 'svelte';
 	import { get } from 'svelte/store';
 	import type { Action } from 'svelte/action';
-	import { navigating } from '$app/stores';
-	import { page } from '$app/state';
+	import { navigating, page } from '$app/state';
 	import { goto, invalidateAll } from '$app/navigation';
 	import type { ContentItem } from '$lib/tv/types';
 	import { supabase } from '$lib/supabaseClient';
@@ -133,26 +132,26 @@
 	let xPopParticleSeed = 0;
 	let xPopTimer: ReturnType<typeof setTimeout> | null = null;
 
-	const isAdminRoute = $derived(deLocalizeUrl(page.url).pathname.startsWith('/admin'));
+	const isAdminRoute = $derived(deLocalizeUrl(page.url.href).pathname.startsWith('/admin'));
 	const isStatsRoute = $derived(
-		deLocalizeUrl(page.url).pathname === '/stats' || deLocalizeUrl(page.url).pathname.startsWith('/stats/')
+		deLocalizeUrl(page.url.href).pathname === '/stats' || deLocalizeUrl(page.url.href).pathname.startsWith('/stats/')
 	);
-	const isAboutRoute = $derived(deLocalizeUrl(page.url).pathname === '/about');
-	const isCostsRoute = $derived(/\/costs$/.test(String(deLocalizeUrl(page.url).pathname)));
+	const isAboutRoute = $derived(deLocalizeUrl(page.url.href).pathname === '/about');
+	const isCostsRoute = $derived(/\/costs$/.test(String(deLocalizeUrl(page.url.href).pathname)));
 	const isLegalRoute = $derived(
-		deLocalizeUrl(page.url).pathname === '/privacy-policy' || deLocalizeUrl(page.url).pathname === '/terms-of-service'
+		deLocalizeUrl(page.url.href).pathname === '/privacy-policy' || deLocalizeUrl(page.url.href).pathname === '/terms-of-service'
 	);
 	const isVideoMapRoute = $derived(
-		deLocalizeUrl(page.url).pathname === '/video-map' || deLocalizeUrl(page.url).pathname.startsWith('/video-map/')
+		deLocalizeUrl(page.url.href).pathname === '/video-map' || deLocalizeUrl(page.url.href).pathname.startsWith('/video-map/')
 	);
-	const isAutoplayRoute = $derived(String(deLocalizeUrl(page.url).pathname) === '/autoplay');
+	const isAutoplayRoute = $derived(String(deLocalizeUrl(page.url.href).pathname) === '/autoplay');
 	const isDetailRoute = $derived(
-		deLocalizeUrl(page.url).pathname.startsWith('/movie/') || deLocalizeUrl(page.url).pathname.startsWith('/series/')
+		deLocalizeUrl(page.url.href).pathname.startsWith('/movie/') || deLocalizeUrl(page.url.href).pathname.startsWith('/series/')
 	);
-	const isPeopleRoute = $derived(deLocalizeUrl(page.url).pathname.startsWith('/people/'));
+	const isPeopleRoute = $derived(deLocalizeUrl(page.url.href).pathname.startsWith('/people/'));
 	const isNavigatingToStats = $derived(
 		(() => {
-			const toPath = $navigating?.to?.url?.pathname;
+			const toPath = navigating.to?.url.pathname;
 			if (!toPath) return false;
 			return toPath === '/stats' || toPath.startsWith('/stats/');
 		})()
@@ -161,7 +160,7 @@
 	// Give slower client-side navigations a quiet, global progress signal without
 	// flashing it for links that resolve immediately.
 	$effect(() => {
-		const isNavigating = Boolean($navigating);
+		const isNavigating = navigating.to !== null;
 
 		if (isNavigating) {
 			if (navigationLoadingExitTimer) {
@@ -172,7 +171,7 @@
 			if (!showNavigationLoading && !navigationLoadingTimer) {
 				navigationLoadingTimer = setTimeout(() => {
 					navigationLoadingTimer = null;
-					if ($navigating) {
+					if (navigating.to) {
 						navigationLoadingStartedAt = Date.now();
 						showNavigationLoading = true;
 					}
@@ -791,7 +790,7 @@
 				.getRegistration()
 				.then((reg) => {
 					if (!reg) {
-						navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+						navigator.serviceWorker.register('/service-worker.js', { type: 'module' }).catch(() => {});
 					} else {
 						// Check for updates on page load
 						reg.update().catch(() => {});
@@ -1113,7 +1112,7 @@
 		{/if}
 	{/key}
 
-	{#if deLocalizeUrl(page.url).pathname === '/' && !page.error}
+	{#if deLocalizeUrl(page.url.href).pathname === '/' && !page.error}
 		<footer class="border-t border-border/60 px-4 py-4 text-center text-[11px] text-muted-foreground/80">
 			<p class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
 				<span>Made by</span>

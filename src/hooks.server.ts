@@ -1,8 +1,7 @@
-import type { Handle, HandleServerError } from '@sveltejs/kit';
+import { sequence, type Handle, type HandleServerError } from '@sveltejs/kit/hooks';
 import { paraglideMiddleware } from '$lib/paraglide/server';
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
 import { handleSupabase } from '$lib/server/supabase';
-import { sequence } from '@sveltejs/kit/hooks';
 
 const FORM_CONTENT_TYPES = [
 	'application/x-www-form-urlencoded',
@@ -42,9 +41,7 @@ const handleCsrf: Handle = async ({ event, resolve }) => {
 
 const handleParaglide: Handle = ({ event, resolve }) =>
 	paraglideMiddleware(event.request, ({ request, locale }) => {
-		event.request = request;
-
-		return resolve(event, {
+		return resolve({ ...event, request }, {
 			transformPageChunk: ({ html }) => html.replace('%paraglide.lang%', locale)
 		});
 	});
@@ -52,8 +49,11 @@ const handleParaglide: Handle = ({ event, resolve }) =>
 // Keep CSRF guard for site forms while allowing OAuth protocol endpoints.
 export const handle: Handle = sequence(handleCsrf, handleSupabase, handleParaglide);
 
-export const handleError: HandleServerError = async ({ error, event, status, message }) => {
+export const handleError: HandleServerError = async ({ kind, error, event }) => {
+	if (kind === 'app') return;
+
 	const errorId = crypto.randomUUID();
+	const { status, message } = kind === 'unknown' ? { status: 500, message: 'Internal Error' } : error;
 
 	// Log error details (in production, you might want to send to error tracking service)
 	if (!dev) {

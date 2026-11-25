@@ -1,4 +1,4 @@
-import { TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID } from '$env/static/private';
+import { TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID } from '$app/env/private';
 
 const BOT_TOKEN = TELEGRAM_BOT_TOKEN?.trim();
 const CHANNEL_ID = TELEGRAM_CHANNEL_ID?.trim();

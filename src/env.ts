@@ -1,0 +1,47 @@
+import { defineEnvVars } from '@sveltejs/kit/env';
+
+const optional = { schema: (value: string | undefined) => value };
+const optionalStatic = { static: true, ...optional };
+
+export const variables = defineEnvVars({
+	PUBLIC_SUPABASE_URL: { public: true, static: true },
+	PUBLIC_SUPABASE_ANON_KEY: { public: true, static: true },
+	PUBLIC_SITE_URL: { public: true, ...optional },
+	SUPABASE_SERVICE_ROLE_KEY: { static: true },
+	ADMIN_EMAILS: optionalStatic,
+	ADMIN_USER_IDS: optionalStatic,
+	TELEGRAM_BOT_TOKEN: optionalStatic,
+	TELEGRAM_CHANNEL_ID: optionalStatic,
+	PARKOUR_SPOT_API_KEY: optional,
+	PARKOUR_SPOT_BEARER_TOKEN: optional,
+	SPOTIFY_CLIENT_ID: optional,
+	SPOTIFY_CLIENT_SECRET: optional,
+	OPENAI_API_KEY: optional,
+	MCP_BEARER_TOKEN: optional,
+	JUMPFLIX_MCP_BEARER_TOKEN: optional,
+	JUMPFLIX_MCP_MAX_STRUCTURED_CONTENT_CHARS: optional,
+	JUMPFLIX_MCP_MAX_TEXT_CONTENT_CHARS: optional,
+	JUMPFLIX_MCP_SESSION_MODE: optional,
+	JUMPFLIX_MCP_VERSION: optional,
+	JUMPFLIX_MCP_OAUTH_ACCESS_TOKEN_TTL_SECONDS: optional,
+	JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_ORIGINS: optional,
+	JUMPFLIX_MCP_OAUTH_ALLOWED_REDIRECT_URIS: optional,
+	JUMPFLIX_MCP_OAUTH_CIMD_ALLOWED_HOSTS: optional,
+	JUMPFLIX_MCP_OAUTH_CIMD_CACHE_TTL_SECONDS: optional,
+	JUMPFLIX_MCP_OAUTH_CIMD_FETCH_TIMEOUT_MS: optional,
+	JUMPFLIX_MCP_OAUTH_CLIENT_ID: optional,
+	JUMPFLIX_MCP_OAUTH_CLIENT_SECRET: optional,
+	JUMPFLIX_MCP_OAUTH_CODE_TTL_SECONDS: optional,
+	JUMPFLIX_MCP_OAUTH_DCR_AUTH_METHODS: optional,
+	JUMPFLIX_MCP_OAUTH_DCR_CLIENT_TTL_SECONDS: optional,
+	JUMPFLIX_MCP_OAUTH_DEFAULT_SUBJECT: optional,
+	JUMPFLIX_MCP_OAUTH_ENABLE_CIMD: optional,
+	JUMPFLIX_MCP_OAUTH_ENABLE_DCR: optional,
+	JUMPFLIX_MCP_OAUTH_ISSUER: optional,
+	JUMPFLIX_MCP_OAUTH_JWKS_CACHE_TTL_SECONDS: optional,
+	JUMPFLIX_MCP_OAUTH_REQUIRE_USER_SESSION: optional,
+	JUMPFLIX_MCP_OAUTH_REQUIRED_SCOPES: optional,
+	JUMPFLIX_MCP_OAUTH_RESOURCE: optional,
+	JUMPFLIX_MCP_OAUTH_SCOPES: optional,
+	JUMPFLIX_MCP_OAUTH_SIGNING_SECRET: optional
+});

@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 
 /**
  * Validates the Bearer token from the Authorization header.

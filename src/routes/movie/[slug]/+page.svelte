@@ -2,7 +2,7 @@
 	import DetailRoute from '$lib/tv/DetailRoute.svelte';
 	import { getUrlForItem } from '$lib/tv/slug';
 	import { buildMovieVideoSchema } from '$lib/tv/video-discovery';
-	import { env } from '$env/dynamic/public';
+	import * as env from '$app/env/public';
 	import { decode } from 'html-entities';
 
 	import { buildContentSchema } from '$lib/tv/structured-data';

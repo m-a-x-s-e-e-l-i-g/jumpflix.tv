@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import type { SubmitFunction } from '@sveltejs/kit';
+	import { enhance, type SubmitFunction } from '$app/forms';
 	import { tick } from 'svelte';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { Dialog } from 'bits-ui';
@@ -29,7 +28,7 @@
 				return;
 			}
 
-			await update({ invalidateAll: false });
+			await update({ refreshAll: false, navigate: false });
 
 			if (result.type === 'failure') {
 				submitError = result.data?.message ?? m.submit_film_error_generic();

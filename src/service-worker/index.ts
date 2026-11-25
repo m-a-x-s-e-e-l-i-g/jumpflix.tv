@@ -1,20 +1,21 @@
-/// <reference lib="webworker" />
 // SvelteKit Service Worker for precaching and faster reloads
 // Strategies:
 // - Precache build + static files (cache-first)
 // - Runtime cache images/icons with stale-while-revalidate
 // - Navigation: network-first with offline fallback to root when unavailable
 
-import { build, files, prerendered, version } from '$service-worker';
-
-declare const self: ServiceWorkerGlobalScope;
+import { version } from '$app/env';
+import { assets, immutable, prerendered } from '$app/manifest';
+import { resolve } from '$app/paths';
+import { self } from '$app/service-worker';
 
 const APP_CACHE = `app-${version}`;
 const STATIC_CACHE = `static-${version}`;
 const IMAGE_CACHE = 'images-v1';
 
 // Everything we know at build time
-const PRECACHE_URLS = new Set<string>([...build, ...files, ...prerendered]);
+const base = resolve('/');
+const PRECACHE_URLS = new Set([...immutable, ...assets, ...prerendered].map(({ path }) => `${base}${path}`));
 
 self.addEventListener('install', (event) => {
 	// Skip waiting so new SW activates immediately

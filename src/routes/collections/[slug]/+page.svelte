@@ -2,7 +2,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import LanguageAlternates from '$lib/components/LanguageAlternates.svelte';
-	import { env } from '$env/dynamic/public';
+	import * as env from '$app/env/public';
 	import { getFeedBySlug } from '$lib/tv/feeds';
 	import { getUrlForItem } from '$lib/tv/slug';
 	import JsonLd from '$lib/components/JsonLd.svelte';

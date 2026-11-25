@@ -3,7 +3,7 @@
 	import { getUrlForItem } from './slug';
 	import { isImage } from './utils';
 	import { Image } from '@unpic/svelte';
-	import { dev } from '$app/environment';
+	import { dev } from '$app/env';
 	import { familySafeOnly, loadedThumbnails, markThumbnailLoaded } from '$lib/tv/store';
 	import {
 		getWatchProgress,
@@ -11,7 +11,7 @@
 		getSeriesProgressSummary,
 		PROGRESS_CHANGE_EVENT
 	} from '$lib/tv/watchHistory';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { onMount } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
 	import { isBunnyExclusiveMovie, resolveMoviePlaybackSource } from '$lib/tv/playback-source';

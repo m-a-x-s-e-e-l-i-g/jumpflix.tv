@@ -1,11 +1,12 @@
 <script lang="ts">
+	import { toStore } from 'svelte/store';
 	import type { ContentItem, ContentWarning, Episode, Movie } from './types';
 	import { isContentUnavailable, isInlinePlayable } from './utils';
 	import { getUrlForItem, getEpisodeUrl } from './slug';
-	import { browser, dev } from '$app/environment';
+	import { browser, dev } from '$app/env';
 	import { Image } from '@unpic/svelte';
 	import { invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { toast } from 'svelte-sonner';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import Link2Icon from '@lucide/svelte/icons/link-2';
@@ -194,6 +195,9 @@
 		}
 	}
 
+	const pageData = toStore(() => page.data);
+	const pageUrl = toStore(() => page.url);
+
 	export let selected: ContentItem | null;
 	export let openContent: (c: ContentItem) => void;
 	export let openExternal: (c: ContentItem) => void;
@@ -288,7 +292,7 @@
 	}
 	$: isLocalPosterRegenerationEnabled = Boolean(
 		browser &&
-			$page.data?.isAdmin === true &&
+			$pageData?.isAdmin === true &&
 			window.location.hostname === 'localhost' &&
 			movieForPoster?.slug?.trim() &&
 			movieForPoster?.videoId?.trim()
@@ -971,7 +975,7 @@
 		const curId = selectedEpisode?.id ?? null;
 		const exists = curId ? episodes.some((ep) => ep.id === curId) : false;
 		const hasEpisodeInPath =
-			$page.url.pathname.includes('/seasons/') && $page.url.pathname.includes('/episodes/');
+			$pageUrl.pathname.includes('/seasons/') && $pageUrl.pathname.includes('/episodes/');
 		const hydrateEpisode = (ep: Episode) => ({
 			...ep,
 			title: ep.title ? decode(ep.title) : `Episode ${ep.position ?? ''}`.trim()
@@ -1198,7 +1202,7 @@
 							{/if}
 						</a>
 					{/if}
-					{#if $page.data?.isAdmin}
+					{#if $pageData?.isAdmin}
 						<button
 							type="button"
 							class="detail-icon detail-icon--label"

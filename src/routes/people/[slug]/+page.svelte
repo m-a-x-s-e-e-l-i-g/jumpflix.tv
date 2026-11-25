@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { get } from 'svelte/store';
 	import { searchQuery, selectedFacets, showPaid, showWatched, sortBy } from '$lib/tv/store';
 

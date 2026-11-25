@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { RequestHandler } from './$types';
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -30,7 +30,7 @@ function resolveSessionMode(): SessionMode {
 		return configured;
 	}
 
-	const nodeEnv = env.NODE_ENV?.trim().toLowerCase();
+	const nodeEnv = process.env.NODE_ENV?.trim().toLowerCase();
 	return nodeEnv === 'production' ? 'stateless' : 'stateful';
 }
 

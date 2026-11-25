@@ -1,5 +1,5 @@
 import { writable, derived, type Readable, get } from 'svelte/store';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import type { CatalogView, ContentItem, Episode, SortBy, SelectedFacets } from './types';
 import {
 	buildRankMap,

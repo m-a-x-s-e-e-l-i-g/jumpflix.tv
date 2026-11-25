@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { localizeHref } from '$lib/paraglide/runtime';
 	import { Image } from '@unpic/svelte';
-	import { dev } from '$app/environment';
+	import { dev } from '$app/env';
 	import SubmitFilmDialog from '$lib/components/SubmitFilmDialog.svelte';
 	import * as m from '$lib/paraglide/messages';
 	import type { FeedDefinition } from './feeds';

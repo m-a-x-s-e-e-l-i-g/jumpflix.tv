@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/public';
+import * as env from '$app/env/public';
 import { renderDiscoveryPage } from '$lib/server/discovery-page';
 import { discoveryResponse } from '$lib/server/discovery-response';
 

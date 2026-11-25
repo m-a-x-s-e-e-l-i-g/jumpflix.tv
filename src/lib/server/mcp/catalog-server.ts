@@ -1,7 +1,7 @@
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ResourceLink } from '@modelcontextprotocol/sdk/types.js';
 import * as z from 'zod/v4';
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 import {
 	CONTENT_WARNING_DESCRIPTIONS,
 	CONTENT_WARNING_LABELS,

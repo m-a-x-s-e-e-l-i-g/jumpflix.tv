@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { USER_XP_WEIGHTS, type UserXpKind } from '$lib/xp';
 
 export const XPOP_AWARDED_EVENT = 'xpop:awarded';

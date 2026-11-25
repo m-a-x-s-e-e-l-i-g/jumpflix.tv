@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
-import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
-import type { Handle } from '@sveltejs/kit';
+import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$app/env/public';
+import type { Handle } from '@sveltejs/kit/hooks';
 import type { Database } from '$lib/supabase/types';
 
 const SUPABASE_BYPASS_PATHS = new Set(['/oauth/token', '/oauth/register']);

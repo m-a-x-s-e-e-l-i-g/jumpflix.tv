@@ -1,7 +1,7 @@
 <script lang="ts">
 	import VideoPlayer from '$lib/tv/VideoPlayer.svelte';
 	import { familySafeOnly } from '$lib/tv/store';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { tick } from 'svelte';
 	import type { VideoTrack } from '$lib/tv/types';
 

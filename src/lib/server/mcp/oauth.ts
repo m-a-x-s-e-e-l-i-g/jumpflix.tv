@@ -1,5 +1,5 @@
 import { createHash, createHmac, createPublicKey, createVerify, randomUUID, timingSafeEqual } from 'node:crypto';
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 
 const DEFAULT_SCOPE = 'jumpflix.read';
 const DEFAULT_CLIENT_ID = 'jumpflix-chatgpt';

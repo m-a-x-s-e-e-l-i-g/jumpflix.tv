@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 import { createSupabaseServiceClient } from '$lib/server/supabaseClient';
 import { normalizeParkourSpotPayload } from '$lib/server/parkourSpotPayload';
 import { asTrimmedString, normalizeParkourSpotId } from '$lib/utils';

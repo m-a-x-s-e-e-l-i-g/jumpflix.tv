@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { CountUp, type CountUpOptions } from 'countup.js';
 
 export type CountUpParams = {

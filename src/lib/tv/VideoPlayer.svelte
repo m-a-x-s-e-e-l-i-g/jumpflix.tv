@@ -1,6 +1,6 @@
-﻿<script lang="ts">
+<script lang="ts">
 	import { createEventDispatcher, onDestroy, onMount } from 'svelte';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import type { MediaPlayerElement } from 'vidstack/elements';
 	import PlayIcon from 'lucide-svelte/icons/play';
 	import PauseIcon from 'lucide-svelte/icons/pause';

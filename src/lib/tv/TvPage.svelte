@@ -4,8 +4,8 @@
 	import InstagramIcon from '@lucide/svelte/icons/instagram';
 	import LayoutGridIcon from '@lucide/svelte/icons/layout-grid';
 	import ListIcon from '@lucide/svelte/icons/list';
-	import { page } from '$app/stores';
-	import { get } from 'svelte/store';
+	import { page } from '$app/state';
+	import { get, toStore } from 'svelte/store';
 	import { toast } from 'svelte-sonner';
 	import * as m from '$lib/paraglide/messages';
 	import TvHeroSection from '$lib/tv/TvHeroSection.svelte';
@@ -45,7 +45,7 @@
 		watchHistoryVersion
 	} from '$lib/tv/watchHistory';
 	import type { ContentItem, Episode, Movie } from '$lib/tv/types';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { afterNavigate, beforeNavigate, goto } from '$app/navigation';
 	import { buildItemUrl, openExternalContent } from '$lib/tv/helpers/navigation';
 	import { computeColumns } from '$lib/tv/helpers/grid';
@@ -64,11 +64,12 @@
 		initialEpisodeNumber?: number | null;
 		initialSeasonNumber?: number | null;
 	}>();
-	const routeEpisode = $derived(($page.data as any).episode as Episode | undefined);
+	const pageUrl = toStore(() => page.url);
+	const routeEpisode = $derived((page.data as any).episode as Episode | undefined);
 	let lastCollectionPath = $state<string | null>(null);
 
 	$effect(() => {
-		const path = deLocalizeUrl($page.url).pathname;
+		const path = deLocalizeUrl(page.url.href).pathname;
 		if (path.startsWith('/collections/') && path !== lastCollectionPath) {
 			searchQuery.set('');
 			selectedFacets.set({});
@@ -78,7 +79,7 @@
 		} else if (!path.startsWith('/collections/')) {
 			lastCollectionPath = null;
 		}
-		const pageContent = ($page?.data as any)?.content;
+		const pageContent = (page?.data as any)?.content;
 		const items = Array.isArray(pageContent) ? pageContent : content;
 		setContent(initialItem ? [initialItem] : (items ?? []));
 	});
@@ -88,13 +89,13 @@
 	// Use request-local data for SSR; never populate shared module stores on the server.
 	const initialCatalog = $derived(
 		filterAndSortContent(content, buildRankMap(content, new Date().toISOString().slice(0, 10)), {
-			searchQuery: $page.url.searchParams.get('q') ?? '',
+			searchQuery: page.url.searchParams.get('q') ?? '',
 			showPaid: true,
 			showWatched: true,
 			sortBy: 'default'
 		})
 	);
-	const collection = $derived(getFeedBySlug(($page.data as any).collectionSlug));
+	const collection = $derived(getFeedBySlug((page.data as any).collectionSlug));
 	let gridEl = $state<HTMLElement | null>(null);
 	let currentPath = $state('');
 	let logoTilt = $state(0);
@@ -112,7 +113,7 @@
 	let restoreCatalogScroll = false;
 
 	const isDetailRoute = $derived(
-		deLocalizeUrl($page.url).pathname.startsWith('/movie/') || deLocalizeUrl($page.url).pathname.startsWith('/series/')
+		deLocalizeUrl(page.url.href).pathname.startsWith('/movie/') || deLocalizeUrl(page.url.href).pathname.startsWith('/series/')
 	);
 
 	type ProfileContext = {
@@ -276,7 +277,7 @@
 		return `All films and series featuring ${name}.`;
 	}
 
-	const profileContext = $derived(computeProfileContext(deLocalizeUrl($page.url).pathname, $page.data));
+	const profileContext = $derived(computeProfileContext(deLocalizeUrl(page.url.href).pathname, page.data));
 
 	const isDetailPathname = (pathname: string) =>
 		pathname.startsWith('/movie/') || pathname.startsWith('/series/');
@@ -286,16 +287,16 @@
 	};
 
 	const profileStats = $derived(
-		profileContext ? computeProfileStats(($page.data as any)?.content) : null
+		profileContext ? computeProfileStats((page.data as any)?.content) : null
 	);
 	const profileCreditStats = $derived(
 		profileContext
-			? computeProfileCreditStats(($page.data as any)?.content, profileContext.slug)
+			? computeProfileCreditStats((page.data as any)?.content, profileContext.slug)
 			: null
 	);
 	const profileWatchSummary = $derived(
 		profileContext
-			? computeProfileWatchSummary(($page.data as any)?.content, $watchHistoryVersion)
+			? computeProfileWatchSummary((page.data as any)?.content, $watchHistoryVersion)
 			: null
 	);
 
@@ -312,7 +313,7 @@
 		if (!slug) return;
 		if (slug === lastProfileSlug) return;
 		lastProfileSlug = slug;
-		const roles = ($page.data as any)?.roles as
+		const roles = (page.data as any)?.roles as
 			| { creator?: boolean; athlete?: boolean }
 			| null
 			| undefined;
@@ -387,7 +388,7 @@
 		if (browser) {
 			console.warn('[TvPage] loadPlayerModal:start', {
 				showPlayer: get(showPlayer),
-				path: get(page).url.pathname
+				path: page.url.pathname
 			});
 		}
 		try {
@@ -433,8 +434,8 @@
 	}
 
 	if (browser) {
-		const initialPage = get(page);
-		if (deLocalizeUrl(initialPage.url).pathname === '/') {
+		const initialPage = page;
+		if (deLocalizeUrl(initialPage.url.href).pathname === '/') {
 			const initialQuery = initialPage.url.searchParams.get('q');
 			// Only sync from URL when `q` is explicitly present.
 			// Otherwise, keep the persisted store value (e.g., localStorage) to avoid
@@ -446,7 +447,7 @@
 	}
 
 	function nav(url: string, opts?: { replace?: boolean }) {
-		goto(localizeHref(url), { replaceState: !!opts?.replace, noScroll: true, keepFocus: true });
+		goto(localizeHref(url), { replace: !!opts?.replace, reset: false });
 	}
 
 	$effect(() => {
@@ -648,7 +649,7 @@
 
 	onMount(() => {
 		mounted = true;
-		currentPath = `${get(page).url.pathname}${get(page).url.search}`;
+		currentPath = `${page.url.pathname}${page.url.search}`;
 
 		// In Android standalone (installed PWA), require double-back to exit on catalog overview.
 		const handlePopState = () => {
@@ -722,10 +723,11 @@
 			});
 		});
 
-		const unsubPage = page.subscribe((p) => {
-			currentPath = `${deLocalizeUrl(p.url).pathname}${p.url.search}`;
-			if (deLocalizeUrl(p.url).pathname === '/') {
-				const nextQuery = p.url.searchParams.get('q');
+		const unsubPage = pageUrl.subscribe((url) => {
+			const pathname = deLocalizeUrl(url.href).pathname;
+			currentPath = `${pathname}${url.search}`;
+			if (pathname === '/') {
+				const nextQuery = url.searchParams.get('q');
 				// Only sync from URL when `q` is explicitly present.
 				if (nextQuery !== null && nextQuery !== get(searchQuery)) {
 					searchQuery.set(nextQuery);

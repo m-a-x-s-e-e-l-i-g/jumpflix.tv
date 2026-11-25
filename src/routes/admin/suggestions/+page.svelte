@@ -1,6 +1,9 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { toStore } from 'svelte/store';
+	import { page } from '$app/state';
 	import { enhance } from '$app/forms';
+
+	const pageUrl = toStore(() => page.url);
 
 	export let data: { suggestions: any[]; error: string | null; usernames: Record<string, string> };
 
@@ -18,7 +21,7 @@
 	);
 
 	$: {
-		const fromUrl = Number($page.url.searchParams.get('id') ?? '');
+		const fromUrl = Number($pageUrl.searchParams.get('id') ?? '');
 		selectedId = Number.isFinite(fromUrl) && fromUrl > 0 ? fromUrl : null;
 	}
 

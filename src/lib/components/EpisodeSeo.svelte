@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { env } from '$env/dynamic/public';
+	import * as env from '$app/env/public';
 	import { decode } from 'html-entities';
 	import JsonLd from './JsonLd.svelte';
 	import { verifiedDate } from '$lib/seo';
